@@ -27,7 +27,9 @@ export default {
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
 					foreground: 'hsl(var(--primary-foreground))',
-					glow: 'hsl(var(--primary-glow))'
+					glow: 'hsl(var(--primary-glow))',
+					900: 'hsl(var(--primary-900))',
+					800: 'hsl(var(--primary-800))'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
@@ -72,7 +74,8 @@ export default {
 				'gradient-primary': 'var(--gradient-primary)',
 				'gradient-hero': 'var(--gradient-hero)',
 				'gradient-card': 'var(--gradient-card)',
-				'gradient-glass': 'var(--gradient-glass)'
+				'gradient-glass': 'var(--gradient-glass)',
+				'grid-pattern': 'linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)'
 			},
 			boxShadow: {
 				'soft': 'var(--shadow-soft)',

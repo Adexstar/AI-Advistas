@@ -57,6 +57,10 @@ All colors MUST be HSL.
 
     --radius: 0.5rem;
 
+    /* Custom primary colors for enhanced design */
+    --primary-900: 220 80% 25%;
+    --primary-800: 225 80% 30%;
+
     --sidebar-background: 0 0% 98%;
 
     --sidebar-foreground: 240 5.3% 26.1%;
