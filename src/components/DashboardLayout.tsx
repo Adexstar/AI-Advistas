@@ -14,10 +14,12 @@ import {
   LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { signOut } = useAuth();
 
   const navigationItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -87,7 +89,11 @@ const DashboardLayout = () => {
 
           {/* User menu */}
           <div className="p-4 border-t border-border">
-            <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-foreground">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start text-muted-foreground hover:text-foreground"
+              onClick={signOut}
+            >
               <LogOut className="mr-3 h-5 w-5" />
               Sign Out
             </Button>

@@ -1,9 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Facebook, Instagram, Twitter, Youtube } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-bg.jpg";
 
 const HeroSection = () => {
+  const navigate = useNavigate();
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -73,10 +75,19 @@ const HeroSection = () => {
               variants={itemVariants}
               className="flex flex-col sm:flex-row gap-4 mb-12"
             >
-              <Button size="xl" className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold">
+              <Button 
+                size="xl" 
+                className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold"
+                onClick={() => navigate("/auth")}
+              >
                 Get Started Free
               </Button>
-              <Button variant="outline" size="xl" className="border-white/30 text-white hover:bg-white/10">
+              <Button 
+                variant="outline" 
+                size="xl" 
+                className="border-white/30 text-white hover:bg-white/10"
+                onClick={() => navigate("/auth")}
+              >
                 Login
               </Button>
             </motion.div>

@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
@@ -27,8 +29,8 @@ const Navigation = () => {
           </div>
 
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost">Sign In</Button>
-            <Button variant="hero">Get Started</Button>
+            <Button variant="ghost" onClick={() => navigate("/auth")}>Sign In</Button>
+            <Button variant="hero" onClick={() => navigate("/auth")}>Get Started</Button>
           </div>
 
           <div className="md:hidden">
@@ -57,8 +59,8 @@ const Navigation = () => {
                 About
               </a>
               <div className="flex flex-col space-y-2 pt-4">
-                <Button variant="ghost">Sign In</Button>
-                <Button variant="hero">Get Started</Button>
+                <Button variant="ghost" onClick={() => { navigate("/auth"); setIsOpen(false); }}>Sign In</Button>
+                <Button variant="hero" onClick={() => { navigate("/auth"); setIsOpen(false); }}>Get Started</Button>
               </div>
             </div>
           </div>
