@@ -14,6 +14,7 @@ import Audience from "./pages/Audience";
 import Billing from "./pages/Billing";
 import LandingPages from "./pages/LandingPages";
 import Settings from "./pages/Settings";
+import AdSimulatorPage from "./pages/AdSimulatorPage";
 import { AuthProvider } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -78,6 +79,11 @@ const App = () => (
             }>
               <Route index element={<Settings />} />
             </Route>
+            <Route path="/ad-simulator" element={
+              <ProtectedRoute>
+                <AdSimulatorPage />
+              </ProtectedRoute>
+            } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
