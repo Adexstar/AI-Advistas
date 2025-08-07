@@ -27,7 +27,7 @@ const DashboardLayout = () => {
     { name: "Create Ad", href: "/create-ad", icon: Plus },
     { name: "Audience", href: "/audience", icon: Users },
     { name: "Billing", href: "/billing", icon: CreditCard },
-    { name: "Landing Pages", href: "/landing-pages", icon: Layout },
+    { name: "Ad Simulator", href: "/ad-simulator", icon: Layout },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
