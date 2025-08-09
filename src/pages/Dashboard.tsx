@@ -29,6 +29,9 @@ import { AIRecommendations } from "@/components/dashboard/AIRecommendations";
 import { CampaignTools } from "@/components/dashboard/CampaignTools";
 import { AudienceInsights } from "@/components/dashboard/AudienceInsights";
 import { RecentCampaigns } from "@/components/dashboard/RecentCampaigns";
+import { TargetAudienceInsights } from "@/components/dashboard/TargetAudienceInsights";
+import { OptimizationTips } from "@/components/dashboard/OptimizationTips";
+import { AdPerformanceHeatmap } from "@/components/dashboard/AdPerformanceHeatmap";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -258,7 +261,19 @@ const Dashboard = () => {
         </TabsContent>
 
         <TabsContent value="insights" className="space-y-6">
-          <AudienceInsights insights={audienceInsights} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <AudienceInsights insights={audienceInsights} />
+            <TargetAudienceInsights />
+          </div>
+
+          <div className="grid grid-cols-1 gap-5">
+            <PlatformPerformance platforms={platformPerformance} />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <OptimizationTips />
+            <AdPerformanceHeatmap />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
