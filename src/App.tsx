@@ -15,6 +15,7 @@ import Billing from "./pages/Billing";
 import LandingPages from "./pages/LandingPages";
 import Settings from "./pages/Settings";
 import AdSimulatorPage from "./pages/AdSimulatorPage";
+import AIVideoGenerator from "./pages/AIVideoGenerator";
 import { AuthProvider } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -78,6 +79,13 @@ const App = () => (
               </ProtectedRoute>
             }>
               <Route index element={<Settings />} />
+            </Route>
+            <Route path="/ai-video-generator" element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<AIVideoGenerator />} />
             </Route>
             <Route path="/ad-simulator" element={
               <ProtectedRoute>
