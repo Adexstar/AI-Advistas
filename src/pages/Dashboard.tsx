@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useApp } from "@/contexts/AppContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -34,14 +36,20 @@ import { OptimizationTips } from "@/components/dashboard/OptimizationTips";
 import { AdPerformanceHeatmap } from "@/components/dashboard/AdPerformanceHeatmap";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  const { state, actions } = useApp();
   const [activeTab, setActiveTab] = useState("overview");
-  const [timeRange, setTimeRange] = useState("30");
 
-  // Enhanced overview stats with backgrounds and trends
+  // Calculate dynamic stats from app state
+  const totalImpressions = state.campaigns.reduce((acc, campaign) => acc + campaign.impressions, 0);
+  const totalClicks = state.campaigns.reduce((acc, campaign) => acc + campaign.clicks, 0);
+  const totalSpent = state.campaigns.reduce((acc, campaign) => acc + campaign.spent, 0);
+  const avgCTR = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
+
   const overviewStats = [
     { 
       title: "Total Impressions", 
-      value: "2.4M", 
+      value: `${(totalImpressions / 1000).toFixed(1)}K`, 
       change: "+12.5%", 
       icon: Eye, 
       trend: "up" as const,
@@ -50,7 +58,7 @@ const Dashboard = () => {
     },
     { 
       title: "Total Clicks", 
-      value: "48.7K", 
+      value: `${(totalClicks / 1000).toFixed(1)}K`, 
       change: "+8.2%", 
       icon: MousePointer, 
       trend: "up" as const,
@@ -59,7 +67,7 @@ const Dashboard = () => {
     },
     { 
       title: "Conversion Rate", 
-      value: "3.8%", 
+      value: `${avgCTR.toFixed(1)}%`, 
       change: "+0.6%", 
       icon: Target, 
       trend: "up" as const,
@@ -67,8 +75,8 @@ const Dashboard = () => {
       color: "text-green-600"
     },
     { 
-      title: "Total Revenue", 
-      value: "$24,890", 
+      title: "Total Spent", 
+      value: `$${totalSpent.toLocaleString()}`, 
       change: "+15.3%", 
       icon: DollarSign, 
       trend: "up" as const,
@@ -86,67 +94,67 @@ const Dashboard = () => {
     { platform: "LinkedIn", icon: Linkedin, color: "text-blue-700", performance: 88, revenue: "$1,490", ctr: "4.1%" },
   ];
 
-  // Recent campaigns with enhanced data
-  const recentCampaigns = [
-    { 
-      id: 1, 
-      name: "Summer Sale Campaign", 
-      status: "Active", 
-      platform: "Facebook", 
-      ctr: "2.8%", 
-      impressions: "145.2K",
-      budget: "$2,500",
-      spent: "$1,850",
-      thumbnail: "🏖️"
-    },
-    { 
-      id: 2, 
-      name: "Product Launch", 
-      status: "Active", 
-      platform: "Instagram", 
-      ctr: "3.1%", 
-      impressions: "98.7K",
-      budget: "$1,800",
-      spent: "$1,200",
-      thumbnail: "🚀"
-    },
-    { 
-      id: 3, 
-      name: "Brand Awareness", 
-      status: "Paused", 
-      platform: "Google", 
-      ctr: "1.9%", 
-      impressions: "267.3K",
-      budget: "$3,200",
-      spent: "$2,890",
-      thumbnail: "✨"
-    },
-  ];
+  // Use real campaigns from app state
+  const recentCampaigns = state.campaigns.slice(0, 3).map(campaign => ({
+    id: campaign.id,
+    name: campaign.name,
+    status: campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1),
+    platform: campaign.platform.join(", "),
+    ctr: `${campaign.ctr}%`,
+    impressions: `${(campaign.impressions / 1000).toFixed(1)}K`,
+    budget: `$${campaign.budget.toLocaleString()}`,
+    spent: `$${campaign.spent.toLocaleString()}`,
+    thumbnail: campaign.name.includes('Summer') ? '🏖️' : 
+               campaign.name.includes('Product') ? '🚀' : 
+               campaign.name.includes('Brand') ? '✨' : '📊'
+  }));
 
-  // AI Recommendations
-  const aiRecommendations = [
-    {
-      type: "Creative",
-      title: "Update Headlines",
-      description: "Your current headlines are performing 15% below average. Try more action-oriented language.",
-      impact: "High" as const,
-      color: "text-red-600"
-    },
-    {
+  // Generate AI Recommendations based on actual data
+  const generateRecommendations = () => {
+    const recommendations = [];
+    
+    // Find best performing platform
+    const bestPlatform = platformPerformance.reduce((best, current) => 
+      current.performance > best.performance ? current : best
+    );
+    
+    if (bestPlatform.performance > 85) {
+      recommendations.push({
+        type: "Performance",
+        title: `Increase ${bestPlatform.platform} Budget`,
+        description: `${bestPlatform.platform} is outperforming other platforms. Consider reallocating 20% more budget.`,
+        impact: "High" as const,
+        color: "text-green-600",
+        action: () => navigate('/campaigns')
+      });
+    }
+
+    // Check for low performing campaigns
+    const lowPerformingCampaigns = state.campaigns.filter(c => c.ctr < 2.0);
+    if (lowPerformingCampaigns.length > 0) {
+      recommendations.push({
+        type: "Creative",
+        title: "Optimize Low-CTR Campaigns",
+        description: `${lowPerformingCampaigns.length} campaigns have CTR below 2%. Consider updating headlines and visuals.`,
+        impact: "High" as const,
+        color: "text-red-600",
+        action: () => navigate('/create-ad')
+      });
+    }
+
+    recommendations.push({
       type: "Strategy",
       title: "A/B Test Landing Pages",
       description: "Consider testing multiple landing page variants to improve conversion rates.",
       impact: "Medium" as const,
-      color: "text-yellow-600"
-    },
-    {
-      type: "Performance",
-      title: "Increase Instagram Budget",
-      description: "Instagram is outperforming other platforms. Consider reallocating 20% more budget.",
-      impact: "High" as const,
-      color: "text-green-600"
-    },
-  ];
+      color: "text-yellow-600",
+      action: () => navigate('/landing-pages')
+    });
+
+    return recommendations;
+  };
+
+  const aiRecommendations = generateRecommendations();
 
   // Campaign Tools with enhanced descriptions
   const campaignTools = [
@@ -240,8 +248,9 @@ const Dashboard = () => {
 
           {/* Performance Chart */}
           <PerformanceChart 
-            timeRange={timeRange} 
-            onTimeRangeChange={setTimeRange} 
+            timeRange={state.timeRange} 
+            onTimeRangeChange={actions.setTimeRange}
+            campaigns={state.campaigns}
           />
 
           <div className="grid gap-6 lg:grid-cols-2">
@@ -249,15 +258,30 @@ const Dashboard = () => {
             <PlatformPerformance platforms={platformPerformance} />
 
             {/* AI Recommendations */}
-            <AIRecommendations recommendations={aiRecommendations} />
+            <AIRecommendations 
+              recommendations={aiRecommendations}
+              onRecommendationClick={(recommendation) => recommendation.action?.()}
+            />
           </div>
 
           {/* Recent Campaigns */}
-          <RecentCampaigns campaigns={recentCampaigns} />
+          <RecentCampaigns 
+            campaigns={recentCampaigns}
+            onCampaignClick={(campaign) => navigate(`/campaigns`)}
+            onToggleStatus={(campaignId) => actions.toggleCampaignStatus(campaignId)}
+          />
         </TabsContent>
 
         <TabsContent value="tools" className="space-y-6">
-          <CampaignTools tools={campaignTools} />
+          <CampaignTools 
+            tools={campaignTools}
+            onToolClick={(toolTitle) => {
+              if (toolTitle === 'Creative Studio') navigate('/create-ad');
+              else if (toolTitle === 'Platform Manager') navigate('/campaigns');
+              else if (toolTitle === 'Ad Scheduler') navigate('/campaigns');
+              else if (toolTitle === 'Budget Estimator') navigate('/billing');
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="insights" className="space-y-6">

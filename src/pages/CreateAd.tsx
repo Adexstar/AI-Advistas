@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { useApp, type AdContent, type Campaign } from "@/contexts/AppContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,41 +13,99 @@ import AdPreviewAnimation from "@/components/ad/AdPreviewAnimation";
 import SocialMediaPreview from "@/components/ad/SocialMediaPreview";
 
 const CreateAd = () => {
-  const [formData, setFormData] = useState({
+  const navigate = useNavigate();
+  const { state, actions } = useApp();
+  
+  const [formData, setFormData] = useState<AdContent>({
     product: "",
     details: "",
     websiteUrl: "",
-    adType: "image",
+    adType: "image" as "image" | "video" | "carousel",
     platforms: [],
-    placementOptions: {},
     audience: "",
-    simpleAudience: "",
-    mediaUrl: null,
-    mediaType: "image"
+    mediaUrl: "",
+    mediaType: "image" as "image" | "video"
   });
 
   const [previewDevice, setPreviewDevice] = useState("desktop");
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Load selected campaign/ad data if editing
+  useEffect(() => {
+    if (state.selectedCampaign) {
+      setFormData(prev => ({
+        ...prev,
+        product: state.selectedCampaign.name,
+        platforms: state.selectedCampaign.platform,
+        ...state.selectedCampaign.adContent
+      }));
+    }
+    if (state.selectedAd) {
+      setFormData(prev => ({
+        ...prev,
+        ...state.selectedAd.content
+      }));
+    }
+  }, [state.selectedCampaign, state.selectedAd]);
+
   const handleGenerate = async () => {
     setIsGenerating(true);
     
-    // Simulate API call
     try {
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      if (state.selectedAd) {
+        // Update existing ad
+        actions.updateAd(state.selectedAd.id, {
+          content: formData,
+          name: formData.product || state.selectedAd.name
+        });
+        actions.selectAd(null);
+      } else if (state.selectedCampaign) {
+        // Create new ad for existing campaign
+        actions.createAd({
+          name: formData.product || "New Ad",
+          campaignId: state.selectedCampaign.id,
+          status: 'draft',
+          format: formData.adType as 'image' | 'video' | 'carousel',
+          impressions: 0,
+          clicks: 0,
+          ctr: 0,
+          content: formData
+        });
+        actions.selectCampaign(null);
+      } else {
+        // Create new campaign and ad
+        const newCampaign: Omit<Campaign, 'id' | 'createdAt'> = {
+          name: formData.product || "New Campaign",
+          status: 'draft',
+          platform: formData.platforms,
+          budget: 1000,
+          spent: 0,
+          impressions: 0,
+          clicks: 0,
+          ctr: 0,
+          startDate: new Date().toISOString().split('T')[0],
+          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          adContent: formData
+        };
+        
+        actions.createCampaign(newCampaign);
+      }
       
       toast({
-        title: "Campaign Generated!",
-        description: "Your AI-powered ad campaign has been created successfully.",
+        title: "Success!",
+        description: "Your ad has been created successfully.",
       });
       
-      // Here you would make the actual API call
-      console.log("Generating campaign with data:", formData);
+      // Navigate to campaigns page
+      setTimeout(() => navigate('/campaigns'), 1000);
       
     } catch (error) {
       toast({
         title: "Generation failed",
-        description: "There was an error generating your campaign. Please try again.",
+        description: "There was an error creating your ad. Please try again.",
         variant: "destructive",
       });
     } finally {

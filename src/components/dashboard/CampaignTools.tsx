@@ -13,9 +13,10 @@ interface Tool {
 
 interface CampaignToolsProps {
   tools: Tool[];
+  onToolClick?: (toolTitle: string) => void;
 }
 
-export const CampaignTools = ({ tools }: CampaignToolsProps) => {
+export const CampaignTools = ({ tools, onToolClick }: CampaignToolsProps) => {
   return (
     <div className="grid gap-6 md:grid-cols-2">
       {tools.map((tool, index) => (
@@ -49,7 +50,11 @@ export const CampaignTools = ({ tools }: CampaignToolsProps) => {
                   </Badge>
                 ))}
               </div>
-              <Button className="w-full" variant="outline">
+              <Button 
+                className="w-full" 
+                variant="outline"
+                onClick={() => onToolClick?.(tool.title)}
+              >
                 Launch Tool
               </Button>
             </CardContent>

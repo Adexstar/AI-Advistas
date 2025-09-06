@@ -6,9 +6,18 @@ import { BarChart3 } from "lucide-react";
 interface PerformanceChartProps {
   timeRange: string;
   onTimeRangeChange: (range: string) => void;
+  campaigns?: Array<{
+    impressions: number;
+    clicks: number;
+    spent: number;
+  }>;
 }
 
-export const PerformanceChart = ({ timeRange, onTimeRangeChange }: PerformanceChartProps) => {
+export const PerformanceChart = ({ timeRange, onTimeRangeChange, campaigns = [] }: PerformanceChartProps) => {
+  // Calculate real totals from campaigns
+  const totalImpressions = campaigns.reduce((acc, campaign) => acc + campaign.impressions, 0);
+  const totalClicks = campaigns.reduce((acc, campaign) => acc + campaign.clicks, 0);
+  const totalRevenue = campaigns.reduce((acc, campaign) => acc + campaign.spent, 0);
   return (
     <Card>
       <CardHeader>
@@ -39,21 +48,26 @@ export const PerformanceChart = ({ timeRange, onTimeRangeChange }: PerformanceCh
             <p className="text-sm text-muted-foreground">Impressions, Clicks, Revenue trends</p>
           </div>
         </div>
-        {/* Summary Statistics */}
-        <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">Total Impressions</p>
-            <p className="text-xl font-bold">2.4M</p>
-          </div>
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">Total Clicks</p>
-            <p className="text-xl font-bold">48.7K</p>
-          </div>
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">Total Revenue</p>
-            <p className="text-xl font-bold">$24,890</p>
-          </div>
-        </div>
+            <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-border">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-primary">
+                  {totalImpressions > 0 ? `${(totalImpressions / 1000).toFixed(1)}K` : '0'}
+                </p>
+                <p className="text-sm text-muted-foreground">Total Impressions</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-blue-600">
+                  {totalClicks > 0 ? `${(totalClicks / 1000).toFixed(1)}K` : '0'}
+                </p>
+                <p className="text-sm text-muted-foreground">Total Clicks</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-green-600">
+                  ${totalRevenue.toLocaleString()}
+                </p>
+                <p className="text-sm text-muted-foreground">Total Spent</p>
+              </div>
+            </div>
       </CardContent>
     </Card>
   );

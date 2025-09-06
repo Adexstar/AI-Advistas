@@ -9,13 +9,15 @@ interface Recommendation {
   description: string;
   impact: "High" | "Medium" | "Low";
   color: string;
+  action?: () => void;
 }
 
 interface AIRecommendationsProps {
   recommendations: Recommendation[];
+  onRecommendationClick?: (recommendation: any) => void;
 }
 
-export const AIRecommendations = ({ recommendations }: AIRecommendationsProps) => {
+export const AIRecommendations = ({ recommendations, onRecommendationClick }: AIRecommendationsProps) => {
   return (
     <Card>
       <CardHeader>
@@ -32,6 +34,7 @@ export const AIRecommendations = ({ recommendations }: AIRecommendationsProps) =
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
+            onClick={() => onRecommendationClick?.(rec)}
             className="p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer"
           >
             <div className="flex items-start justify-between">

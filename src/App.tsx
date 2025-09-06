@@ -18,13 +18,15 @@ import AdSimulatorPage from "./pages/AdSimulatorPage";
 import AIVideoGenerator from "./pages/AIVideoGenerator";
 import { AuthProvider } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { AppProvider } from "./contexts/AppContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
+      <AppProvider>
+        <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -97,6 +99,7 @@ const App = () => (
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
+      </AppProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
