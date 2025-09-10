@@ -34,6 +34,7 @@ import { RecentCampaigns } from "@/components/dashboard/RecentCampaigns";
 import { TargetAudienceInsights } from "@/components/dashboard/TargetAudienceInsights";
 import { OptimizationTips } from "@/components/dashboard/OptimizationTips";
 import { AdPerformanceHeatmap } from "@/components/dashboard/AdPerformanceHeatmap";
+import { InteractiveDashboard } from "@/components/InteractiveDashboard";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -243,6 +244,9 @@ const Dashboard = () => {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
+          {/* Interactive Dashboard Widget */}
+          <InteractiveDashboard />
+          
           {/* Overview Cards */}
           <OverviewCards stats={overviewStats} />
 

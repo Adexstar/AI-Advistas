@@ -1,8 +1,20 @@
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { ArrowRight, Sparkles } from "lucide-react";
 
 const CTASection = () => {
+  const navigate = useNavigate();
+  const { user, loading } = useAuth();
+
+  const handleGetStarted = () => {
+    if (user && !loading) {
+      navigate("/dashboard");
+    } else {
+      navigate("/auth");
+    }
+  };
   return (
     <section className="py-20 bg-gradient-to-br from-primary via-primary-900 to-primary-800 relative overflow-hidden">
       <div className="absolute inset-0 opacity-10">
@@ -63,16 +75,20 @@ const CTASection = () => {
             <Button 
               size="xl" 
               className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold group min-w-64"
+              onClick={handleGetStarted}
+              disabled={loading}
             >
-              Get Started For Free
+              {loading ? "Loading..." : user ? "Go to Dashboard" : "Get Started For Free"}
               <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
             <Button 
               variant="outline" 
               size="xl" 
               className="border-white/30 text-white hover:bg-white/10 min-w-64"
+              onClick={() => navigate("/auth")}
+              disabled={loading}
             >
-              Schedule Demo
+              {user ? "Dashboard" : "Schedule Demo"}
             </Button>
           </motion.div>
 

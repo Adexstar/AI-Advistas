@@ -2,10 +2,20 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Facebook, Instagram, Twitter, Youtube } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import heroImage from "@/assets/hero-bg.jpg";
 
 const HeroSection = () => {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
+
+  const handleGetStarted = () => {
+    if (user && !loading) {
+      navigate("/dashboard");
+    } else {
+      navigate("/auth");
+    }
+  };
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -78,17 +88,19 @@ const HeroSection = () => {
               <Button 
                 size="xl" 
                 className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold"
-                onClick={() => navigate("/auth")}
+                onClick={handleGetStarted}
+                disabled={loading}
               >
-                Get Started Free
+                {loading ? "Loading..." : user ? "Go to Dashboard" : "Get Started Free"}
               </Button>
               <Button 
                 variant="outline" 
                 size="xl" 
                 className="border-white/30 text-white hover:bg-white/10"
-                onClick={() => navigate("/auth")}
+                onClick={handleGetStarted}
+                disabled={loading}
               >
-                Login
+                {user ? "Dashboard" : "Login"}
               </Button>
             </motion.div>
 

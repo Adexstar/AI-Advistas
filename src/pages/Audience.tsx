@@ -1,6 +1,9 @@
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { useApp } from "@/contexts/AppContext";
 import { 
   Users, 
   MapPin, 
@@ -11,10 +14,20 @@ import {
   Heart,
   ShoppingBag,
   Gamepad2,
-  Plane
+  Plane,
+  FileText
 } from "lucide-react";
 
 const Audience = () => {
+  const navigate = useNavigate();
+  const { state } = useApp();
+
+  // Generate dynamic insights based on campaign data
+  const totalImpressions = state.campaigns.reduce((acc, campaign) => acc + campaign.impressions, 0);
+  const avgCTR = state.campaigns.length > 0 
+    ? (state.campaigns.reduce((acc, campaign) => acc + campaign.ctr, 0) / state.campaigns.length).toFixed(1)
+    : "0";
+  const activeCampaigns = state.campaigns.filter(c => c.status === 'active').length;
   const ageDistribution = [
     { range: "18-24", percentage: 25, color: "bg-blue-500" },
     { range: "25-34", percentage: 35, color: "bg-purple-500" },
@@ -48,9 +61,43 @@ const Audience = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Audience Analytics</h1>
-        <p className="text-muted-foreground">Understand your audience demographics and behavior patterns</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Audience Analytics</h1>
+          <p className="text-muted-foreground">Understand your audience demographics and behavior patterns</p>
+        </div>
+        <Button onClick={() => navigate('/dashboard')} variant="outline">
+          <FileText className="h-4 w-4 mr-2" />
+          Export Data
+        </Button>
+      </div>
+
+      {/* Live Campaign Metrics */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-primary">{(totalImpressions / 1000).toFixed(1)}K</p>
+              <p className="text-sm text-muted-foreground">Total Impressions</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-green-600">{avgCTR}%</p>
+              <p className="text-sm text-muted-foreground">Average CTR</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-blue-600">{activeCampaigns}</p>
+              <p className="text-sm text-muted-foreground">Active Campaigns</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -174,15 +221,15 @@ const Audience = () => {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+            <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500 cursor-pointer hover:bg-blue-100 transition-colors" onClick={() => navigate('/create-ad')}>
               <h4 className="font-medium text-blue-900">Target Mobile Users</h4>
               <p className="text-sm text-blue-700 mt-1">65% of your audience uses mobile devices. Optimize for mobile-first experience.</p>
             </div>
-            <div className="p-4 bg-green-50 rounded-lg border-l-4 border-green-500">
+            <div className="p-4 bg-green-50 rounded-lg border-l-4 border-green-500 cursor-pointer hover:bg-green-100 transition-colors" onClick={() => navigate('/campaigns')}>
               <h4 className="font-medium text-green-900">Focus on 25-34 Age Group</h4>
               <p className="text-sm text-green-700 mt-1">Your highest converting segment. Increase budget allocation for this demographic.</p>
             </div>
-            <div className="p-4 bg-purple-50 rounded-lg border-l-4 border-purple-500">
+            <div className="p-4 bg-purple-50 rounded-lg border-l-4 border-purple-500 cursor-pointer hover:bg-purple-100 transition-colors" onClick={() => navigate('/create-ad')}>
               <h4 className="font-medium text-purple-900">Expand to Technology Interest</h4>
               <p className="text-sm text-purple-700 mt-1">45% show tech interest. Consider tech-focused ad content and platforms.</p>
             </div>

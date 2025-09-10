@@ -1,11 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+  const { user, loading } = useAuth();
 
   const handleAuthNavigation = () => {
-    window.location.href = "/auth";
+    if (user) {
+      navigate("/dashboard");
+    } else {
+      navigate("/auth");
+    }
   };
 
   return (
@@ -31,8 +39,19 @@ const Navigation = () => {
           </div>
 
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" onClick={handleAuthNavigation}>Sign In</Button>
-            <Button variant="hero" onClick={handleAuthNavigation}>Get Started</Button>
+            {loading ? (
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            ) : user ? (
+              <>
+                <Button variant="ghost" onClick={() => navigate("/dashboard")}>Dashboard</Button>
+                <Button variant="hero" onClick={() => navigate("/dashboard")}>Go to App</Button>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" onClick={handleAuthNavigation}>Sign In</Button>
+                <Button variant="hero" onClick={handleAuthNavigation}>Get Started</Button>
+              </>
+            )}
           </div>
 
           <div className="md:hidden">
@@ -61,8 +80,19 @@ const Navigation = () => {
                 About
               </a>
               <div className="flex flex-col space-y-2 pt-4">
-                <Button variant="ghost" onClick={() => { handleAuthNavigation(); setIsOpen(false); }}>Sign In</Button>
-                <Button variant="hero" onClick={() => { handleAuthNavigation(); setIsOpen(false); }}>Get Started</Button>
+                {loading ? (
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+                ) : user ? (
+                  <>
+                    <Button variant="ghost" onClick={() => { navigate("/dashboard"); setIsOpen(false); }}>Dashboard</Button>
+                    <Button variant="hero" onClick={() => { navigate("/dashboard"); setIsOpen(false); }}>Go to App</Button>
+                  </>
+                ) : (
+                  <>
+                    <Button variant="ghost" onClick={() => { handleAuthNavigation(); setIsOpen(false); }}>Sign In</Button>
+                    <Button variant="hero" onClick={() => { handleAuthNavigation(); setIsOpen(false); }}>Get Started</Button>
+                  </>
+                )}
               </div>
             </div>
           </div>
