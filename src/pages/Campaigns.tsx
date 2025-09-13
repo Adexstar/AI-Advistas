@@ -20,15 +20,82 @@ import {
   Edit, 
   BarChart3,
   Calendar,
-  DollarSign
+  DollarSign,
+  Filter
 } from "lucide-react";
+import { SearchBar } from "@/components/SearchBar";
+import { BulkActions } from "@/components/BulkActions";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { toast } from "@/hooks/use-toast";
 
 const Campaigns = () => {
   const navigate = useNavigate();
   const { state, actions } = useApp();
   const [selectedTab, setSelectedTab] = useState("campaigns");
-  
-  // Use campaigns from global state instead of local state
+  const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([]);
+  const [selectedAds, setSelectedAds] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilters, setActiveFilters] = useState<{ [key: string]: string[] }>({});
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    shortcuts: [
+      {
+        key: 'n',
+        ctrlKey: true,
+        metaKey: true,
+        action: () => {
+          handleCreateCampaign();
+        },
+        description: 'Create new campaign',
+        category: 'Creation'
+      },
+      {
+        key: 'a',
+        ctrlKey: true,
+        metaKey: true,
+        action: () => {
+          if (selectedTab === "campaigns") {
+            setSelectedCampaigns(filteredCampaigns.map(c => c.id));
+          } else {
+            setSelectedAds(filteredAds.map(a => a.id));
+          }
+        },
+        description: 'Select all items',
+        category: 'Selection'
+      }
+    ]
+  });
+
+  // Filter data based on search query and filters
+  const filteredCampaigns = state.campaigns.filter(campaign => {
+    const matchesSearch = campaign.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         campaign.platform.some(p => p.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    const matchesFilters = Object.entries(activeFilters).every(([filterKey, values]) => {
+      if (values.length === 0) return true;
+      if (filterKey === 'status') return values.includes(campaign.status);
+      if (filterKey === 'platform') return campaign.platform.some(p => values.includes(p));
+      return true;
+    });
+
+    return matchesSearch && matchesFilters;
+  });
+
+  const filteredAds = state.ads.filter(ad => {
+    const campaign = state.campaigns.find(c => c.id === ad.campaignId);
+    const matchesSearch = ad.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         campaign?.name.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesFilters = Object.entries(activeFilters).every(([filterKey, values]) => {
+      if (values.length === 0) return true;
+      if (filterKey === 'status') return values.includes(ad.status);
+      if (filterKey === 'format') return values.includes(ad.format);
+      return true;
+    });
+
+    return matchesSearch && matchesFilters;
+  });
 
 
   const getStatusColor = (status: string) => {
@@ -45,6 +112,76 @@ const Campaigns = () => {
     navigate('/create-ad');
   };
 
+  const handleBulkAction = (action: string, itemIds: string[], payload?: any) => {
+    if (selectedTab === "campaigns") {
+      itemIds.forEach(id => {
+        switch (action) {
+          case 'activate':
+          case 'pause':
+            actions.toggleCampaignStatus(id);
+            break;
+          case 'delete':
+            actions.deleteCampaign(id);
+            break;
+          case 'changeStatus':
+            // Update campaign status with payload.status
+            break;
+        }
+      });
+    } else {
+      itemIds.forEach(id => {
+        switch (action) {
+          case 'activate':
+          case 'pause':
+            actions.toggleAdStatus(id);
+            break;
+          case 'delete':
+            actions.deleteAd(id);
+            break;
+        }
+      });
+    }
+    
+    toast({
+      title: "Bulk Action Complete",
+      description: `${action} applied to ${itemIds.length} ${selectedTab}.`,
+    });
+  };
+
+  // Search and filter options
+  const searchFilters = [
+    {
+      id: 'status',
+      label: 'Status',
+      options: [
+        { value: 'active', label: 'Active' },
+        { value: 'paused', label: 'Paused' },
+        { value: 'draft', label: 'Draft' },
+        { value: 'completed', label: 'Completed' },
+      ]
+    },
+    {
+      id: 'platform',
+      label: 'Platform',
+      options: [
+        { value: 'Facebook', label: 'Facebook' },
+        { value: 'Instagram', label: 'Instagram' },
+        { value: 'Google', label: 'Google' },
+        { value: 'Twitter', label: 'Twitter' },
+        { value: 'LinkedIn', label: 'LinkedIn' },
+      ]
+    },
+    ...(selectedTab === "ads" ? [{
+      id: 'format',
+      label: 'Format',
+      options: [
+        { value: 'image', label: 'Image' },
+        { value: 'video', label: 'Video' },
+        { value: 'carousel', label: 'Carousel' },
+      ]
+    }] : [])
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -57,6 +194,39 @@ const Campaigns = () => {
           Create Campaign
         </Button>
       </div>
+
+      {/* Search and Filters */}
+      <SearchBar
+        onSearch={(query, filters) => {
+          setSearchQuery(query);
+          setActiveFilters(filters);
+        }}
+        placeholder={`Search ${selectedTab}...`}
+        filters={searchFilters}
+        className="mb-6"
+      />
+
+      {/* Bulk Actions for Campaigns */}
+      {selectedTab === "campaigns" && (
+        <BulkActions
+          items={filteredCampaigns}
+          selectedItems={selectedCampaigns}
+          onSelectionChange={setSelectedCampaigns}
+          onBulkAction={handleBulkAction}
+          itemType="campaigns"
+        />
+      )}
+
+      {/* Bulk Actions for Ads */}
+      {selectedTab === "ads" && (
+        <BulkActions
+          items={filteredAds}
+          selectedItems={selectedAds}
+          onSelectionChange={setSelectedAds}
+          onBulkAction={handleBulkAction}
+          itemType="ads"
+        />
+      )}
 
       {/* Campaigns Table */}
       <Card>
@@ -78,7 +248,7 @@ const Campaigns = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {state.campaigns.map((campaign) => (
+              {filteredCampaigns.map((campaign) => (
                 <TableRow key={campaign.id}>
                   <TableCell className="font-medium">{campaign.name}</TableCell>
                   <TableCell>
@@ -142,7 +312,7 @@ const Campaigns = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {state.ads.map((ad) => {
+              {filteredAds.map((ad) => {
                 const campaign = state.campaigns.find(c => c.id === ad.campaignId);
                 return (
                   <TableRow key={ad.id}>

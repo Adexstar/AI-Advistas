@@ -20,8 +20,12 @@ import {
   Twitter,
   Linkedin,
   Activity,
-  Heart
+  Heart,
+  Search
 } from "lucide-react";
+import { SearchBar } from "@/components/SearchBar";
+import { PerformancePrediction } from "@/components/PerformancePrediction";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 // Import dashboard components
 import { OverviewCards } from "@/components/dashboard/OverviewCards";
@@ -40,6 +44,43 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { state, actions } = useApp();
   const [activeTab, setActiveTab] = useState("overview");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    shortcuts: [
+      {
+        key: 'd',
+        ctrlKey: true,
+        shiftKey: true,
+        action: () => {
+          setActiveTab("overview");
+        },
+        description: 'Go to dashboard',
+        category: 'Navigation'
+      },
+      {
+        key: 't',
+        ctrlKey: true,
+        shiftKey: true,
+        action: () => {
+          setActiveTab("tools");
+        },
+        description: 'Go to tools',
+        category: 'Navigation'
+      },
+      {
+        key: 'i',
+        ctrlKey: true,
+        shiftKey: true,
+        action: () => {
+          setActiveTab("insights");
+        },
+        description: 'Go to insights',
+        category: 'Navigation'
+      }
+    ]
+  });
 
   // Calculate dynamic stats from app state
   const totalImpressions = state.campaigns.reduce((acc, campaign) => acc + campaign.impressions, 0);
@@ -229,6 +270,17 @@ const Dashboard = () => {
           <p className="text-muted-foreground">Welcome back! Here's your advertising performance overview.</p>
         </div>
         <div className="flex items-center gap-3">
+          <SearchBar
+            onSearch={(query) => {
+              setSearchQuery(query);
+              // Quick search - navigate to campaigns with search applied
+              if (query.trim()) {
+                navigate(`/campaigns?search=${encodeURIComponent(query)}`);
+              }
+            }}
+            placeholder="Quick search campaigns, ads..."
+            className="w-80"
+          />
           <Button variant="outline" size="sm">
             <Calendar className="h-4 w-4 mr-2" />
             Last 30 days
@@ -286,6 +338,35 @@ const Dashboard = () => {
               else if (toolTitle === 'Budget Estimator') navigate('/billing');
             }}
           />
+          
+          {/* Performance Prediction Tool */}
+          <Card>
+            <CardHeader>
+              <CardTitle>AI Performance Predictor</CardTitle>
+              <CardDescription>
+                Get AI-powered predictions for your ad campaigns before launching
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PerformancePrediction
+                campaignData={{
+                  product: "Sample Product",
+                  details: "Sample ad details",
+                  websiteUrl: "https://example.com",
+                  adType: "image",
+                  platforms: ["Facebook", "Instagram"],
+                  audience: "18-35",
+                  mediaUrl: "",
+                  mediaType: "image"
+                }}
+                adData={{
+                  name: "Sample Ad",
+                  format: "image",
+                  status: "active"
+                }}
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="insights" className="space-y-6">

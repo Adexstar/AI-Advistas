@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -22,14 +23,58 @@ import { AppProvider } from "./contexts/AppContext";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <AppProvider>
-        <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+const AppContent = () => {
+  // Global keyboard shortcuts
+  useKeyboardShortcuts({
+    shortcuts: [
+      {
+        key: 'h',
+        ctrlKey: true,
+        shiftKey: true,
+        action: () => {
+          window.location.href = '/';
+        },
+        description: 'Go to home',
+        category: 'Navigation'
+      },
+      {
+        key: 'd',
+        ctrlKey: true,
+        shiftKey: true,
+        action: () => {
+          window.location.href = '/dashboard';
+        },
+        description: 'Go to dashboard',
+        category: 'Navigation'
+      },
+      {
+        key: 'c',
+        ctrlKey: true,
+        shiftKey: true,
+        action: () => {
+          window.location.href = '/campaigns';
+        },
+        description: 'Go to campaigns',
+        category: 'Navigation'
+      },
+      {
+        key: 'n',
+        ctrlKey: true,
+        shiftKey: true,
+        action: () => {
+          window.location.href = '/create-ad';
+        },
+        description: 'Create new ad',
+        category: 'Navigation'
+      }
+    ]
+  });
+
+  return (
+    <>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
@@ -98,7 +143,17 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-      </TooltipProvider>
+    </>
+  );
+};
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>
+      <AppProvider>
+        <TooltipProvider>
+          <AppContent />
+        </TooltipProvider>
       </AppProvider>
     </AuthProvider>
   </QueryClientProvider>
