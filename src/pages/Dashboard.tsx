@@ -263,149 +263,128 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      {/* Fixed Header */}
-      <div className="flex-shrink-0 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex items-center justify-between p-6">
-          <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back! Here's your advertising performance overview.</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <SearchBar
-              onSearch={(query) => {
-                setSearchQuery(query);
-                // Quick search - navigate to campaigns with search applied
-                if (query.trim()) {
-                  navigate(`/campaigns?search=${encodeURIComponent(query)}`);
-                }
-              }}
-              placeholder="Quick search campaigns, ads..."
-              className="w-80"
-            />
-            <Button variant="outline" size="sm">
-              <Calendar className="h-4 w-4 mr-2" />
-              Last 30 days
-            </Button>
-          </div>
+    <div className="space-y-6 max-w-full">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">Welcome back! Here's your advertising performance overview.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <SearchBar
+            onSearch={(query) => {
+              setSearchQuery(query);
+              // Quick search - navigate to campaigns with search applied
+              if (query.trim()) {
+                navigate(`/campaigns?search=${encodeURIComponent(query)}`);
+              }
+            }}
+            placeholder="Quick search campaigns, ads..."
+            className="w-80"
+          />
+          <Button variant="outline" size="sm">
+            <Calendar className="h-4 w-4 mr-2" />
+            Last 30 days
+          </Button>
         </div>
       </div>
 
-      {/* Tabs Navigation - Fixed */}
-      <div className="flex-shrink-0 border-b bg-background">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
-          <TabsList className="grid w-full grid-cols-3 rounded-none border-b">
-            <TabsTrigger value="overview" className="rounded-none">Main Dashboard</TabsTrigger>
-            <TabsTrigger value="tools" className="rounded-none">Campaign Tools</TabsTrigger>
-            <TabsTrigger value="insights" className="rounded-none">Audience Insights</TabsTrigger>
-          </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview">Main Dashboard</TabsTrigger>
+          <TabsTrigger value="tools">Campaign Tools</TabsTrigger>
+          <TabsTrigger value="insights">Audience Insights</TabsTrigger>
+        </TabsList>
 
-          {/* Scrollable Content Area */}
-          <div className="flex-1 overflow-hidden">
-            <TabsContent value="overview" className="h-full m-0 p-0">
-              <div className="h-full overflow-y-auto">
-                <div className="p-6 space-y-6">
-                  {/* Interactive Dashboard Widget */}
-                  <InteractiveDashboard />
-                  
-                  {/* Overview Cards */}
-                  <OverviewCards stats={overviewStats} />
+        <TabsContent value="overview" className="space-y-6">
+          {/* Interactive Dashboard Widget */}
+          <InteractiveDashboard />
+          
+          {/* Overview Cards */}
+          <OverviewCards stats={overviewStats} />
 
-                  {/* Performance Chart */}
-                  <PerformanceChart 
-                    timeRange={state.timeRange} 
-                    onTimeRangeChange={actions.setTimeRange}
-                    campaigns={state.campaigns}
-                  />
+          {/* Performance Chart */}
+          <PerformanceChart 
+            timeRange={state.timeRange} 
+            onTimeRangeChange={actions.setTimeRange}
+            campaigns={state.campaigns}
+          />
 
-                  <div className="grid gap-6 lg:grid-cols-2">
-                    {/* Platform Performance */}
-                    <PlatformPerformance platforms={platformPerformance} />
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Platform Performance */}
+            <PlatformPerformance platforms={platformPerformance} />
 
-                    {/* AI Recommendations */}
-                    <AIRecommendations 
-                      recommendations={aiRecommendations}
-                      onRecommendationClick={(recommendation) => recommendation.action?.()}
-                    />
-                  </div>
-
-                  {/* Recent Campaigns */}
-                  <RecentCampaigns 
-                    campaigns={recentCampaigns}
-                    onCampaignClick={(campaign) => navigate(`/campaigns`)}
-                    onToggleStatus={(campaignId) => actions.toggleCampaignStatus(campaignId)}
-                  />
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="tools" className="h-full m-0 p-0">
-              <div className="h-full overflow-y-auto">
-                <div className="p-6 space-y-6">
-                  <CampaignTools 
-                    tools={campaignTools}
-                    onToolClick={(toolTitle) => {
-                      if (toolTitle === 'Creative Studio') navigate('/create-ad');
-                      else if (toolTitle === 'Platform Manager') navigate('/campaigns');
-                      else if (toolTitle === 'Ad Scheduler') navigate('/campaigns');
-                      else if (toolTitle === 'Budget Estimator') navigate('/billing');
-                    }}
-                  />
-                  
-                  {/* Performance Prediction Tool */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>AI Performance Predictor</CardTitle>
-                      <CardDescription>
-                        Get AI-powered predictions for your ad campaigns before launching
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <PerformancePrediction
-                        campaignData={{
-                          product: "Sample Product",
-                          details: "Sample ad details",
-                          websiteUrl: "https://example.com",
-                          adType: "image",
-                          platforms: ["Facebook", "Instagram"],
-                          audience: "18-35",
-                          mediaUrl: "",
-                          mediaType: "image"
-                        }}
-                        adData={{
-                          name: "Sample Ad",
-                          format: "image",
-                          status: "active"
-                        }}
-                      />
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="insights" className="h-full m-0 p-0">
-              <div className="h-full overflow-y-auto">
-                <div className="p-6 space-y-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                    <AudienceInsights insights={audienceInsights} />
-                    <TargetAudienceInsights />
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-5">
-                    <PlatformPerformance platforms={platformPerformance} />
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                    <OptimizationTips />
-                    <AdPerformanceHeatmap />
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
+            {/* AI Recommendations */}
+            <AIRecommendations 
+              recommendations={aiRecommendations}
+              onRecommendationClick={(recommendation) => recommendation.action?.()}
+            />
           </div>
-        </Tabs>
-      </div>
+
+          {/* Recent Campaigns */}
+          <RecentCampaigns 
+            campaigns={recentCampaigns}
+            onCampaignClick={(campaign) => navigate(`/campaigns`)}
+            onToggleStatus={(campaignId) => actions.toggleCampaignStatus(campaignId)}
+          />
+        </TabsContent>
+
+        <TabsContent value="tools" className="space-y-6">
+          <CampaignTools 
+            tools={campaignTools}
+            onToolClick={(toolTitle) => {
+              if (toolTitle === 'Creative Studio') navigate('/create-ad');
+              else if (toolTitle === 'Platform Manager') navigate('/campaigns');
+              else if (toolTitle === 'Ad Scheduler') navigate('/campaigns');
+              else if (toolTitle === 'Budget Estimator') navigate('/billing');
+            }}
+          />
+          
+          {/* Performance Prediction Tool */}
+          <Card>
+            <CardHeader>
+              <CardTitle>AI Performance Predictor</CardTitle>
+              <CardDescription>
+                Get AI-powered predictions for your ad campaigns before launching
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PerformancePrediction
+                campaignData={{
+                  product: "Sample Product",
+                  details: "Sample ad details",
+                  websiteUrl: "https://example.com",
+                  adType: "image",
+                  platforms: ["Facebook", "Instagram"],
+                  audience: "18-35",
+                  mediaUrl: "",
+                  mediaType: "image"
+                }}
+                adData={{
+                  name: "Sample Ad",
+                  format: "image",
+                  status: "active"
+                }}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="insights" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <AudienceInsights insights={audienceInsights} />
+            <TargetAudienceInsights />
+          </div>
+
+          <div className="grid grid-cols-1 gap-5">
+            <PlatformPerformance platforms={platformPerformance} />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <OptimizationTips />
+            <AdPerformanceHeatmap />
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

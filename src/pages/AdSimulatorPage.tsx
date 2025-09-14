@@ -46,7 +46,7 @@ const AdSimulatorPage = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-gradient-to-br from-primary-50 to-primary-100">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100">
       {/* Background Decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob" />
@@ -54,9 +54,9 @@ const AdSimulatorPage = () => {
         <div className="absolute top-40 left-1/2 w-80 h-80 bg-accent-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000" />
       </div>
 
-      <div className="relative flex flex-col h-full">
-        {/* Fixed Header */}
-        <div className="flex-shrink-0 bg-white/80 backdrop-blur-sm border-b sticky top-0 z-10">
+      <div className="relative">
+        {/* Header */}
+        <div className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-10">
           <div className="container mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -95,124 +95,116 @@ const AdSimulatorPage = () => {
           </div>
         </div>
 
-        {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="container mx-auto px-6 py-8">
-            {/* Ad Summary Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-8"
-            >
-              <Card className="bg-gradient-to-r from-primary-600 to-primary-700 text-white border-0">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <Badge variant="secondary" className="bg-white/20 text-white border-0">
-                          Active Preview
-                        </Badge>
-                        <Badge variant="secondary" className="bg-white/20 text-white border-0">
-                          4 Platforms
-                        </Badge>
-                      </div>
-                      <h2 className="text-2xl font-bold mb-2">{sampleAdContent.title}</h2>
-                      <p className="text-primary-100 mb-4 max-w-2xl">
-                        {sampleAdContent.description}
-                      </p>
-                      <div className="flex items-center gap-6 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Eye className="h-4 w-4" />
-                          <span>Est. Reach: 250K</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Target className="h-4 w-4" />
-                          <span>CTR: 3.2%</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <BarChart3 className="h-4 w-4" />
-                          <span>Engagement: 4.5%</span>
-                        </div>
-                      </div>
+        {/* Main Content */}
+        <div className="container mx-auto px-6 py-8">
+          {/* Ad Summary Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <Card className="bg-gradient-to-r from-primary-600 to-primary-700 text-white border-0">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Badge variant="secondary" className="bg-white/20 text-white border-0">
+                        Active Preview
+                      </Badge>
+                      <Badge variant="secondary" className="bg-white/20 text-white border-0">
+                        4 Platforms
+                      </Badge>
                     </div>
-                    <div className="flex-shrink-0 ml-6">
-                      <div className="w-32 h-20 bg-white/10 rounded-lg overflow-hidden">
-                        {sampleAdContent.imageUrl ? (
-                          <img 
-                            src={sampleAdContent.imageUrl} 
-                            alt="Ad preview" 
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <span className="text-2xl">📱</span>
-                          </div>
-                        )}
+                    <h2 className="text-2xl font-bold mb-2">{sampleAdContent.title}</h2>
+                    <p className="text-primary-100 mb-4 max-w-2xl">
+                      {sampleAdContent.description}
+                    </p>
+                    <div className="flex items-center gap-6 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Eye className="h-4 w-4" />
+                        <span>Est. Reach: 250K</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Target className="h-4 w-4" />
+                        <span>CTR: 3.2%</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <BarChart3 className="h-4 w-4" />
+                        <span>Engagement: 4.5%</span>
                       </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Fixed Tabs Navigation */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="sticky top-20 z-10 mb-6"
-            >
-              <div className="flex justify-center">
-                <div className="bg-white/90 backdrop-blur-sm rounded-lg p-1 border">
-                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid grid-cols-2 w-fit bg-transparent">
-                      <TabsTrigger value="simulator" className="flex items-center gap-2">
-                        <Target className="h-4 w-4" />
-                        Performance Simulator
-                      </TabsTrigger>
-                      <TabsTrigger value="placements" className="flex items-center gap-2">
-                        <PlayCircle className="h-4 w-4" />
-                        Placement Preview
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
+                  <div className="flex-shrink-0 ml-6">
+                    <div className="w-32 h-20 bg-white/10 rounded-lg overflow-hidden">
+                      {sampleAdContent.imageUrl ? (
+                        <img 
+                          src={sampleAdContent.imageUrl} 
+                          alt="Ad preview" 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-2xl">📱</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-            {/* Tab Content */}
+          {/* Main Simulator Interface */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsContent value="simulator" className="mt-0">
+              <div className="flex justify-center mb-6">
+                <TabsList className="grid grid-cols-2 w-fit">
+                  <TabsTrigger value="simulator" className="flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    Performance Simulator
+                  </TabsTrigger>
+                  <TabsTrigger value="placements" className="flex items-center gap-2">
+                    <PlayCircle className="h-4 w-4" />
+                    Placement Preview
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              <TabsContent value="simulator">
                 <AdPreviewSimulator 
                   adContent={sampleAdContent}
                   isGenerating={false}
                 />
               </TabsContent>
 
-              <TabsContent value="placements" className="mt-0">
+              <TabsContent value="placements">
                 <AdPlacementPreview 
                   adContent={sampleAdContent}
                 />
               </TabsContent>
             </Tabs>
+          </motion.div>
 
-            {/* Action Buttons */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="mt-8 flex justify-center gap-4 pb-8"
-            >
-              <Button variant="outline" size="lg">
-                <Download className="h-4 w-4 mr-2" />
-                Export Report
-              </Button>
-              <Button size="lg" onClick={() => navigate("/create-ad")}>
-                <PlayCircle className="h-4 w-4 mr-2" />
-                Create New Campaign
-              </Button>
-            </motion.div>
-          </div>
+          {/* Action Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mt-8 flex justify-center gap-4 pb-8"
+          >
+            <Button variant="outline" size="lg">
+              <Download className="h-4 w-4 mr-2" />
+              Export Report
+            </Button>
+            <Button size="lg" onClick={() => navigate("/create-ad")}>
+              <PlayCircle className="h-4 w-4 mr-2" />
+              Create New Campaign
+            </Button>
+          </motion.div>
         </div>
       </div>
     </div>
