@@ -213,34 +213,35 @@ const CreateAd = () => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-primary-900 relative overflow-hidden"
+      className="h-screen flex flex-col bg-gradient-to-br from-primary-900 via-primary-800 to-primary-900 relative overflow-hidden"
     >
       {/* Background decoration */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-20" />
       
-      <div className="relative z-10 p-6">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-8 text-center"
-        >
-          <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4 flex items-center justify-center gap-3">
-            <Sparkles className="h-10 w-10 text-yellow-400" />
-            AI Ad Studio
-          </h1>
-          <p className="text-white/80 text-lg max-w-2xl mx-auto">
-            Create professional, high-converting advertisements across multiple platforms with AI-powered optimization
-          </p>
-        </motion.div>
+      {/* Header - Fixed */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="relative z-10 px-6 pt-6 pb-4 text-center flex-shrink-0"
+      >
+        <h1 className="text-3xl lg:text-4xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+          <Sparkles className="h-8 w-8 text-yellow-400" />
+          AI Ad Studio
+        </h1>
+        <p className="text-white/80 text-base max-w-2xl mx-auto">
+          Create professional, high-converting advertisements across multiple platforms with AI-powered optimization
+        </p>
+      </motion.div>
 
+      {/* Scrollable Content Area */}
+      <div className="relative z-10 flex-1 overflow-y-auto px-6 pb-6">
         {/* Template System */}
         {showTemplates && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="max-w-7xl mx-auto mb-6"
+            className="max-w-7xl mx-auto mb-4"
           >
             <TemplateSystem
               onUseTemplate={(template) => {
@@ -263,11 +264,11 @@ const CreateAd = () => {
           className="max-w-7xl mx-auto"
         >
           <Card className="bg-white/95 backdrop-blur-sm shadow-2xl border-0 overflow-hidden">
-            <div className="bg-gradient-to-r from-primary to-primary-600 p-6">
+            <div className="bg-gradient-to-r from-primary to-primary-600 p-4">
               <div className="flex items-center justify-between text-white">
                 <div className="flex items-center gap-3">
-                  <Target className="h-6 w-6" />
-                  <h2 className="text-2xl font-bold">Campaign Creator</h2>
+                  <Target className="h-5 w-5" />
+                  <h2 className="text-xl font-bold">Campaign Creator</h2>
                 </div>
                 <div className="flex items-center gap-4">
                   <Button
@@ -287,8 +288,8 @@ const CreateAd = () => {
               </div>
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="border-b">
-              <div className="px-6 pt-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <div className="px-4 pt-4 border-b">
                 <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="create">Create</TabsTrigger>
                   <TabsTrigger value="test">A/B Test</TabsTrigger>
@@ -298,9 +299,9 @@ const CreateAd = () => {
               </div>
               
               <TabsContent value="create" className="mt-0">
-                <div className="grid lg:grid-cols-3 gap-0">
+                <div className="grid lg:grid-cols-3 gap-0 h-[calc(100vh-16rem)]">
                   {/* Creator Form - 2/3 width */}
-                  <div className="lg:col-span-2 p-6 bg-gradient-to-b from-white to-gray-50/50 border-r">
+                  <div className="lg:col-span-2 p-4 bg-gradient-to-b from-white to-gray-50/50 border-r overflow-y-auto">
                     <AdCreator
                       formData={formValidation.data}
                       setFormData={(data) => {
@@ -315,9 +316,9 @@ const CreateAd = () => {
                   </div>
 
                   {/* Preview Section - 1/3 width */}
-                  <div className="p-6 bg-white">
-                    <div className="sticky top-6">
-                      <div className="flex items-center justify-between mb-6">
+                  <div className="p-4 bg-white overflow-y-auto">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
                         <h3 className="text-lg font-semibold flex items-center gap-2">
                           <Eye className="h-5 w-5 text-primary" />
                           Live Preview
@@ -357,7 +358,7 @@ const CreateAd = () => {
                           <TabsTrigger value="social" className="text-xs">Platforms</TabsTrigger>
                         </TabsList>
                         
-                        <div className="min-h-[500px]">
+                        <div className="min-h-[400px]">
                           <TabsContent value="static" className="mt-0">
                             <AdPreview formData={formData} device={previewDevice} />
                           </TabsContent>
@@ -377,7 +378,7 @@ const CreateAd = () => {
               </TabsContent>
 
               <TabsContent value="test" className="mt-0">
-                <div className="p-6">
+                <div className="p-4 h-[calc(100vh-16rem)] overflow-y-auto">
                   <ABTestingInterface
                     onCreateTest={(test) => {
                       toast({
@@ -402,7 +403,7 @@ const CreateAd = () => {
               </TabsContent>
 
               <TabsContent value="predict" className="mt-0">
-                <div className="p-6">
+                <div className="p-4 h-[calc(100vh-16rem)] overflow-y-auto">
                   <PerformancePrediction
                     campaignData={formData}
                     adData={formData}
@@ -411,7 +412,7 @@ const CreateAd = () => {
               </TabsContent>
 
               <TabsContent value="preview" className="mt-0">
-                <div className="p-6">
+                <div className="p-4 h-[calc(100vh-16rem)] overflow-y-auto">
                   <div className="flex items-center justify-center mb-6">
                     <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
                       <Button
