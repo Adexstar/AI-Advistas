@@ -27,7 +27,7 @@ import { SearchBar } from "@/components/SearchBar";
 import { PerformancePrediction } from "@/components/PerformancePrediction";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
-// Import dashboard components
+import { CustomizableDashboard } from "@/components/dashboard/CustomizableDashboard";
 import { OverviewCards } from "@/components/dashboard/OverviewCards";
 import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
 import { PlatformPerformance } from "@/components/dashboard/PlatformPerformance";
@@ -296,36 +296,30 @@ const Dashboard = () => {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          {/* Interactive Dashboard Widget */}
-          <InteractiveDashboard />
+          {/* Customizable Dashboard */}
+          <CustomizableDashboard />
           
-          {/* Overview Cards */}
-          <OverviewCards stats={overviewStats} />
-
-          {/* Performance Chart */}
-          <PerformanceChart 
-            timeRange={state.timeRange} 
-            onTimeRangeChange={actions.setTimeRange}
-            campaigns={state.campaigns}
-          />
-
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Platform Performance */}
-            <PlatformPerformance platforms={platformPerformance} />
-
-            {/* AI Recommendations */}
-            <AIRecommendations 
-              recommendations={aiRecommendations}
-              onRecommendationClick={(recommendation) => recommendation.action?.()}
+          {/* Performance Prediction Tool */}
+          <div className="grid gap-6 md:grid-cols-2">
+            <InteractiveDashboard />
+            <PerformancePrediction
+              campaignData={{
+                product: "Sample Product",
+                details: "Sample ad details",
+                websiteUrl: "https://example.com",
+                adType: "image",
+                platforms: ["Facebook", "Instagram"],
+                audience: "18-35",
+                mediaUrl: "",
+                mediaType: "image"
+              }}
+              adData={{
+                name: "Sample Ad",
+                format: "image",
+                status: "active"
+              }}
             />
           </div>
-
-          {/* Recent Campaigns */}
-          <RecentCampaigns 
-            campaigns={recentCampaigns}
-            onCampaignClick={(campaign) => navigate(`/campaigns`)}
-            onToggleStatus={(campaignId) => actions.toggleCampaignStatus(campaignId)}
-          />
         </TabsContent>
 
         <TabsContent value="tools" className="space-y-6">
