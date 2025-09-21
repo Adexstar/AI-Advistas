@@ -15,6 +15,9 @@ export interface GeneratedAdContent {
   hashtags: string[];
   imageUrl?: string;
   videoUrl?: string;
+  thumbnailUrl?: string;
+  aspectRatio?: string;
+  duration?: number;
 }
 
 export interface GeneratedAd {
@@ -80,6 +83,30 @@ export const useRealTimeAdGenerator = () => {
         } else {
           console.warn('Failed to generate image:', imageError || imageData?.error);
           // Continue without image rather than failing completely
+        }
+      }
+
+      // If video ad, also generate video
+      if (request.adType === 'video') {
+        console.log('Generating ad video...');
+        
+        const { data: videoData, error: videoError } = await supabase.functions.invoke('generate-ad-video', {
+          body: {
+            product: request.product,
+            platform: request.platform,
+            adContent: textContent
+          }
+        });
+
+        if (!videoError && videoData?.success) {
+          finalContent.videoUrl = videoData.videoUrl;
+          finalContent.thumbnailUrl = videoData.thumbnailUrl;
+          finalContent.aspectRatio = videoData.aspectRatio;
+          finalContent.duration = videoData.duration;
+          console.log('Generated video URL:', videoData.videoUrl);
+        } else {
+          console.warn('Failed to generate video:', videoError || videoData?.error);
+          // Continue without video rather than failing completely
         }
       }
 

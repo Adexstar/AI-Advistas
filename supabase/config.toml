@@ -47,5 +47,8 @@ verify_jwt = true
 [functions.generate-ad-image]
 verify_jwt = true
 
+[functions.generate-ad-video]
+verify_jwt = true
+
 [functions.save-generated-ad]
 verify_jwt = true
