@@ -25,10 +25,9 @@ const DashboardLayout = () => {
 
   const navigationItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "AI Ad Generator", href: "/ai-ad-generator", icon: Sparkles },
+    { name: "AI Ad Generator", href: "/ai-video-generator", icon: Sparkles },
     { name: "Campaigns", href: "/campaigns", icon: Target },
     { name: "Create Ad", href: "/create-ad", icon: Plus },
-    { name: "AI Video Generator", href: "/ai-video-generator", icon: Video },
     { name: "Audience", href: "/audience", icon: Users },
     { name: "Billing", href: "/billing", icon: CreditCard },
     { name: "Ad Simulator", href: "/ad-simulator", icon: Layout },

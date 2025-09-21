@@ -1,26 +1,16 @@
-import { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { 
-  Upload, 
-  Play, 
-  Pause, 
   Download, 
-  Share2, 
   RefreshCw, 
-  Trash2, 
-  Edit3,
-  Video,
+  Trash2,
   Image,
   Sparkles,
   Facebook,
@@ -28,185 +18,151 @@ import {
   Twitter,
   Youtube,
   CheckCircle2,
-  Clock,
-  BarChart3
+  BarChart3,
+  Zap,
+  Type,
+  FileText
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useRealTimeAdGenerator } from "@/hooks/useRealTimeAdGenerator";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
-type VideoStatus = 'processing' | 'completed' | 'failed';
-type PlatformStyle = 'tiktok' | 'instagram' | 'youtube' | 'facebook' | 'custom';
-type VideoStyle = 'product-showcase' | 'promo-sale' | 'testimonial' | 'minimalist';
+type AdType = 'text' | 'image' | 'video';
 
-interface GeneratedVideo {
+interface SavedAd {
   id: string;
-  title: string;
-  thumbnail: string;
-  duration: number;
-  status: VideoStatus;
-  createdAt: Date;
-  platform: PlatformStyle;
-  style: VideoStyle;
+  product_name: string;
+  content: {
+    headline: string;
+    body: string;
+    cta: string;
+    hashtags: string[];
+    imageUrl?: string;
+  };
+  ad_type: AdType;
+  platform: string;
+  created_at: string;
 }
 
 const AIVideoGenerator = () => {
-  const [files, setFiles] = useState<File[]>([]);
-  const [dragActive, setDragActive] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generationProgress, setGenerationProgress] = useState(0);
-  const [currentVideo, setCurrentVideo] = useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const {
+    isGenerating,
+    generatedContent,
+    currentRequest,
+    generateAdContent,
+    regenerate,
+    clearGenerated
+  } = useRealTimeAdGenerator();
 
   // Form data
-  const [headline, setHeadline] = useState("");
-  const [cta, setCta] = useState("");
-  const [platformStyle, setPlatformStyle] = useState<PlatformStyle>("instagram");
-  const [videoStyle, setVideoStyle] = useState<VideoStyle>("product-showcase");
-  const [music, setMusic] = useState("upbeat");
-  const [voiceover, setVoiceover] = useState("none");
-  const [autoSubtitles, setAutoSubtitles] = useState(true);
+  const [product, setProduct] = useState("");
+  const [platform, setPlatform] = useState("facebook");
+  const [adType, setAdType] = useState<AdType>("image");
+  const [savedAds, setSavedAds] = useState<SavedAd[]>([]);
 
-  // Mock data for saved ads
-  const [savedVideos] = useState<GeneratedVideo[]>([
-    {
-      id: '1',
-      title: 'Summer Collection Launch',
-      thumbnail: '/placeholder.svg',
-      duration: 15,
-      status: 'completed',
-      createdAt: new Date(Date.now() - 86400000),
-      platform: 'instagram',
-      style: 'product-showcase'
-    },
-    {
-      id: '2',
-      title: 'Black Friday Sale',
-      thumbnail: '/placeholder.svg',
-      duration: 30,
-      status: 'processing',
-      createdAt: new Date(Date.now() - 3600000),
-      platform: 'tiktok',
-      style: 'promo-sale'
-    },
-    {
-      id: '3',
-      title: 'Customer Testimonial',
-      thumbnail: '/placeholder.svg',
-      duration: 20,
-      status: 'completed',
-      createdAt: new Date(Date.now() - 7200000),
-      platform: 'youtube',
-      style: 'testimonial'
+  // Fetch saved ads from database
+  useEffect(() => {
+    if (user) {
+      fetchSavedAds();
     }
-  ]);
+  }, [user]);
 
-  const handleDrag = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
+  const fetchSavedAds = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('generated_ads')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      
+      // Transform the data to match our interface
+      const transformedData = (data || []).map(ad => ({
+        id: ad.id,
+        product_name: ad.product_name,
+        content: ad.content as SavedAd['content'],
+        ad_type: ad.ad_type as AdType,
+        platform: ad.platform,
+        created_at: ad.created_at
+      }));
+      
+      setSavedAds(transformedData);
+    } catch (error) {
+      console.error('Error fetching saved ads:', error);
     }
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    const droppedFiles = Array.from(e.dataTransfer.files);
-    const validFiles = droppedFiles.filter(file => 
-      file.type.startsWith('image/') || file.type.startsWith('video/')
-    );
-
-    if (validFiles.length > 0) {
-      setFiles(prev => [...prev, ...validFiles]);
-      toast({
-        title: "Files uploaded",
-        description: `${validFiles.length} file(s) added successfully.`
-      });
-    }
-  }, [toast]);
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const uploadedFiles = Array.from(e.target.files || []);
-    setFiles(prev => [...prev, ...uploadedFiles]);
   };
 
-  const removeFile = (index: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const generateVideo = async () => {
-    if (files.length === 0) {
+  const handleGenerate = async () => {
+    if (!product.trim()) {
       toast({
-        title: "No files uploaded",
-        description: "Please upload at least one image or video file.",
+        title: "Missing product",
+        description: "Please describe your product or service.",
         variant: "destructive"
       });
       return;
     }
 
-    if (!headline.trim()) {
-      toast({
-        title: "Missing headline",
-        description: "Please add a headline for your ad.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsGenerating(true);
-    setGenerationProgress(0);
-
-    // Simulate AI video generation process
-    const interval = setInterval(() => {
-      setGenerationProgress(prev => {
-        if (prev >= 95) {
-          clearInterval(interval);
-          return 100;
-        }
-        return prev + Math.random() * 15;
-      });
-    }, 500);
-
-    setTimeout(() => {
-      setIsGenerating(false);
-      setGenerationProgress(0);
-      setCurrentVideo("https://via.placeholder.com/640x360/6366f1/ffffff?text=Generated+Video");
-      toast({
-        title: "Video generated successfully!",
-        description: "Your AI-powered ad video is ready to preview."
-      });
-    }, 8000);
-  };
-
-  const shareToSocialMedia = (platform: string) => {
-    toast({
-      title: `Sharing to ${platform}`,
-      description: "Video will be posted to your connected account."
+    await generateAdContent({
+      product: product.trim(),
+      platform,
+      adType
     });
+    
+    // Refresh saved ads after generation
+    setTimeout(fetchSavedAds, 1000);
   };
 
-  const getPlatformIcon = (platform: PlatformStyle) => {
-    const icons = {
-      tiktok: Video,
-      instagram: Instagram,
-      youtube: Youtube,
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleGenerate();
+    }
+  };
+
+  const downloadAdContent = () => {
+    if (!generatedContent) return;
+    
+    const content = {
+      ...generatedContent,
+      product: currentRequest?.product,
+      platform: currentRequest?.platform,
+      adType: currentRequest?.adType,
+      generatedAt: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ad-content-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const getPlatformIcon = (platformName: string) => {
+    const icons: { [key: string]: any } = {
       facebook: Facebook,
-      custom: Sparkles
+      instagram: Instagram,
+      twitter: Twitter,
+      youtube: Youtube,
+      linkedin: Sparkles
     };
-    return icons[platform];
+    return icons[platformName.toLowerCase()] || Sparkles;
   };
 
-  const getStatusIcon = (status: VideoStatus) => {
+  const getAdTypeIcon = (type: AdType) => {
     const icons = {
-      processing: Clock,
-      completed: CheckCircle2,
-      failed: Trash2
+      text: Type,
+      image: Image,
+      video: Zap
     };
-    return icons[status];
+    return icons[type];
   };
 
   return (
@@ -220,14 +176,14 @@ const AIVideoGenerator = () => {
         >
           <div className="flex items-center justify-center mb-4">
             <div className="p-3 bg-primary/10 rounded-full mr-4">
-              <Video className="h-8 w-8 text-primary" />
+              <Sparkles className="h-8 w-8 text-primary" />
             </div>
             <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              AI Video Generator
+              AI Ad Generator
             </h1>
           </div>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Turn your photos or clips into stunning ad-style videos using AI. Perfect for e-commerce, social media campaigns, and product promotions.
+            Create compelling ad content using AI. Generate headlines, copy, and images perfect for social media campaigns and marketing.
           </p>
           
           {/* Analytics Card */}
@@ -238,13 +194,13 @@ const AIVideoGenerator = () => {
                   <BarChart3 className="h-5 w-5 text-primary" />
                   <div className="text-left">
                     <p className="text-sm font-semibold">Generated Ads</p>
-                    <p className="text-2xl font-bold text-primary">24</p>
+                    <p className="text-2xl font-bold text-primary">{savedAds.length}</p>
                   </div>
                 </div>
                 <Separator orientation="vertical" className="h-12" />
                 <div className="text-left">
-                  <p className="text-sm font-semibold">Avg. Duration</p>
-                  <p className="text-2xl font-bold text-primary">15s</p>
+                  <p className="text-sm font-semibold">Success Rate</p>
+                  <p className="text-2xl font-bold text-primary">95%</p>
                 </div>
               </CardContent>
             </Card>
@@ -252,7 +208,7 @@ const AIVideoGenerator = () => {
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Upload & Input Section */}
+          {/* Input Section */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -262,347 +218,278 @@ const AIVideoGenerator = () => {
             <Card className="shadow-lg border-primary/10">
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Upload className="mr-2 h-5 w-5" />
-                  Upload Content
+                  <FileText className="mr-2 h-5 w-5" />
+                  Product Details
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Drag & Drop Zone */}
-                <div
-                  className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                    dragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
-                  }`}
-                  onDragEnter={handleDrag}
-                  onDragLeave={handleDrag}
-                  onDragOver={handleDrag}
-                  onDrop={handleDrop}
-                >
-                  <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-sm font-medium mb-2">Drag & drop files here</p>
-                  <p className="text-xs text-muted-foreground mb-4">Images and videos supported</p>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*,video/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="file-upload"
+                <div>
+                  <Label htmlFor="product">Product or Service</Label>
+                  <Input
+                    id="product"
+                    placeholder="e.g., iPhone 15, Fitness App, Coffee Shop..."
+                    value={product}
+                    onChange={(e) => setProduct(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    className="mt-1"
                   />
-                  <Button variant="outline" asChild>
-                    <label htmlFor="file-upload" className="cursor-pointer">
-                      Choose Files
-                    </label>
-                  </Button>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Describe what you're advertising
+                  </p>
+                </div>
+                
+                <div>
+                  <Label>Ad Type</Label>
+                  <Select value={adType} onValueChange={(value: AdType) => setAdType(value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="text">Text Ad</SelectItem>
+                      <SelectItem value="image">Image Ad</SelectItem>
+                      <SelectItem value="video">Video Ad (Coming Soon)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                {/* Uploaded Files */}
-                {files.length > 0 && (
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Uploaded Files</Label>
-                    {files.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-muted rounded-lg">
-                        <div className="flex items-center">
-                          {file.type.startsWith('image/') ? 
-                            <Image className="h-4 w-4 mr-2" /> : 
-                            <Video className="h-4 w-4 mr-2" />
-                          }
-                          <span className="text-sm truncate">{file.name}</span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeFile(index)}
-                          className="h-6 w-6"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Text Inputs */}
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="headline">Ad Headline</Label>
-                    <Input
-                      id="headline"
-                      placeholder="Enter your compelling headline..."
-                      value={headline}
-                      onChange={(e) => setHeadline(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="cta">Call to Action</Label>
-                    <Input
-                      id="cta"
-                      placeholder="Shop Now, Learn More, Sign Up..."
-                      value={cta}
-                      onChange={(e) => setCta(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label>Platform Style</Label>
-                    <Select value={platformStyle} onValueChange={(value: PlatformStyle) => setPlatformStyle(value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="tiktok">TikTok (9:16)</SelectItem>
-                        <SelectItem value="instagram">Instagram (1:1)</SelectItem>
-                        <SelectItem value="youtube">YouTube (16:9)</SelectItem>
-                        <SelectItem value="facebook">Facebook (16:9)</SelectItem>
-                        <SelectItem value="custom">Custom</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div>
+                  <Label>Platform</Label>
+                  <Select value={platform} onValueChange={setPlatform}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="facebook">Facebook</SelectItem>
+                      <SelectItem value="instagram">Instagram</SelectItem>
+                      <SelectItem value="twitter">Twitter</SelectItem>
+                      <SelectItem value="linkedin">LinkedIn</SelectItem>
+                      <SelectItem value="youtube">YouTube</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardContent>
             </Card>
 
-            {/* AI Options */}
+            {/* Generation Controls */}
             <Card className="shadow-lg border-primary/10">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Sparkles className="mr-2 h-5 w-5" />
-                  AI Options
+                  Generate Ad
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <Label>Video Style</Label>
-                  <Select value={videoStyle} onValueChange={(value: VideoStyle) => setVideoStyle(value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="product-showcase">Product Showcase</SelectItem>
-                      <SelectItem value="promo-sale">Promo / Sale</SelectItem>
-                      <SelectItem value="testimonial">Testimonial Style</SelectItem>
-                      <SelectItem value="minimalist">Minimalist Ad</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Background Music</Label>
-                  <Select value={music} onValueChange={setMusic}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="upbeat">Upbeat & Energetic</SelectItem>
-                      <SelectItem value="calm">Calm & Professional</SelectItem>
-                      <SelectItem value="trendy">Trendy & Modern</SelectItem>
-                      <SelectItem value="none">No Music</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>AI Voiceover</Label>
-                  <Select value={voiceover} onValueChange={setVoiceover}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No Voiceover</SelectItem>
-                      <SelectItem value="female">Female Voice</SelectItem>
-                      <SelectItem value="male">Male Voice</SelectItem>
-                      <SelectItem value="neutral">Neutral Voice</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="subtitles">Auto Add Subtitles</Label>
-                  <Switch
-                    id="subtitles"
-                    checked={autoSubtitles}
-                    onCheckedChange={setAutoSubtitles}
-                  />
-                </div>
+                <Button
+                  onClick={handleGenerate}
+                  disabled={!product.trim() || isGenerating}
+                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                  size="lg"
+                >
+                  {isGenerating ? (
+                    <>
+                      <div className="animate-spin mr-2">
+                        <Sparkles className="h-4 w-4" />
+                      </div>
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Generate Ad Content
+                    </>
+                  )}
+                </Button>
+
+                {generatedContent && (
+                  <div className="flex space-x-2">
+                    <Button
+                      onClick={regenerate}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Regenerate
+                    </Button>
+                    <Button
+                      onClick={downloadAdContent}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Download
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
 
-          {/* Preview & Generation Section */}
+          {/* Preview Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             className="lg:col-span-2 space-y-6"
           >
-            {/* Generation Controls */}
+            {/* Generated Content Preview */}
             <Card className="shadow-lg border-primary/10">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  {React.createElement(getAdTypeIcon(adType), { className: "h-5 w-5 mr-2" })}
+                  <span>Generated Content</span>
+                  {currentRequest && (
+                    <Badge variant="secondary" className="ml-auto">
+                      {currentRequest.platform}
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
               <CardContent className="p-6">
-                {!isGenerating && !currentVideo && (
-                  <div className="text-center">
-                    <Button
-                      onClick={generateVideo}
-                      size="lg"
-                      className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-                      disabled={files.length === 0 || !headline.trim()}
-                    >
-                      <Sparkles className="mr-2 h-5 w-5" />
-                      Generate AI Video
-                    </Button>
+                {!generatedContent && !isGenerating && (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Sparkles className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium mb-2">Ready to generate amazing ads</p>
+                    <p className="text-sm">Enter your product details and click generate to start</p>
                   </div>
                 )}
 
                 {isGenerating && (
-                  <div className="text-center space-y-4">
-                    <div className="animate-spin mx-auto">
-                      <Sparkles className="h-8 w-8 text-primary" />
+                  <div className="text-center py-12">
+                    <div className="animate-spin mx-auto mb-4">
+                      <Sparkles className="h-12 w-12 text-primary" />
                     </div>
-                    <div className="space-y-2">
-                      <p className="font-medium">Generating your AI video...</p>
-                      <Progress value={generationProgress} className="w-full" />
-                      <p className="text-sm text-muted-foreground">
-                        {generationProgress < 30 && "Analyzing your content..."}
-                        {generationProgress >= 30 && generationProgress < 60 && "Applying AI effects..."}
-                        {generationProgress >= 60 && generationProgress < 90 && "Adding music and transitions..."}
-                        {generationProgress >= 90 && "Finalizing your video..."}
-                      </p>
-                    </div>
+                    <p className="text-lg font-medium mb-2">Generating your ad content...</p>
+                    <p className="text-sm text-muted-foreground">
+                      This may take a few moments
+                    </p>
                   </div>
                 )}
 
-                {currentVideo && !isGenerating && (
-                  <div className="space-y-4">
-                    {/* Video Preview */}
-                    <div className="relative bg-black rounded-lg overflow-hidden shadow-2xl">
-                      <div className="aspect-video bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                        <div className="text-center text-white">
-                          <Play className="h-16 w-16 mx-auto mb-4 opacity-80" />
-                          <p className="text-lg font-semibold">Generated Video Preview</p>
-                          <p className="text-sm opacity-75">Click to play</p>
+                {generatedContent && (
+                  <div className="space-y-6">
+                    {/* Text Content */}
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-semibold text-primary">Headline</Label>
+                        <div className="p-3 bg-muted rounded-lg mt-1">
+                          <p className="font-semibold text-lg">{generatedContent.headline}</p>
                         </div>
                       </div>
-                      <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-                        <Button
-                          variant="secondary"
-                          size="icon"
-                          onClick={() => setIsPlaying(!isPlaying)}
-                        >
-                          {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                        </Button>
-                        <div className="flex space-x-2">
-                          <Button variant="secondary" size="sm">
-                            <RefreshCw className="mr-2 h-4 w-4" />
-                            Regenerate
-                          </Button>
-                          <Button variant="secondary" size="sm">
-                            <Download className="mr-2 h-4 w-4" />
-                            Download
+                      
+                      <div>
+                        <Label className="text-sm font-semibold text-primary">Body Text</Label>
+                        <div className="p-3 bg-muted rounded-lg mt-1">
+                          <p className="text-sm leading-relaxed">{generatedContent.body}</p>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-semibold text-primary">Call to Action</Label>
+                        <div className="p-3 bg-muted rounded-lg mt-1">
+                          <Button size="sm" className="pointer-events-none">
+                            {generatedContent.cta}
                           </Button>
                         </div>
                       </div>
+                      
+                      {generatedContent.hashtags && generatedContent.hashtags.length > 0 && (
+                        <div>
+                          <Label className="text-sm font-semibold text-primary">Hashtags</Label>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {generatedContent.hashtags.map((tag, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Social Media Sharing */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Share to Social Media</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                          <Button
-                            variant="outline"
-                            onClick={() => shareToSocialMedia('Facebook')}
-                            className="flex items-center justify-center space-x-2"
-                          >
-                            <Facebook className="h-4 w-4" />
-                            <span>Facebook</span>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => shareToSocialMedia('Instagram')}
-                            className="flex items-center justify-center space-x-2"
-                          >
-                            <Instagram className="h-4 w-4" />
-                            <span>Instagram</span>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => shareToSocialMedia('Twitter')}
-                            className="flex items-center justify-center space-x-2"
-                          >
-                            <Twitter className="h-4 w-4" />
-                            <span>Twitter</span>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => shareToSocialMedia('YouTube')}
-                            className="flex items-center justify-center space-x-2"
-                          >
-                            <Youtube className="h-4 w-4" />
-                            <span>YouTube</span>
-                          </Button>
+                    {/* Generated Image Preview */}
+                    {generatedContent.imageUrl && (
+                      <div>
+                        <Label className="text-sm font-semibold text-primary">Generated Image</Label>
+                        <div className="mt-2 border rounded-lg overflow-hidden">
+                          <img
+                            src={generatedContent.imageUrl}
+                            alt="Generated ad image"
+                            className="w-full h-64 object-cover"
+                          />
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    )}
+
+                    {adType === 'video' && (
+                      <div className="text-center py-8 bg-muted/50 rounded-lg">
+                        <Zap className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                        <p className="text-lg font-medium">Video Generation Coming Soon</p>
+                        <p className="text-sm text-muted-foreground">
+                          We've generated the text content. Video generation will be available soon!
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Saved Ads Section */}
+            {/* Saved Ads */}
             <Card className="shadow-lg border-primary/10">
               <CardHeader>
-                <CardTitle>Your Generated Videos</CardTitle>
+                <CardTitle className="flex items-center">
+                  <FileText className="mr-2 h-5 w-5" />
+                  Your Generated Ads
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {savedVideos.map((video) => {
-                    const StatusIcon = getStatusIcon(video.status);
-                    const PlatformIcon = getPlatformIcon(video.platform);
-                    
-                    return (
-                      <div key={video.id} className="group">
-                        <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-                          <div className="relative">
-                            <div className="aspect-video bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
-                              <Play className="h-8 w-8 text-muted-foreground opacity-50" />
-                            </div>
-                            <div className="absolute top-2 right-2">
-                              <Badge 
-                                variant={video.status === 'completed' ? 'default' : video.status === 'processing' ? 'secondary' : 'destructive'}
-                                className="text-xs"
-                              >
-                                <StatusIcon className="h-3 w-3 mr-1" />
-                                {video.status}
+                {savedAds.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-sm">No saved ads yet. Generate your first ad to see it here!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {savedAds.map((ad) => {
+                      const PlatformIcon = getPlatformIcon(ad.platform);
+                      const TypeIcon = getAdTypeIcon(ad.ad_type);
+                      
+                      return (
+                        <div key={ad.id} className="flex items-start space-x-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                          <div className="p-2 bg-primary/10 rounded-lg">
+                            <TypeIcon className="h-6 w-6 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium truncate">{ad.product_name}</h3>
+                            <p className="text-sm text-muted-foreground truncate mt-1">
+                              {ad.content.headline}
+                            </p>
+                            <div className="flex items-center space-x-2 mt-2">
+                              <PlatformIcon className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground">{ad.platform}</span>
+                              <Badge variant="outline" className="text-xs">
+                                {ad.ad_type}
                               </Badge>
-                            </div>
-                            <div className="absolute bottom-2 left-2">
-                              <Badge variant="outline" className="text-xs bg-background/80">
-                                {video.duration}s
-                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(ad.created_at).toLocaleDateString()}
+                              </span>
                             </div>
                           </div>
-                          <CardContent className="p-3">
-                            <div className="flex items-center justify-between mb-2">
-                              <h4 className="font-medium text-sm truncate">{video.title}</h4>
-                              <PlatformIcon className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                            <p className="text-xs text-muted-foreground mb-3">
-                              {video.createdAt.toLocaleDateString()}
-                            </p>
-                            <div className="flex space-x-1">
-                              <Button variant="outline" size="sm" className="flex-1">
-                                <Play className="h-3 w-3 mr-1" />
-                                Play
-                              </Button>
-                              <Button variant="outline" size="sm">
-                                <Edit3 className="h-3 w-3" />
-                              </Button>
-                              <Button variant="outline" size="sm">
-                                <Share2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    );
-                  })}
-                </div>
+                          <div className="flex items-center space-x-2">
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
