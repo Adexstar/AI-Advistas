@@ -18,6 +18,8 @@ import {
   DollarSign
 } from "lucide-react";
 import SocialMediaPreview from "./SocialMediaPreview";
+import { AdScorePanel } from "./AdScorePanel";
+import { useSimulateAd, AdData } from "@/hooks/useSimulateAd";
 
 interface AdPreviewSimulatorProps {
   adContent: {
@@ -45,6 +47,8 @@ const AdPreviewSimulator = ({ adContent, isGenerating = false }: AdPreviewSimula
   const [audienceSize, setAudienceSize] = useState([50]);
   const [engagementRate, setEngagementRate] = useState([30]);
   const [targetingPreset, setTargetingPreset] = useState("balanced");
+  
+  const simulateAdMutation = useSimulateAd();
 
   const platforms = [
     { id: "facebook", name: "Facebook", color: "bg-blue-600", textColor: "text-blue-600" },
@@ -89,6 +93,25 @@ const AdPreviewSimulator = ({ adContent, isGenerating = false }: AdPreviewSimula
     setEngagementRate([presetData.engagementRate]);
   };
 
+  // Simulate ad when content changes
+  useEffect(() => {
+    if (adContent && adContent.title && adContent.description) {
+      const adData: AdData = {
+        headline: adContent.title,
+        body: adContent.description,
+        imageAlt: adContent.imageUrl || undefined,
+        platform: selectedPlatform,
+        cta: adContent.cta || 'Learn More',
+        targetAudience: {
+          ageRange: adContent.targetAudience ? `${adContent.targetAudience.age.min}-${adContent.targetAudience.age.max}` : '25-54',
+          interests: adContent.targetAudience?.interests || []
+        }
+      };
+      
+      simulateAdMutation.mutate({ ad: adData });
+    }
+  }, [adContent, selectedPlatform]);
+
   const formData = {
     product: adContent.title || adContent.product || "Sample Product",
     details: adContent.description || adContent.details || "This is a sample ad description for preview purposes.",
@@ -99,8 +122,9 @@ const AdPreviewSimulator = ({ adContent, isGenerating = false }: AdPreviewSimula
   };
 
   return (
-    <div className="space-y-6">
-      {/* Controls Section */}
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-2 space-y-6">
+        {/* Controls Section */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -290,6 +314,15 @@ const AdPreviewSimulator = ({ adContent, isGenerating = false }: AdPreviewSimula
           </div>
         </CardContent>
       </Card>
+      </div>
+
+      {/* AI Score Panel */}
+      <div>
+        <AdScorePanel 
+          score={simulateAdMutation.data} 
+          isLoading={simulateAdMutation.isPending}
+        />
+      </div>
     </div>
   );
 };
