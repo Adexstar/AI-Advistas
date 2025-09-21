@@ -1,129 +1,162 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { 
-  CreditCard, 
-  Plus, 
-  Crown, 
-  Star,
-  Download,
-  Calendar,
-  DollarSign
-} from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Star, CreditCard, CheckCircle, Loader2 } from "lucide-react";
+import { usePlan } from "@/hooks/usePlan";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Billing = () => {
-  const [currentCredits] = useState(45);
+  const { user } = useAuth();
+  const { currentPlan, loading, getUsageForFeature, getLimitForFeature } = usePlan();
+  const [upgrading, setUpgrading] = useState<string | null>(null);
   
-  const creditPackages = [
-    { credits: 50, price: 10, popular: false },
-    { credits: 150, price: 25, popular: true },
-    { credits: 350, price: 50, popular: false },
-    { credits: 750, price: 100, popular: false }
-  ];
-
   const subscriptionPlans = [
     {
       name: "Free",
       price: 0,
-      credits: 10,
-      features: ["10 starter credits", "Basic ad creation", "Single platform", "Standard analytics"],
-      current: true
+      credits: 50,
+      features: [
+        "3 active campaigns",
+        "5 AI generations/day",
+        "2 template downloads",
+        "Email support"
+      ],
+      planKey: "free",
+      current: currentPlan === "free",
+      popular: false
     },
     {
-      name: "Standard",
-      price: 22.99,
-      credits: 100,
-      features: ["100 monthly credits", "Advanced AI creation", "Multi-platform", "Detailed analytics", "Landing page builder"],
-      current: false,
+      name: "Pro",
+      price: 29,
+      credits: 500,
+      features: [
+        "50 active campaigns",
+        "100 AI generations/day",
+        "50 template downloads",
+        "Priority support",
+        "A/B testing",
+        "Advanced analytics"
+      ],
+      planKey: "pro",
+      current: currentPlan === "pro",
       popular: true
     },
     {
-      name: "Premium",
-      price: 15.99,
-      credits: 250,
-      features: ["250 monthly credits", "Premium AI capabilities", "All platforms", "Advanced analytics", "Priority support"],
-      current: false
+      name: "Enterprise",
+      price: 99,
+      credits: 2000,
+      features: [
+        "Unlimited campaigns",
+        "Unlimited AI generations",
+        "Unlimited template downloads",
+        "24/7 phone support",
+        "Custom integrations",
+        "White-label options",
+        "API access"
+      ],
+      planKey: "enterprise",
+      current: currentPlan === "enterprise",
+      popular: false
     }
   ];
 
-  const transactionHistory = [
-    { id: 1, date: "2024-01-15", type: "Credit Purchase", amount: "$25.00", credits: 150, status: "Completed" },
-    { id: 2, date: "2024-01-10", type: "Subscription", amount: "$22.99", credits: 100, status: "Completed" },
-    { id: 3, date: "2024-01-05", type: "Credit Usage", amount: "-", credits: -25, status: "Used" },
-    { id: 4, date: "2024-01-01", type: "Credit Purchase", amount: "$10.00", credits: 50, status: "Completed" }
-  ];
+  const handleUpgrade = async (planKey: string) => {
+    if (!user || planKey === currentPlan) return;
+
+    setUpgrading(planKey);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: {
+          plan: planKey,
+          email: user.email,
+          name: user.user_metadata?.full_name || user.email?.split('@')[0]
+        }
+      });
+
+      if (error) throw error;
+
+      // Redirect to Flutterwave checkout
+      window.open(data.checkout_url, '_blank');
+      
+    } catch (error) {
+      console.error('Error creating checkout:', error);
+      toast.error('Failed to create checkout session. Please try again.');
+    } finally {
+      setUpgrading(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">Billing & Credits</h1>
-        <p className="text-muted-foreground">Manage your credits, subscriptions, and payment history</p>
+        <h1 className="text-3xl font-bold">Billing & Subscription</h1>
+        <p className="text-muted-foreground mt-2">
+          Manage your subscription and billing information
+        </p>
       </div>
 
-      {/* Credit Balance */}
+      {/* Current Plan & Usage */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-primary" />
-            Credit Balance
+            <CreditCard className="h-5 w-5" />
+            Current Plan: {subscriptionPlans.find(p => p.current)?.name || 'Free'}
           </CardTitle>
+          <CardDescription>
+            Your usage limits and current consumption
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-3xl font-bold">{currentCredits}</div>
-              <p className="text-muted-foreground">Credits remaining</p>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>AI Generations</span>
+                <span>
+                  {getUsageForFeature('ai_generations')} / {getLimitForFeature('ai_generations') === -1 ? '∞' : getLimitForFeature('ai_generations')}
+                </span>
+              </div>
+              <Progress 
+                value={getLimitForFeature('ai_generations') === -1 ? 0 : (getUsageForFeature('ai_generations') / getLimitForFeature('ai_generations')) * 100} 
+                className="h-2" 
+              />
             </div>
-            <div className="text-right">
-              <p className="text-sm text-muted-foreground">Est. usage this month</p>
-              <p className="text-lg font-semibold">~75 credits</p>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Active Campaigns</span>
+                <span>
+                  {getUsageForFeature('active_campaigns')} / {getLimitForFeature('active_campaigns') === -1 ? '∞' : getLimitForFeature('active_campaigns')}
+                </span>
+              </div>
+              <Progress 
+                value={getLimitForFeature('active_campaigns') === -1 ? 0 : (getUsageForFeature('active_campaigns') / getLimitForFeature('active_campaigns')) * 100} 
+                className="h-2" 
+              />
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Credit Packages */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Purchase Credits</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {creditPackages.map((pkg, index) => (
-              <motion.div
-                key={pkg.credits}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className={`relative border rounded-lg p-4 ${pkg.popular ? 'border-primary bg-primary/5' : 'border-border'}`}
-              >
-                {pkg.popular && (
-                  <Badge className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-primary">
-                    Popular
-                  </Badge>
-                )}
-                <div className="text-center">
-                  <div className="text-2xl font-bold">{pkg.credits}</div>
-                  <p className="text-sm text-muted-foreground mb-2">Credits</p>
-                  <div className="text-lg font-semibold">${pkg.price}</div>
-                  <p className="text-xs text-muted-foreground mb-4">${(pkg.price / pkg.credits).toFixed(3)} per credit</p>
-                  <Button className="w-full" variant={pkg.popular ? "default" : "outline"}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Purchase
-                  </Button>
-                </div>
-              </motion.div>
-            ))}
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Template Downloads</span>
+                <span>
+                  {getUsageForFeature('template_downloads')} / {getLimitForFeature('template_downloads') === -1 ? '∞' : getLimitForFeature('template_downloads')}
+                </span>
+              </div>
+              <Progress 
+                value={getLimitForFeature('template_downloads') === -1 ? 0 : (getUsageForFeature('template_downloads') / getLimitForFeature('template_downloads')) * 100} 
+                className="h-2" 
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -132,100 +165,88 @@ const Billing = () => {
       <Card>
         <CardHeader>
           <CardTitle>Subscription Plans</CardTitle>
+          <CardDescription>
+            Choose the plan that best fits your needs
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {subscriptionPlans.map((plan, index) => (
-              <motion.div
-                key={plan.name}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className={`relative border rounded-lg p-6 ${
-                  plan.popular ? 'border-primary bg-primary/5' : 
-                  plan.current ? 'border-green-500 bg-green-50' : 'border-border'
-                }`}
-              >
+              <Card key={index} className={`relative ${plan.popular ? 'ring-2 ring-primary' : ''} ${plan.current ? 'bg-muted/50' : ''}`}>
                 {plan.popular && (
                   <Badge className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-primary">
-                    <Crown className="mr-1 h-3 w-3" />
-                    Popular
+                    <Star className="mr-1 h-3 w-3" />
+                    Most Popular
                   </Badge>
                 )}
                 {plan.current && (
-                  <Badge className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-green-500">
+                  <Badge variant="secondary" className="absolute -top-2 right-4">
                     Current Plan
                   </Badge>
                 )}
-                
-                <div className="text-center mb-4">
-                  <h3 className="text-lg font-semibold">{plan.name}</h3>
-                  <div className="text-3xl font-bold">${plan.price}</div>
-                  <p className="text-sm text-muted-foreground">/month</p>
-                </div>
-
-                <div className="space-y-2 mb-6">
-                  {plan.features.map((feature, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-sm">
-                      <Star className="h-3 w-3 text-primary" />
-                      {feature}
+                <CardHeader>
+                  <CardTitle>{plan.name}</CardTitle>
+                  <div className="space-y-2">
+                    <div className="flex items-baseline">
+                      <span className="text-3xl font-bold">${plan.price}</span>
+                      <span className="text-muted-foreground ml-1">/month</span>
                     </div>
-                  ))}
-                </div>
-
-                <Button 
-                  className="w-full" 
-                  variant={plan.current ? "outline" : plan.popular ? "default" : "outline"}
-                  disabled={plan.current}
-                >
-                  {plan.current ? "Current Plan" : plan.name === "Free" ? "Downgrade" : "Upgrade"}
-                </Button>
-              </motion.div>
+                    <p className="text-sm text-muted-foreground">
+                      {plan.credits} monthly credits included
+                    </p>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-2">
+                    {plan.features.map((feature, featureIndex) => (
+                      <li key={featureIndex} className="flex items-center text-sm">
+                        <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button 
+                    className="w-full" 
+                    variant={plan.current ? "secondary" : "default"}
+                    disabled={plan.current || upgrading === plan.planKey}
+                    onClick={() => handleUpgrade(plan.planKey)}
+                  >
+                    {upgrading === plan.planKey ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : plan.current ? (
+                      "Current Plan"
+                    ) : (
+                      `Upgrade to ${plan.name}`
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Transaction History */}
+      {/* Additional Information */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Transaction History</CardTitle>
-            <Button variant="outline" size="sm">
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
-          </div>
+          <CardTitle>Billing Information</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Credits</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {transactionHistory.map((transaction) => (
-                <TableRow key={transaction.id}>
-                  <TableCell>{transaction.date}</TableCell>
-                  <TableCell>{transaction.type}</TableCell>
-                  <TableCell>{transaction.amount}</TableCell>
-                  <TableCell className={transaction.credits > 0 ? "text-green-600" : "text-red-600"}>
-                    {transaction.credits > 0 ? "+" : ""}{transaction.credits}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={transaction.status === "Completed" ? "default" : "secondary"}>
-                      {transaction.status}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between py-2">
+            <span className="text-sm text-muted-foreground">Payment Method</span>
+            <span className="text-sm">Flutterwave (Cards, Bank Transfer, USSD)</span>
+          </div>
+          <div className="flex items-center justify-between py-2">
+            <span className="text-sm text-muted-foreground">Billing Cycle</span>
+            <span className="text-sm">Monthly</span>
+          </div>
+          <div className="flex items-center justify-between py-2">
+            <span className="text-sm text-muted-foreground">Next Billing Date</span>
+            <span className="text-sm">{currentPlan !== 'free' ? 'TBD after upgrade' : 'N/A'}</span>
+          </div>
         </CardContent>
       </Card>
     </div>
