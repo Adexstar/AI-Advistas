@@ -134,6 +134,13 @@ const AppContent = () => {
             }>
               <Route index element={<AIVideoGenerator />} />
             </Route>
+            <Route path="/ad-simulator" element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<AdSimulatorPage />} />
+            </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
