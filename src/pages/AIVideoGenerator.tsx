@@ -69,7 +69,7 @@ const AIVideoGenerator: React.FC = () => {
   } = useRealTimeAdGenerator();
   
   const { exportAdContent, copyTextContent } = useExportAd();
-  const { canUse, incrementUsage, getRemainingUsage, getCurrentPlan, loading: planLoading } = usePlan();
+  const { canUse, incrementUsage, getRemainingUsage, currentPlan, loading: planLoading } = usePlan();
 
   // State management
   const [productDescription, setProductDescription] = useState('');
@@ -96,9 +96,8 @@ const AIVideoGenerator: React.FC = () => {
   ];
 
   // Plan limits and features
-  const { currentPlan } = usePlan();
-  const remainingGenerations = getRemainingUsage('ads_generated');
-  const canGenerate = canUse('ads_generated');
+  const remainingGenerations = getRemainingUsage('ai_generations');
+  const canGenerate = canUse('ai_generations');
 
   // Fetch saved ads
   const fetchSavedAds = async () => {
@@ -169,7 +168,7 @@ const AIVideoGenerator: React.FC = () => {
       });
       
       // Increment usage after successful generation
-      await incrementUsage('ads_generated');
+      await incrementUsage('ai_generations');
       setGenerationProgress(100);
       
       // Refresh saved ads
