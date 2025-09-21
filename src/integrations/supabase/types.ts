@@ -38,6 +38,42 @@ export type Database = {
         }
         Relationships: []
       }
+      generated_ads: {
+        Row: {
+          ad_type: string
+          content: Json
+          created_at: string
+          generation_prompt: string | null
+          id: string
+          platform: string
+          product_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ad_type: string
+          content: Json
+          created_at?: string
+          generation_prompt?: string | null
+          id?: string
+          platform: string
+          product_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ad_type?: string
+          content?: Json
+          created_at?: string
+          generation_prompt?: string | null
+          id?: string
+          platform?: string
+          product_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           created_at: string

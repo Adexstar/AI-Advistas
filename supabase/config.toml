@@ -40,3 +40,12 @@ verify_jwt = true
 
 [functions.flutterwave-webhook]
 verify_jwt = false
+
+[functions.generate-ad-content]
+verify_jwt = true
+
+[functions.generate-ad-image]
+verify_jwt = true
+
+[functions.save-generated-ad]
+verify_jwt = true

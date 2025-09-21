@@ -17,6 +17,7 @@ import LandingPages from "./pages/LandingPages";
 import Settings from "./pages/Settings";
 import AdSimulatorPage from "./pages/AdSimulatorPage";
 import AIVideoGenerator from "./pages/AIVideoGenerator";
+import AIAdGenerator from "./pages/AIAdGenerator";
 import { AuthProvider } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AppProvider } from "./contexts/AppContext";
@@ -137,6 +138,11 @@ const AppContent = () => {
             <Route path="/ad-simulator" element={
               <ProtectedRoute>
                 <AdSimulatorPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/ai-ad-generator" element={
+              <ProtectedRoute>
+                <AIAdGenerator />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

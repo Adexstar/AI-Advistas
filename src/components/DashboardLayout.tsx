@@ -12,7 +12,8 @@ import {
   Menu,
   X,
   LogOut,
-  Video
+  Video,
+  Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,6 +25,7 @@ const DashboardLayout = () => {
 
   const navigationItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: "AI Ad Generator", href: "/ai-ad-generator", icon: Sparkles },
     { name: "Campaigns", href: "/campaigns", icon: Target },
     { name: "Create Ad", href: "/create-ad", icon: Plus },
     { name: "AI Video Generator", href: "/ai-video-generator", icon: Video },
