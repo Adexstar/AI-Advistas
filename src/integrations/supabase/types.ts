@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_simulations: {
+        Row: {
+          ad_id: string | null
+          created_at: string | null
+          id: string
+          score: Json
+          user_id: string
+        }
+        Insert: {
+          ad_id?: string | null
+          created_at?: string | null
+          id?: string
+          score: Json
+          user_id: string
+        }
+        Update: {
+          ad_id?: string | null
+          created_at?: string | null
+          id?: string
+          score?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_dashboards: {
         Row: {
           created_at: string | null
