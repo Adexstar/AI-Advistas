@@ -45,7 +45,7 @@ serve(async (req) => {
     }
 
     // Create Flutterwave payment link
-    const flutterwaveResponse = await fetch('https://api.flutterwave.com/v3/payment-links', {
+    const flutterwaveResponse = await fetch('https://api.flutterwave.com/v3/payments', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${Deno.env.get('FLUTTERWAVE_SECRET_KEY')}`,
@@ -53,11 +53,10 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         tx_ref: `sub_${user.id}_${Date.now()}`,
-        amount: planDetails.amount / 100, // Convert from cents to dollars
+        amount: planDetails.amount / 100, // Convert from cents to dollars  
         currency: 'USD',
-        country: 'US',
-        payment_options: 'card,banktransfer,ussd,mobilemoney',
         redirect_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/flutterwave-webhook`,
+        payment_options: 'card,banktransfer,ussd,mobilemoney',
         customer: {
           email: email || user.email,
           name: name || user.email?.split('@')[0] || 'User',
@@ -75,6 +74,12 @@ serve(async (req) => {
       }),
     })
 
+    if (!flutterwaveResponse.ok) {
+      const errorText = await flutterwaveResponse.text()
+      console.error('Flutterwave API error:', flutterwaveResponse.status, errorText)
+      throw new Error(`Flutterwave API error: ${flutterwaveResponse.status} - ${errorText}`)
+    }
+
     const flutterwaveData = await flutterwaveResponse.json()
     console.log('Flutterwave response:', flutterwaveData)
 
@@ -84,7 +89,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        checkout_url: flutterwaveData.data.link,
+        checkout_url: flutterwaveData.data.link || flutterwaveData.data.hosted_link,
         tx_ref: flutterwaveData.data.tx_ref || `sub_${user.id}_${Date.now()}`,
       }),
       { 
