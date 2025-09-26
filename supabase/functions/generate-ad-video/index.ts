@@ -139,7 +139,7 @@ serve(async (req) => {
     // Return a fallback response for development
     return new Response(JSON.stringify({ 
       success: false, 
-      error: error.message,
+      error: error instanceof Error ? error.message : 'An error occurred',
       // Temporary placeholder for development
       videoUrl: `https://via.placeholder.com/1920x1080/000000/ffffff?text=Video+Generation+Coming+Soon`,
       thumbnailUrl: `https://via.placeholder.com/1920x1080/000000/ffffff?text=Video+Preview`,

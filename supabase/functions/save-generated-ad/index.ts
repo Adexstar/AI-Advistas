@@ -68,9 +68,9 @@ serve(async (req) => {
     console.error('Error saving generated ad:', error);
     return new Response(JSON.stringify({ 
       success: false, 
-      error: error.message 
+      error: error instanceof Error ? error.message : 'An error occurred'
     }), {
-      status: error.message === 'Unauthorized' ? 401 : 500,
+      status: (error instanceof Error && error.message === 'Unauthorized') ? 401 : 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
