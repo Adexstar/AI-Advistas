@@ -45,7 +45,7 @@ serve(async (req) => {
     }
 
     // Create Flutterwave payment link
-    const flutterwaveResponse = await fetch('https://api.flutterwave.com/v3/payments', {
+    const flutterwaveResponse = await fetch('https://api.flutterwave.com/v3/payment-links', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${Deno.env.get('FLUTTERWAVE_SECRET_KEY')}`,
@@ -53,18 +53,19 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         tx_ref: `sub_${user.id}_${Date.now()}`,
-        amount: planDetails.amount,
+        amount: planDetails.amount / 100, // Convert from cents to dollars
         currency: 'USD',
+        country: 'US',
+        payment_options: 'card,banktransfer,ussd,mobilemoney',
         redirect_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/flutterwave-webhook`,
-        payment_options: 'card,banktransfer,ussd',
         customer: {
           email: email || user.email,
           name: name || user.email?.split('@')[0] || 'User',
         },
         customizations: {
           title: 'Ad Generator Pro',
-          description: `Subscription to ${plan.charAt(0).toUpperCase() + plan.slice(1)} plan`,
-          logo: 'https://your-logo-url.com/logo.png',
+          description: `${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan Subscription`,
+          logo: 'https://lovable.app/favicon.ico',
         },
         meta: {
           user_id: user.id,
@@ -84,7 +85,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         checkout_url: flutterwaveData.data.link,
-        tx_ref: flutterwaveData.data.tx_ref,
+        tx_ref: flutterwaveData.data.tx_ref || `sub_${user.id}_${Date.now()}`,
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
