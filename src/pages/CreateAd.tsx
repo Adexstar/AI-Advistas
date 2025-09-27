@@ -213,29 +213,29 @@ const CreateAd = () => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="h-screen flex flex-col bg-gradient-to-br from-primary-900 via-primary-800 to-primary-900 relative overflow-hidden"
+      className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-primary-900 relative"
     >
       {/* Background decoration */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-20" />
       
-      {/* Header - Fixed */}
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="relative z-10 px-6 pt-6 pb-4 text-center flex-shrink-0"
+        className="relative z-10 px-4 lg:px-6 pt-6 pb-4 text-center"
       >
-        <h1 className="text-3xl lg:text-4xl font-bold text-white mb-2 flex items-center justify-center gap-3">
-          <Sparkles className="h-8 w-8 text-yellow-400" />
+        <h1 className="text-2xl lg:text-4xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+          <Sparkles className="h-6 w-6 lg:h-8 lg:w-8 text-yellow-400" />
           AI Ad Studio
         </h1>
-        <p className="text-white/80 text-base max-w-2xl mx-auto">
+        <p className="text-white/80 text-sm lg:text-base max-w-2xl mx-auto">
           Create professional, high-converting advertisements across multiple platforms with AI-powered optimization
         </p>
       </motion.div>
 
-      {/* Scrollable Content Area */}
-      <div className="relative z-10 flex-1 overflow-y-auto px-6 pb-6">
+      {/* Content Area */}
+      <div className="relative z-10 px-4 lg:px-6 pb-6">
         {/* Template System */}
         {showTemplates && (
           <motion.div
@@ -263,12 +263,12 @@ const CreateAd = () => {
           transition={{ delay: 0.2 }}
           className="max-w-7xl mx-auto"
         >
-          <Card className="bg-white/95 backdrop-blur-sm shadow-2xl border-0 overflow-hidden">
-            <div className="bg-gradient-to-r from-primary to-primary-600 p-4">
-              <div className="flex items-center justify-between text-white">
+          <Card className="bg-white/95 backdrop-blur-sm shadow-2xl border-0">
+            <div className="bg-gradient-to-r from-primary to-primary-600 p-3 lg:p-4">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between text-white gap-3 lg:gap-4">
                 <div className="flex items-center gap-3">
                   <Target className="h-5 w-5" />
-                  <h2 className="text-xl font-bold">Campaign Creator</h2>
+                  <h2 className="text-lg lg:text-xl font-bold">Campaign Creator</h2>
                 </div>
                 <div className="flex items-center gap-4">
                   <Button
@@ -280,7 +280,7 @@ const CreateAd = () => {
                     <FileText className="h-4 w-4" />
                     Templates
                   </Button>
-                  <div className="flex items-center gap-2 text-white/80">
+                  <div className="hidden lg:flex items-center gap-2 text-white/80">
                     <span className="text-sm">Real-time preview</span>
                     <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                   </div>
@@ -291,32 +291,29 @@ const CreateAd = () => {
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <div className="px-4 pt-4 border-b">
                 <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="create">Create</TabsTrigger>
-                  <TabsTrigger value="test">A/B Test</TabsTrigger>
-                  <TabsTrigger value="predict">Predict</TabsTrigger>
-                  <TabsTrigger value="preview">Preview</TabsTrigger>
+                  <TabsTrigger value="create" className="text-xs lg:text-sm">Create</TabsTrigger>
+                  <TabsTrigger value="test" className="text-xs lg:text-sm">A/B Test</TabsTrigger>
+                  <TabsTrigger value="predict" className="text-xs lg:text-sm">Predict</TabsTrigger>
+                  <TabsTrigger value="preview" className="text-xs lg:text-sm">Preview</TabsTrigger>
                 </TabsList>
               </div>
               
               <TabsContent value="create" className="mt-0">
-                <div className="grid lg:grid-cols-3 gap-0 h-[calc(100vh-16rem)]">
-                  {/* Creator Form - 2/3 width */}
-                  <div className="lg:col-span-2 p-4 bg-gradient-to-b from-white to-gray-50/50 border-r overflow-y-auto">
-                    <AdCreator
-                      formData={formValidation.data}
-                      setFormData={(data) => {
-                        setFormData(data);
-                        Object.keys(data).forEach(key => {
-                          formValidation.updateField(key, data[key as keyof typeof data]);
-                        });
-                      }}
-                      onGenerate={handleGenerate}
-                      isGenerating={isGenerating}
-                    />
+                <div className="flex flex-col xl:grid xl:grid-cols-3 gap-0">
+                  {/* Creator Form */}
+                  <div className="xl:col-span-2 p-4 bg-gradient-to-b from-white to-gray-50/50 xl:border-r">
+                    <div className="max-h-[80vh] overflow-y-auto pr-2">
+                      <AdCreator
+                        formData={formData}
+                        setFormData={setFormData}
+                        onGenerate={handleGenerate}
+                        isGenerating={isGenerating}
+                      />
+                    </div>
                   </div>
 
-                  {/* Preview Section - 1/3 width */}
-                  <div className="p-4 bg-white overflow-y-auto">
+                  {/* Preview Section */}
+                  <div className="p-4 bg-white">
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -358,7 +355,7 @@ const CreateAd = () => {
                           <TabsTrigger value="social" className="text-xs">Platforms</TabsTrigger>
                         </TabsList>
                         
-                        <div className="min-h-[400px]">
+                        <div className="min-h-[300px] lg:min-h-[400px] max-h-[60vh] overflow-y-auto">
                           <TabsContent value="static" className="mt-0">
                             <AdPreview formData={formData} device={previewDevice} />
                           </TabsContent>
@@ -378,7 +375,7 @@ const CreateAd = () => {
               </TabsContent>
 
               <TabsContent value="test" className="mt-0">
-                <div className="p-4 h-[calc(100vh-16rem)] overflow-y-auto">
+                <div className="p-4 max-h-[80vh] overflow-y-auto">
                   <ABTestingInterface
                     onCreateTest={(test) => {
                       toast({
@@ -403,7 +400,7 @@ const CreateAd = () => {
               </TabsContent>
 
               <TabsContent value="predict" className="mt-0">
-                <div className="p-4 h-[calc(100vh-16rem)] overflow-y-auto">
+                <div className="p-4 max-h-[80vh] overflow-y-auto">
                   <PerformancePrediction
                     campaignData={formData}
                     adData={formData}
@@ -412,7 +409,7 @@ const CreateAd = () => {
               </TabsContent>
 
               <TabsContent value="preview" className="mt-0">
-                <div className="p-4 h-[calc(100vh-16rem)] overflow-y-auto">
+                <div className="p-4 max-h-[80vh] overflow-y-auto">
                   <div className="flex items-center justify-center mb-6">
                     <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
                       <Button
