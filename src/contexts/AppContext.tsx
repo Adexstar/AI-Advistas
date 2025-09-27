@@ -43,6 +43,8 @@ export interface AdContent {
   headline?: string;
   description?: string;
   cta?: string;
+  placementOptions?: Record<string, string[]>;
+  simpleAudience?: string;
 }
 
 export interface AppState {

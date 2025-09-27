@@ -30,7 +30,9 @@ const CreateAd = () => {
     platforms: [],
     audience: "",
     mediaUrl: "",
-    mediaType: "image" as "image" | "video"
+    mediaType: "image" as "image" | "video",
+    placementOptions: {},
+    simpleAudience: ""
   });
 
   const [previewDevice, setPreviewDevice] = useState("desktop");
