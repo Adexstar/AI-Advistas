@@ -2,6 +2,7 @@ import React from 'react';
 import { useVisualEditor } from '@/contexts/VisualEditorContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   ArrowLeft, 
   Save, 
@@ -9,7 +10,9 @@ import {
   Image, 
   Video, 
   Menu,
-  X
+  X,
+  FileImage,
+  FileVideo
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -26,9 +29,9 @@ export const EditorHeader: React.FC = () => {
   
   const navigate = useNavigate();
 
-  const handleExport = () => {
+  const handleExport = (format?: string) => {
     if (mode === 'image') {
-      exportProject('png');
+      exportProject(format || 'png');
     } else {
       exportProject('mp4');
     }
@@ -70,7 +73,7 @@ export const EditorHeader: React.FC = () => {
             onClick={() => setMode('image')}
             className="h-8 px-3"
           >
-            <Image className="h-4 w-4 mr-1" />
+            <FileImage className="h-4 w-4 mr-1" />
             Image
           </Button>
           <Button
@@ -79,17 +82,30 @@ export const EditorHeader: React.FC = () => {
             onClick={() => setMode('video')}
             className="h-8 px-3"
           >
-            <Video className="h-4 w-4 mr-1" />
+            <FileVideo className="h-4 w-4 mr-1" />
             Video
           </Button>
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Export Format Selector for Images */}
+          {mode === 'image' && (
+            <Select defaultValue="png" onValueChange={handleExport}>
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="png">PNG</SelectItem>
+                <SelectItem value="jpeg">JPG</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+          
           <Button variant="outline" size="sm" onClick={saveProject}>
             <Save className="h-4 w-4 mr-1" />
             Save
           </Button>
-          <Button size="sm" onClick={handleExport}>
+          <Button size="sm" onClick={() => handleExport()}>
             <Download className="h-4 w-4 mr-1" />
             Export
           </Button>

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useRef } from 'react';
 import { Canvas as FabricCanvas } from 'fabric';
 import { useAutoSave } from '@/hooks/useAutoSave';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
 export type EditorMode = 'image' | 'video';
@@ -12,6 +13,16 @@ export interface EditorProject {
   data: any;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface Template {
+  id: string;
+  name: string;
+  type: 'image' | 'video';
+  platform: string;
+  thumbnail_url?: string;
+  template_json: any;
+  created_at: string;
 }
 
 interface VisualEditorContextType {
@@ -45,6 +56,12 @@ interface VisualEditorContextType {
   uploadedFiles: File[];
   setUploadedFiles: (files: File[]) => void;
   
+  // Template system
+  templates: Template[];
+  setTemplates: (templates: Template[]) => void;
+  loadTemplate: (template: Template) => void;
+  fetchTemplates: () => Promise<void>;
+  
   // Actions
   saveProject: () => void;
   exportProject: (format: string) => void;
@@ -72,6 +89,7 @@ export const VisualEditorProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [selectedTool, setSelectedTool] = useState('select');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
 
   // Auto-save functionality
   const projectData = {
@@ -96,6 +114,90 @@ export const VisualEditorProvider: React.FC<{ children: React.ReactNode }> = ({ 
       enabled: true 
     }
   );
+
+  // Template functions
+  const fetchTemplates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('templates')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Type cast the data to match our Template interface
+      const templatesData = (data || []).map(template => ({
+        ...template,
+        type: template.type as 'image' | 'video'
+      }));
+      
+      setTemplates(templatesData);
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+      toast({
+        title: "Error loading templates",
+        description: "Could not load templates from database",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const loadTemplate = async (template: Template) => {
+    try {
+      if (template.type === 'image' && fabricCanvas) {
+        // Set canvas dimensions and background
+        if (template.template_json.width && template.template_json.height) {
+          fabricCanvas.setWidth(template.template_json.width);
+          fabricCanvas.setHeight(template.template_json.height);
+          fabricCanvas.setZoom(1);
+        }
+        
+        if (template.template_json.background) {
+          fabricCanvas.backgroundColor = template.template_json.background;
+        }
+        
+        // Load canvas data
+        await fabricCanvas.loadFromJSON(template.template_json);
+        fabricCanvas.renderAll();
+        
+        toast({
+          title: "Template loaded",
+          description: `Successfully loaded ${template.name}`,
+        });
+      } else if (template.type === 'video') {
+        // Handle video template loading
+        const config = template.template_json;
+        
+        // Set video configuration
+        if (config.width && config.height) {
+          // Update project with template settings
+          setCurrentProject(prev => prev ? {
+            ...prev,
+            name: template.name,
+            type: 'video'
+          } : null);
+        }
+        
+        toast({
+          title: "Video template loaded",
+          description: `Successfully loaded ${template.name}`,
+        });
+      }
+      
+      // Update mode if different
+      if (template.type !== mode) {
+        setMode(template.type);
+      }
+      
+    } catch (error) {
+      console.error('Error loading template:', error);
+      toast({
+        title: "Error loading template",
+        description: "Could not load the selected template",
+        variant: "destructive",
+      });
+    }
+  };
 
   const saveProject = () => {
     try {
@@ -125,22 +227,22 @@ export const VisualEditorProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const exportProject = (format: string) => {
     try {
       if (mode === 'image' && fabricCanvas) {
-        if (format === 'png') {
+        if (format === 'png' || format === 'jpeg') {
           const dataURL = fabricCanvas.toDataURL({
-            format: 'png',
+            format: format as 'png' | 'jpeg',
             quality: 1,
-            multiplier: 2,
+            multiplier: 2, // Higher resolution export
           });
           
           // Create download link
           const link = document.createElement('a');
-          link.download = `visual-editor-export-${Date.now()}.png`;
+          link.download = `visual-editor-export-${Date.now()}.${format}`;
           link.href = dataURL;
           link.click();
           
           toast({
             title: "Export successful",
-            description: "Your image has been exported",
+            description: `Your ${format.toUpperCase()} has been exported`,
           });
         }
       } else if (mode === 'video') {
@@ -191,6 +293,10 @@ export const VisualEditorProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setSidebarOpen,
     uploadedFiles,
     setUploadedFiles,
+    templates,
+    setTemplates,
+    loadTemplate,
+    fetchTemplates,
     saveProject,
     exportProject,
     clearCanvas,

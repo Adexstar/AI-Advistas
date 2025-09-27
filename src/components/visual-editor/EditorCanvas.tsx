@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { useVisualEditor } from '@/contexts/VisualEditorContext';
 import { Canvas as FabricCanvas, Rect, Circle, Textbox } from 'fabric';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 export const EditorCanvas: React.FC = () => {
   const { 
@@ -72,18 +74,28 @@ export const EditorCanvas: React.FC = () => {
 
   if (mode === 'image') {
     return (
-      <div className="h-full flex items-center justify-center p-4">
-        <div className="relative bg-white rounded-lg shadow-lg overflow-hidden">
-          <canvas ref={canvasRef} className="max-w-full max-h-full" />
-        </div>
+      <div className="h-full flex items-center justify-center p-4 bg-muted/20">
+        <Card className="relative bg-white rounded-lg shadow-lg overflow-hidden">
+          <div className="absolute top-2 left-2 z-10">
+            <Badge variant="secondary" className="text-xs">
+              Image Editor
+            </Badge>
+          </div>
+          <canvas ref={canvasRef} className="max-w-full max-h-full block" />
+        </Card>
       </div>
     );
   }
 
   // Video mode
   return (
-    <div className="h-full flex items-center justify-center p-4">
-      <div className="relative bg-black rounded-lg overflow-hidden max-w-4xl w-full">
+    <div className="h-full flex items-center justify-center p-4 bg-muted/20">
+      <Card className="relative bg-black rounded-lg overflow-hidden max-w-4xl w-full">
+        <div className="absolute top-2 left-2 z-10">
+          <Badge variant="secondary" className="text-xs">
+            Video Editor
+          </Badge>
+        </div>
         {videoUrl ? (
           <video
             ref={playerRef}
@@ -96,14 +108,15 @@ export const EditorCanvas: React.FC = () => {
             onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
           />
         ) : (
-          <div className="w-full h-96 flex items-center justify-center bg-muted text-muted-foreground">
+          <div className="w-full h-96 flex items-center justify-center bg-muted text-muted-foreground rounded-lg">
             <div className="text-center">
-              <div className="text-4xl mb-2">🎬</div>
-              <p>Import a video to get started</p>
+              <div className="text-6xl mb-4">🎬</div>
+              <p className="text-lg font-medium mb-2">Video Editor</p>
+              <p className="text-sm">Import a video or select a template to get started</p>
             </div>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 };

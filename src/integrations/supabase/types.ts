@@ -113,6 +113,39 @@ export type Database = {
         }
         Relationships: []
       }
+      templates: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          platform: string
+          template_json: Json
+          thumbnail_url: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          platform: string
+          template_json: Json
+          thumbnail_url?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          platform?: string
+          template_json?: Json
+          thumbnail_url?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_dashboards: {
         Row: {
           created_at: string | null

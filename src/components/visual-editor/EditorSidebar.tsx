@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useVisualEditor } from '@/contexts/VisualEditorContext';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Folder, 
   Image, 
@@ -10,50 +13,82 @@ import {
   Type, 
   Palette, 
   Layers,
-  Clock
+  Clock,
+  Sparkles
 } from 'lucide-react';
 
 export const EditorSidebar: React.FC = () => {
-  const { mode } = useVisualEditor();
-
-  const templates = [
-    { id: 1, name: 'Instagram Post', size: '1080x1080', type: 'image' },
-    { id: 2, name: 'Facebook Ad', size: '1200x628', type: 'image' },
-    { id: 3, name: 'YouTube Thumbnail', size: '1280x720', type: 'image' },
-    { id: 4, name: 'Short Video', size: '1080x1920', type: 'video' },
-    { id: 5, name: 'Landscape Video', size: '1920x1080', type: 'video' },
-  ];
+  const { mode, templates, fetchTemplates, loadTemplate, uploadedFiles } = useVisualEditor();
+  
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
 
   const filteredTemplates = templates.filter(t => t.type === mode);
+
+  const getPlatformIcon = (platform: string) => {
+    switch (platform.toLowerCase()) {
+      case 'facebook': return '📘';
+      case 'instagram': return '📷';
+      case 'youtube': return '📺';
+      case 'tiktok': return '🎵';
+      case 'linkedin': return '💼';
+      default: return '📄';
+    }
+  };
 
   return (
     <div className="h-full bg-background border-r flex flex-col">
       <div className="p-4 border-b">
-        <h2 className="font-medium text-sm">Assets & Templates</h2>
+        <h2 className="font-medium text-sm flex items-center gap-2">
+          <Sparkles className="h-4 w-4" />
+          Assets & Templates
+        </h2>
       </div>
       
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-4">
           {/* Templates Section */}
           <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Folder className="h-4 w-4" />
-              <span className="text-sm font-medium">Templates</span>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Folder className="h-4 w-4" />
+                <span className="text-sm font-medium">Templates</span>
+              </div>
+              <Badge variant="secondary" className="text-xs">
+                {filteredTemplates.length}
+              </Badge>
             </div>
-            <div className="space-y-2">
-              {filteredTemplates.map((template) => (
-                <Button
-                  key={template.id}
-                  variant="ghost"
-                  className="w-full justify-start h-auto p-3"
-                >
-                  <div className="flex flex-col items-start">
-                    <span className="text-sm font-medium">{template.name}</span>
-                    <span className="text-xs text-muted-foreground">{template.size}</span>
-                  </div>
-                </Button>
-              ))}
-            </div>
+            
+            {templates.length === 0 ? (
+              <div className="space-y-2">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-16 w-full" />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filteredTemplates.map((template) => (
+                  <Card key={template.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
+                    <CardContent className="p-3" onClick={() => loadTemplate(template)}>
+                      <div className="flex items-center gap-3">
+                        <div className="text-2xl">
+                          {getPlatformIcon(template.platform)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">
+                            {template.name}
+                          </div>
+                          <div className="text-xs text-muted-foreground capitalize">
+                            {template.platform} • {template.type}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
           
           <Separator />
@@ -68,8 +103,25 @@ export const EditorSidebar: React.FC = () => {
               )}
               <span className="text-sm font-medium">Media</span>
             </div>
-            <div className="text-sm text-muted-foreground">
-              No media files yet. Upload files to see them here.
+            <div className="space-y-2">
+              {uploadedFiles.length > 0 ? (
+                uploadedFiles.map((file, index) => (
+                  <Card key={index} className="cursor-pointer hover:bg-muted/50">
+                    <CardContent className="p-2">
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm">
+                          {file.type.startsWith('image/') ? '🖼️' : '🎥'}
+                        </div>
+                        <span className="text-xs truncate">{file.name}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="text-sm text-muted-foreground text-center p-4 border-2 border-dashed rounded-lg">
+                  No media files yet. Upload files to see them here.
+                </div>
+              )}
             </div>
           </div>
           
