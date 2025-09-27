@@ -52,3 +52,6 @@ verify_jwt = true
 
 [functions.save-generated-ad]
 verify_jwt = true
+
+[functions.generate-ai-campaign]
+verify_jwt = true

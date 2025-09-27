@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
-import { Upload, X, Wand2, Target, Camera, Video, Grid3X3, CheckCircle } from "lucide-react";
+import { Upload, X, Wand2, Target, Camera, Video, Grid3X3, CheckCircle, Lightbulb, Copy } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useAICampaign, type AICampaignResponse } from "@/hooks/useAICampaign";
 
 interface AdCreatorProps {
   formData: any;
@@ -21,6 +22,10 @@ interface AdCreatorProps {
 
 const AdCreator = ({ formData, setFormData, onGenerate, isGenerating }: AdCreatorProps) => {
   const [dragActive, setDragActive] = useState(false);
+  const [aiCampaign, setAiCampaign] = useState<AICampaignResponse | null>(null);
+  const [showAISuggestions, setShowAISuggestions] = useState(false);
+  
+  const aiCampaignMutation = useAICampaign();
 
   const platforms = [
     { id: "facebook", name: "Facebook", color: "bg-blue-100 text-blue-800 border-blue-200", icon: "📘" },
@@ -149,10 +154,50 @@ const AdCreator = ({ formData, setFormData, onGenerate, isGenerating }: AdCreato
     return true;
   };
 
+  const handleAICampaignGenerate = async () => {
+    if (!validateForm()) return;
+    
+    try {
+      const campaignData = {
+        product: formData.product,
+        details: formData.details,
+        platforms: formData.platforms,
+        audience: formData.audience,
+        simpleAudience: formData.simpleAudience,
+        adType: formData.adType,
+        placementOptions: formData.placementOptions,
+        websiteUrl: formData.websiteUrl
+      };
+      
+      const result = await aiCampaignMutation.mutateAsync(campaignData);
+      setAiCampaign(result);
+      setShowAISuggestions(true);
+      
+      toast({
+        title: "AI Campaign Generated!",
+        description: "Your personalized campaign strategy is ready.",
+      });
+    } catch (error) {
+      toast({
+        title: "Generation Failed",
+        description: error instanceof Error ? error.message : "Failed to generate AI campaign",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleGenerate = () => {
     if (validateForm()) {
       onGenerate();
     }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied!",
+      description: "Text copied to clipboard",
+    });
   };
 
   return (
@@ -426,9 +471,34 @@ const AdCreator = ({ formData, setFormData, onGenerate, isGenerating }: AdCreato
         </CardContent>
       </Card>
 
-      {/* Generate Button */}
+      {/* Generate Buttons */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="pt-6 space-y-3">
+          <Button 
+            onClick={handleAICampaignGenerate}
+            disabled={aiCampaignMutation.isPending}
+            className="w-full h-12 text-lg"
+            variant="outline"
+          >
+            {aiCampaignMutation.isPending ? (
+              <>
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="mr-2"
+                >
+                  <Lightbulb className="h-5 w-5" />
+                </motion.div>
+                Generating AI Strategy...
+              </>
+            ) : (
+              <>
+                <Lightbulb className="mr-2 h-5 w-5" />
+                Generate AI Campaign Strategy
+              </>
+            )}
+          </Button>
+          
           <Button 
             onClick={handleGenerate}
             disabled={isGenerating}
@@ -443,17 +513,127 @@ const AdCreator = ({ formData, setFormData, onGenerate, isGenerating }: AdCreato
                 >
                   <Wand2 className="h-5 w-5" />
                 </motion.div>
-                Generating AI Campaign...
+                Creating Campaign...
               </>
             ) : (
               <>
                 <Wand2 className="mr-2 h-5 w-5" />
-                Generate AI Campaign
+                Create Campaign
               </>
             )}
           </Button>
         </CardContent>
       </Card>
+
+      {/* AI Campaign Suggestions */}
+      {showAISuggestions && aiCampaign && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-primary">
+              <Lightbulb className="h-5 w-5" />
+              AI Campaign Strategy
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Campaign Overview */}
+            <div className="space-y-2">
+              <h4 className="font-semibold">Strategy Overview</h4>
+              <p className="text-sm text-muted-foreground">{aiCampaign.campaign_overview.strategy_summary}</p>
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Key Messaging:</p>
+                <p className="text-sm text-muted-foreground">{aiCampaign.campaign_overview.key_messaging}</p>
+              </div>
+            </div>
+
+            {/* Platform-specific campaigns */}
+            <div className="space-y-4">
+              <h4 className="font-semibold">Platform Strategies</h4>
+              {Object.entries(aiCampaign.platform_campaigns).map(([platform, campaign]) => (
+                <div key={platform} className="border rounded-lg p-4 space-y-3 bg-background">
+                  <h5 className="font-medium capitalize flex items-center gap-2">
+                    {platforms.find(p => p.id === platform)?.icon} {platform}
+                  </h5>
+                  
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Headlines:</p>
+                    <div className="space-y-1">
+                      {campaign.headlines.map((headline, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-sm">
+                          <span className="flex-1">{headline}</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => copyToClipboard(headline)}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Body Copy:</p>
+                    <div className="flex items-start gap-2">
+                      <p className="text-sm text-muted-foreground flex-1">{campaign.body_copy}</p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => copyToClipboard(campaign.body_copy)}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="font-medium">Recommended CTA:</p>
+                      <p className="text-muted-foreground">{campaign.cta}</p>
+                    </div>
+                    <div>
+                      <p className="font-medium">Target Interests:</p>
+                      <p className="text-muted-foreground">{campaign.targeting.interests.join(', ')}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Budget Recommendations */}
+            <div className="space-y-2">
+              <h4 className="font-semibold">Budget Recommendations</h4>
+              <div className="text-sm space-y-1">
+                <p><span className="font-medium">Daily Budget:</span> {aiCampaign.budget_recommendations.recommended_daily_budget}</p>
+                <p><span className="font-medium">Platform Allocation:</span> {aiCampaign.budget_recommendations.platform_allocation}</p>
+                <p><span className="font-medium">Scaling Strategy:</span> {aiCampaign.budget_recommendations.scaling_strategy}</p>
+              </div>
+            </div>
+
+            {/* Optimization Tips */}
+            <div className="space-y-2">
+              <h4 className="font-semibold">Optimization Tips</h4>
+              <ul className="text-sm space-y-1 text-muted-foreground">
+                {aiCampaign.optimization_tips.map((tip, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <span className="text-primary">•</span>
+                    {tip}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAISuggestions(false)}
+              className="w-full"
+            >
+              Hide AI Suggestions
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

@@ -12,8 +12,6 @@ import {
   Menu,
   X,
   LogOut,
-  Video,
-  Sparkles,
   Edit,
   FileImage
 } from "lucide-react";
@@ -29,7 +27,6 @@ const DashboardLayout = () => {
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Template Library", href: "/templates", icon: Layout },
     { name: "My Ads", href: "/ads", icon: FileImage },
-    { name: "Visual Editor", href: "/editor", icon: Video },
     { name: "Campaigns", href: "/campaigns", icon: Target },
     { name: "Create Ad", href: "/create", icon: Plus },
     { name: "Audience", href: "/audience", icon: Users },
