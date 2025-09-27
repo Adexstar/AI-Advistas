@@ -16,7 +16,6 @@ import Billing from "./pages/Billing";
 import LandingPages from "./pages/LandingPages";
 import Settings from "./pages/Settings";
 import AdSimulatorPage from "./pages/AdSimulatorPage";
-import AIVideoGenerator from "./pages/AIVideoGenerator";
 import VisualEditor from "./pages/VisualEditor";
 import TemplateLibrary from "./pages/TemplateLibrary";
 import AdEditor from "./pages/AdEditor";
@@ -66,7 +65,7 @@ const AppContent = () => {
         ctrlKey: true,
         shiftKey: true,
         action: () => {
-          window.location.href = '/create-ad';
+          window.location.href = '/create';
         },
         description: 'Create new ad',
         category: 'Navigation'
@@ -96,7 +95,7 @@ const AppContent = () => {
             }>
               <Route index element={<Campaigns />} />
             </Route>
-            <Route path="/create-ad" element={
+            <Route path="/create" element={
               <ProtectedRoute>
                 <DashboardLayout />
               </ProtectedRoute>
@@ -117,13 +116,6 @@ const AppContent = () => {
             }>
               <Route index element={<Billing />} />
             </Route>
-            <Route path="/landing-pages" element={
-              <ProtectedRoute>
-                <DashboardLayout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<LandingPages />} />
-            </Route>
             <Route path="/settings" element={
               <ProtectedRoute>
                 <DashboardLayout />
@@ -131,38 +123,31 @@ const AppContent = () => {
             }>
               <Route index element={<Settings />} />
             </Route>
-            <Route path="/ai-video-generator" element={
+            <Route path="/templates" element={
               <ProtectedRoute>
-                <DashboardLayout />
+                <TemplateLibrary />
               </ProtectedRoute>
-            }>
-              <Route index element={<AIVideoGenerator />} />
-            </Route>
-            <Route path="/ad-simulator" element={
+            } />
+            <Route path="/ads" element={
+              <ProtectedRoute>
+                <MyAds />
+              </ProtectedRoute>
+            } />
+            <Route path="/editor" element={
+              <ProtectedRoute>
+                <VisualEditor />
+              </ProtectedRoute>
+            } />
+            <Route path="/simulator" element={
               <ProtectedRoute>
                 <DashboardLayout />
               </ProtectedRoute>
             }>
               <Route index element={<AdSimulatorPage />} />
             </Route>
-            <Route path="/visual-editor" element={
-              <ProtectedRoute>
-                <VisualEditor />
-              </ProtectedRoute>
-            } />
-            <Route path="/ad-templates" element={
-              <ProtectedRoute>
-                <TemplateLibrary />
-              </ProtectedRoute>
-            } />
             <Route path="/ad-editor/:templateId" element={
               <ProtectedRoute>
                 <AdEditor />
-              </ProtectedRoute>
-            } />
-            <Route path="/my-ads" element={
-              <ProtectedRoute>
-                <MyAds />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

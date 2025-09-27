@@ -27,15 +27,14 @@ const DashboardLayout = () => {
 
   const navigationItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Template Library", href: "/ad-templates", icon: Layout },
-    { name: "My Ads", href: "/my-ads", icon: FileImage },
-    { name: "Visual Editor", href: "/visual-editor", icon: Video },
-    { name: "AI Ad Generator", href: "/ai-video-generator", icon: Sparkles },
+    { name: "Template Library", href: "/templates", icon: Layout },
+    { name: "My Ads", href: "/ads", icon: FileImage },
+    { name: "Visual Editor", href: "/editor", icon: Video },
     { name: "Campaigns", href: "/campaigns", icon: Target },
-    { name: "Create Ad", href: "/create-ad", icon: Plus },
+    { name: "Create Ad", href: "/create", icon: Plus },
     { name: "Audience", href: "/audience", icon: Users },
     { name: "Billing", href: "/billing", icon: CreditCard },
-    { name: "Ad Simulator", href: "/ad-simulator", icon: Edit },
+    { name: "Ad Simulator", href: "/simulator", icon: Edit },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
