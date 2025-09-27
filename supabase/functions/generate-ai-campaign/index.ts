@@ -13,9 +13,9 @@ serve(async (req) => {
   }
 
   try {
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY is not set');
+    const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY');
+    if (!GROQ_API_KEY) {
+      throw new Error('GROQ_API_KEY is not set');
     }
 
     const {
@@ -31,7 +31,7 @@ serve(async (req) => {
 
     console.log('Generating AI campaign for:', { product, platforms, audience });
 
-    // Build comprehensive prompt for GPT-4o
+    // Build comprehensive prompt for Mixtral-8x7B
     const platformsText = platforms.join(', ');
     const placementsText = Object.entries(placementOptions || {})
       .map(([platform, placements]) => 
@@ -89,14 +89,14 @@ Format your response as a structured JSON with the following structure:
   "optimization_tips": ["tip1", "tip2", "tip3"]
 }`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'mixtral-8x7b-32768',
         messages: [
           {
             role: 'system',
@@ -114,8 +114,8 @@ Format your response as a structured JSON with the following structure:
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(`OpenAI API error: ${response.status}`);
+      console.error('Groq API error:', errorData);
+      throw new Error(`Groq API error: ${response.status}`);
     }
 
     const data = await response.json();
