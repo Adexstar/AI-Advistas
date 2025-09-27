@@ -96,7 +96,7 @@ Format your response as a structured JSON with the following structure:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'mixtral-8x7b-32768',
+        model: 'openai/gpt-oss-120b',
         messages: [
           {
             role: 'system',
