@@ -18,6 +18,9 @@ import Settings from "./pages/Settings";
 import AdSimulatorPage from "./pages/AdSimulatorPage";
 import AIVideoGenerator from "./pages/AIVideoGenerator";
 import VisualEditor from "./pages/VisualEditor";
+import TemplateLibrary from "./pages/TemplateLibrary";
+import AdEditor from "./pages/AdEditor";
+import MyAds from "./pages/MyAds";
 import { AuthProvider } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AppProvider } from "./contexts/AppContext";
@@ -145,6 +148,21 @@ const AppContent = () => {
             <Route path="/visual-editor" element={
               <ProtectedRoute>
                 <VisualEditor />
+              </ProtectedRoute>
+            } />
+            <Route path="/ad-templates" element={
+              <ProtectedRoute>
+                <TemplateLibrary />
+              </ProtectedRoute>
+            } />
+            <Route path="/ad-editor/:templateId" element={
+              <ProtectedRoute>
+                <AdEditor />
+              </ProtectedRoute>
+            } />
+            <Route path="/my-ads" element={
+              <ProtectedRoute>
+                <MyAds />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

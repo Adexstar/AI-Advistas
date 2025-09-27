@@ -38,6 +38,44 @@ export type Database = {
         }
         Relationships: []
       }
+      ads: {
+        Row: {
+          content: Json
+          created_at: string
+          id: string
+          preview_url: string | null
+          template_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          id?: string
+          preview_url?: string | null
+          template_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          id?: string
+          preview_url?: string | null
+          template_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ads_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       generated_ads: {
         Row: {
           ad_type: string
@@ -116,32 +154,32 @@ export type Database = {
       templates: {
         Row: {
           created_at: string
+          description: string | null
           id: string
           name: string
-          platform: string
-          template_json: Json
+          preview_url: string | null
+          schema: Json | null
           thumbnail_url: string | null
-          type: string
           updated_at: string
         }
         Insert: {
           created_at?: string
+          description?: string | null
           id?: string
           name: string
-          platform: string
-          template_json: Json
+          preview_url?: string | null
+          schema?: Json | null
           thumbnail_url?: string | null
-          type: string
           updated_at?: string
         }
         Update: {
           created_at?: string
+          description?: string | null
           id?: string
           name?: string
-          platform?: string
-          template_json?: Json
+          preview_url?: string | null
+          schema?: Json | null
           thumbnail_url?: string | null
-          type?: string
           updated_at?: string
         }
         Relationships: []

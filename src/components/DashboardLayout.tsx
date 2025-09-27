@@ -14,7 +14,8 @@ import {
   LogOut,
   Video,
   Sparkles,
-  Edit
+  Edit,
+  FileImage
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,13 +27,15 @@ const DashboardLayout = () => {
 
   const navigationItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Visual Editor", href: "/visual-editor", icon: Edit },
+    { name: "Template Library", href: "/ad-templates", icon: Layout },
+    { name: "My Ads", href: "/my-ads", icon: FileImage },
+    { name: "Visual Editor", href: "/visual-editor", icon: Video },
     { name: "AI Ad Generator", href: "/ai-video-generator", icon: Sparkles },
     { name: "Campaigns", href: "/campaigns", icon: Target },
     { name: "Create Ad", href: "/create-ad", icon: Plus },
     { name: "Audience", href: "/audience", icon: Users },
     { name: "Billing", href: "/billing", icon: CreditCard },
-    { name: "Ad Simulator", href: "/ad-simulator", icon: Layout },
+    { name: "Ad Simulator", href: "/ad-simulator", icon: Edit },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 

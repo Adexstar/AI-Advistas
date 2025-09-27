@@ -18,10 +18,17 @@ export interface EditorProject {
 export interface Template {
   id: string;
   name: string;
-  type: 'image' | 'video';
-  platform: string;
-  thumbnail_url?: string;
-  template_json: any;
+  description: string | null;
+  preview_url: string | null;
+  schema: {
+    fields: Array<{
+      name: string;
+      label: string;
+      type: 'text' | 'textarea' | 'image';
+      default: string;
+    }>;
+    layout: Record<string, any>;
+  };
   created_at: string;
 }
 
@@ -128,7 +135,7 @@ export const VisualEditorProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Type cast the data to match our Template interface
       const templatesData = (data || []).map(template => ({
         ...template,
-        type: template.type as 'image' | 'video'
+        schema: template.schema as Template['schema']
       }));
       
       setTemplates(templatesData);
@@ -144,50 +151,11 @@ export const VisualEditorProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const loadTemplate = async (template: Template) => {
     try {
-      if (template.type === 'image' && fabricCanvas) {
-        // Set canvas dimensions and background
-        if (template.template_json.width && template.template_json.height) {
-          fabricCanvas.setWidth(template.template_json.width);
-          fabricCanvas.setHeight(template.template_json.height);
-          fabricCanvas.setZoom(1);
-        }
-        
-        if (template.template_json.background) {
-          fabricCanvas.backgroundColor = template.template_json.background;
-        }
-        
-        // Load canvas data
-        await fabricCanvas.loadFromJSON(template.template_json);
-        fabricCanvas.renderAll();
-        
-        toast({
-          title: "Template loaded",
-          description: `Successfully loaded ${template.name}`,
-        });
-      } else if (template.type === 'video') {
-        // Handle video template loading
-        const config = template.template_json;
-        
-        // Set video configuration
-        if (config.width && config.height) {
-          // Update project with template settings
-          setCurrentProject(prev => prev ? {
-            ...prev,
-            name: template.name,
-            type: 'video'
-          } : null);
-        }
-        
-        toast({
-          title: "Video template loaded",
-          description: `Successfully loaded ${template.name}`,
-        });
-      }
-      
-      // Update mode if different
-      if (template.type !== mode) {
-        setMode(template.type);
-      }
+      // For the ad editor context, we just need to navigate to the editor
+      toast({
+        title: "Template loaded",
+        description: `Successfully loaded ${template.name}`,
+      });
       
     } catch (error) {
       console.error('Error loading template:', error);

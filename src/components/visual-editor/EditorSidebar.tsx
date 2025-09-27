@@ -24,7 +24,9 @@ export const EditorSidebar: React.FC = () => {
     fetchTemplates();
   }, []);
 
-  const filteredTemplates = templates.filter(t => t.type === mode);
+  const filteredTemplates = templates.filter(t => 
+    t.name.toLowerCase().includes('template') // Simple filter since we don't have type/platform anymore
+  );
 
   const getPlatformIcon = (platform: string) => {
     switch (platform.toLowerCase()) {
@@ -56,7 +58,7 @@ export const EditorSidebar: React.FC = () => {
                 <span className="text-sm font-medium">Templates</span>
               </div>
               <Badge variant="secondary" className="text-xs">
-                {filteredTemplates.length}
+                {templates.length}
               </Badge>
             </div>
             
@@ -68,19 +70,17 @@ export const EditorSidebar: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-2">
-                {filteredTemplates.map((template) => (
+                {templates.map((template) => (
                   <Card key={template.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
                     <CardContent className="p-3" onClick={() => loadTemplate(template)}>
                       <div className="flex items-center gap-3">
-                        <div className="text-2xl">
-                          {getPlatformIcon(template.platform)}
-                        </div>
+                        <div className="text-2xl">📄</div>
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-sm truncate">
                             {template.name}
                           </div>
-                          <div className="text-xs text-muted-foreground capitalize">
-                            {template.platform} • {template.type}
+                          <div className="text-xs text-muted-foreground">
+                            {template.description || 'Ad template'}
                           </div>
                         </div>
                       </div>
