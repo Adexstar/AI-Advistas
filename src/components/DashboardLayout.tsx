@@ -13,7 +13,8 @@ import {
   X,
   LogOut,
   Video,
-  Sparkles
+  Sparkles,
+  Edit
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,6 +26,7 @@ const DashboardLayout = () => {
 
   const navigationItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Visual Editor", href: "/visual-editor", icon: Edit },
     { name: "AI Ad Generator", href: "/ai-video-generator", icon: Sparkles },
     { name: "Campaigns", href: "/campaigns", icon: Target },
     { name: "Create Ad", href: "/create-ad", icon: Plus },

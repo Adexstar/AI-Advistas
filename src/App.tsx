@@ -17,6 +17,7 @@ import LandingPages from "./pages/LandingPages";
 import Settings from "./pages/Settings";
 import AdSimulatorPage from "./pages/AdSimulatorPage";
 import AIVideoGenerator from "./pages/AIVideoGenerator";
+import VisualEditor from "./pages/VisualEditor";
 import { AuthProvider } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AppProvider } from "./contexts/AppContext";
@@ -141,6 +142,11 @@ const AppContent = () => {
             }>
               <Route index element={<AdSimulatorPage />} />
             </Route>
+            <Route path="/visual-editor" element={
+              <ProtectedRoute>
+                <VisualEditor />
+              </ProtectedRoute>
+            } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
