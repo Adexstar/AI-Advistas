@@ -5,7 +5,7 @@ import { useApp, type AdContent, type Campaign } from "@/contexts/AppContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Eye, Smartphone, Monitor, Tablet, Sparkles, Target, FileText, TestTube, Palette } from "lucide-react";
+import { Eye, Smartphone, Monitor, Tablet, Target, FileText, TestTube } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import { useAutoSave } from "@/hooks/useAutoSave";
@@ -17,8 +17,6 @@ import SocialMediaPreview from "@/components/ad/SocialMediaPreview";
 import { TemplateSystem } from "@/components/TemplateSystem";
 import { ABTestingInterface } from "@/components/ABTestingInterface";
 import { PerformancePrediction } from "@/components/PerformancePrediction";
-import { AIStylePanel } from "@/components/ai/AIStylePanel";
-import { SmartCopyEditor } from "@/components/ai/SmartCopyEditor";
 
 const CreateAd = () => {
   const navigate = useNavigate();
@@ -230,11 +228,11 @@ const CreateAd = () => {
         className="relative z-10 px-4 lg:px-6 pt-6 pb-4 text-center"
       >
         <h1 className="text-2xl lg:text-4xl font-bold text-white mb-2 flex items-center justify-center gap-3">
-          <Sparkles className="h-6 w-6 lg:h-8 lg:w-8 text-yellow-400" />
-          AI Ad Studio
+          <Target className="h-6 w-6 lg:h-8 lg:w-8 text-primary-400" />
+          Ad Creator
         </h1>
         <p className="text-white/80 text-sm lg:text-base max-w-2xl mx-auto">
-          Create professional, high-converting advertisements across multiple platforms with AI-powered optimization
+          Create professional, high-converting advertisements across multiple platforms with powerful tools
         </p>
       </motion.div>
 
@@ -305,12 +303,8 @@ const CreateAd = () => {
 
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <div className="px-4 pt-4 border-b">
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="create" className="text-xs lg:text-sm">Create</TabsTrigger>
-                  <TabsTrigger value="ai-assistant" className="text-xs lg:text-sm flex items-center gap-1">
-                    <Sparkles className="h-3 w-3" />
-                    AI Assistant
-                  </TabsTrigger>
                   <TabsTrigger value="test" className="text-xs lg:text-sm">A/B Test</TabsTrigger>
                   <TabsTrigger value="predict" className="text-xs lg:text-sm">Predict</TabsTrigger>
                   <TabsTrigger value="preview" className="text-xs lg:text-sm">Preview</TabsTrigger>
@@ -393,138 +387,29 @@ const CreateAd = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="ai-assistant" className="mt-0">
-                <div className="p-4 space-y-6 max-h-[80vh] overflow-y-auto">
-                  <div className="text-center mb-6">
-                    <h2 className="text-2xl font-bold mb-2 flex items-center justify-center gap-2">
-                      <Sparkles className="h-6 w-6 text-primary" />
-                      AI Creative Assistant
-                    </h2>
-                    <p className="text-muted-foreground">
-                      Get AI-powered suggestions for your ad copy, colors, and design
-                    </p>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* AI Style Suggestions */}
-                    <div className="space-y-4">
-                      <AIStylePanel
-                        productCategory={formData.product ? "general" : "product"}
-                        platform={formData.platforms[0] || "facebook"}
-                        onStyleSelect={(style) => {
-                          // Apply style to form data or design system
-                          toast({
-                            title: "Style Applied",
-                            description: `Applied ${style.name} style with ${style.primaryColor} theme.`,
-                          });
-                        }}
-                      />
-                    </div>
-                    
-                    {/* Smart Copy Editor */}
-                    <div className="space-y-4">
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                            <Palette className="w-5 h-5" />
-                            Smart Copy Editor
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div>
-                            <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                              Headline
-                            </label>
-                            <SmartCopyEditor
-                              text={formData.product || ""}
-                              onTextChange={(newText) => setFormData(prev => ({ ...prev, product: newText }))}
-                              productName={formData.product}
-                              platform={formData.platforms[0]}
-                              textType="headline"
-                              maxLength={60}
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                              Description
-                            </label>
-                            <SmartCopyEditor
-                              text={formData.details || ""}
-                              onTextChange={(newText) => setFormData(prev => ({ ...prev, details: newText }))}
-                              productName={formData.product}
-                              platform={formData.platforms[0]}
-                              textType="description"
-                              maxLength={200}
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                              Call-to-Action
-                            </label>
-                            <SmartCopyEditor
-                              text="Learn More"
-                              onTextChange={(newText) => {
-                                // Update CTA in form data
-                                console.log('CTA updated:', newText);
-                              }}
-                              productName={formData.product}
-                              platform={formData.platforms[0]}
-                              textType="cta"
-                              maxLength={25}
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </div>
-                  
-                  <div className="text-center pt-4 border-t">
-                    <p className="text-sm text-muted-foreground">
-                      💡 <strong>Pro Tip:</strong> Use the AI assistant to generate copy, then fine-tune it in the Create tab for the best results.
-                    </p>
-                  </div>
-                </div>
-              </TabsContent>
-
               <TabsContent value="test" className="mt-0">
                 <div className="p-4 max-h-[80vh] overflow-y-auto">
                   <ABTestingInterface
-                    onCreateTest={(test) => {
-                      toast({
-                        title: "A/B Test Created",
-                        description: "Your ad variant has been created for testing.",
-                      });
-                    }}
-                    onUpdateTest={(testId, updates) => {
-                      toast({
-                        title: "Test Updated",
-                        description: "Your A/B test has been updated.",
-                      });
-                    }}
-                    onDeleteTest={(testId) => {
-                      toast({
-                        title: "Test Deleted",
-                        description: "Your A/B test has been deleted.",
-                      });
-                    }}
+                    onCreateTest={() => {}}
+                    onUpdateTest={() => {}}
+                    onDeleteTest={() => {}}
                   />
                 </div>
               </TabsContent>
 
               <TabsContent value="predict" className="mt-0">
                 <div className="p-4 max-h-[80vh] overflow-y-auto">
-                  <PerformancePrediction
-                    campaignData={formData}
-                    adData={formData}
-                  />
+                  <PerformancePrediction />
                 </div>
               </TabsContent>
 
               <TabsContent value="preview" className="mt-0">
-                <div className="p-4 max-h-[80vh] overflow-y-auto">
-                  <div className="flex items-center justify-center mb-6">
+                <div className="p-4 space-y-4 max-h-[80vh] overflow-y-auto">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <TestTube className="h-5 w-5 text-primary" />
+                      Multi-Platform Preview
+                    </h3>
                     <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
                       <Button
                         variant={previewDevice === "desktop" ? "default" : "ghost"}
@@ -553,8 +438,33 @@ const CreateAd = () => {
                     </div>
                   </div>
                   
-                  <div className="max-w-4xl mx-auto">
-                    <SocialMediaPreview formData={formData} device={previewDevice} />
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Static Preview</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <AdPreview formData={formData} device={previewDevice} />
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Interactive Preview</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <AdPreviewAnimation formData={formData} device={previewDevice} />
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="lg:col-span-2 xl:col-span-1">
+                      <CardHeader>
+                        <CardTitle>Social Media Preview</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <SocialMediaPreview formData={formData} device={previewDevice} />
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
               </TabsContent>

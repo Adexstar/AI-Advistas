@@ -13,7 +13,8 @@ import {
   X,
   LogOut,
   Edit,
-  FileImage
+  FileImage,
+  Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,6 +30,7 @@ const DashboardLayout = () => {
     { name: "My Ads", href: "/ads", icon: FileImage },
     { name: "Campaigns", href: "/campaigns", icon: Target },
     { name: "Create Ad", href: "/create", icon: Plus },
+    { name: "AI Ad Editor", href: "/ai-editor", icon: Sparkles },
     { name: "Audience", href: "/audience", icon: Users },
     { name: "Billing", href: "/billing", icon: CreditCard },
     { name: "Ad Simulator", href: "/simulator", icon: Edit },

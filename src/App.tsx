@@ -20,6 +20,7 @@ import VisualEditor from "./pages/VisualEditor";
 import TemplateLibrary from "./pages/TemplateLibrary";
 import AdEditor from "./pages/AdEditor";
 import MyAds from "./pages/MyAds";
+import AIAdEditor from "./pages/AIAdEditor";
 import { AuthProvider } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AppProvider } from "./contexts/AppContext";
@@ -144,6 +145,13 @@ const AppContent = () => {
               </ProtectedRoute>
             }>
               <Route index element={<AdSimulatorPage />} />
+            </Route>
+            <Route path="/ai-editor" element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<AIAdEditor />} />
             </Route>
             <Route path="/ad-editor/:templateId" element={
               <ProtectedRoute>
