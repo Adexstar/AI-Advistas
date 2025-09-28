@@ -1,156 +1,160 @@
-import { useCallback } from 'react';
-import { GeneratedAdContent } from './useRealTimeAdGenerator';
-import { toast } from 'sonner';
+import { useMutation } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Canvas as FabricCanvas } from 'fabric';
 
-interface ExportOptions {
-  format: 'json' | 'png' | 'jpg' | 'mp4';
-  size?: 'original' | 'instagram-post' | 'instagram-story' | 'facebook-post' | 'tiktok' | 'youtube-thumbnail';
+export interface ExportOptions {
+  format: 'png' | 'jpg' | 'pdf' | 'svg';
+  quality?: number;
+  width?: number;
+  height?: number;
 }
 
 export const useExportAd = () => {
-  const exportAdContent = useCallback(async (
-    content: GeneratedAdContent, 
-    productName: string, 
-    platform: string,
-    options: ExportOptions = { format: 'json' }
-  ) => {
-    try {
-      if (options.format === 'json') {
-        // Export as JSON file
-        const exportData = {
-          productName,
-          platform,
-          content,
-          exportedAt: new Date().toISOString(),
-          metadata: {
-            format: options.format,
-            size: options.size
-          }
-        };
+  const { toast } = useToast();
 
-        const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
-          type: 'application/json' 
-        });
-        
-        const url = URL.createObjectURL(blob);
+  return useMutation({
+    mutationFn: async ({ 
+      canvas, 
+      adId, 
+      options 
+    }: { 
+      canvas: FabricCanvas; 
+      adId: string; 
+      options: ExportOptions 
+    }) => {
+      if (!canvas) {
+        throw new Error('Canvas not available');
+      }
+
+      // Get canvas data as base64
+      const format = options.format === 'jpg' ? 'jpeg' : (options.format === 'pdf' || options.format === 'svg' ? 'png' : options.format);
+      const canvasData = canvas.toDataURL({
+        format: format as 'png' | 'jpeg',
+        quality: options.quality || 0.9,
+        multiplier: options.width && options.height ? 
+          Math.min(options.width / canvas.width!, options.height / canvas.height!) : 1
+      });
+
+      // Call export edge function
+      const { data, error } = await supabase.functions.invoke('export-ad', {
+        body: {
+          adId,
+          format: options.format,
+          quality: options.quality,
+          width: options.width,
+          height: options.height,
+          canvasData
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Export failed');
+      }
+
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Export successful",
+        description: `Your ad has been exported as ${data.format.toUpperCase()}`,
+      });
+      
+      // Trigger download
+      if (data.downloadUrl) {
         const link = document.createElement('a');
-        link.href = url;
-        link.download = `${productName.toLowerCase().replace(/\s+/g, '-')}-ad-${Date.now()}.json`;
+        link.href = data.downloadUrl;
+        link.download = data.fileName;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
-        toast.success('Ad content exported successfully!');
-      } 
-      else if (options.format === 'png' || options.format === 'jpg') {
-        // Export image with different sizes
-        if (!content.imageUrl) {
-          toast.error('No image available to export');
-          return;
-        }
-
-        // Create canvas and resize image based on platform requirements
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-          img.src = content.imageUrl!;
-        });
-
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        // Set dimensions based on platform
-        let width = img.width;
-        let height = img.height;
-        
-        switch (options.size) {
-          case 'instagram-post':
-            width = height = 1080;
-            break;
-          case 'instagram-story':
-            width = 1080;
-            height = 1920;
-            break;
-          case 'facebook-post':
-            width = 1200;
-            height = 630;
-            break;
-          case 'tiktok':
-            width = 1080;
-            height = 1920;
-            break;
-          case 'youtube-thumbnail':
-            width = 1280;
-            height = 720;
-            break;
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        
-        // Draw image to canvas with proper scaling
-        const scale = Math.min(width / img.width, height / img.height);
-        const x = (width - img.width * scale) / 2;
-        const y = (height - img.height * scale) / 2;
-        
-        ctx?.drawImage(img, x, y, img.width * scale, img.height * scale);
-        
-        // Convert to blob and download
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `${productName.toLowerCase().replace(/\s+/g, '-')}-${options.size || 'original'}.${options.format}`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            
-            toast.success(`Image exported as ${options.format.toUpperCase()}!`);
-          }
-        }, `image/${options.format}`, 0.9);
       }
-      else if (options.format === 'mp4') {
-        // Export video
-        if (!content.videoUrl) {
-          toast.error('No video available to export');
-          return;
-        }
-
-        // Create a temporary link to download the video
-        const link = document.createElement('a');
-        link.href = content.videoUrl;
-        link.download = `${productName.toLowerCase().replace(/\s+/g, '-')}-video.mp4`;
-        link.target = '_blank';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        toast.success('Video download started!');
-      }
-    } catch (error) {
-      console.error('Export error:', error);
-      toast.error('Failed to export content');
+    },
+    onError: (error) => {
+      toast({
+        title: "Export failed",
+        description: error.message,
+        variant: "destructive",
+      });
     }
-  }, []);
+  });
+};
 
-  const copyTextContent = useCallback((content: GeneratedAdContent) => {
-    const textToCopy = `${content.headline}\n\n${content.body}\n\n${content.cta}\n\n${content.hashtags.join(' ')}`;
-    
-    navigator.clipboard.writeText(textToCopy).then(() => {
-      toast.success('Text content copied to clipboard!');
-    }).catch(() => {
-      toast.error('Failed to copy content');
-    });
-  }, []);
+export const useQuickExport = () => {
+  const { toast } = useToast();
 
   return {
-    exportAdContent,
-    copyTextContent
+    exportAsPNG: (canvas: FabricCanvas, filename = 'ad.png') => {
+      if (!canvas) return;
+      
+      const dataURL = canvas.toDataURL({
+        format: 'png',
+        quality: 1,
+        multiplier: 2 // 2x resolution for better quality
+      });
+      
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = dataURL;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Exported as PNG",
+        description: "Your ad has been downloaded",
+      });
+    },
+    
+    exportAsJPG: (canvas: FabricCanvas, filename = 'ad.jpg') => {
+      if (!canvas) return;
+      
+      const dataURL = canvas.toDataURL({
+        format: 'jpeg',
+        quality: 0.9,
+        multiplier: 2
+      });
+      
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = dataURL;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Exported as JPG",
+        description: "Your ad has been downloaded",
+      });
+    },
+    
+    copyToClipboard: async (canvas: FabricCanvas) => {
+      if (!canvas) return;
+      
+      try {
+        const dataURL = canvas.toDataURL({ 
+          format: 'png', 
+          quality: 1,
+          multiplier: 1 
+        });
+        const response = await fetch(dataURL);
+        const blob = await response.blob();
+        
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob })
+        ]);
+        
+        toast({
+          title: "Copied to clipboard",
+          description: "Your ad has been copied as an image",
+        });
+      } catch (error) {
+        toast({
+          title: "Copy failed",
+          description: "Unable to copy to clipboard",
+          variant: "destructive",
+        });
+      }
+    }
   };
 };

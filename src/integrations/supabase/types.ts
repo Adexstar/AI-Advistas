@@ -193,10 +193,16 @@ export type Database = {
         Row: {
           cached_data: Json | null
           created_at: string
+          created_by: string | null
           description: string | null
+          dimensions: Json | null
+          file_path: string | null
+          file_size: number | null
+          file_type: string | null
           freepik_download_url: string | null
           freepik_id: string | null
           id: string
+          is_file_based: boolean | null
           name: string
           preview_url: string | null
           schema: Json | null
@@ -207,10 +213,16 @@ export type Database = {
         Insert: {
           cached_data?: Json | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
+          dimensions?: Json | null
+          file_path?: string | null
+          file_size?: number | null
+          file_type?: string | null
           freepik_download_url?: string | null
           freepik_id?: string | null
           id?: string
+          is_file_based?: boolean | null
           name: string
           preview_url?: string | null
           schema?: Json | null
@@ -221,10 +233,16 @@ export type Database = {
         Update: {
           cached_data?: Json | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
+          dimensions?: Json | null
+          file_path?: string | null
+          file_size?: number | null
+          file_type?: string | null
           freepik_download_url?: string | null
           freepik_id?: string | null
           id?: string
+          is_file_based?: boolean | null
           name?: string
           preview_url?: string | null
           schema?: Json | null
@@ -233,6 +251,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      user_ads: {
+        Row: {
+          content: Json
+          created_at: string
+          export_format: string | null
+          file_path: string | null
+          id: string
+          name: string
+          status: string | null
+          template_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          export_format?: string | null
+          file_path?: string | null
+          id?: string
+          name: string
+          status?: string | null
+          template_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          export_format?: string | null
+          file_path?: string | null
+          id?: string
+          name?: string
+          status?: string | null
+          template_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_ads_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_dashboards: {
         Row: {
