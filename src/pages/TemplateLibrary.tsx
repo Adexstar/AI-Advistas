@@ -1,7 +1,9 @@
 import { TemplateSystem } from '@/components/TemplateSystem';
 import { EdgeFunctionTest } from '@/components/EdgeFunctionTest';
+import { BatchTemplateUploader } from '@/components/admin/BatchTemplateUploader';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft } from 'lucide-react';
 
 const TemplateLibrary: React.FC = () => {
@@ -33,12 +35,25 @@ const TemplateLibrary: React.FC = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <EdgeFunctionTest />
-        </div>
-        <TemplateSystem 
-          onUseTemplate={handleUseTemplate}
-        />
+        <Tabs defaultValue="templates" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="templates">Browse Templates</TabsTrigger>
+            <TabsTrigger value="upload">Upload Templates</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="templates" className="space-y-8">
+            <div className="mb-8">
+              <EdgeFunctionTest />
+            </div>
+            <TemplateSystem 
+              onUseTemplate={handleUseTemplate}
+            />
+          </TabsContent>
+          
+          <TabsContent value="upload" className="py-8">
+            <BatchTemplateUploader />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
