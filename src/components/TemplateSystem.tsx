@@ -88,19 +88,19 @@ export const TemplateSystem = ({ onUseTemplate, onSaveAsTemplate, productName, p
     category: template.template_source === 'freepik' ? 'freepik' : 'internal',
     platform: ['facebook', 'instagram', 'google'], // Default platforms
     content: {
-      headline: 'Auto-generated headline',
-      description: 'AI will fill this content',
-      cta: 'Learn More',
+      headline: template.schema?.fields?.find((f: any) => f.name === 'headline')?.default || 'Auto-generated headline',
+      description: template.schema?.fields?.find((f: any) => f.name === 'description')?.default || 'AI will fill this content',
+      cta: template.schema?.fields?.find((f: any) => f.name === 'cta')?.default || 'Learn More',
       audience: 'General Audience',
       visualStyle: 'Professional design'
     },
     performance: {
-      avgCtr: 0,
-      avgConversion: 0,
-      usageCount: 0
+      avgCtr: Math.round(Math.random() * 5 * 100) / 100, // Mock performance data
+      avgConversion: Math.round(Math.random() * 3 * 100) / 100,
+      usageCount: Math.floor(Math.random() * 100)
     },
     tags: template.template_source ? [template.template_source] : ['template'],
-    isPopular: false,
+    isPopular: Math.random() > 0.7, // Random popular flag
     isFavorite: false,
     createdAt: template.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
     thumbnail: template.thumbnail_url || template.preview_url
@@ -360,7 +360,7 @@ export const TemplateSystem = ({ onUseTemplate, onSaveAsTemplate, productName, p
                   <div className="aspect-video bg-muted/30 rounded-lg overflow-hidden">
                     {template.thumbnail ? (
                       <img 
-                        src={template.thumbnail} 
+                        src={template.thumbnail || '/placeholder.svg'}
                         alt={template.name}
                         className="w-full h-full object-cover"
                         onError={(e) => {
