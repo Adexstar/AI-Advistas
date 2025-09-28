@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useProcessPSD } from './usePSDProcessor';
 
 export interface FreepikTemplate {
   id: string;
@@ -94,6 +95,7 @@ export const useCombinedTemplates = (searchParams?: FreepikSearchParams) => {
   const [isSearchingFreepik, setIsSearchingFreepik] = useState(false);
   
   const searchFreepik = useSearchFreepikTemplates();
+  const processPSD = useProcessPSD();
 
   // Get internal templates from database
   const { data: internalTemplates = [], isLoading: isLoadingInternal } = useQuery({
@@ -123,6 +125,16 @@ export const useCombinedTemplates = (searchParams?: FreepikSearchParams) => {
     }
   };
 
+  const processFreepikPSD = async (templateId: string, freepikDownloadUrl: string) => {
+    try {
+      await processPSD.mutateAsync({ templateId, freepikDownloadUrl });
+      return true;
+    } catch (error) {
+      console.error('Failed to process PSD:', error);
+      return false;
+    }
+  };
+
   const allTemplates = [...internalTemplates, ...freepikTemplates];
   const isLoading = isLoadingInternal || isSearchingFreepik;
 
@@ -133,6 +145,8 @@ export const useCombinedTemplates = (searchParams?: FreepikSearchParams) => {
     isLoading,
     searchAllTemplates,
     searchFreepik: searchFreepik.mutate,
-    isSearchingFreepik
+    isSearchingFreepik,
+    processFreepikPSD,
+    isProcessingPSD: processPSD.isPending,
   };
 };

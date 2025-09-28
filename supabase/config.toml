@@ -70,3 +70,6 @@ verify_jwt = true
 
 [functions.get-freepik-template]
 verify_jwt = true
+
+[functions.process-freepik-psd]
+verify_jwt = true
