@@ -5,7 +5,7 @@ import { useApp, type AdContent, type Campaign } from "@/contexts/AppContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Eye, Smartphone, Monitor, Tablet, Sparkles, Target, FileText, TestTube } from "lucide-react";
+import { Eye, Smartphone, Monitor, Tablet, Sparkles, Target, FileText, TestTube, Palette } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import { useAutoSave } from "@/hooks/useAutoSave";
@@ -17,6 +17,8 @@ import SocialMediaPreview from "@/components/ad/SocialMediaPreview";
 import { TemplateSystem } from "@/components/TemplateSystem";
 import { ABTestingInterface } from "@/components/ABTestingInterface";
 import { PerformancePrediction } from "@/components/PerformancePrediction";
+import { AIStylePanel } from "@/components/ai/AIStylePanel";
+import { SmartCopyEditor } from "@/components/ai/SmartCopyEditor";
 
 const CreateAd = () => {
   const navigate = useNavigate();
@@ -254,6 +256,17 @@ const CreateAd = () => {
                   description: `${template.name} template has been applied to your ad.`,
                 });
               }}
+              productName={formData.product}
+              platform={formData.platforms[0] || 'facebook'}
+              onAutoFill={(templateId, filledData) => {
+                setFormData(prev => ({
+                  ...prev,
+                  product: prev.product || filledData.filledTemplate.headline?.split(' ')[2] || prev.product,
+                  details: filledData.filledTemplate.description || prev.details,
+                  // Update other fields as needed
+                }));
+                setShowTemplates(false);
+              }}
             />
           </motion.div>
         )}
@@ -292,8 +305,12 @@ const CreateAd = () => {
 
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <div className="px-4 pt-4 border-b">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="create" className="text-xs lg:text-sm">Create</TabsTrigger>
+                  <TabsTrigger value="ai-assistant" className="text-xs lg:text-sm flex items-center gap-1">
+                    <Sparkles className="h-3 w-3" />
+                    AI Assistant
+                  </TabsTrigger>
                   <TabsTrigger value="test" className="text-xs lg:text-sm">A/B Test</TabsTrigger>
                   <TabsTrigger value="predict" className="text-xs lg:text-sm">Predict</TabsTrigger>
                   <TabsTrigger value="preview" className="text-xs lg:text-sm">Preview</TabsTrigger>
@@ -372,6 +389,101 @@ const CreateAd = () => {
                         </div>
                       </Tabs>
                     </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="ai-assistant" className="mt-0">
+                <div className="p-4 space-y-6 max-h-[80vh] overflow-y-auto">
+                  <div className="text-center mb-6">
+                    <h2 className="text-2xl font-bold mb-2 flex items-center justify-center gap-2">
+                      <Sparkles className="h-6 w-6 text-primary" />
+                      AI Creative Assistant
+                    </h2>
+                    <p className="text-muted-foreground">
+                      Get AI-powered suggestions for your ad copy, colors, and design
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* AI Style Suggestions */}
+                    <div className="space-y-4">
+                      <AIStylePanel
+                        productCategory={formData.product ? "general" : "product"}
+                        platform={formData.platforms[0] || "facebook"}
+                        onStyleSelect={(style) => {
+                          // Apply style to form data or design system
+                          toast({
+                            title: "Style Applied",
+                            description: `Applied ${style.name} style with ${style.primaryColor} theme.`,
+                          });
+                        }}
+                      />
+                    </div>
+                    
+                    {/* Smart Copy Editor */}
+                    <div className="space-y-4">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Palette className="w-5 h-5" />
+                            Smart Copy Editor
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                              Headline
+                            </label>
+                            <SmartCopyEditor
+                              text={formData.product || ""}
+                              onTextChange={(newText) => setFormData(prev => ({ ...prev, product: newText }))}
+                              productName={formData.product}
+                              platform={formData.platforms[0]}
+                              textType="headline"
+                              maxLength={60}
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                              Description
+                            </label>
+                            <SmartCopyEditor
+                              text={formData.details || ""}
+                              onTextChange={(newText) => setFormData(prev => ({ ...prev, details: newText }))}
+                              productName={formData.product}
+                              platform={formData.platforms[0]}
+                              textType="description"
+                              maxLength={200}
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                              Call-to-Action
+                            </label>
+                            <SmartCopyEditor
+                              text="Learn More"
+                              onTextChange={(newText) => {
+                                // Update CTA in form data
+                                console.log('CTA updated:', newText);
+                              }}
+                              productName={formData.product}
+                              platform={formData.platforms[0]}
+                              textType="cta"
+                              maxLength={25}
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                  
+                  <div className="text-center pt-4 border-t">
+                    <p className="text-sm text-muted-foreground">
+                      💡 <strong>Pro Tip:</strong> Use the AI assistant to generate copy, then fine-tune it in the Create tab for the best results.
+                    </p>
                   </div>
                 </div>
               </TabsContent>
