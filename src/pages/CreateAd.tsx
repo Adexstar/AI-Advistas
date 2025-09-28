@@ -287,6 +287,15 @@ const CreateAd = () => {
                   <Button
                     variant="secondary"
                     size="sm"
+                    onClick={() => navigate('/visual-editor')}
+                    className="flex items-center gap-2"
+                  >
+                    <Target className="h-4 w-4" />
+                    Visual Editor
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={() => setShowTemplates(!showTemplates)}
                     className="flex items-center gap-2"
                   >
