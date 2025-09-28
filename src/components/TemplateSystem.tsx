@@ -60,7 +60,6 @@ interface TemplateSystemProps {
 }
 
 export const TemplateSystem = ({ onUseTemplate, onSaveAsTemplate, productName, platform, onAutoFill }: TemplateSystemProps) => {
-  const [templates, setTemplates] = useState<Template[]>([]);
   const [filteredTemplates, setFilteredTemplates] = useState<Template[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedPlatform, setSelectedPlatform] = useState('all');
@@ -74,103 +73,40 @@ export const TemplateSystem = ({ onUseTemplate, onSaveAsTemplate, productName, p
   });
 
   const { mutate: autoFillTemplate, isPending: isAutoFilling } = useAutoFillTemplate();
+  const { 
+    templates: allTemplates, 
+    isLoading, 
+    searchAllTemplates, 
+    isSearchingFreepik 
+  } = useCombinedTemplates();
 
-  // Mock templates data
-  const mockTemplates: Template[] = [
-    {
-      id: '1',
-      name: 'E-commerce Product Launch',
-      description: 'High-converting template for product launches with social proof',
-      category: 'ecommerce',
-      platform: ['facebook', 'instagram'],
-      content: {
-        headline: 'Introducing [Product Name] - Now Available!',
-        description: 'Get [Benefit] with our revolutionary [Product]. Join [Number] satisfied customers who already love it!',
-        cta: 'Shop Now - Limited Time Offer',
-        audience: 'Young Professionals (25-40)',
-        visualStyle: 'Clean, modern with product hero shot'
-      },
-      performance: {
-        avgCtr: 2.8,
-        avgConversion: 4.2,
-        usageCount: 156
-      },
-      tags: ['product-launch', 'social-proof', 'ecommerce'],
-      isPopular: true,
-      isFavorite: false,
-      createdAt: '2024-01-15',
-      thumbnail: '/templates/ecommerce-launch.jpg'
+  // Convert Freepik templates to local Template format
+  const convertToLocalTemplate = (template: any): Template => ({
+    id: template.id,
+    name: template.name,
+    description: template.description || 'Professional ad template',
+    category: template.template_source === 'freepik' ? 'freepik' : 'internal',
+    platform: ['facebook', 'instagram', 'google'], // Default platforms
+    content: {
+      headline: 'Auto-generated headline',
+      description: 'AI will fill this content',
+      cta: 'Learn More',
+      audience: 'General Audience',
+      visualStyle: 'Professional design'
     },
-    {
-      id: '2',
-      name: 'App Download Campaign',
-      description: 'Mobile-first template optimized for app downloads',
-      category: 'app-promotion',
-      platform: ['instagram', 'tiktok', 'facebook'],
-      content: {
-        headline: 'Download [App Name] Today!',
-        description: 'Experience [Key Feature] like never before. Over [Downloads] downloads and counting!',
-        cta: 'Download Free',
-        audience: 'Mobile Users (18-35)',
-        visualStyle: 'Vibrant colors, phone mockups, UI screenshots'
-      },
-      performance: {
-        avgCtr: 3.5,
-        avgConversion: 6.1,
-        usageCount: 203
-      },
-      tags: ['mobile-app', 'downloads', 'tech'],
-      isPopular: true,
-      isFavorite: true,
-      createdAt: '2024-01-10'
+    performance: {
+      avgCtr: 0,
+      avgConversion: 0,
+      usageCount: 0
     },
-    {
-      id: '3',
-      name: 'Service-Based Business',
-      description: 'Professional template for service providers and consultants',
-      category: 'services',
-      platform: ['linkedin', 'facebook', 'google'],
-      content: {
-        headline: 'Transform Your [Area] with Expert [Service]',
-        description: 'Get professional [Service] from certified experts. [Years] years of experience, [Testimonials] satisfied clients.',
-        cta: 'Get Free Consultation',
-        audience: 'Business Owners (30-55)',
-        visualStyle: 'Professional, trustworthy, testimonials'
-      },
-      performance: {
-        avgCtr: 2.1,
-        avgConversion: 8.3,
-        usageCount: 89
-      },
-      tags: ['services', 'b2b', 'professional'],
-      isPopular: false,
-      isFavorite: false,
-      createdAt: '2024-01-08'
-    },
-    {
-      id: '4',
-      name: 'Event Promotion',
-      description: 'High-energy template for events, webinars, and workshops',
-      category: 'events',
-      platform: ['facebook', 'instagram', 'twitter'],
-      content: {
-        headline: 'Join Us for [Event Name] - [Date]',
-        description: 'Don\'t miss this exclusive [Event Type] featuring [Speaker/Topic]. Limited seats available!',
-        cta: 'Register Now',
-        audience: 'Event Attendees (25-50)',
-        visualStyle: 'Dynamic, event imagery, countdown timers'
-      },
-      performance: {
-        avgCtr: 4.2,
-        avgConversion: 12.5,
-        usageCount: 67
-      },
-      tags: ['events', 'webinar', 'registration'],
-      isPopular: false,
-      isFavorite: true,
-      createdAt: '2024-01-05'
-    }
-  ];
+    tags: template.template_source ? [template.template_source] : ['template'],
+    isPopular: false,
+    isFavorite: false,
+    createdAt: template.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
+    thumbnail: template.thumbnail_url || template.preview_url
+  });
+
+  const templates = allTemplates.map(convertToLocalTemplate);
 
   const categories = [
     { id: 'all', name: 'All Templates' },
@@ -180,6 +116,8 @@ export const TemplateSystem = ({ onUseTemplate, onSaveAsTemplate, productName, p
     { id: 'events', name: 'Events' },
     { id: 'content', name: 'Content Marketing' },
     { id: 'lead-gen', name: 'Lead Generation' },
+    { id: 'freepik', name: 'Freepik Templates' },
+    { id: 'internal', name: 'Internal Templates' },
   ];
 
   const platforms = [
@@ -193,9 +131,8 @@ export const TemplateSystem = ({ onUseTemplate, onSaveAsTemplate, productName, p
   ];
 
   useEffect(() => {
-    setTemplates(mockTemplates);
-    setFilteredTemplates(mockTemplates);
-  }, []);
+    setFilteredTemplates(templates);
+  }, [templates]);
 
   useEffect(() => {
     let filtered = templates;
@@ -325,7 +262,12 @@ export const TemplateSystem = ({ onUseTemplate, onSaveAsTemplate, productName, p
           <Input
             placeholder="Search templates..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              if (e.target.value.trim()) {
+                searchAllTemplates({ query: e.target.value.trim() });
+              }
+            }}
             className="pl-10"
           />
         </div>
@@ -354,6 +296,23 @@ export const TemplateSystem = ({ onUseTemplate, onSaveAsTemplate, productName, p
       </div>
 
       {/* Template Grid */}
+      {(isLoading || isSearchingFreepik) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i} className="h-full">
+              <CardHeader>
+                <div className="h-32 bg-muted rounded animate-pulse" />
+                <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
+                <div className="h-3 bg-muted rounded animate-pulse w-full" />
+              </CardHeader>
+              <CardContent>
+                <div className="h-20 bg-muted rounded animate-pulse" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <AnimatePresence>
           {filteredTemplates.map((template) => (
@@ -395,7 +354,25 @@ export const TemplateSystem = ({ onUseTemplate, onSaveAsTemplate, productName, p
                 </CardHeader>
 
                 <CardContent className="space-y-4">
-                  {/* Template Preview */}
+                  {/* Template Preview Image */}
+                  <div className="aspect-video bg-muted/30 rounded-lg overflow-hidden">
+                    {template.thumbnail ? (
+                      <img 
+                        src={template.thumbnail} 
+                        alt={template.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = '/placeholder.svg';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <FileText className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Template Preview Text */}
                   <div className="bg-muted/30 rounded-lg p-3 space-y-2">
                     <h4 className="font-medium text-sm">Preview:</h4>
                     <div className="text-xs space-y-1">
