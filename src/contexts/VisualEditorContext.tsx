@@ -20,6 +20,7 @@ export interface Template {
   name: string;
   description: string | null;
   preview_url: string | null;
+  thumbnail_url: string | null;
   schema: {
     fields: Array<{
       name: string;
