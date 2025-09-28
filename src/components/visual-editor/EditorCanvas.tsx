@@ -10,6 +10,7 @@ export const EditorCanvas: React.FC = () => {
     fabricCanvas, 
     setFabricCanvas, 
     selectedTool,
+    setSelectedObject,
     videoUrl,
     isPlaying,
     setIsPlaying,
@@ -30,18 +31,33 @@ export const EditorCanvas: React.FC = () => {
         backgroundColor: '#ffffff',
       });
 
+      // Selection handling
+      canvas.on('selection:created', (e) => {
+        setSelectedObject(e.selected[0]);
+      });
+
+      canvas.on('selection:updated', (e) => {
+        setSelectedObject(e.selected[0]);
+      });
+
+      canvas.on('selection:cleared', () => {
+        setSelectedObject(null);
+      });
+
       canvas.on('mouse:down', (e) => {
         if (selectedTool === 'text') {
           const pointer = canvas.getPointer(e.e);
-          const text = new Textbox('New Text', {
+          const text = new Textbox('Add your text here', {
             left: pointer.x,
             top: pointer.y,
             width: 200,
             fontSize: 20,
+            fontFamily: 'Inter',
             fill: '#000000',
           });
           canvas.add(text);
           canvas.setActiveObject(text);
+          setSelectedObject(text);
         } else if (selectedTool === 'rectangle') {
           const pointer = canvas.getPointer(e.e);
           const rect = new Rect({
@@ -52,6 +68,8 @@ export const EditorCanvas: React.FC = () => {
             fill: '#3B82F6',
           });
           canvas.add(rect);
+          canvas.setActiveObject(rect);
+          setSelectedObject(rect);
         } else if (selectedTool === 'circle') {
           const pointer = canvas.getPointer(e.e);
           const circle = new Circle({
@@ -61,6 +79,8 @@ export const EditorCanvas: React.FC = () => {
             fill: '#EF4444',
           });
           canvas.add(circle);
+          canvas.setActiveObject(circle);
+          setSelectedObject(circle);
         }
       });
 

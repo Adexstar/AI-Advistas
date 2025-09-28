@@ -16,7 +16,7 @@ import Billing from "./pages/Billing";
 import LandingPages from "./pages/LandingPages";
 import Settings from "./pages/Settings";
 import AdSimulatorPage from "./pages/AdSimulatorPage";
-import VisualEditor from "./pages/VisualEditor";
+import VisualEditorPage from "./pages/VisualEditorPage";
 import TemplateLibrary from "./pages/TemplateLibrary";
 import AdEditor from "./pages/AdEditor";
 import MyAds from "./pages/MyAds";
@@ -134,9 +134,9 @@ const AppContent = () => {
                 <MyAds />
               </ProtectedRoute>
             } />
-            <Route path="/editor" element={
+            <Route path="/visual-editor" element={
               <ProtectedRoute>
-                <VisualEditor />
+                <VisualEditorPage />
               </ProtectedRoute>
             } />
             <Route path="/simulator" element={

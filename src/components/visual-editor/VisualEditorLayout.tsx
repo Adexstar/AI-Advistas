@@ -2,13 +2,14 @@ import React from 'react';
 import { useVisualEditor } from '@/contexts/VisualEditorContext';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { EditorHeader } from './EditorHeader';
-import { EditorToolbar } from './EditorToolbar';
+import { EnhancedToolbar } from './EnhancedToolbar';
 import { EditorCanvas } from './EditorCanvas';
 import { EditorTimeline } from './EditorTimeline';
-import { EditorSidebar } from './EditorSidebar';
+import { MultiTabSidebar } from './MultiTabSidebar';
+import { PropertiesPanel } from './PropertiesPanel';
 
 export const VisualEditorLayout: React.FC = () => {
-  const { mode, sidebarOpen } = useVisualEditor();
+  const { mode, sidebarOpen, propertiesPanelOpen } = useVisualEditor();
 
   return (
     <div className="h-full flex flex-col">
@@ -16,24 +17,24 @@ export const VisualEditorLayout: React.FC = () => {
       
       <div className="flex-1 flex">
         <ResizablePanelGroup direction="horizontal" className="h-full">
-          {/* Sidebar */}
+          {/* Left Sidebar */}
           {sidebarOpen && (
             <>
-              <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
-                <EditorSidebar />
+              <ResizablePanel defaultSize={22} minSize={18} maxSize={35}>
+                <MultiTabSidebar />
               </ResizablePanel>
               <ResizableHandle />
             </>
           )}
           
           {/* Main content area */}
-          <ResizablePanel defaultSize={sidebarOpen ? 60 : 80}>
+          <ResizablePanel defaultSize={sidebarOpen && propertiesPanelOpen ? 56 : sidebarOpen ? 78 : propertiesPanelOpen ? 78 : 100}>
             <div className="h-full flex flex-col">
-              {/* Toolbar */}
-              <EditorToolbar />
+              {/* Enhanced Toolbar */}
+              <EnhancedToolbar />
               
               {/* Canvas/Preview area */}
-              <div className="flex-1 bg-muted/20">
+              <div className="flex-1 bg-muted/10 relative">
                 <EditorCanvas />
               </div>
               
@@ -46,16 +47,15 @@ export const VisualEditorLayout: React.FC = () => {
             </div>
           </ResizablePanel>
           
-          {/* Properties panel (optional) */}
-          <ResizableHandle />
-          <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
-            <div className="h-full bg-background border-l p-4">
-              <h3 className="font-medium text-sm mb-4">Properties</h3>
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <p>Select an element to edit its properties</p>
-              </div>
-            </div>
-          </ResizablePanel>
+          {/* Right Properties Panel */}
+          {propertiesPanelOpen && (
+            <>
+              <ResizableHandle />
+              <ResizablePanel defaultSize={22} minSize={18} maxSize={35}>
+                <PropertiesPanel />
+              </ResizablePanel>
+            </>
+          )}
         </ResizablePanelGroup>
       </div>
     </div>

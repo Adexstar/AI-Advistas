@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useRef } from 'react';
-import { Canvas as FabricCanvas } from 'fabric';
+import { Canvas as FabricCanvas, Textbox, Rect, Circle, Triangle } from 'fabric';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -42,6 +42,10 @@ interface VisualEditorContextType {
   // Canvas state (for image editing)
   fabricCanvas: FabricCanvas | null;
   setFabricCanvas: (canvas: FabricCanvas | null) => void;
+  selectedObject: any | null;
+  setSelectedObject: (object: any | null) => void;
+  canvasZoom: number;
+  setCanvasZoom: (zoom: number) => void;
   
   // Video state
   videoUrl: string | null;
@@ -58,6 +62,10 @@ interface VisualEditorContextType {
   setSelectedTool: (tool: string) => void;
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
+  activeSidebarTab: string;
+  setActiveSidebarTab: (tab: string) => void;
+  propertiesPanelOpen: boolean;
+  setPropertiesPanelOpen: (open: boolean) => void;
   
   // File management
   uploadedFiles: File[];
@@ -69,10 +77,17 @@ interface VisualEditorContextType {
   loadTemplate: (template: Template) => void;
   fetchTemplates: () => Promise<void>;
   
+  // Font management
+  googleFonts: string[];
+  setGoogleFonts: (fonts: string[]) => void;
+  loadGoogleFonts: () => Promise<void>;
+  
   // Actions
   saveProject: () => void;
   exportProject: (format: string) => void;
   clearCanvas: () => void;
+  addTextElement: (text: string, options?: any) => void;
+  addShapeElement: (type: string, options?: any) => void;
 }
 
 const VisualEditorContext = createContext<VisualEditorContextType | undefined>(undefined);
@@ -89,14 +104,21 @@ export const VisualEditorProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [mode, setMode] = useState<EditorMode>('image');
   const [currentProject, setCurrentProject] = useState<EditorProject | null>(null);
   const [fabricCanvas, setFabricCanvas] = useState<FabricCanvas | null>(null);
+  const [selectedObject, setSelectedObject] = useState<any | null>(null);
+  const [canvasZoom, setCanvasZoom] = useState(1);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [selectedTool, setSelectedTool] = useState('select');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeSidebarTab, setActiveSidebarTab] = useState('templates');
+  const [propertiesPanelOpen, setPropertiesPanelOpen] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [googleFonts, setGoogleFonts] = useState<string[]>([
+    'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins', 'Source Sans Pro', 'Raleway', 'PT Sans', 'Lora'
+  ]);
 
   // Auto-save functionality
   const projectData = {
@@ -240,6 +262,76 @@ export const VisualEditorProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
+  // Enhanced actions
+  const loadGoogleFonts = async () => {
+    // This would typically load fonts from Google Fonts API
+    console.log('Loading Google Fonts...');
+  };
+
+  const addTextElement = (text: string, options: any = {}) => {
+    if (fabricCanvas) {
+      const textElement = new Textbox(text, {
+        left: 100,
+        top: 100,
+        width: 200,
+        fontSize: options.fontSize || 20,
+        fontFamily: options.fontFamily || 'Inter',
+        fontWeight: options.fontWeight || 'normal',
+        fill: options.fill || '#000000',
+        ...options,
+      });
+      fabricCanvas.add(textElement);
+      fabricCanvas.setActiveObject(textElement);
+      setSelectedObject(textElement);
+      fabricCanvas.renderAll();
+    }
+  };
+
+  const addShapeElement = (type: string, options: any = {}) => {
+    if (fabricCanvas) {
+      let shape;
+      
+      switch (type) {
+        case 'rectangle':
+          shape = new Rect({
+            left: 100,
+            top: 100,
+            width: 100,
+            height: 100,
+            fill: options.fill || '#3B82F6',
+            ...options,
+          });
+          break;
+        case 'circle':
+          shape = new Circle({
+            left: 100,
+            top: 100,
+            radius: 50,
+            fill: options.fill || '#EF4444',
+            ...options,
+          });
+          break;
+        case 'triangle':
+          shape = new Triangle({
+            left: 100,
+            top: 100,
+            width: 100,
+            height: 100,
+            fill: options.fill || '#10B981',
+            ...options,
+          });
+          break;
+        default:
+          return;
+      }
+      
+      fabricCanvas.add(shape);
+      fabricCanvas.setActiveObject(shape);
+      setSelectedObject(shape);
+      fabricCanvas.renderAll();
+    }
+  };
+
   const value: VisualEditorContextType = {
     mode,
     setMode,
@@ -247,6 +339,10 @@ export const VisualEditorProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setCurrentProject,
     fabricCanvas,
     setFabricCanvas,
+    selectedObject,
+    setSelectedObject,
+    canvasZoom,
+    setCanvasZoom,
     videoUrl,
     setVideoUrl,
     isPlaying,
@@ -259,15 +355,24 @@ export const VisualEditorProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setSelectedTool,
     sidebarOpen,
     setSidebarOpen,
+    activeSidebarTab,
+    setActiveSidebarTab,
+    propertiesPanelOpen,
+    setPropertiesPanelOpen,
     uploadedFiles,
     setUploadedFiles,
     templates,
     setTemplates,
     loadTemplate,
     fetchTemplates,
+    googleFonts,
+    setGoogleFonts,
+    loadGoogleFonts,
     saveProject,
     exportProject,
     clearCanvas,
+    addTextElement,
+    addShapeElement,
   };
 
   return (

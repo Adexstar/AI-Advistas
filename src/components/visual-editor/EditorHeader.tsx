@@ -24,7 +24,9 @@ export const EditorHeader: React.FC = () => {
     saveProject, 
     exportProject,
     sidebarOpen,
-    setSidebarOpen
+    setSidebarOpen,
+    propertiesPanelOpen,
+    setPropertiesPanelOpen
   } = useVisualEditor();
   
   const navigate = useNavigate();
@@ -108,6 +110,14 @@ export const EditorHeader: React.FC = () => {
           <Button size="sm" onClick={() => handleExport()}>
             <Download className="h-4 w-4 mr-1" />
             Export
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setPropertiesPanelOpen(!propertiesPanelOpen)}
+          >
+            <Menu className="h-4 w-4" />
           </Button>
         </div>
       </div>
