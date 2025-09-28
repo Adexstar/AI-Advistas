@@ -50,7 +50,7 @@ export const MultiTabSidebar: React.FC = () => {
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = (e) => {
-          const img = new Image();
+          const img = new window.Image();
           img.onload = () => {
             if (fabricCanvas) {
               const fabricImage = new FabricImage(img, {
