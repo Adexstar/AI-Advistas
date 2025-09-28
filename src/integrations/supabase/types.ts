@@ -76,6 +76,44 @@ export type Database = {
           },
         ]
       }
+      ai_suggestions: {
+        Row: {
+          created_at: string
+          id: string
+          suggestion_type: string
+          suggestions: Json
+          template_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          suggestion_type?: string
+          suggestions?: Json
+          template_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          suggestion_type?: string
+          suggestions?: Json
+          template_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_suggestions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       generated_ads: {
         Row: {
           ad_type: string

@@ -19,9 +19,11 @@ import {
   Heart,
   Eye,
   Download,
-  Share2
+  Share2,
+  Sparkles
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useAutoFillTemplate } from '@/hooks/useAIAssistant';
 
 interface Template {
   id: string;
@@ -51,9 +53,12 @@ interface Template {
 interface TemplateSystemProps {
   onUseTemplate: (template: Template) => void;
   onSaveAsTemplate?: (templateData: any) => void;
+  productName?: string;
+  platform?: string;
+  onAutoFill?: (templateId: string, filledData: any) => void;
 }
 
-export const TemplateSystem = ({ onUseTemplate, onSaveAsTemplate }: TemplateSystemProps) => {
+export const TemplateSystem = ({ onUseTemplate, onSaveAsTemplate, productName, platform, onAutoFill }: TemplateSystemProps) => {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [filteredTemplates, setFilteredTemplates] = useState<Template[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -66,6 +71,8 @@ export const TemplateSystem = ({ onUseTemplate, onSaveAsTemplate }: TemplateSyst
     category: 'social-media',
     tags: ''
   });
+
+  const { mutate: autoFillTemplate, isPending: isAutoFilling } = useAutoFillTemplate();
 
   // Mock templates data
   const mockTemplates: Template[] = [
@@ -213,6 +220,42 @@ export const TemplateSystem = ({ onUseTemplate, onSaveAsTemplate }: TemplateSyst
 
     setFilteredTemplates(filtered);
   }, [templates, selectedCategory, selectedPlatform, searchQuery]);
+
+  const handleAutoFillTemplate = (template: Template) => {
+    if (!productName) {
+      toast({
+        title: "Product name required",
+        description: "Please enter a product name to use AI auto-fill",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    autoFillTemplate({
+      templateId: template.id,
+      productName,
+      platform: platform || 'facebook',
+      templateStructure: {
+        elements: ['headline', 'description', 'cta']
+      }
+    }, {
+      onSuccess: (data) => {
+        onAutoFill?.(template.id, data);
+        toast({
+          title: "Template Auto-Filled",
+          description: `${template.name} has been filled with AI-generated content.`,
+        });
+      },
+      onError: (error) => {
+        toast({
+          title: "Auto-fill failed",
+          description: "Failed to generate AI content for this template",
+          variant: "destructive",
+        });
+        console.error(error);
+      }
+    });
+  };
 
   const handleUseTemplate = (template: Template) => {
     onUseTemplate(template);
@@ -405,6 +448,17 @@ export const TemplateSystem = ({ onUseTemplate, onSaveAsTemplate }: TemplateSyst
                       <Copy className="h-4 w-4 mr-2" />
                       Use Template
                     </Button>
+                    {productName && (
+                      <Button 
+                        onClick={() => handleAutoFillTemplate(template)}
+                        variant="outline"
+                        size="sm"
+                        disabled={isAutoFilling}
+                        className="px-3"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button variant="outline" size="sm" className="px-3">
                       <Eye className="h-4 w-4" />
                     </Button>

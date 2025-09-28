@@ -55,3 +55,12 @@ verify_jwt = true
 
 [functions.generate-ai-campaign]
 verify_jwt = true
+
+[functions.generate-ad-copy]
+verify_jwt = true
+
+[functions.suggest-ad-style]
+verify_jwt = true
+
+[functions.auto-fill-template]
+verify_jwt = true
