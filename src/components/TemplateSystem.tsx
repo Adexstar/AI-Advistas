@@ -204,9 +204,11 @@ export const TemplateSystem = ({ onUseTemplate, onSaveAsTemplate, productName, p
   };
 
   const handleToggleFavorite = (templateId: string) => {
-    setTemplates(prev => prev.map(t => 
-      t.id === templateId ? { ...t, isFavorite: !t.isFavorite } : t
-    ));
+    // TODO: Implement favorite toggle functionality with backend
+    toast({
+      title: "Feature coming soon",
+      description: "Template favorites will be available soon.",
+    });
   };
 
   const handleSaveTemplate = () => {
