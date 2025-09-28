@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useAutoFillTemplate } from '@/hooks/useAIAssistant';
+import { useCombinedTemplates } from '@/hooks/useFreepikTemplates';
 
 interface Template {
   id: string;

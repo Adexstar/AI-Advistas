@@ -191,32 +191,44 @@ export type Database = {
       }
       templates: {
         Row: {
+          cached_data: Json | null
           created_at: string
           description: string | null
+          freepik_download_url: string | null
+          freepik_id: string | null
           id: string
           name: string
           preview_url: string | null
           schema: Json | null
+          template_source: string
           thumbnail_url: string | null
           updated_at: string
         }
         Insert: {
+          cached_data?: Json | null
           created_at?: string
           description?: string | null
+          freepik_download_url?: string | null
+          freepik_id?: string | null
           id?: string
           name: string
           preview_url?: string | null
           schema?: Json | null
+          template_source?: string
           thumbnail_url?: string | null
           updated_at?: string
         }
         Update: {
+          cached_data?: Json | null
           created_at?: string
           description?: string | null
+          freepik_download_url?: string | null
+          freepik_id?: string | null
           id?: string
           name?: string
           preview_url?: string | null
           schema?: Json | null
+          template_source?: string
           thumbnail_url?: string | null
           updated_at?: string
         }
