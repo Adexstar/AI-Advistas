@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useVisualEditor } from '@/contexts/VisualEditorContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,18 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Canvas as FabricCanvas, Image as FabricImage } from 'fabric';
+import { useUserAds, useDeleteUserAd, useFileBasedTemplates } from '@/hooks/useTemplateStorage';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { 
   Layout, 
   Type, 
@@ -22,7 +34,9 @@ import {
   Circle,
   Triangle,
   Star,
-  Heart
+  Heart,
+  Edit3,
+  Trash2
 } from 'lucide-react';
 
 export const MultiTabSidebar: React.FC = () => {
@@ -38,9 +52,39 @@ export const MultiTabSidebar: React.FC = () => {
     googleFonts
   } = useVisualEditor();
 
+  const { data: fileBasedTemplates, isLoading: isLoadingFileTemplates } = useFileBasedTemplates();
+  const { data: userAds, isLoading: isLoadingUserAds } = useUserAds();
+  const deleteUserAd = useDeleteUserAd();
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [templateSearchQuery, setTemplateSearchQuery] = useState('');
+
   useEffect(() => {
     fetchTemplates();
   }, []);
+
+  // Combine all templates with proper typing
+  const allTemplates = [
+    ...(templates || []).map(t => ({ ...t, is_file_based: false, description: t.description || '', thumbnail_url: t.thumbnail_url })),
+    ...(fileBasedTemplates || []).map(t => ({ ...t, is_file_based: true, description: '', thumbnail_url: t.thumbnail_url }))
+  ];
+
+  const filteredTemplates = allTemplates.filter(template =>
+    template.name.toLowerCase().includes(templateSearchQuery.toLowerCase()) ||
+    template.description.toLowerCase().includes(templateSearchQuery.toLowerCase())
+  );
+
+  const filteredUserAds = userAds?.filter(ad =>
+    ad.name.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
+
+  const handleDeleteAd = async (adId: string) => {
+    try {
+      await deleteUserAd.mutateAsync(adId);
+    } catch (error) {
+      console.error('Failed to delete ad:', error);
+    }
+  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -112,9 +156,9 @@ export const MultiTabSidebar: React.FC = () => {
               <Upload className="h-3 w-3 mr-1" />
               Uploads
             </TabsTrigger>
-            <TabsTrigger value="projects" className="text-xs">
-              <FolderOpen className="h-3 w-3 mr-1" />
-              Projects
+            <TabsTrigger value="my-ads" className="text-xs">
+              <Heart className="h-3 w-3 mr-1" />
+              My Ads
             </TabsTrigger>
           </TabsList>
         </div>
@@ -126,6 +170,8 @@ export const MultiTabSidebar: React.FC = () => {
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search templates..."
+                  value={templateSearchQuery}
+                  onChange={(e) => setTemplateSearchQuery(e.target.value)}
                   className="pl-8 h-9"
                 />
               </div>
@@ -133,21 +179,21 @@ export const MultiTabSidebar: React.FC = () => {
             
             <ScrollArea className="flex-1">
               <div className="p-3 pt-0">
-                {templates.length === 0 ? (
+                {isLoadingFileTemplates ? (
                   <div className="space-y-2">
                     {[...Array(6)].map((_, i) => (
                       <Skeleton key={i} className="h-20 w-full" />
                     ))}
                   </div>
-                ) : (
+                ) : filteredTemplates.length > 0 ? (
                   <div className="grid grid-cols-2 gap-2">
-                    {templates.map((template) => (
+                    {filteredTemplates.map((template) => (
                       <Card key={template.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
-                        <CardContent className="p-2" onClick={() => loadTemplate(template)}>
+                        <CardContent className="p-2" onClick={() => loadTemplate(template as any)}>
                           <div className="aspect-square bg-muted rounded mb-2 flex items-center justify-center">
-                            {template.preview_url ? (
+                            {(template as any).preview_url || (template as any).thumbnail_url ? (
                               <img 
-                                src={template.preview_url} 
+                                src={(template as any).preview_url || (template as any).thumbnail_url} 
                                 alt={template.name}
                                 className="w-full h-full object-cover rounded"
                               />
@@ -155,12 +201,27 @@ export const MultiTabSidebar: React.FC = () => {
                               <Layout className="h-8 w-8 text-muted-foreground" />
                             )}
                           </div>
-                          <div className="text-xs font-medium truncate">
-                            {template.name}
+                          <div className="flex items-center justify-between">
+                            <div className="text-xs font-medium truncate flex-1">
+                              {template.name}
+                            </div>
+                            {template.is_file_based && (
+                              <Badge variant="secondary" className="text-xs ml-2">File</Badge>
+                            )}
                           </div>
+                          {template.description && (
+                            <div className="text-xs text-muted-foreground truncate mt-1">
+                              {template.description}
+                            </div>
+                          )}
                         </CardContent>
                       </Card>
                     ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Layout className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-sm text-muted-foreground">No templates found</p>
                   </div>
                 )}
               </div>
@@ -329,13 +390,92 @@ export const MultiTabSidebar: React.FC = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="projects" className="h-full m-0">
+          <TabsContent value="my-ads" className="h-full m-0">
             <div className="p-3">
-              <div className="text-center text-muted-foreground">
-                <FolderOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-sm">No saved projects</p>
-                <p className="text-xs">Your saved projects will appear here</p>
+              <div className="relative mb-3">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search my ads..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 h-9"
+                />
               </div>
+              
+              <ScrollArea className="flex-1">
+                {isLoadingUserAds ? (
+                  <div className="space-y-2">
+                    {[...Array(4)].map((_, i) => (
+                      <Skeleton key={i} className="h-20 w-full" />
+                    ))}
+                  </div>
+                ) : filteredUserAds.length > 0 ? (
+                  <div className="space-y-3">
+                    {filteredUserAds.map((ad) => (
+                      <div
+                        key={ad.id}
+                        className="group relative bg-card rounded-lg border p-3 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-medium truncate">{ad.name}</h4>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant={ad.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
+                                {ad.status}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(ad.updated_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                            {(ad as any).templates && (
+                              <p className="text-xs text-muted-foreground mt-1 truncate">
+                                Template: {(ad as any).templates.name}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="sm">
+                              <Edit3 className="h-3 w-3" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Ad</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete "{ad.name}"? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => handleDeleteAd(ad.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Heart className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-sm text-muted-foreground">No saved ads yet</p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Create and save your first ad to see it here
+                    </p>
+                  </div>
+                )}
+              </ScrollArea>
             </div>
           </TabsContent>
         </div>

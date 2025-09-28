@@ -5,8 +5,9 @@ import { EditorHeader } from './EditorHeader';
 import { EnhancedToolbar } from './EnhancedToolbar';
 import { EditorCanvas } from './EditorCanvas';
 import { EditorTimeline } from './EditorTimeline';
-import { MultiTabSidebar } from './MultiTabSidebar';
 import { PropertiesPanel } from './PropertiesPanel';
+import { MultiTabSidebar } from './MultiTabSidebar';
+import { ExportPanel } from './ExportPanel';
 
 export const VisualEditorLayout: React.FC = () => {
   const { mode, sidebarOpen, propertiesPanelOpen } = useVisualEditor();
@@ -52,7 +53,12 @@ export const VisualEditorLayout: React.FC = () => {
             <>
               <ResizableHandle />
               <ResizablePanel defaultSize={22} minSize={18} maxSize={35}>
-                <PropertiesPanel />
+                <div className="h-full overflow-y-auto">
+                  <PropertiesPanel />
+                  <div className="p-4 border-t">
+                    <ExportPanel />
+                  </div>
+                </div>
               </ResizablePanel>
             </>
           )}

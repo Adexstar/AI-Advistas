@@ -13,7 +13,7 @@ export interface ExportOptions {
 export const useExportAd = () => {
   const { toast } = useToast();
 
-  return useMutation({
+  const canvasExport = useMutation({
     mutationFn: async ({ 
       canvas, 
       adId, 
@@ -27,7 +27,6 @@ export const useExportAd = () => {
         throw new Error('Canvas not available');
       }
 
-      // Get canvas data as base64
       const format = options.format === 'jpg' ? 'jpeg' : (options.format === 'pdf' || options.format === 'svg' ? 'png' : options.format);
       const canvasData = canvas.toDataURL({
         format: format as 'png' | 'jpeg',
@@ -36,7 +35,6 @@ export const useExportAd = () => {
           Math.min(options.width / canvas.width!, options.height / canvas.height!) : 1
       });
 
-      // Call export edge function
       const { data, error } = await supabase.functions.invoke('export-ad', {
         body: {
           adId,
@@ -60,7 +58,6 @@ export const useExportAd = () => {
         description: `Your ad has been exported as ${data.format.toUpperCase()}`,
       });
       
-      // Trigger download
       if (data.downloadUrl) {
         const link = document.createElement('a');
         link.href = data.downloadUrl;
@@ -78,6 +75,86 @@ export const useExportAd = () => {
       });
     }
   });
+
+  // Functions for AI-generated content export (for AIVideoGenerator)
+  const exportAdContent = async (generatedContent: any, productName: string, platform: string, options: any) => {
+    try {
+      const exportData = {
+        content: generatedContent,
+        productName,
+        platform,
+        format: options.format,
+        timestamp: new Date().toISOString()
+      };
+
+      if (options.format === 'json') {
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${productName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_ad.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else if (generatedContent.imageUrl && (options.format === 'png' || options.format === 'jpg')) {
+        const link = document.createElement('a');
+        link.href = generatedContent.imageUrl;
+        link.download = `${productName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_ad.${options.format}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else if (generatedContent.videoUrl && options.format === 'mp4') {
+        const link = document.createElement('a');
+        link.href = generatedContent.videoUrl;
+        link.download = `${productName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_ad.mp4`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      toast({
+        title: "Export successful",
+        description: `Ad content exported as ${options.format.toUpperCase()}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Export failed",
+        description: "Unable to export ad content",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const copyTextContent = (generatedContent: any) => {
+    try {
+      const textContent = [
+        generatedContent.headline,
+        generatedContent.body,
+        generatedContent.cta,
+        ...(generatedContent.hashtags || [])
+      ].filter(Boolean).join('\n\n');
+
+      navigator.clipboard.writeText(textContent);
+      toast({
+        title: "Copied to clipboard",
+        description: "Ad text content has been copied",
+      });
+    } catch (error) {
+      toast({
+        title: "Copy failed",
+        description: "Unable to copy to clipboard",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return {
+    ...canvasExport,
+    exportAdContent,
+    copyTextContent
+  };
 };
 
 export const useQuickExport = () => {
