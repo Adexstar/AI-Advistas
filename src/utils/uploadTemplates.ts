@@ -30,6 +30,20 @@ export const uploadTemplateFiles = async () => {
       description: 'Creative agency flyer template showcasing digital marketing services with vibrant orange branding',
       category: 'agency_marketing',
       dimensions: { width: 1080, height: 1080 }
+    },
+    {
+      file: await fetch('/src/assets/templates/4742769.jpg').then(r => r.blob()).then(b => new File([b], 'sports-running-collection.jpg', { type: 'image/jpeg' })),
+      name: 'Sports & Running Ad Collection',
+      description: 'Professional fitness and sports event templates featuring running marathons, gym promotions, and athletic equipment ads',
+      category: 'business',
+      dimensions: { width: 1080, height: 1350 }
+    },
+    {
+      file: await fetch('/src/assets/templates/3491672.jpg').then(r => r.blob()).then(b => new File([b], 'yoga-wellness-collection.jpg', { type: 'image/jpeg' })),
+      name: 'Yoga & Wellness Social Posts',
+      description: 'Serene yoga and wellness social media templates perfect for studios, instructors, and health businesses with calming aesthetics',
+      category: 'social_media',
+      dimensions: { width: 1080, height: 1080 }
     }
   ];
 
