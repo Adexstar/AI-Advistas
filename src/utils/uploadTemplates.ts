@@ -44,6 +44,20 @@ export const uploadTemplateFiles = async () => {
       description: 'Serene yoga and wellness social media templates perfect for studios, instructors, and health businesses with calming aesthetics',
       category: 'social_media',
       dimensions: { width: 1080, height: 1080 }
+    },
+    {
+      file: await fetch('/src/assets/templates/3556e52b-f585-4290-bf76-958c24ff9fd4.jpg').then(r => r.blob()).then(b => new File([b], 'boost-social-presence.jpg', { type: 'image/jpeg' })),
+      name: 'Boost Your Social Presence',
+      description: 'Dynamic social media advertisement template with megaphone visual, perfect for agencies promoting social media management services',
+      category: 'agency_marketing',
+      dimensions: { width: 1080, height: 1080 }
+    },
+    {
+      file: await fetch('/src/assets/templates/6284348.jpg').then(r => r.blob()).then(b => new File([b], 'membership-streaming-collection.jpg', { type: 'image/jpeg' })),
+      name: 'Membership & Streaming Service Templates',
+      description: 'Professional streaming service and membership promotion templates featuring free trial offers and subscription plans',
+      category: 'business',
+      dimensions: { width: 1080, height: 1080 }
     }
   ];
 
