@@ -97,14 +97,13 @@ export const useCombinedTemplates = (searchParams?: FreepikSearchParams) => {
   const searchFreepik = useSearchFreepikTemplates();
   const processPSD = useProcessPSD();
 
-  // Get internal templates from database
+  // Get all templates from database (including file-based and internal templates)
   const { data: internalTemplates = [], isLoading: isLoadingInternal } = useQuery({
-    queryKey: ['templates', 'internal'],
+    queryKey: ['templates', 'all'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('templates')
         .select('*')
-        .eq('template_source', 'internal')
         .order('created_at', { ascending: false });
 
       if (error) throw error;

@@ -16,6 +16,7 @@ export interface TemplateFile {
   is_file_based: boolean;
   thumbnail_url?: string;
   preview_url?: string;
+  description?: string;
 }
 
 export interface UserAd {

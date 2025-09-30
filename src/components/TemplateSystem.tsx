@@ -80,44 +80,46 @@ export const TemplateSystem = ({ onUseTemplate, onSaveAsTemplate, productName, p
     isSearchingFreepik 
   } = useCombinedTemplates();
 
-  // Convert Freepik templates to local Template format
-  const convertToLocalTemplate = (template: any): Template => ({
-    id: template.id,
-    name: template.name,
-    description: template.description || 'Professional ad template',
-    category: template.template_source === 'freepik' ? 'freepik' : 'internal',
-    platform: ['facebook', 'instagram', 'google'], // Default platforms
-    content: {
-      headline: template.schema?.fields?.find((f: any) => f.name === 'headline')?.default || 'Auto-generated headline',
-      description: template.schema?.fields?.find((f: any) => f.name === 'description')?.default || 'AI will fill this content',
-      cta: template.schema?.fields?.find((f: any) => f.name === 'cta')?.default || 'Learn More',
-      audience: 'General Audience',
-      visualStyle: 'Professional design'
-    },
-    performance: {
-      avgCtr: Math.round(Math.random() * 5 * 100) / 100, // Mock performance data
-      avgConversion: Math.round(Math.random() * 3 * 100) / 100,
-      usageCount: Math.floor(Math.random() * 100)
-    },
-    tags: template.template_source ? [template.template_source] : ['template'],
-    isPopular: Math.random() > 0.7, // Random popular flag
-    isFavorite: false,
-    createdAt: template.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
-    thumbnail: template.thumbnail_url || template.preview_url
-  });
+  // Convert database templates to local Template format
+  const convertToLocalTemplate = (template: any): Template => {
+    // Preserve the actual category from database or use template_source as fallback
+    const category = template.category || template.template_source || 'business';
+    
+    return {
+      id: template.id,
+      name: template.name,
+      description: template.description || 'Professional ad template',
+      category: category,
+      platform: ['facebook', 'instagram', 'google'], // Default platforms
+      content: {
+        headline: template.schema?.fields?.find((f: any) => f.name === 'headline')?.default || 'Click to customize',
+        description: template.schema?.fields?.find((f: any) => f.name === 'description')?.default || 'Add your compelling description here',
+        cta: template.schema?.fields?.find((f: any) => f.name === 'cta')?.default || 'Learn More',
+        audience: 'Target Audience',
+        visualStyle: 'Professional design'
+      },
+      performance: {
+        avgCtr: Math.round(Math.random() * 5 * 100) / 100,
+        avgConversion: Math.round(Math.random() * 3 * 100) / 100,
+        usageCount: Math.floor(Math.random() * 100)
+      },
+      tags: [category, template.template_source].filter(Boolean),
+      isPopular: Math.random() > 0.7,
+      isFavorite: false,
+      createdAt: template.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
+      thumbnail: template.thumbnail_url || template.preview_url
+    };
+  };
 
   const templates = allTemplates.map(convertToLocalTemplate);
 
   const categories = [
     { id: 'all', name: 'All Templates' },
-    { id: 'ecommerce', name: 'E-commerce' },
-    { id: 'app-promotion', name: 'App Promotion' },
-    { id: 'services', name: 'Services' },
-    { id: 'events', name: 'Events' },
-    { id: 'content', name: 'Content Marketing' },
-    { id: 'lead-gen', name: 'Lead Generation' },
+    { id: 'social_media', name: 'Social Media' },
+    { id: 'business', name: 'Business' },
+    { id: 'agency_marketing', name: 'Agency & Marketing' },
     { id: 'freepik', name: 'Freepik Templates' },
-    { id: 'internal', name: 'Internal Templates' },
+    { id: 'internal', name: 'File-Based Templates' },
   ];
 
   const platforms = [

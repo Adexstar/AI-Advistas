@@ -63,15 +63,12 @@ export const MultiTabSidebar: React.FC = () => {
     fetchTemplates();
   }, []);
 
-  // Combine all templates with proper typing
-  const allTemplates = [
-    ...(templates || []).map(t => ({ ...t, is_file_based: false, description: t.description || '', thumbnail_url: t.thumbnail_url })),
-    ...(fileBasedTemplates || []).map(t => ({ ...t, is_file_based: true, description: '', thumbnail_url: t.thumbnail_url }))
-  ];
+  // Use file-based templates from database directly
+  const allTemplates = fileBasedTemplates || [];
 
   const filteredTemplates = allTemplates.filter(template =>
-    template.name.toLowerCase().includes(templateSearchQuery.toLowerCase()) ||
-    template.description.toLowerCase().includes(templateSearchQuery.toLowerCase())
+    template.name?.toLowerCase().includes(templateSearchQuery.toLowerCase()) ||
+    (template.description || '')?.toLowerCase().includes(templateSearchQuery.toLowerCase())
   );
 
   const filteredUserAds = userAds?.filter(ad =>
@@ -188,32 +185,33 @@ export const MultiTabSidebar: React.FC = () => {
                 ) : filteredTemplates.length > 0 ? (
                   <div className="grid grid-cols-2 gap-2">
                     {filteredTemplates.map((template) => (
-                      <Card key={template.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
+                      <Card key={template.id} className="cursor-pointer hover:bg-muted/50 transition-colors group">
                         <CardContent className="p-2" onClick={() => loadTemplate(template as any)}>
-                          <div className="aspect-square bg-muted rounded mb-2 flex items-center justify-center">
-                            {(template as any).preview_url || (template as any).thumbnail_url ? (
+                          <div className="aspect-square bg-muted rounded mb-2 flex items-center justify-center overflow-hidden">
+                            {template.thumbnail_url || template.preview_url ? (
                               <img 
-                                src={(template as any).preview_url || (template as any).thumbnail_url} 
+                                src={template.thumbnail_url || template.preview_url} 
                                 alt={template.name}
-                                className="w-full h-full object-cover rounded"
+                                className="w-full h-full object-cover rounded group-hover:scale-105 transition-transform"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  e.currentTarget.parentElement!.innerHTML = '<div class="h-full w-full flex items-center justify-center"><svg class="h-8 w-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M9 9h6v6H9z"/></svg></div>';
+                                }}
                               />
                             ) : (
                               <Layout className="h-8 w-8 text-muted-foreground" />
                             )}
                           </div>
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs font-medium truncate flex-1">
+                          <div className="space-y-1">
+                            <div className="text-xs font-medium truncate">
                               {template.name}
                             </div>
-                            {template.is_file_based && (
-                              <Badge variant="secondary" className="text-xs ml-2">File</Badge>
+                            {template.description && (
+                              <div className="text-xs text-muted-foreground truncate">
+                                {template.description}
+                              </div>
                             )}
                           </div>
-                          {template.description && (
-                            <div className="text-xs text-muted-foreground truncate mt-1">
-                              {template.description}
-                            </div>
-                          )}
                         </CardContent>
                       </Card>
                     ))}
