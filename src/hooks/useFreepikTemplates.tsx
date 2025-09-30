@@ -17,6 +17,7 @@ export interface FreepikTemplate {
   schema: any;
   created_at: string;
   updated_at: string;
+  category?: string;
 }
 
 export interface FreepikSearchParams {

@@ -88,7 +88,8 @@ serve(async (req) => {
       template_source: 'internal',
       preview_url: urlData.publicUrl,
       thumbnail_url: urlData.publicUrl,
-      schema: processedData || {}
+      schema: processedData || {},
+      category: metadata.category || 'business'
     };
 
     const { data: template, error: templateError } = await supabaseClient

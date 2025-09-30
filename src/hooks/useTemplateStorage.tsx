@@ -17,6 +17,7 @@ export interface TemplateFile {
   thumbnail_url?: string;
   preview_url?: string;
   description?: string;
+  category?: string;
 }
 
 export interface UserAd {

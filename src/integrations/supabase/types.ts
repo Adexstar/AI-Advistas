@@ -192,6 +192,7 @@ export type Database = {
       templates: {
         Row: {
           cached_data: Json | null
+          category: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -212,6 +213,7 @@ export type Database = {
         }
         Insert: {
           cached_data?: Json | null
+          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -232,6 +234,7 @@ export type Database = {
         }
         Update: {
           cached_data?: Json | null
+          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
