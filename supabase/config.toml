@@ -73,3 +73,6 @@ verify_jwt = true
 
 [functions.process-freepik-psd]
 verify_jwt = true
+
+[functions.generate-ad-draft]
+verify_jwt = false

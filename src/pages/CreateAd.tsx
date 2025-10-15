@@ -17,6 +17,8 @@ import SocialMediaPreview from "@/components/ad/SocialMediaPreview";
 import { TemplateSystem } from "@/components/TemplateSystem";
 import { ABTestingInterface } from "@/components/ABTestingInterface";
 import { PerformancePrediction } from "@/components/PerformancePrediction";
+import QuickDraftPrompt from "@/components/ad/QuickDraftPrompt";
+import type { AdDraftResponse } from "@/schemas/adDraftSchema";
 
 const CreateAd = () => {
   const navigate = useNavigate();
@@ -39,6 +41,7 @@ const CreateAd = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState("create");
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showQuickDraft, setShowQuickDraft] = useState(true);
 
   // Form validation
   const formValidation = useFormValidation(formData, {
@@ -116,6 +119,7 @@ const CreateAd = () => {
       };
       setFormData(updatedData);
       formValidation.resetForm();
+      setShowQuickDraft(false);
     }
     if (state.selectedAd) {
       const updatedData = {
@@ -124,18 +128,40 @@ const CreateAd = () => {
       };
       setFormData(updatedData);
       formValidation.resetForm();
+      setShowQuickDraft(false);
     }
     
     // Try to restore from auto-save on component mount
     const restored = restoreFromAutoSave();
     if (restored && !state.selectedCampaign && !state.selectedAd) {
       setFormData(restored);
+      setShowQuickDraft(false);
       toast({
         title: "Draft Restored",
         description: "Your previous work has been restored from auto-save.",
       });
     }
   }, [state.selectedCampaign, state.selectedAd]);
+
+  const handleDraftGenerated = (draft: AdDraftResponse) => {
+    setFormData({
+      ...formData,
+      ...draft,
+    });
+    setShowQuickDraft(false);
+    
+    toast({
+      title: "AI Draft Generated! ✨",
+      description: "Your ad has been pre-filled. Review and customize it below.",
+    });
+    
+    // Scroll to top smoothly
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSkipQuickDraft = () => {
+    setShowQuickDraft(false);
+  };
 
   const handleGenerate = async () => {
     // Validate form before generating
@@ -210,6 +236,16 @@ const CreateAd = () => {
       setIsGenerating(false);
     }
   };
+
+  // Show Quick Draft prompt if user is starting fresh
+  if (showQuickDraft) {
+    return (
+      <QuickDraftPrompt
+        onDraftGenerated={handleDraftGenerated}
+        onSkip={handleSkipQuickDraft}
+      />
+    );
+  }
 
   return (
     <motion.div

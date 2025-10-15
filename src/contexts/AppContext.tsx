@@ -45,6 +45,12 @@ export interface AdContent {
   cta?: string;
   placementOptions?: Record<string, string[]>;
   simpleAudience?: string;
+  aiGenerated?: boolean;
+  aiMetadata?: {
+    suggestedHeadlines?: string[];
+    suggestedCTA?: string;
+    confidence?: number;
+  };
 }
 
 export interface AppState {

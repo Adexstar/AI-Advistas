@@ -212,23 +212,41 @@ const AdCreator = ({ formData, setFormData, onGenerate, isGenerating }: AdCreato
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="product">What are you advertising? *</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="product">What are you advertising? *</Label>
+              {formData.aiGenerated && (
+                <Badge variant="secondary" className="gap-1">
+                  <Wand2 className="h-3 w-3" />
+                  AI Generated
+                </Badge>
+              )}
+            </div>
             <Input
               id="product"
               placeholder="e.g., Fitness app, Organic skincare, Digital marketing course"
               value={formData.product}
               onChange={(e) => handleInputChange("product", e.target.value)}
+              className={formData.aiGenerated ? "bg-primary/5 border-primary/20" : ""}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="details">Key details or features *</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="details">Key details or features *</Label>
+              {formData.aiGenerated && (
+                <Badge variant="secondary" className="gap-1">
+                  <Wand2 className="h-3 w-3" />
+                  AI Generated
+                </Badge>
+              )}
+            </div>
             <Textarea
               id="details"
               placeholder="Describe the key features, benefits, and unique selling points of your product or service..."
               rows={4}
               value={formData.details}
               onChange={(e) => handleInputChange("details", e.target.value)}
+              className={formData.aiGenerated ? "bg-primary/5 border-primary/20" : ""}
             />
           </div>
 
@@ -440,12 +458,20 @@ const AdCreator = ({ formData, setFormData, onGenerate, isGenerating }: AdCreato
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="audience">Primary audience persona *</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="audience">Primary audience persona *</Label>
+              {formData.aiGenerated && (
+                <Badge variant="secondary" className="gap-1">
+                  <Wand2 className="h-3 w-3" />
+                  AI Generated
+                </Badge>
+              )}
+            </div>
             <Select
               value={formData.audience}
               onValueChange={(value) => handleInputChange("audience", value)}
             >
-              <SelectTrigger>
+              <SelectTrigger className={formData.aiGenerated ? "bg-primary/5 border-primary/20" : ""}>
                 <SelectValue placeholder="Select your target audience" />
               </SelectTrigger>
               <SelectContent>
