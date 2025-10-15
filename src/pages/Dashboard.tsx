@@ -39,6 +39,7 @@ import { TargetAudienceInsights } from "@/components/dashboard/TargetAudienceIns
 import { OptimizationTips } from "@/components/dashboard/OptimizationTips";
 import { AdPerformanceHeatmap } from "@/components/dashboard/AdPerformanceHeatmap";
 import { InteractiveDashboard } from "@/components/InteractiveDashboard";
+import { NextBestActionWidget } from "@/components/dashboard/NextBestActionWidget";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -296,6 +297,9 @@ const Dashboard = () => {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
+          {/* Next Best Actions Widget */}
+          <NextBestActionWidget />
+          
           {/* Customizable Dashboard */}
           <CustomizableDashboard />
           

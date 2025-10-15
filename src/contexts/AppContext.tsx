@@ -12,6 +12,11 @@ export interface Campaign {
   impressions: number;
   clicks: number;
   ctr: number;
+  conversions?: number;
+  cpa?: number;
+  cpc?: number;
+  roas?: number;
+  revenue?: number;
   startDate: string;
   endDate: string;
   createdAt: string;
