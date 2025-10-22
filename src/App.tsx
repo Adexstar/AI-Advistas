@@ -11,6 +11,7 @@ import DashboardLayout from "./components/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
 import Campaigns from "./pages/Campaigns";
 import CreateAd from "./pages/CreateAd";
+import CreateAdEntry from "./pages/CreateAdEntry";
 import Billing from "./pages/Billing";
 import Settings from "./pages/Settings";
 import VisualEditorPage from "./pages/VisualEditorPage";
@@ -85,6 +86,20 @@ const AppContent = () => {
                 <DashboardLayout />
               </ProtectedRoute>
             }>
+              <Route index element={<CreateAdEntry />} />
+            </Route>
+            <Route path="/ad-editor" element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<AdEditor />} />
+            </Route>
+            <Route path="/create-old" element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }>
               <Route index element={<CreateAd />} />
             </Route>
             <Route path="/billing" element={
@@ -119,7 +134,6 @@ const AppContent = () => {
               <Route index element={<CreateAd />} />
             </Route>
             <Route path="/visual-editor" element={<ProtectedRoute><VisualEditorPage /></ProtectedRoute>} />
-            <Route path="/ad-editor/:templateId" element={<ProtectedRoute><AdEditor /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

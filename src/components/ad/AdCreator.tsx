@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,14 +18,22 @@ interface AdCreatorProps {
   setFormData: (data: any) => void;
   onGenerate: () => void;
   isGenerating: boolean;
+  initialData?: Partial<any>;
 }
 
-const AdCreator = ({ formData, setFormData, onGenerate, isGenerating }: AdCreatorProps) => {
+const AdCreator = ({ formData, setFormData, onGenerate, isGenerating, initialData }: AdCreatorProps) => {
   const [dragActive, setDragActive] = useState(false);
   const [aiCampaign, setAiCampaign] = useState<AICampaignResponse | null>(null);
   const [showAISuggestions, setShowAISuggestions] = useState(false);
   
   const aiCampaignMutation = useAICampaign();
+
+  // Populate form with initial data when component mounts or initialData changes
+  useEffect(() => {
+    if (initialData) {
+      setFormData((prev: any) => ({ ...prev, ...initialData }));
+    }
+  }, [initialData, setFormData]);
 
   const platforms = [
     { id: "facebook", name: "Facebook", color: "bg-blue-100 text-blue-800 border-blue-200", icon: "📘" },
