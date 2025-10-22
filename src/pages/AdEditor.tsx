@@ -117,16 +117,15 @@ const AdEditor = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <Button variant="ghost" onClick={handleBack} className="mb-4">
-        <ArrowLeft className="h-4 w-4 mr-2" /> Back to {campaignId ? 'Campaigns' : 'Creation Options'}
+    <div className="p-4 md:p-6 max-w-5xl mx-auto">
+      <Button variant="ghost" onClick={handleBack} className="mb-4 text-primary">
+        <ArrowLeft className="h-4 w-4 mr-2" /> Back to Options
       </Button>
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>{getTitle()}</CardTitle>
-          <p className="text-sm text-muted-foreground">{getSubtitle()}</p>
-        </CardHeader>
-      </Card>
+      
+      <div className="mb-6">
+        <h1 className="text-xl font-bold mb-1">{getTitle()}</h1>
+        <p className="text-sm text-muted-foreground">{getSubtitle()}</p>
+      </div>
 
       <AdCreator 
         formData={formData}

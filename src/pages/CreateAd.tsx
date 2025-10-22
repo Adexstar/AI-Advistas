@@ -53,24 +53,26 @@ const CreateAd = () => {
   }
 
   return (
-    <div className="space-y-8 p-6 max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold tracking-tight text-center">How Would You Like to Create Your Ad?</h1>
-      <p className="text-lg text-muted-foreground text-center">Select the option that gets you to launch the fastest.</p>
+    <div className="space-y-6 p-4 md:p-6 max-w-4xl mx-auto">
+      <div className="text-center space-y-2">
+        <h1 className="text-2xl md:text-3xl font-bold">How Would You Like to Create Your Ad?</h1>
+        <p className="text-muted-foreground">Select the option that gets you to launch the fastest.</p>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card
           onClick={() => setMethod('AI_DRAFT')}
-          className="cursor-pointer hover:border-primary transition-all shadow-lg border-2 border-primary/20"
+          className="cursor-pointer hover:border-primary transition-all border-2 border-primary/20 hover:shadow-md"
         >
           <CardHeader>
             <Wand2 className="h-8 w-8 text-primary mb-2" />
-            <CardTitle>1. AI Quick Draft</CardTitle>
+            <CardTitle className="text-lg">1. AI Quick Draft</CardTitle>
           </CardHeader>
           <CardContent>
-            <CardDescription>
+            <CardDescription className="text-sm mb-4">
               Tell the AI your goal. We'll generate copy, audience, and placements instantly.
             </CardDescription>
-            <Button className="mt-4 w-full" variant="default">
+            <Button className="w-full" variant="default">
               Start with AI
             </Button>
           </CardContent>
@@ -78,17 +80,17 @@ const CreateAd = () => {
 
         <Card
           onClick={() => setMethod('TEMPLATE')}
-          className="cursor-pointer hover:border-secondary transition-all"
+          className="cursor-pointer hover:border-secondary transition-all hover:shadow-md"
         >
           <CardHeader>
             <LayoutTemplate className="h-8 w-8 text-secondary mb-2" />
-            <CardTitle>2. Use a Template</CardTitle>
+            <CardTitle className="text-lg">2. Use a Template</CardTitle>
           </CardHeader>
           <CardContent>
-            <CardDescription>
+            <CardDescription className="text-sm mb-4">
               Browse pre-designed layouts optimized for specific platforms and goals.
             </CardDescription>
-            <Button className="mt-4 w-full" variant="secondary">
+            <Button className="w-full" variant="secondary">
               Browse Templates
             </Button>
           </CardContent>
@@ -96,17 +98,17 @@ const CreateAd = () => {
 
         <Card
           onClick={handleStartFromScratch}
-          className="cursor-pointer hover:border-muted-foreground/50 transition-all"
+          className="cursor-pointer hover:border-muted-foreground/50 transition-all hover:shadow-md"
         >
           <CardHeader>
             <Square className="h-8 w-8 text-muted-foreground mb-2" />
-            <CardTitle>3. Start from Scratch</CardTitle>
+            <CardTitle className="text-lg">3. Start from Scratch</CardTitle>
           </CardHeader>
           <CardContent>
-            <CardDescription>
+            <CardDescription className="text-sm mb-4">
               Full control. Build your ad step-by-step with manual input for all settings.
             </CardDescription>
-            <Button className="mt-4 w-full" variant="outline">
+            <Button className="w-full" variant="outline">
               Manual Setup
             </Button>
           </CardContent>
