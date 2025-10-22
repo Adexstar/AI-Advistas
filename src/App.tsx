@@ -11,16 +11,10 @@ import DashboardLayout from "./components/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
 import Campaigns from "./pages/Campaigns";
 import CreateAd from "./pages/CreateAd";
-import Audience from "./pages/Audience";
 import Billing from "./pages/Billing";
-import LandingPages from "./pages/LandingPages";
 import Settings from "./pages/Settings";
-import AdSimulatorPage from "./pages/AdSimulatorPage";
 import VisualEditorPage from "./pages/VisualEditorPage";
-import TemplateLibrary from "./pages/TemplateLibrary";
 import AdEditor from "./pages/AdEditor";
-import MyAds from "./pages/MyAds";
-import AIAdEditor from "./pages/AIAdEditor";
 import { AuthProvider } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AppProvider } from "./contexts/AppContext";
@@ -28,19 +22,9 @@ import { AppProvider } from "./contexts/AppContext";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  // Global keyboard shortcuts
+  // Global keyboard shortcuts - simplified for core actions
   useKeyboardShortcuts({
     shortcuts: [
-      {
-        key: 'h',
-        ctrlKey: true,
-        shiftKey: true,
-        action: () => {
-          window.location.href = '/';
-        },
-        description: 'Go to home',
-        category: 'Navigation'
-      },
       {
         key: 'd',
         ctrlKey: true,
@@ -56,19 +40,19 @@ const AppContent = () => {
         ctrlKey: true,
         shiftKey: true,
         action: () => {
-          window.location.href = '/campaigns';
-        },
-        description: 'Go to campaigns',
-        category: 'Navigation'
-      },
-      {
-        key: 'n',
-        ctrlKey: true,
-        shiftKey: true,
-        action: () => {
           window.location.href = '/create';
         },
         description: 'Create new ad',
+        category: 'Navigation'
+      },
+      {
+        key: 'm',
+        ctrlKey: true,
+        shiftKey: true,
+        action: () => {
+          window.location.href = '/campaigns';
+        },
+        description: 'Manage campaigns',
         category: 'Navigation'
       }
     ]
@@ -103,13 +87,6 @@ const AppContent = () => {
             }>
               <Route index element={<CreateAd />} />
             </Route>
-            <Route path="/audience" element={
-              <ProtectedRoute>
-                <DashboardLayout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<Audience />} />
-            </Route>
             <Route path="/billing" element={
               <ProtectedRoute>
                 <DashboardLayout />
@@ -124,40 +101,25 @@ const AppContent = () => {
             }>
               <Route index element={<Settings />} />
             </Route>
-            <Route path="/templates" element={
-              <ProtectedRoute>
-                <TemplateLibrary />
-              </ProtectedRoute>
-            } />
-            <Route path="/ads" element={
-              <ProtectedRoute>
-                <MyAds />
-              </ProtectedRoute>
-            } />
-            <Route path="/visual-editor" element={
-              <ProtectedRoute>
-                <VisualEditorPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/simulator" element={
-              <ProtectedRoute>
-                <DashboardLayout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<AdSimulatorPage />} />
+            
+            {/* Redirects from old routes to new consolidated structure */}
+            <Route path="/templates" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route index element={<CreateAd />} />
             </Route>
-            <Route path="/ai-editor" element={
-              <ProtectedRoute>
-                <DashboardLayout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<AIAdEditor />} />
+            <Route path="/ads" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route index element={<Campaigns />} />
             </Route>
-            <Route path="/ad-editor/:templateId" element={
-              <ProtectedRoute>
-                <AdEditor />
-              </ProtectedRoute>
-            } />
+            <Route path="/audience" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route index element={<Campaigns />} />
+            </Route>
+            <Route path="/ai-editor" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route index element={<CreateAd />} />
+            </Route>
+            <Route path="/simulator" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route index element={<CreateAd />} />
+            </Route>
+            <Route path="/visual-editor" element={<ProtectedRoute><VisualEditorPage /></ProtectedRoute>} />
+            <Route path="/ad-editor/:templateId" element={<ProtectedRoute><AdEditor /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -24,17 +24,30 @@ const DashboardLayout = () => {
   const location = useLocation();
   const { signOut } = useAuth();
 
-  const navigationItems = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Template Library", href: "/templates", icon: Layout },
-    { name: "My Ads", href: "/ads", icon: FileImage },
-    { name: "Campaigns", href: "/campaigns", icon: Target },
-    { name: "Create Ad", href: "/create", icon: Plus },
-    { name: "AI Ad Editor", href: "/ai-editor", icon: Sparkles },
-    { name: "Audience", href: "/audience", icon: Users },
+  const mainNavigation = [
+    { 
+      name: "Dashboard", 
+      href: "/dashboard", 
+      icon: LayoutDashboard,
+      description: "Your command center and next steps"
+    },
+    { 
+      name: "Create Ad", 
+      href: "/create", 
+      icon: Plus,
+      description: "Launch a new ad instantly using AI Quick Draft"
+    },
+    { 
+      name: "Campaigns & Ads", 
+      href: "/campaigns", 
+      icon: Target,
+      description: "Manage, pause, or edit all running and past ads"
+    }
+  ];
+
+  const secondaryNavigation = [
     { name: "Billing", href: "/billing", icon: CreditCard },
-    { name: "Ad Simulator", href: "/simulator", icon: Edit },
-    { name: "Settings", href: "/settings", icon: Settings },
+    { name: "Settings", href: "/settings", icon: Settings }
   ];
 
   const isActivePath = (href: string) => location.pathname === href;
@@ -73,7 +86,7 @@ const DashboardLayout = () => {
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6">
             <ul className="space-y-2">
-              {navigationItems.map((item) => (
+              {mainNavigation.map((item) => (
                 <li key={item.name}>
                   <NavLink
                     to={item.href}
@@ -91,6 +104,30 @@ const DashboardLayout = () => {
                 </li>
               ))}
             </ul>
+            
+            {/* Secondary Navigation */}
+            <div className="pt-4 mt-4 border-t border-border">
+              <p className="text-xs font-semibold text-muted-foreground mb-2 px-3">Account</p>
+              <ul className="space-y-2">
+                {secondaryNavigation.map((item) => (
+                  <li key={item.name}>
+                    <NavLink
+                      to={item.href}
+                      className={({ isActive }) => cn(
+                        "flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors",
+                        isActive 
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                      )}
+                      onClick={() => setSidebarOpen(false)}
+                    >
+                      <item.icon className="mr-3 h-5 w-5" />
+                      {item.name}
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </nav>
 
           {/* User menu */}

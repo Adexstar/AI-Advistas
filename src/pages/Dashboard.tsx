@@ -1,388 +1,94 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useApp } from "@/contexts/AppContext";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { 
-  MousePointer, 
-  Target, 
-  DollarSign,
-  Calendar,
-  Calculator,
-  Layers,
-  Eye,
-  Users,
-  MapPin,
-  Globe,
-  Facebook,
-  Instagram,
-  Twitter,
-  Linkedin,
-  Activity,
-  Heart,
-  Search
-} from "lucide-react";
-import { SearchBar } from "@/components/SearchBar";
-import { PerformancePrediction } from "@/components/PerformancePrediction";
-import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-
-import { CustomizableDashboard } from "@/components/dashboard/CustomizableDashboard";
-import { OverviewCards } from "@/components/dashboard/OverviewCards";
-import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
-import { PlatformPerformance } from "@/components/dashboard/PlatformPerformance";
-import { AIRecommendations } from "@/components/dashboard/AIRecommendations";
-import { CampaignTools } from "@/components/dashboard/CampaignTools";
-import { AudienceInsights } from "@/components/dashboard/AudienceInsights";
-import { RecentCampaigns } from "@/components/dashboard/RecentCampaigns";
-import { TargetAudienceInsights } from "@/components/dashboard/TargetAudienceInsights";
-import { OptimizationTips } from "@/components/dashboard/OptimizationTips";
-import { AdPerformanceHeatmap } from "@/components/dashboard/AdPerformanceHeatmap";
-import { InteractiveDashboard } from "@/components/InteractiveDashboard";
-import { NextBestActionWidget } from "@/components/dashboard/NextBestActionWidget";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Plus, DollarSign, TrendingUp, AlertTriangle, Wand2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useApp } from '@/contexts/AppContext';
+import { NextBestActionWidget } from '@/components/dashboard/NextBestActionWidget';
+import { SimpleSummaryCard } from '@/components/dashboard/SimpleSummaryCard';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { state, actions } = useApp();
-  const [activeTab, setActiveTab] = useState("overview");
-  const [searchQuery, setSearchQuery] = useState("");
+  const { state } = useApp();
+  
+  const hasCampaigns = state.campaigns && state.campaigns.length > 0;
 
-  // Keyboard shortcuts
-  useKeyboardShortcuts({
-    shortcuts: [
-      {
-        key: 'd',
-        ctrlKey: true,
-        shiftKey: true,
-        action: () => {
-          setActiveTab("overview");
-        },
-        description: 'Go to dashboard',
-        category: 'Navigation'
-      },
-      {
-        key: 't',
-        ctrlKey: true,
-        shiftKey: true,
-        action: () => {
-          setActiveTab("tools");
-        },
-        description: 'Go to tools',
-        category: 'Navigation'
-      },
-      {
-        key: 'i',
-        ctrlKey: true,
-        shiftKey: true,
-        action: () => {
-          setActiveTab("insights");
-        },
-        description: 'Go to insights',
-        category: 'Navigation'
-      }
-    ]
-  });
+  // Calculate key metrics
+  const totalSpent = state.campaigns.reduce((acc, c) => acc + c.spent, 0);
+  const totalRevenue = state.campaigns.reduce((acc, c) => acc + (c.revenue || 0), 0);
+  const avgROAS = totalSpent > 0 ? (totalRevenue / totalSpent).toFixed(2) : '0.00';
+  const criticalActions = 0; // Will be populated by NBA widget
 
-  // Calculate dynamic stats from app state
-  const totalImpressions = state.campaigns.reduce((acc, campaign) => acc + campaign.impressions, 0);
-  const totalClicks = state.campaigns.reduce((acc, campaign) => acc + campaign.clicks, 0);
-  const totalSpent = state.campaigns.reduce((acc, campaign) => acc + campaign.spent, 0);
-  const avgCTR = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
-
-  const overviewStats = [
-    { 
-      title: "Total Impressions", 
-      value: `${(totalImpressions / 1000).toFixed(1)}K`, 
-      change: "+12.5%", 
-      icon: Eye, 
-      trend: "up" as const,
-      bg: "bg-primary/10",
-      color: "text-primary"
-    },
-    { 
-      title: "Total Clicks", 
-      value: `${(totalClicks / 1000).toFixed(1)}K`, 
-      change: "+8.2%", 
-      icon: MousePointer, 
-      trend: "up" as const,
-      bg: "bg-blue-500/10",
-      color: "text-blue-600"
-    },
-    { 
-      title: "Conversion Rate", 
-      value: `${avgCTR.toFixed(1)}%`, 
-      change: "+0.6%", 
-      icon: Target, 
-      trend: "up" as const,
-      bg: "bg-green-500/10",
-      color: "text-green-600"
-    },
-    { 
-      title: "Total Spent", 
-      value: `$${totalSpent.toLocaleString()}`, 
-      change: "+15.3%", 
-      icon: DollarSign, 
-      trend: "up" as const,
-      bg: "bg-purple-500/10",
-      color: "text-purple-600"
-    },
-  ];
-
-  // Platform performance data
-  const platformPerformance = [
-    { platform: "Facebook", icon: Facebook, color: "text-blue-600", performance: 85, revenue: "$8,450", ctr: "2.8%" },
-    { platform: "Instagram", icon: Instagram, color: "text-pink-600", performance: 92, revenue: "$6,720", ctr: "3.2%" },
-    { platform: "Google Ads", icon: Globe, color: "text-red-600", performance: 78, revenue: "$5,890", ctr: "2.1%" },
-    { platform: "Twitter", icon: Twitter, color: "text-blue-400", performance: 71, revenue: "$2,340", ctr: "1.9%" },
-    { platform: "LinkedIn", icon: Linkedin, color: "text-blue-700", performance: 88, revenue: "$1,490", ctr: "4.1%" },
-  ];
-
-  // Use real campaigns from app state
-  const recentCampaigns = state.campaigns.slice(0, 3).map(campaign => ({
-    id: campaign.id,
-    name: campaign.name,
-    status: campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1),
-    platform: campaign.platform.join(", "),
-    ctr: `${campaign.ctr}%`,
-    impressions: `${(campaign.impressions / 1000).toFixed(1)}K`,
-    budget: `$${campaign.budget.toLocaleString()}`,
-    spent: `$${campaign.spent.toLocaleString()}`,
-    thumbnail: campaign.name.includes('Summer') ? '🏖️' : 
-               campaign.name.includes('Product') ? '🚀' : 
-               campaign.name.includes('Brand') ? '✨' : '📊'
-  }));
-
-  // Generate AI Recommendations based on actual data
-  const generateRecommendations = () => {
-    const recommendations = [];
-    
-    // Find best performing platform
-    const bestPlatform = platformPerformance.reduce((best, current) => 
-      current.performance > best.performance ? current : best
+  // Empty State for New Users
+  if (!hasCampaigns) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
+        <Wand2 className="h-16 w-16 text-primary mb-4" />
+        <h1 className="text-4xl font-bold mb-2">Ready to Launch Your First Ad?</h1>
+        <p className="text-lg text-muted-foreground mb-8 max-w-md">
+          The fastest way to start is with our AI Quick Draft system. Describe your ad in plain language, and we'll handle the rest.
+        </p>
+        <Button size="lg" onClick={() => navigate('/create')} className="text-lg">
+          <Plus className="h-6 w-6 mr-2" /> Start Creating an Ad Now
+        </Button>
+      </div>
     );
-    
-    if (bestPlatform.performance > 85) {
-      recommendations.push({
-        type: "Performance",
-        title: `Increase ${bestPlatform.platform} Budget`,
-        description: `${bestPlatform.platform} is outperforming other platforms. Consider reallocating 20% more budget.`,
-        impact: "High" as const,
-        color: "text-green-600",
-        action: () => navigate('/campaigns')
-      });
-    }
+  }
 
-    // Check for low performing campaigns
-    const lowPerformingCampaigns = state.campaigns.filter(c => c.ctr < 2.0);
-    if (lowPerformingCampaigns.length > 0) {
-      recommendations.push({
-        type: "Creative",
-        title: "Optimize Low-CTR Campaigns",
-        description: `${lowPerformingCampaigns.length} campaigns have CTR below 2%. Consider updating headlines and visuals.`,
-        impact: "High" as const,
-        color: "text-red-600",
-        action: () => navigate('/create-ad')
-      });
-    }
-
-    recommendations.push({
-      type: "Strategy",
-      title: "A/B Test Landing Pages",
-      description: "Consider testing multiple landing page variants to improve conversion rates.",
-      impact: "Medium" as const,
-      color: "text-yellow-600",
-      action: () => navigate('/landing-pages')
-    });
-
-    return recommendations;
-  };
-
-  const aiRecommendations = generateRecommendations();
-
-  // Campaign Tools with enhanced descriptions
-  const campaignTools = [
-    { 
-      title: "Ad Scheduler", 
-      description: "Plan and automate campaign timing with AI-optimized scheduling", 
-      icon: Calendar,
-      features: ["Smart scheduling", "Timezone optimization", "Recurring campaigns"],
-      color: "bg-blue-500/5 border-blue-200"
-    },
-    { 
-      title: "Budget Estimator", 
-      description: "Calculate optimal budget allocation across platforms with ROI predictions", 
-      icon: Calculator,
-      features: ["ROI forecasting", "Platform comparison", "Cost optimization"],
-      color: "bg-green-500/5 border-green-200"
-    },
-    { 
-      title: "Platform Manager", 
-      description: "Manage all advertising platforms from a unified dashboard", 
-      icon: Layers,
-      features: ["Multi-platform sync", "Performance comparison", "Unified reporting"],
-      color: "bg-purple-500/5 border-purple-200"
-    },
-    { 
-      title: "Creative Studio", 
-      description: "AI-powered ad creation with real-time platform previews", 
-      icon: Eye,
-      features: ["AI content generation", "Platform optimization", "A/B testing"],
-      color: "bg-orange-500/5 border-orange-200"
-    },
-  ];
-
-  // Audience Insights with detailed analytics
-  const audienceInsights = [
-    { 
-      title: "Demographics", 
-      description: "Comprehensive age, gender, and income analysis", 
-      icon: Users,
-      data: "4 key segments identified",
-      color: "bg-indigo-500/5 border-indigo-200"
-    },
-    { 
-      title: "Geographic Data", 
-      description: "Location-based performance with city-level insights", 
-      icon: MapPin,
-      data: "Top 3 markets: NY, CA, TX",
-      color: "bg-cyan-500/5 border-cyan-200"
-    },
-    { 
-      title: "Behavioral Analytics", 
-      description: "User engagement patterns and conversion paths", 
-      icon: Activity,
-      data: "85% mobile engagement",
-      color: "bg-emerald-500/5 border-emerald-200"
-    },
-    { 
-      title: "Interest Mapping", 
-      description: "Category preferences and purchase intent analysis", 
-      icon: Heart,
-      data: "12 interest categories",
-      color: "bg-rose-500/5 border-rose-200"
-    },
-  ];
-
+  // Action-Oriented Dashboard View
   return (
-    <div className="space-y-6 max-w-full">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      
+      {/* Header with Primary CTA */}
+      <div className="flex justify-between items-center pb-4 border-b border-border">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back! Here's your advertising performance overview.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Command Center</h1>
+          <p className="text-muted-foreground mt-1">
+            Your performance snapshot and recommended actions
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <SearchBar
-            onSearch={(query) => {
-              setSearchQuery(query);
-              // Quick search - navigate to campaigns with search applied
-              if (query.trim()) {
-                navigate(`/campaigns?search=${encodeURIComponent(query)}`);
-              }
-            }}
-            placeholder="Quick search campaigns, ads..."
-            className="w-80"
-          />
-          <Button variant="outline" size="sm">
-            <Calendar className="h-4 w-4 mr-2" />
-            Last 30 days
-          </Button>
-        </div>
+        <Button size="lg" onClick={() => navigate('/create')} className="min-w-[200px] shadow-lg">
+          <Plus className="h-5 w-5 mr-2" /> Create New Ad
+        </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overview">Main Dashboard</TabsTrigger>
-          <TabsTrigger value="tools">Campaign Tools</TabsTrigger>
-          <TabsTrigger value="insights">Audience Insights</TabsTrigger>
-        </TabsList>
+      {/* 3 Key Metrics Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <SimpleSummaryCard 
+          title="Total Spend (Today)" 
+          value={`$${totalSpent.toFixed(2)}`}
+          icon={DollarSign} 
+          trend="Live performance tracking"
+        />
+        <SimpleSummaryCard 
+          title="ROAS (Last 7 Days)" 
+          value={avgROAS}
+          icon={TrendingUp} 
+          trend={parseFloat(avgROAS) > 2 ? "Performing well" : "Room for improvement"}
+          variant={parseFloat(avgROAS) > 2 ? 'success' : 'default'}
+        />
+        <SimpleSummaryCard 
+          title="Critical Alerts" 
+          value={criticalActions}
+          icon={AlertTriangle} 
+          trend="Check recommendations below"
+          variant={criticalActions > 0 ? 'warning' : 'default'}
+        />
+      </div>
 
-        <TabsContent value="overview" className="space-y-6">
-          {/* Next Best Actions Widget */}
-          <NextBestActionWidget />
-          
-          {/* Customizable Dashboard */}
-          <CustomizableDashboard />
-          
-          {/* Performance Prediction Tool */}
-          <div className="grid gap-6 md:grid-cols-2">
-            <InteractiveDashboard />
-            <PerformancePrediction
-              campaignData={{
-                product: "Sample Product",
-                details: "Sample ad details",
-                websiteUrl: "https://example.com",
-                adType: "image",
-                platforms: ["Facebook", "Instagram"],
-                audience: "18-35",
-                mediaUrl: "",
-                mediaType: "image"
-              }}
-              adData={{
-                name: "Sample Ad",
-                format: "image",
-                status: "active"
-              }}
-            />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="tools" className="space-y-6">
-          <CampaignTools 
-            tools={campaignTools}
-            onToolClick={(toolTitle) => {
-              if (toolTitle === 'Creative Studio') navigate('/create-ad');
-              else if (toolTitle === 'Platform Manager') navigate('/campaigns');
-              else if (toolTitle === 'Ad Scheduler') navigate('/campaigns');
-              else if (toolTitle === 'Budget Estimator') navigate('/billing');
-            }}
-          />
-          
-          {/* Performance Prediction Tool */}
-          <Card>
-            <CardHeader>
-              <CardTitle>AI Performance Predictor</CardTitle>
-              <CardDescription>
-                Get AI-powered predictions for your ad campaigns before launching
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <PerformancePrediction
-                campaignData={{
-                  product: "Sample Product",
-                  details: "Sample ad details",
-                  websiteUrl: "https://example.com",
-                  adType: "image",
-                  platforms: ["Facebook", "Instagram"],
-                  audience: "18-35",
-                  mediaUrl: "",
-                  mediaType: "image"
-                }}
-                adData={{
-                  name: "Sample Ad",
-                  format: "image",
-                  status: "active"
-                }}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="insights" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <AudienceInsights insights={audienceInsights} />
-            <TargetAudienceInsights />
-          </div>
-
-          <div className="grid grid-cols-1 gap-5">
-            <PlatformPerformance platforms={platformPerformance} />
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <OptimizationTips />
-            <AdPerformanceHeatmap />
-          </div>
-        </TabsContent>
-      </Tabs>
+      {/* Next Best Actions Widget */}
+      <NextBestActionWidget />
+      
+      {/* Quick Link to Full Management */}
+      <Card className="bg-muted/30">
+        <CardContent className="flex justify-between items-center p-4">
+          <p className="text-md font-medium text-muted-foreground">
+            Looking for detailed charts or full campaign list?
+          </p>
+          <Button variant="link" onClick={() => navigate('/campaigns')}>
+            Go to Campaigns & Ads Management →
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 };
