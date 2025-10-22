@@ -17,6 +17,7 @@ const AdEditor = () => {
   const initialData = locationState.initialData || {};
   const isAI = locationState.isAI || false;
   const templateId = locationState.templateId;
+  const isTemplate = locationState.isTemplate || false;
   const isScratch = locationState.isScratch || false;
 
   const [formData, setFormData] = useState<AdContent>({
@@ -86,14 +87,14 @@ const AdEditor = () => {
   const getTitle = () => {
     if (campaignId) return `Edit Campaign: ${campaignId}`;
     if (isAI) return 'Review & Refine AI Ad Draft';
-    if (templateId) return 'Customize Template Ad';
+    if (templateId || isTemplate) return `Customize Template: ${locationState.initialData?.templateName || 'Template Ad'}`;
     return 'New Ad Setup';
   };
 
   const getSubtitle = () => {
     if (campaignId) return 'Make changes to your live campaign settings.';
     if (isAI) return 'AI has pre-filled the form. Simply review the copy, audience, and placements.';
-    if (templateId) return 'This template is loaded with proven content. Customize it to match your needs.';
+    if (templateId || isTemplate) return 'This template is loaded with proven content. Customize it to match your needs.';
     return 'Fill in the details to launch your ad campaign.';
   };
 

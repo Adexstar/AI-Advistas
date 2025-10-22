@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Upload, Zap, MapPin, Wand2, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, Zap, MapPin, Wand2, AlertCircle, Loader2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface AdCreatorProps {
@@ -47,6 +47,9 @@ const LivePreview = ({ formData }: { formData: any }) => (
 
 const AdCreator = ({ formData, setFormData, onGenerate, isGenerating, initialData }: AdCreatorProps) => {
   const [dragActive, setDragActive] = useState(false);
+  
+  const isAI = initialData?.isAI || false;
+  const isTemplate = initialData?.isTemplate || false;
 
   useEffect(() => {
     if (initialData) {
@@ -57,6 +60,18 @@ const AdCreator = ({ formData, setFormData, onGenerate, isGenerating, initialDat
   const handleInputChange = (field: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [field]: value }));
   };
+  
+  const AIBadge = () => isAI && (
+    <Badge className="ml-2 bg-primary/10 text-primary hover:bg-primary/20 transition">
+      <Wand2 className="h-3 w-3 mr-1" /> AI Generated
+    </Badge>
+  );
+  
+  const TemplateBadge = () => isTemplate && (
+    <Badge className="ml-2 bg-secondary/10 text-secondary hover:bg-secondary/20 transition">
+      <FileText className="h-3 w-3 mr-1" /> From Template
+    </Badge>
+  );
 
   const handleFileUpload = (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -106,13 +121,6 @@ const AdCreator = ({ formData, setFormData, onGenerate, isGenerating, initialDat
     onGenerate();
   };
 
-  const isAI = formData.aiGenerated || initialData?.aiGenerated;
-  const AIBadge = () => isAI ? (
-    <Badge className="ml-2 bg-primary/10 text-primary hover:bg-primary/20">
-      <Wand2 className="h-3 w-3 mr-1" /> AI Generated
-    </Badge>
-  ) : null;
-
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* LEFT COLUMN: Input Sections (2/3 width) */}
@@ -129,7 +137,7 @@ const AdCreator = ({ formData, setFormData, onGenerate, isGenerating, initialDat
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="product" className="flex items-center">
-                What are you advertising? * <AIBadge />
+                What are you advertising? * <AIBadge /> <TemplateBadge />
               </Label>
               <Input 
                 id="product"
@@ -142,7 +150,7 @@ const AdCreator = ({ formData, setFormData, onGenerate, isGenerating, initialDat
             
             <div className="space-y-2">
               <Label htmlFor="details" className="flex items-center">
-                Key Details or Features * <AIBadge />
+                Key Details or Features * <AIBadge /> <TemplateBadge />
               </Label>
               <Textarea 
                 id="details"

@@ -2,82 +2,68 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, FileText } from 'lucide-react';
+import { Loader2, FileText, AlertTriangle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-
-interface TemplateData {
-  templateId: string;
-  name: string;
-  description: string;
-  goal: 'Conversion' | 'Awareness' | 'Traffic' | 'Engagement';
-  platforms: string[];
-  isPopular: boolean;
-  initialForm: any;
-}
-
-const mockTemplates: TemplateData[] = [
-  {
-    templateId: 'temp-1',
-    name: 'E-commerce Sale Blitz',
-    description: 'Optimized for quick purchases with clear CTAs and urgency.',
-    goal: 'Conversion',
-    platforms: ['Facebook', 'Instagram'],
-    isPopular: false,
-    initialForm: { product: 'E-commerce Product', details: 'Limited time sale with exclusive discounts', adType: 'image', platforms: ['facebook', 'instagram'], websiteUrl: 'https://shop.com' }
-  },
-  {
-    templateId: 'temp-2',
-    name: 'TikTok Viral Video',
-    description: 'Short-form video template built for high retention and shareability on TikTok/Reels.',
-    goal: 'Engagement',
-    platforms: ['TikTok', 'Instagram'],
-    isPopular: true,
-    initialForm: { product: 'App Promotion', details: 'Engaging short-form video content designed for virality', adType: 'video', platforms: ['tiktok', 'instagram'] }
-  },
-  {
-    templateId: 'temp-3',
-    name: 'B2B Lead Generation',
-    description: 'Professional layout optimized for collecting high-quality leads on LinkedIn.',
-    goal: 'Traffic',
-    platforms: ['LinkedIn', 'Google'],
-    isPopular: false,
-    initialForm: { product: 'Service Offer', details: 'Professional B2B solution for enterprise clients', adType: 'image', platforms: ['linkedin', 'google'] }
-  },
-];
+import { useTemplates, AdTemplate, useTrackTemplateUsage } from '@/hooks/useTemplates';
 
 interface TemplateBrowserProps {
-  onTemplateSelect: (templateData: TemplateData) => void;
+  onTemplateSelect: (templateData: any) => void;
 }
 
 const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
-  const [isLoading, setIsLoading] = useState(false);
+  const { data: templates, isLoading, error } = useTemplates();
+  const trackUsage = useTrackTemplateUsage();
   const [search, setSearch] = useState('');
   const [filterGoal, setFilterGoal] = useState('all');
 
-  const filteredTemplates = mockTemplates.filter(t =>
-    t.name.toLowerCase().includes(search.toLowerCase()) &&
-    (filterGoal === 'all' || t.goal === filterGoal)
-  );
+  const filteredTemplates = (templates || []).filter(template => {
+    const matchesSearch = template.name.toLowerCase().includes(search.toLowerCase()) ||
+                         template.description?.toLowerCase().includes(search.toLowerCase());
+    const matchesGoal = filterGoal === 'all' || template.goal === filterGoal;
+    
+    return matchesSearch && matchesGoal;
+  });
 
-  const handleTemplateClick = (template: TemplateData) => {
-    setIsLoading(true);
-    setTimeout(() => {
-      onTemplateSelect(template);
-      setIsLoading(false);
-    }, 300);
+  const handleTemplateClick = (template: AdTemplate) => {
+    trackUsage.mutate(template.id);
+    
+    onTemplateSelect({
+      ...template.template_json,
+      templateId: template.id,
+      templateName: template.name,
+      isTemplate: true,
+    });
   };
 
   if (isLoading) {
     return (
       <Card className="min-h-[300px] flex flex-col items-center justify-center">
         <Loader2 className="h-8 w-8 text-primary animate-spin mb-4" />
-        <p className="text-lg font-medium">Loading Template...</p>
-        <p className="text-sm text-muted-foreground">Preparing proven content and layouts.</p>
+        <p className="text-lg font-medium">Loading Templates...</p>
+        <p className="text-sm text-muted-foreground">Fetching proven layouts from the library.</p>
       </Card>
     );
   }
 
-  const getGoalBadgeColor = (goal: string) => {
+  if (error) {
+    return (
+      <Card className="min-h-[300px] flex flex-col items-center justify-center border-destructive/50 bg-destructive/5">
+        <AlertTriangle className="h-8 w-8 text-destructive mb-4" />
+        <p className="text-lg font-medium text-destructive">Failed to Load Templates</p>
+        <p className="text-sm text-muted-foreground mb-4 text-center max-w-md">
+          {error.message || 'Please check your network connection or try again later.'}
+        </p>
+        <Button 
+          variant="outline" 
+          onClick={() => window.location.reload()}
+        >
+          Retry
+        </Button>
+      </Card>
+    );
+  }
+
+  const getGoalBadgeColor = (goal: string | null) => {
     switch (goal) {
       case 'Conversion':
         return 'bg-emerald-100 text-emerald-600';
@@ -135,24 +121,26 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
       <div className="space-y-4">
         {filteredTemplates.map((template) => (
           <div 
-            key={template.templateId} 
+            key={template.id} 
             onClick={() => handleTemplateClick(template)}
             className="border border-border rounded-xl p-4 cursor-pointer bg-card hover:border-primary hover:shadow-lg transition-all"
           >
             <div className="flex justify-between items-start mb-2">
               <h2 className="text-lg font-semibold">{template.name}</h2>
               <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getGoalBadgeColor(template.goal)}`}>
-                {template.goal}
+                {template.goal || 'General'}
               </span>
             </div>
-            <p className="text-sm text-muted-foreground my-2">{template.description}</p>
+            <p className="text-sm text-muted-foreground my-2">
+              {template.description || 'No description available'}
+            </p>
             <div className="flex items-center gap-3 text-xs text-muted-foreground mt-3">
               <span className="flex items-center gap-1">
                 <span className={`w-2 h-2 rounded-full ${getPlatformDotColor(template.platforms)}`}></span>
                 {template.platforms.join(', ')}
               </span>
               <span>|</span>
-              <span>Used {template.isPopular ? '1.2K+' : '450+'} times</span>
+              <span>Used {template.is_popular ? '1.2K+' : '450+'} times</span>
             </div>
             <Button className="w-full mt-4 bg-primary text-primary-foreground hover:bg-primary/90">
               Load & Customize Template
@@ -161,8 +149,16 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
         ))}
       </div>
       
-      {filteredTemplates.length === 0 && (
-        <div className="text-center p-8 text-muted-foreground">No templates found matching your criteria.</div>
+      {filteredTemplates.length === 0 && templates && templates.length > 0 && (
+        <div className="text-center p-8 text-muted-foreground">
+          No templates match your search criteria. Try different keywords or filters.
+        </div>
+      )}
+
+      {templates && templates.length === 0 && (
+        <div className="text-center p-8 text-muted-foreground">
+          No templates available yet. Check back soon!
+        </div>
       )}
     </div>
   );

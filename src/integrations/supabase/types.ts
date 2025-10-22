@@ -38,6 +38,51 @@ export type Database = {
         }
         Relationships: []
       }
+      ad_templates: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          goal: string | null
+          id: string
+          is_popular: boolean | null
+          name: string
+          platforms: string[]
+          tags: string[] | null
+          template_json: Json
+          updated_at: string
+          usage_count: number | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          goal?: string | null
+          id?: string
+          is_popular?: boolean | null
+          name: string
+          platforms?: string[]
+          tags?: string[] | null
+          template_json?: Json
+          updated_at?: string
+          usage_count?: number | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          goal?: string | null
+          id?: string
+          is_popular?: boolean | null
+          name?: string
+          platforms?: string[]
+          tags?: string[] | null
+          template_json?: Json
+          updated_at?: string
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       ads: {
         Row: {
           content: Json
@@ -361,7 +406,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_template_usage: {
+        Args: { template_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
