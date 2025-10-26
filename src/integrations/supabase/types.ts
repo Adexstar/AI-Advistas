@@ -43,10 +43,14 @@ export type Database = {
           category: string | null
           created_at: string
           description: string | null
+          difficulty_level: string | null
+          estimated_setup_time_minutes: number | null
           goal: string | null
           id: string
+          industry: string | null
           is_popular: boolean | null
           name: string
+          performance_score: number | null
           platforms: string[]
           tags: string[] | null
           template_json: Json
@@ -57,10 +61,14 @@ export type Database = {
           category?: string | null
           created_at?: string
           description?: string | null
+          difficulty_level?: string | null
+          estimated_setup_time_minutes?: number | null
           goal?: string | null
           id?: string
+          industry?: string | null
           is_popular?: boolean | null
           name: string
+          performance_score?: number | null
           platforms?: string[]
           tags?: string[] | null
           template_json?: Json
@@ -71,10 +79,14 @@ export type Database = {
           category?: string | null
           created_at?: string
           description?: string | null
+          difficulty_level?: string | null
+          estimated_setup_time_minutes?: number | null
           goal?: string | null
           id?: string
+          industry?: string | null
           is_popular?: boolean | null
           name?: string
+          performance_score?: number | null
           platforms?: string[]
           tags?: string[] | null
           template_json?: Json

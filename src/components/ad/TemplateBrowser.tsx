@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, FileText, AlertTriangle } from 'lucide-react';
+import { Loader2, FileText, AlertTriangle, Zap, Clock, Target } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useTemplates, AdTemplate, useTrackTemplateUsage } from '@/hooks/useTemplates';
 
 interface TemplateBrowserProps {
@@ -15,14 +16,28 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
   const trackUsage = useTrackTemplateUsage();
   const [search, setSearch] = useState('');
   const [filterGoal, setFilterGoal] = useState('all');
+  const [filterIndustry, setFilterIndustry] = useState('all');
+  const [filterDifficulty, setFilterDifficulty] = useState('all');
 
-  const filteredTemplates = (templates || []).filter(template => {
-    const matchesSearch = template.name.toLowerCase().includes(search.toLowerCase()) ||
-                         template.description?.toLowerCase().includes(search.toLowerCase());
-    const matchesGoal = filterGoal === 'all' || template.goal === filterGoal;
-    
-    return matchesSearch && matchesGoal;
-  });
+  const filteredTemplates = (templates || [])
+    .filter(template => {
+      const matchesSearch = template.name.toLowerCase().includes(search.toLowerCase()) ||
+                           template.description?.toLowerCase().includes(search.toLowerCase());
+      const matchesGoal = filterGoal === 'all' || template.goal === filterGoal;
+      const matchesIndustry = filterIndustry === 'all' || template.industry === filterIndustry;
+      const matchesDifficulty = filterDifficulty === 'all' || template.difficulty_level === filterDifficulty;
+      
+      return matchesSearch && matchesGoal && matchesIndustry && matchesDifficulty;
+    })
+    .sort((a, b) => {
+      // Sort by performance score (high to low), then by popularity, then by name
+      if (a.performance_score && b.performance_score) {
+        return b.performance_score - a.performance_score;
+      }
+      if (a.is_popular && !b.is_popular) return -1;
+      if (!a.is_popular && b.is_popular) return 1;
+      return a.name.localeCompare(b.name);
+    });
 
   const handleTemplateClick = (template: AdTemplate) => {
     trackUsage.mutate(template.id);
@@ -31,6 +46,10 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
       ...template.template_json,
       templateId: template.id,
       templateName: template.name,
+      performanceScore: template.performance_score,
+      difficultyLevel: template.difficulty_level,
+      setupTime: template.estimated_setup_time_minutes,
+      industry: template.industry,
       isTemplate: true,
     });
   };
@@ -96,25 +115,67 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
       <h1 className="text-xl font-bold">Choose a High-Performing Template</h1>
 
       {/* Filter/Search Bar */}
-      <div className="flex gap-2">
+      <div className="space-y-3">
         <Input
           placeholder="Search templates..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 text-sm"
+          className="w-full text-sm"
         />
-        <Select value={filterGoal} onValueChange={setFilterGoal}>
-          <SelectTrigger className="w-[140px] text-sm">
-            <SelectValue placeholder="All Goals" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Goals</SelectItem>
-            <SelectItem value="Conversion">Conversion</SelectItem>
-            <SelectItem value="Awareness">Awareness</SelectItem>
-            <SelectItem value="Traffic">Traffic</SelectItem>
-            <SelectItem value="Engagement">Engagement</SelectItem>
-          </SelectContent>
-        </Select>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <Select value={filterGoal} onValueChange={setFilterGoal}>
+            <SelectTrigger className="text-sm">
+              <SelectValue placeholder="All Goals" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Goals</SelectItem>
+              <SelectItem value="Conversion">Conversion</SelectItem>
+              <SelectItem value="Awareness">Awareness</SelectItem>
+              <SelectItem value="Traffic">Traffic</SelectItem>
+              <SelectItem value="Engagement">Engagement</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterIndustry} onValueChange={setFilterIndustry}>
+            <SelectTrigger className="text-sm">
+              <SelectValue placeholder="All Industries" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Industries</SelectItem>
+              <SelectItem value="retail">Retail</SelectItem>
+              <SelectItem value="saas">SaaS</SelectItem>
+              <SelectItem value="b2b">B2B</SelectItem>
+              <SelectItem value="consumer_brands">Consumer Brands</SelectItem>
+              <SelectItem value="lifestyle">Lifestyle</SelectItem>
+              <SelectItem value="mobile_apps">Mobile Apps</SelectItem>
+              <SelectItem value="services">Services</SelectItem>
+              <SelectItem value="e-commerce">E-commerce</SelectItem>
+              <SelectItem value="social_media">Social Media</SelectItem>
+              <SelectItem value="app">Mobile Apps</SelectItem>
+              <SelectItem value="local_business">Local Business</SelectItem>
+              <SelectItem value="video_marketing">Video Marketing</SelectItem>
+              <SelectItem value="events">Events</SelectItem>
+              <SelectItem value="influencer_marketing">Influencer Marketing</SelectItem>
+              <SelectItem value="display">Display Advertising</SelectItem>
+              <SelectItem value="product_demo">Product Demo</SelectItem>
+              <SelectItem value="product_launch">Product Launch</SelectItem>
+              <SelectItem value="all_industries">All Industries</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
+            <SelectTrigger className="text-sm">
+              <SelectValue placeholder="All Levels" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Levels</SelectItem>
+              <SelectItem value="beginner">Beginner</SelectItem>
+              <SelectItem value="intermediate">Intermediate</SelectItem>
+              <SelectItem value="advanced">Advanced</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Template List */}
@@ -127,21 +188,61 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
           >
             <div className="flex justify-between items-start mb-2">
               <h2 className="text-lg font-semibold">{template.name}</h2>
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getGoalBadgeColor(template.goal)}`}>
-                {template.goal || 'General'}
-              </span>
+              <div className="flex flex-col gap-1.5">
+                {template.performance_score && template.performance_score >= 90 && (
+                  <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 text-xs">
+                    <Zap className="w-3 h-3 mr-1" />
+                    High Performer
+                  </Badge>
+                )}
+                {template.difficulty_level === 'beginner' && (
+                  <Badge className="bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20 text-xs">
+                    Beginner Friendly
+                  </Badge>
+                )}
+                {template.is_popular && (
+                  <Badge className="bg-primary/10 text-primary border-primary/20 text-xs">
+                    Popular
+                  </Badge>
+                )}
+              </div>
             </div>
             <p className="text-sm text-muted-foreground my-2">
               {template.description || 'No description available'}
             </p>
-            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-3">
+            
+            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-3">
+              {template.goal && (
+                <span className={`px-2 py-1 rounded-md ${getGoalBadgeColor(template.goal)} flex items-center gap-1`}>
+                  <Target className="w-3 h-3" />
+                  {template.goal}
+                </span>
+              )}
+              {template.performance_score && (
+                <span className="flex items-center gap-1 px-2 py-1 bg-secondary/50 rounded-md">
+                  📊 {template.performance_score}/100
+                </span>
+              )}
+              {template.estimated_setup_time_minutes && (
+                <span className="flex items-center gap-1 px-2 py-1 bg-secondary/50 rounded-md">
+                  <Clock className="w-3 h-3" />
+                  {template.estimated_setup_time_minutes} min
+                </span>
+              )}
+              {template.industry && (
+                <span className="px-2 py-1 bg-secondary/50 rounded-md">
+                  🏢 {template.industry.replace(/_/g, ' ')}
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 mt-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <span className={`w-2 h-2 rounded-full ${getPlatformDotColor(template.platforms)}`}></span>
                 {template.platforms.join(', ')}
               </span>
-              <span>|</span>
-              <span>Used {template.is_popular ? '1.2K+' : '450+'} times</span>
             </div>
+
             <Button className="w-full mt-4 bg-primary text-primary-foreground hover:bg-primary/90">
               Load & Customize Template
             </Button>

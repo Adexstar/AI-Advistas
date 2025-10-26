@@ -26,6 +26,11 @@ export interface AdTemplate {
   usage_count?: number;
   category?: string | null;
   tags?: string[];
+  // New organizational fields
+  industry?: string | null;
+  performance_score?: number | null;
+  difficulty_level?: 'beginner' | 'intermediate' | 'advanced' | null;
+  estimated_setup_time_minutes?: number | null;
 }
 
 /**
