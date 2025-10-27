@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Target, Palette, Wand2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { TemplateSystem } from "@/components/TemplateSystem";
+import TemplateBrowser from "@/components/ad/TemplateBrowser";
 import { AIStylePanel } from "@/components/ai/AIStylePanel";
 import { SmartCopyEditor } from "@/components/ai/SmartCopyEditor";
 
@@ -186,30 +186,16 @@ const AIAdEditor = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6">
-                <TemplateSystem
-                  onUseTemplate={(template) => {
-                  setAdCopy(prev => ({
-                    ...prev,
-                    headline: template.content.headline || prev.headline,
-                    description: template.content.description || prev.description,
-                  }));
+                <TemplateBrowser
+                  onTemplateSelect={(template) => {
+                    setAdCopy(prev => ({
+                      ...prev,
+                      headline: template.name || prev.headline,
+                      description: template.description || prev.description,
+                    }));
                     toast({
                       title: "Template Applied",
                       description: `${template.name} template has been applied to your ad.`,
-                    });
-                  }}
-                  productName={productName}
-                  platform={platform}
-                  onAutoFill={(templateId, filledData) => {
-                    setAdCopy(prev => ({
-                      ...prev,
-                      headline: filledData.filledTemplate.headline || prev.headline,
-                      description: filledData.filledTemplate.description || prev.description,
-                      cta: filledData.filledTemplate.cta || prev.cta,
-                    }));
-                    toast({
-                      title: "AI Auto-fill Complete",
-                      description: "Template has been automatically filled with AI-generated content.",
                     });
                   }}
                 />

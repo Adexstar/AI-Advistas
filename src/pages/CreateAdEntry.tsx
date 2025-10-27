@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Wand2, LayoutTemplate, Square, ArrowLeft } from 'lucide-react';
 import QuickDraftPrompt from '@/components/ad/QuickDraftPrompt';
-import { TemplateSystem } from '@/components/TemplateSystem';
+import TemplateBrowser from '@/components/ad/TemplateBrowser';
 import type { AdDraftResponse } from '@/schemas/adDraftSchema';
 
 type AdCreationMethod = 'AI_DRAFT' | 'TEMPLATE' | 'SCRATCH' | null;
@@ -55,7 +55,7 @@ const CreateAdEntry = () => {
           <Button variant="ghost" onClick={handleBack} className="mb-4">
             <ArrowLeft className="h-4 w-4 mr-2" /> Back to Options
           </Button>
-          <TemplateSystem onUseTemplate={handleTemplateSelect} />
+          <TemplateBrowser onTemplateSelect={handleTemplateSelect} />
         </div>
       </div>
     );
