@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useProcessPSD } from './usePSDProcessor';
@@ -91,12 +91,69 @@ export const useGetFreepikTemplate = () => {
   });
 };
 
+export const useImportFreepikTemplate = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation<{ success: boolean }, Error, { freepikTemplate: FreepikTemplate }>({
+    mutationFn: async ({ freepikTemplate }) => {
+      // First, process the PSD
+      const { data: processData, error: processError } = await supabase.functions.invoke('process-freepik-psd', {
+        body: { 
+          templateId: freepikTemplate.id, 
+          freepikDownloadUrl: freepikTemplate.freepik_download_url 
+        }
+      });
+
+      if (processError) {
+        throw new Error(processError.message || 'Failed to process PSD');
+      }
+
+      // Then insert into ad_templates
+      const { error: insertError } = await supabase
+        .from('ad_templates')
+        .insert({
+          name: freepikTemplate.name,
+          description: freepikTemplate.description,
+          template_source: 'freepik',
+          external_id: freepikTemplate.freepik_id,
+          canvas_data: processData.processedData.canvas_data,
+          customizable_fields: processData.processedData.placeholders,
+          platforms: ['Facebook', 'Instagram', 'Google'],
+          template_json: {},
+        });
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      return { success: true };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ad-templates'] });
+      queryClient.invalidateQueries({ queryKey: ['templates'] });
+      toast({
+        title: "Template Imported",
+        description: "Freepik template has been added to your library",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Import Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+};
+
 export const useCombinedTemplates = (searchParams?: FreepikSearchParams) => {
   const [freepikTemplates, setFreepikTemplates] = useState<FreepikTemplate[]>([]);
   const [isSearchingFreepik, setIsSearchingFreepik] = useState(false);
   
   const searchFreepik = useSearchFreepikTemplates();
   const processPSD = useProcessPSD();
+  const queryClient = useQueryClient();
 
   // Get all templates from database (including file-based and internal templates)
   const { data: internalTemplates = [], isLoading: isLoadingInternal } = useQuery({

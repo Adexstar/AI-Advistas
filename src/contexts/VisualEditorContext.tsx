@@ -215,7 +215,7 @@ export const VisualEditorProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
-  const exportProject = (format: string) => {
+  const exportProject = async (format: string) => {
     try {
       if (mode === 'image' && fabricCanvas) {
         if (format === 'png' || format === 'jpeg') {
@@ -235,6 +235,36 @@ export const VisualEditorProvider: React.FC<{ children: React.ReactNode }> = ({ 
             title: "Export successful",
             description: `Your ${format.toUpperCase()} has been exported`,
           });
+        } else if (format === 'pdf') {
+          // Dynamic import to reduce bundle size
+          const { jsPDF } = await import('jspdf');
+          
+          const canvasWidth = fabricCanvas.width || 800;
+          const canvasHeight = fabricCanvas.height || 600;
+          
+          const pdf = new jsPDF({
+            orientation: canvasWidth > canvasHeight ? 'landscape' : 'portrait',
+            unit: 'px',
+            format: [canvasWidth, canvasHeight]
+          });
+          
+          const imgData = fabricCanvas.toDataURL({ 
+            format: 'png', 
+            quality: 1,
+            multiplier: 2
+          });
+          pdf.addImage(imgData, 'PNG', 0, 0, canvasWidth, canvasHeight);
+          pdf.save(`ad-export-${Date.now()}.pdf`);
+          
+          toast({
+            title: "Export successful",
+            description: "Your PDF has been exported",
+          });
+        } else if (format === 'mp4') {
+          toast({
+            title: "Coming Soon",
+            description: "Video export will be available in the next update",
+          });
         }
       } else if (mode === 'video') {
         toast({
@@ -243,6 +273,7 @@ export const VisualEditorProvider: React.FC<{ children: React.ReactNode }> = ({ 
         });
       }
     } catch (error) {
+      console.error('Export error:', error);
       toast({
         title: "Export failed",
         description: "Could not export your project",

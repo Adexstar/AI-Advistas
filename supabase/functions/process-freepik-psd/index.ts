@@ -9,30 +9,18 @@ const corsHeaders = {
 interface PSDLayer {
   id: string;
   name: string;
-  type: 'text' | 'image' | 'shape';
+  type: 'text' | 'image' | 'shape' | 'group';
   content?: string;
-  bounds: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
-  style?: {
-    font?: string;
-    size?: number;
-    color?: string;
-  };
+  bounds: { left: number; top: number; width: number; height: number };
+  style?: any;
   visible: boolean;
 }
 
 interface ProcessedPSDData {
-  type: 'freepik-psd';
+  type: 'psd';
   layers: PSDLayer[];
-  placeholders: string[];
-  canvas: {
-    width: number;
-    height: number;
-  };
+  placeholders: Array<{ type: string; label: string; path: string; objectIndex: number }>;
+  canvas: { width: number; height: number };
 }
 
 serve(async (req) => {
@@ -72,14 +60,14 @@ serve(async (req) => {
     const psdBuffer = await psdResponse.arrayBuffer();
     console.log(`Downloaded PSD file, size: ${psdBuffer.byteLength} bytes`);
 
-    // For now, we'll create a mock PSD processing since ag-psd needs to be properly integrated
-    // In a real implementation, this would use ag-psd to parse the PSD file
-    const processedData: ProcessedPSDData = await mockProcessPSD(psdBuffer);
+    // Mock PSD processing for MVP
+    const processedData = await mockProcessPSD(psdBuffer);
 
-    // Update template with processed PSD data
+    // Update template in database with canvas_data and customizable_fields
     const { error: updateError } = await supabase
       .from('templates')
       .update({
+        schema: processedData,
         cached_data: processedData,
         updated_at: new Date().toISOString()
       })
@@ -116,61 +104,56 @@ serve(async (req) => {
   }
 });
 
-// Mock PSD processing function - replace with actual ag-psd implementation
+// Mock PSD processing - Replace with real ag-psd implementation later
 async function mockProcessPSD(psdBuffer: ArrayBuffer): Promise<ProcessedPSDData> {
-  // This is a mock implementation. In reality, this would use ag-psd to:
-  // 1. Parse the PSD file structure
-  // 2. Extract layers, text content, and positioning
-  // 3. Identify editable text layers and image placeholders
-  // 4. Convert coordinates and styling information
+  console.log('Mock processing PSD...');
   
-  console.log('Mock processing PSD file...');
-  
-  // Simulate processing time
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  // Simulate processing delay
+  await new Promise(resolve => setTimeout(resolve, 500));
   
   return {
-    type: 'freepik-psd',
-    canvas: {
-      width: 1080,
-      height: 1080
-    },
+    type: 'psd',
     layers: [
       {
-        id: 'layer1',
-        name: 'Headline Text',
+        id: 'layer_1',
+        name: 'Product Title',
         type: 'text',
         content: 'Your Product Name',
-        bounds: { x: 50, y: 100, width: 400, height: 60 },
-        style: { font: 'Arial', size: 32, color: '#000000' },
-        visible: true
+        bounds: { left: 50, top: 50, width: 700, height: 60 },
+        style: {
+          fontSize: 32,
+          fontFamily: 'Inter',
+          fill: '#000000',
+          fontWeight: 'bold',
+        },
+        visible: true,
       },
       {
-        id: 'layer2',
-        name: 'Description Text',
+        id: 'layer_2',
+        name: 'Product Description',
         type: 'text',
-        content: 'Product description goes here',
-        bounds: { x: 50, y: 200, width: 400, height: 120 },
-        style: { font: 'Arial', size: 16, color: '#333333' },
-        visible: true
+        content: 'Add your product description here',
+        bounds: { left: 50, top: 130, width: 700, height: 100 },
+        style: {
+          fontSize: 16,
+          fontFamily: 'Inter',
+          fill: '#666666',
+        },
+        visible: true,
       },
       {
-        id: 'layer3',
-        name: 'CTA Button',
-        type: 'text',
-        content: 'Buy Now',
-        bounds: { x: 50, y: 350, width: 150, height: 50 },
-        style: { font: 'Arial', size: 18, color: '#ffffff' },
-        visible: true
-      },
-      {
-        id: 'layer4',
+        id: 'layer_3',
         name: 'Product Image',
         type: 'image',
-        bounds: { x: 500, y: 100, width: 300, height: 300 },
-        visible: true
-      }
+        bounds: { left: 50, top: 250, width: 400, height: 300 },
+        visible: true,
+      },
     ],
-    placeholders: ['headline', 'description', 'cta', 'product_image']
+    placeholders: [
+      { type: 'text', label: 'Product Title', path: 'objects[0].text', objectIndex: 0 },
+      { type: 'text', label: 'Product Description', path: 'objects[1].text', objectIndex: 1 },
+      { type: 'image', label: 'Product Image', path: 'objects[2].src', objectIndex: 2 },
+    ],
+    canvas: { width: 800, height: 600 },
   };
 }

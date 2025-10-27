@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Download, ArrowLeft, Upload } from 'lucide-react';
+import { Download, ArrowLeft, Upload, ChevronDown } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { EditorCanvas } from '@/components/visual-editor/EditorCanvas';
 import { PlatformPreviews } from '@/components/ad/PlatformPreviews';
 import { detectEditableFields } from '@/utils/canvasHelpers';
@@ -129,10 +130,12 @@ const TemplateCustomizer: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleExport = async () => {
+  const handleExport = async (format: 'png' | 'jpeg' | 'pdf' | 'mp4') => {
     try {
-      await exportProject('png');
-      toast.success('Ad exported successfully!');
+      await exportProject(format);
+      if (format !== 'mp4') {
+        toast.success(`Ad exported as ${format.toUpperCase()} successfully!`);
+      }
     } catch (error) {
       toast.error('Failed to export ad');
     }
@@ -153,10 +156,29 @@ const TemplateCustomizer: React.FC = () => {
           <h1 className="text-xl font-bold">{templateData.templateName || 'Customize Template'}</h1>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Export
+                <ChevronDown className="h-4 w-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport('png')}>
+                Export as PNG
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('jpeg')}>
+                Export as JPEG
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('pdf')}>
+                Export as PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('mp4')} disabled>
+                Export as Video (Coming Soon)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

@@ -30,9 +30,9 @@ export const useImportCanvaTemplate = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (canvaTemplateId: string) => {
+    mutationFn: async (template: CanvaTemplate) => {
       const { data, error } = await supabase.functions.invoke('import-canva-template', {
-        body: { canvaTemplateId }
+        body: { template }
       });
       
       if (error) throw error;
@@ -40,6 +40,7 @@ export const useImportCanvaTemplate = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ad-templates'] });
+      queryClient.invalidateQueries({ queryKey: ['templates'] });
       toast.success('Canva template imported successfully!');
     },
     onError: (error: Error) => {

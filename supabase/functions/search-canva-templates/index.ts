@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,8 +12,45 @@ serve(async (req) => {
 
   try {
     const { query } = await req.json();
+    const canvaApiKey = Deno.env.get('CANVA_API_KEY');
     
-    // Mock implementation - replace with real Canva API when ready
+    // If API key is available, use real Canva API
+    if (canvaApiKey) {
+      console.log('Using Canva API with query:', query);
+      
+      try {
+        const response = await fetch(
+          `https://api.canva.com/v1/designs?query=${encodeURIComponent(query || '')}&category=social-media&limit=20`,
+          {
+            headers: {
+              'Authorization': `Bearer ${canvaApiKey}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          const templates = data.designs?.map((design: any) => ({
+            id: design.id,
+            name: design.name,
+            thumbnail_url: design.thumbnail_url,
+            template_source: 'canva',
+            canvas_data: design,
+          })) || [];
+
+          return new Response(
+            JSON.stringify({ templates, source: 'canva_api' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } catch (apiError) {
+        console.error('Canva API error, falling back to mocks:', apiError);
+      }
+    }
+    
+    // Fallback to mock templates
+    console.log('Using mock Canva templates');
     const mockTemplates = [
       {
         id: 'canva-instagram-story-1',
@@ -90,7 +127,7 @@ serve(async (req) => {
       : mockTemplates;
 
     return new Response(
-      JSON.stringify({ templates: filteredTemplates }),
+      JSON.stringify({ templates: filteredTemplates, source: 'mock' }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }

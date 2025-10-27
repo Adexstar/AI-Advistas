@@ -1,13 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, FileText, AlertTriangle, Zap, Clock, Target } from 'lucide-react';
+import { Loader2, FileText, AlertTriangle, Zap, Clock, Target, Download } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTemplates, AdTemplate, useTrackTemplateUsage } from '@/hooks/useTemplates';
+import { useCombinedTemplates, FreepikTemplate } from '@/hooks/useFreepikTemplates';
+import { useSearchCanvaTemplates } from '@/hooks/useCanvaTemplates';
 import { generateDefaultCanvasData } from '@/utils/canvasHelpers';
+import { toast } from 'sonner';
 
 interface TemplateBrowserProps {
   onTemplateSelect: (templateData: any) => void;
@@ -15,35 +19,86 @@ interface TemplateBrowserProps {
 
 const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
   const navigate = useNavigate();
-  const { data: templates, isLoading, error } = useTemplates();
+  const { data: internalTemplates, isLoading: isLoadingInternal, error } = useTemplates();
+  const { 
+    templates: combinedTemplates, 
+    freepikTemplates, 
+    isLoading: isLoadingFreepik,
+    searchAllTemplates,
+    processFreepikPSD,
+    isProcessingPSD 
+  } = useCombinedTemplates();
+  const { data: canvaTemplates = [], isLoading: isLoadingCanva } = useSearchCanvaTemplates('');
+  
   const trackUsage = useTrackTemplateUsage();
   const [search, setSearch] = useState('');
   const [filterGoal, setFilterGoal] = useState('all');
   const [filterIndustry, setFilterIndustry] = useState('all');
   const [filterDifficulty, setFilterDifficulty] = useState('all');
+  const [filterSource, setFilterSource] = useState<'all' | 'internal' | 'freepik' | 'canva'>('all');
+  
+  useEffect(() => {
+    searchAllTemplates({ query: '', page: 1, limit: 20 });
+  }, []);
+  
+  const isLoading = isLoadingInternal || isLoadingFreepik || isLoadingCanva;
+  
+  // Combine all templates
+  const allTemplates = [
+    ...(internalTemplates || []).map(t => ({ ...t, source: 'internal' as const })),
+    ...freepikTemplates.map(t => ({ ...t, source: 'freepik' as const })),
+    ...canvaTemplates.map(t => ({ ...t, source: 'canva' as const }))
+  ];
 
-  const filteredTemplates = (templates || [])
-    .filter(template => {
-      const matchesSearch = template.name.toLowerCase().includes(search.toLowerCase()) ||
+  const filteredTemplates = allTemplates
+    .filter((template: any) => {
+      const matchesSearch = template.name?.toLowerCase().includes(search.toLowerCase()) ||
                            template.description?.toLowerCase().includes(search.toLowerCase());
       const matchesGoal = filterGoal === 'all' || template.goal === filterGoal;
       const matchesIndustry = filterIndustry === 'all' || template.industry === filterIndustry;
       const matchesDifficulty = filterDifficulty === 'all' || template.difficulty_level === filterDifficulty;
+      const matchesSource = filterSource === 'all' || template.source === filterSource;
       
-      return matchesSearch && matchesGoal && matchesIndustry && matchesDifficulty;
+      return matchesSearch && matchesGoal && matchesIndustry && matchesDifficulty && matchesSource;
     })
-    .sort((a, b) => {
+    .sort((a: any, b: any) => {
       // Sort by performance score (high to low), then by popularity, then by name
-      if (a.performance_score && b.performance_score) {
-        return b.performance_score - a.performance_score;
+      const aScore = a.performance_score || 0;
+      const bScore = b.performance_score || 0;
+      if (aScore && bScore) {
+        return bScore - aScore;
       }
-      if (a.is_popular && !b.is_popular) return -1;
-      if (!a.is_popular && b.is_popular) return 1;
+      const aPopular = a.is_popular || false;
+      const bPopular = b.is_popular || false;
+      if (aPopular && !bPopular) return -1;
+      if (!aPopular && bPopular) return 1;
       return a.name.localeCompare(b.name);
     });
+  
+  const sourceCounts = {
+    internal: allTemplates.filter(t => t.source === 'internal').length,
+    freepik: allTemplates.filter(t => t.source === 'freepik').length,
+    canva: allTemplates.filter(t => t.source === 'canva').length,
+  };
 
-  const handleTemplateClick = (template: AdTemplate) => {
-    trackUsage.mutate(template.id);
+  const handleTemplateClick = async (template: any) => {
+    // Handle external templates that need importing
+    if (template.source === 'freepik' && !template.canvas_data) {
+      toast.info('Importing Freepik template...');
+      const success = await processFreepikPSD(template.id, template.freepik_download_url);
+      if (!success) {
+        toast.error('Failed to import template');
+        return;
+      }
+      toast.success('Template imported successfully!');
+      // Refresh and navigate
+      searchAllTemplates({ query: '', page: 1, limit: 20 });
+      return;
+    }
+    
+    if (template.source === 'internal') {
+      trackUsage.mutate(template.id);
+    }
     
     navigate('/template-customizer', {
       state: {
@@ -115,6 +170,16 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
       </div>
 
       <h1 className="text-xl font-bold">Choose a High-Performing Template</h1>
+
+      {/* Source Tabs */}
+      <Tabs value={filterSource} onValueChange={(v) => setFilterSource(v as any)} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="all">All ({allTemplates.length})</TabsTrigger>
+          <TabsTrigger value="internal">Internal ({sourceCounts.internal})</TabsTrigger>
+          <TabsTrigger value="freepik">Freepik ({sourceCounts.freepik})</TabsTrigger>
+          <TabsTrigger value="canva">Canva ({sourceCounts.canva})</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Filter/Search Bar */}
       <div className="space-y-3">
@@ -189,20 +254,27 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
             className="border border-border rounded-xl p-4 cursor-pointer bg-card hover:border-primary hover:shadow-lg transition-all"
           >
             <div className="flex justify-between items-start mb-2">
-              <h2 className="text-lg font-semibold">{template.name}</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-semibold">{template.name}</h2>
+                <Badge variant="outline" className="text-xs">
+                  {template.source === 'internal' ? '🏠 Internal' : 
+                   template.source === 'freepik' ? '🎨 Freepik' : 
+                   '🎨 Canva'}
+                </Badge>
+              </div>
               <div className="flex flex-col gap-1.5">
-                {template.performance_score && template.performance_score >= 90 && (
+                {(template as any).performance_score && (template as any).performance_score >= 90 && (
                   <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 text-xs">
                     <Zap className="w-3 h-3 mr-1" />
                     High Performer
                   </Badge>
                 )}
-                {template.difficulty_level === 'beginner' && (
+                {(template as any).difficulty_level === 'beginner' && (
                   <Badge className="bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20 text-xs">
                     Beginner Friendly
                   </Badge>
                 )}
-                {template.is_popular && (
+                {(template as any).is_popular && (
                   <Badge className="bg-primary/10 text-primary border-primary/20 text-xs">
                     Popular
                   </Badge>
@@ -210,55 +282,67 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
               </div>
             </div>
             <p className="text-sm text-muted-foreground my-2">
-              {template.description || 'No description available'}
+              {(template as any).description || 'No description available'}
             </p>
             
             <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-3">
-              {template.goal && (
-                <span className={`px-2 py-1 rounded-md ${getGoalBadgeColor(template.goal)} flex items-center gap-1`}>
+              {(template as any).goal && (
+                <span className={`px-2 py-1 rounded-md ${getGoalBadgeColor((template as any).goal)} flex items-center gap-1`}>
                   <Target className="w-3 h-3" />
-                  {template.goal}
+                  {(template as any).goal}
                 </span>
               )}
-              {template.performance_score && (
+              {(template as any).performance_score && (
                 <span className="flex items-center gap-1 px-2 py-1 bg-secondary/50 rounded-md">
-                  📊 {template.performance_score}/100
+                  📊 {(template as any).performance_score}/100
                 </span>
               )}
-              {template.estimated_setup_time_minutes && (
+              {(template as any).estimated_setup_time_minutes && (
                 <span className="flex items-center gap-1 px-2 py-1 bg-secondary/50 rounded-md">
                   <Clock className="w-3 h-3" />
-                  {template.estimated_setup_time_minutes} min
+                  {(template as any).estimated_setup_time_minutes} min
                 </span>
               )}
-              {template.industry && (
+              {(template as any).industry && (
                 <span className="px-2 py-1 bg-secondary/50 rounded-md">
-                  🏢 {template.industry.replace(/_/g, ' ')}
+                  🏢 {(template as any).industry.replace(/_/g, ' ')}
                 </span>
               )}
             </div>
 
             <div className="flex flex-wrap items-center gap-2 mt-3 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <span className={`w-2 h-2 rounded-full ${getPlatformDotColor(template.platforms)}`}></span>
-                {template.platforms.join(', ')}
-              </span>
+              {(template as any).platforms && (
+                <span className="flex items-center gap-1">
+                  <span className={`w-2 h-2 rounded-full ${getPlatformDotColor((template as any).platforms)}`}></span>
+                  {(template as any).platforms.join(', ')}
+                </span>
+              )}
             </div>
 
-            <Button className="w-full mt-4 bg-primary text-primary-foreground hover:bg-primary/90">
-              Load & Customize Template
+            <Button 
+              className="w-full mt-4 bg-primary text-primary-foreground hover:bg-primary/90"
+              disabled={isProcessingPSD}
+            >
+              {template.source !== 'internal' && !(template as any).canvas_data ? (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Import & Use
+                </>
+              ) : (
+                'Load & Customize Template'
+              )}
             </Button>
           </div>
         ))}
       </div>
       
-      {filteredTemplates.length === 0 && templates && templates.length > 0 && (
+      {filteredTemplates.length === 0 && allTemplates && allTemplates.length > 0 && (
         <div className="text-center p-8 text-muted-foreground">
           No templates match your search criteria. Try different keywords or filters.
         </div>
       )}
 
-      {templates && templates.length === 0 && (
+      {allTemplates && allTemplates.length === 0 && (
         <div className="text-center p-8 text-muted-foreground">
           No templates available yet. Check back soon!
         </div>
