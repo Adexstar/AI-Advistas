@@ -1,4 +1,4 @@
-import { TemplateSystem } from '@/components/TemplateSystem';
+import TemplateBrowser from '@/components/ad/TemplateBrowser';
 import { EdgeFunctionTest } from '@/components/EdgeFunctionTest';
 import { BatchTemplateUploader } from '@/components/admin/BatchTemplateUploader';
 import { useNavigate } from 'react-router-dom';
@@ -9,9 +9,9 @@ import { ArrowLeft } from 'lucide-react';
 const TemplateLibrary: React.FC = () => {
   const navigate = useNavigate();
 
-  const handleUseTemplate = (template: any) => {
-    console.log('Using template:', template);
-    navigate(`/ad-editor/${template.id}`);
+  const handleTemplateSelect = (template: any) => {
+    console.log('Template selected:', template);
+    navigate(`/template-customizer?templateId=${template.id}`);
   };
 
   return (
@@ -42,11 +42,8 @@ const TemplateLibrary: React.FC = () => {
           </TabsList>
           
           <TabsContent value="templates" className="space-y-8">
-            <div className="mb-8">
-              <EdgeFunctionTest />
-            </div>
-            <TemplateSystem 
-              onUseTemplate={handleUseTemplate}
+            <TemplateBrowser 
+              onTemplateSelect={handleTemplateSelect}
             />
           </TabsContent>
           

@@ -17,6 +17,7 @@ import Settings from "./pages/Settings";
 import VisualEditorPage from "./pages/VisualEditorPage";
 import AdEditor from "./pages/AdEditor";
 import TemplateCustomizer from "./pages/TemplateCustomizer";
+import TemplateLibrary from "./pages/TemplateLibrary";
 import { AuthProvider } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AppProvider } from "./contexts/AppContext";
@@ -116,6 +117,13 @@ const AppContent = () => {
               </ProtectedRoute>
             }>
               <Route index element={<Settings />} />
+            </Route>
+            <Route path="/template-library" element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<TemplateLibrary />} />
             </Route>
             
             {/* Redirects from old routes to new consolidated structure */}
