@@ -40,11 +40,14 @@ export type Database = {
       }
       ad_templates: {
         Row: {
+          canvas_data: Json | null
           category: string | null
           created_at: string
+          customizable_fields: Json | null
           description: string | null
           difficulty_level: string | null
           estimated_setup_time_minutes: number | null
+          external_id: string | null
           goal: string | null
           id: string
           industry: string | null
@@ -52,17 +55,22 @@ export type Database = {
           name: string
           performance_score: number | null
           platforms: string[]
+          preview_variants: Json | null
           tags: string[] | null
           template_json: Json
+          template_source: string | null
           updated_at: string
           usage_count: number | null
         }
         Insert: {
+          canvas_data?: Json | null
           category?: string | null
           created_at?: string
+          customizable_fields?: Json | null
           description?: string | null
           difficulty_level?: string | null
           estimated_setup_time_minutes?: number | null
+          external_id?: string | null
           goal?: string | null
           id?: string
           industry?: string | null
@@ -70,17 +78,22 @@ export type Database = {
           name: string
           performance_score?: number | null
           platforms?: string[]
+          preview_variants?: Json | null
           tags?: string[] | null
           template_json?: Json
+          template_source?: string | null
           updated_at?: string
           usage_count?: number | null
         }
         Update: {
+          canvas_data?: Json | null
           category?: string | null
           created_at?: string
+          customizable_fields?: Json | null
           description?: string | null
           difficulty_level?: string | null
           estimated_setup_time_minutes?: number | null
+          external_id?: string | null
           goal?: string | null
           id?: string
           industry?: string | null
@@ -88,8 +101,10 @@ export type Database = {
           name?: string
           performance_score?: number | null
           platforms?: string[]
+          preview_variants?: Json | null
           tags?: string[] | null
           template_json?: Json
+          template_source?: string | null
           updated_at?: string
           usage_count?: number | null
         }
