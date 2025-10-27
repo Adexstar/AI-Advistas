@@ -21,6 +21,7 @@ import TemplateLibrary from "./pages/TemplateLibrary";
 import { AuthProvider } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AppProvider } from "./contexts/AppContext";
+import { VisualEditorProvider } from "./contexts/VisualEditorContext";
 
 const queryClient = new QueryClient();
 
@@ -143,7 +144,13 @@ const AppContent = () => {
               <Route index element={<CreateAd />} />
             </Route>
             <Route path="/visual-editor" element={<ProtectedRoute><VisualEditorPage /></ProtectedRoute>} />
-            <Route path="/template-customizer" element={<ProtectedRoute><TemplateCustomizer /></ProtectedRoute>} />
+            <Route path="/template-customizer" element={
+              <ProtectedRoute>
+                <VisualEditorProvider>
+                  <TemplateCustomizer />
+                </VisualEditorProvider>
+              </ProtectedRoute>
+            } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
