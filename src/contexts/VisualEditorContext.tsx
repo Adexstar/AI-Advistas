@@ -121,7 +121,7 @@ export const VisualEditorProvider: React.FC<{ children: React.ReactNode }> = ({ 
     'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins', 'Source Sans Pro', 'Raleway', 'PT Sans', 'Lora'
   ]);
 
-  // Auto-save functionality
+  // Auto-save functionality with Supabase persistence
   const projectData = {
     mode,
     currentProject,
@@ -130,9 +130,33 @@ export const VisualEditorProvider: React.FC<{ children: React.ReactNode }> = ({ 
     canvasData: fabricCanvas ? fabricCanvas.toJSON() : null,
   };
 
-  const handleAutoSave = (data: any) => {
-    // Save to localStorage or send to server
-    console.log('Auto-saving project:', data);
+  const handleAutoSave = async (data: any) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        console.log('No user logged in, skipping auto-save to Supabase');
+        return;
+      }
+
+      // Save to Supabase
+      const { error } = await supabase
+        .from('user_canvas_drafts')
+        .upsert({
+          user_id: user.id,
+          canvas_data: data.canvasData,
+          template_id: data.currentProject?.id || null,
+          last_saved_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id',
+        });
+
+      if (error) {
+        console.error('Failed to auto-save to Supabase:', error);
+      }
+    } catch (error) {
+      console.error('Auto-save error:', error);
+    }
   };
 
   const { restoreFromAutoSave, clearAutoSave } = useAutoSave(
@@ -140,7 +164,7 @@ export const VisualEditorProvider: React.FC<{ children: React.ReactNode }> = ({ 
     handleAutoSave,
     { 
       key: 'visual-editor-project',
-      delay: 3000,
+      delay: 2000, // Save every 2 seconds
       enabled: true 
     }
   );

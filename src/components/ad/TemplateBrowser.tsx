@@ -6,9 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, FileText, AlertTriangle, Zap, Clock, Target, Download } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTemplates, AdTemplate, useTrackTemplateUsage } from '@/hooks/useTemplates';
-import { useCombinedTemplates, FreepikTemplate } from '@/hooks/useFreepikTemplates';
+import { useCombinedTemplates, UnifiedTemplate } from '@/hooks/useUnifiedTemplates';
 import { useSearchCanvaTemplates } from '@/hooks/useCanvaTemplates';
 import { generateDefaultCanvasData } from '@/utils/canvasHelpers';
 import { toast } from 'sonner';
@@ -28,7 +29,7 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
     processFreepikPSD,
     isProcessingPSD 
   } = useCombinedTemplates();
-  const { data: canvaTemplates = [], isLoading: isLoadingCanva } = useSearchCanvaTemplates('');
+  const { data: canvaTemplates = [], isLoading: isLoadingCanva } = useSearchCanvaTemplates();
   
   const trackUsage = useTrackTemplateUsage();
   const [search, setSearch] = useState('');
@@ -113,11 +114,32 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
 
   if (isLoading) {
     return (
-      <Card className="min-h-[300px] flex flex-col items-center justify-center">
-        <Loader2 className="h-8 w-8 text-primary animate-spin mb-4" />
-        <p className="text-lg font-medium">Loading Templates...</p>
-        <p className="text-sm text-muted-foreground">Fetching proven layouts from the library.</p>
-      </Card>
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="flex items-center gap-2 text-primary">
+          <FileText className="h-6 w-6" />
+          <h2 className="text-lg font-semibold">Template Library</h2>
+        </div>
+        <Skeleton className="h-8 w-3/4" />
+        <Skeleton className="h-10 w-full" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="p-4">
+              <Skeleton className="h-6 w-2/3 mb-2" />
+              <Skeleton className="h-4 w-full mb-4" />
+              <div className="flex gap-2">
+                <Skeleton className="h-6 w-20" />
+                <Skeleton className="h-6 w-24" />
+              </div>
+              <Skeleton className="h-10 w-full mt-4" />
+            </Card>
+          ))}
+        </div>
+      </div>
     );
   }
 

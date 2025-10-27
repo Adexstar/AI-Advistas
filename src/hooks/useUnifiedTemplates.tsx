@@ -4,21 +4,37 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useProcessPSD } from './usePSDProcessor';
 
-export interface FreepikTemplate {
+export interface UnifiedTemplate {
   id: string;
   name: string;
-  description: string;
-  thumbnail_url: string;
-  preview_url: string;
-  template_source: 'freepik' | 'internal';
-  freepik_id?: string;
+  description: string | null;
+  thumbnail_url?: string | null;
+  preview_url?: string | null;
+  template_source: 'freepik' | 'internal' | 'canva';
+  freepik_id?: string | null;
+  external_id?: string | null;
   cached_data?: any;
-  freepik_download_url?: string;
-  schema: any;
+  freepik_download_url?: string | null;
+  schema?: any;
+  canvas_data?: any;
+  customizable_fields?: any;
+  platforms?: string[];
+  template_json?: any;
+  goal?: string | null;
+  industry?: string | null;
+  difficulty_level?: string | null;
+  performance_score?: number | null;
+  estimated_setup_time_minutes?: number | null;
+  is_popular?: boolean;
+  usage_count?: number;
+  category?: string | null;
+  tags?: string[];
   created_at: string;
-  updated_at: string;
-  category?: string;
+  updated_at?: string;
 }
+
+// Legacy type for backward compatibility
+export interface FreepikTemplate extends UnifiedTemplate {}
 
 export interface FreepikSearchParams {
   query?: string;
@@ -27,7 +43,7 @@ export interface FreepikSearchParams {
 }
 
 export interface FreepikSearchResponse {
-  templates: FreepikTemplate[];
+  templates: UnifiedTemplate[];
   pagination: {
     page: number;
     limit: number;
@@ -69,7 +85,7 @@ export const useSearchFreepikTemplates = () => {
 export const useGetFreepikTemplate = () => {
   const { toast } = useToast();
 
-  return useMutation<{ template: FreepikTemplate; source: string }, Error, { freepik_id: string }>({
+  return useMutation<{ template: UnifiedTemplate; source: string }, Error, { freepik_id: string }>({
     mutationFn: async ({ freepik_id }) => {
       const { data, error } = await supabase.functions.invoke('get-freepik-template', {
         body: { freepik_id }
@@ -95,7 +111,7 @@ export const useImportFreepikTemplate = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  return useMutation<{ success: boolean }, Error, { freepikTemplate: FreepikTemplate }>({
+  return useMutation<{ success: boolean }, Error, { freepikTemplate: UnifiedTemplate }>({
     mutationFn: async ({ freepikTemplate }) => {
       // First, process the PSD
       const { data: processData, error: processError } = await supabase.functions.invoke('process-freepik-psd', {
@@ -148,24 +164,24 @@ export const useImportFreepikTemplate = () => {
 };
 
 export const useCombinedTemplates = (searchParams?: FreepikSearchParams) => {
-  const [freepikTemplates, setFreepikTemplates] = useState<FreepikTemplate[]>([]);
+  const [freepikTemplates, setFreepikTemplates] = useState<UnifiedTemplate[]>([]);
   const [isSearchingFreepik, setIsSearchingFreepik] = useState(false);
   
   const searchFreepik = useSearchFreepikTemplates();
   const processPSD = useProcessPSD();
   const queryClient = useQueryClient();
 
-  // Get all templates from database (including file-based and internal templates)
+  // Get all templates from database (ad_templates table)
   const { data: internalTemplates = [], isLoading: isLoadingInternal } = useQuery({
-    queryKey: ['templates', 'all'],
+    queryKey: ['ad-templates', 'all'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('templates')
+        .from('ad_templates')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as FreepikTemplate[];
+      return data as UnifiedTemplate[];
     }
   });
 

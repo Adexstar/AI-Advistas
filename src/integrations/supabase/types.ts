@@ -374,6 +374,44 @@ export type Database = {
           },
         ]
       }
+      user_canvas_drafts: {
+        Row: {
+          canvas_data: Json
+          created_at: string | null
+          id: string
+          last_saved_at: string | null
+          template_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          canvas_data: Json
+          created_at?: string | null
+          id?: string
+          last_saved_at?: string | null
+          template_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          canvas_data?: Json
+          created_at?: string | null
+          id?: string
+          last_saved_at?: string | null
+          template_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_canvas_drafts_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "ad_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_dashboards: {
         Row: {
           created_at: string | null

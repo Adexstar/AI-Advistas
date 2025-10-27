@@ -10,19 +10,24 @@ export interface CanvaTemplate {
   canvas_data?: any;
 }
 
-export const useSearchCanvaTemplates = (query: string) => {
+export const useSearchCanvaTemplates = (query: string = '') => {
   return useQuery({
     queryKey: ['canva-templates', query],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('search-canva-templates', {
-        body: { query }
+        body: { query: query || '' }
       });
       
-      if (error) throw error;
-      return data.templates as CanvaTemplate[];
+      if (error) {
+        console.error('Canva templates error:', error);
+        // Return empty array on error instead of throwing
+        return [];
+      }
+      return data?.templates || [];
     },
-    enabled: !!query,
-    retry: 1
+    enabled: true,
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 };
 
