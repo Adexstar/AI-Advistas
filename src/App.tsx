@@ -16,6 +16,7 @@ import Billing from "./pages/Billing";
 import Settings from "./pages/Settings";
 import VisualEditorPage from "./pages/VisualEditorPage";
 import AdEditor from "./pages/AdEditor";
+import TemplateCustomizer from "./pages/TemplateCustomizer";
 import { AuthProvider } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AppProvider } from "./contexts/AppContext";
@@ -134,6 +135,7 @@ const AppContent = () => {
               <Route index element={<CreateAd />} />
             </Route>
             <Route path="/visual-editor" element={<ProtectedRoute><VisualEditorPage /></ProtectedRoute>} />
+            <Route path="/template-customizer" element={<ProtectedRoute><TemplateCustomizer /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

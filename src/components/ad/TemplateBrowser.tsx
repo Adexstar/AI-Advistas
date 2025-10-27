@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -6,12 +7,14 @@ import { Loader2, FileText, AlertTriangle, Zap, Clock, Target } from 'lucide-rea
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useTemplates, AdTemplate, useTrackTemplateUsage } from '@/hooks/useTemplates';
+import { generateDefaultCanvasData } from '@/utils/canvasHelpers';
 
 interface TemplateBrowserProps {
   onTemplateSelect: (templateData: any) => void;
 }
 
 const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
+  const navigate = useNavigate();
   const { data: templates, isLoading, error } = useTemplates();
   const trackUsage = useTrackTemplateUsage();
   const [search, setSearch] = useState('');
@@ -42,15 +45,14 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
   const handleTemplateClick = (template: AdTemplate) => {
     trackUsage.mutate(template.id);
     
-    onTemplateSelect({
-      ...template.template_json,
-      templateId: template.id,
-      templateName: template.name,
-      performanceScore: template.performance_score,
-      difficultyLevel: template.difficulty_level,
-      setupTime: template.estimated_setup_time_minutes,
-      industry: template.industry,
-      isTemplate: true,
+    navigate('/template-customizer', {
+      state: {
+        templateData: {
+          ...template,
+          templateName: template.name,
+          canvas_data: (template as any).canvas_data || generateDefaultCanvasData(template)
+        }
+      }
     });
   };
 
