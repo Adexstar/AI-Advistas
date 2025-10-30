@@ -33,18 +33,9 @@ serve(async (req) => {
 
     console.log(`Searching Freepik templates: "${query}", page ${page}, limit ${limit}`);
 
-    // Search Freepik API
-    const freepikResponse = await fetch(`https://api.freepik.com/v1/resources`, {
-      method: 'GET',
-      headers: {
-        'x-freepik-api-key': freepikApiKey,
-        'Content-Type': 'application/json',
-      },
-      body: null,
-    });
-
+    // Build search parameters
     const searchParams = new URLSearchParams({
-      term: query || '',
+      term: query || 'template',
       'filters[content_type][psd]': '1',
       page: page.toString(),
       limit: limit.toString(),
@@ -52,15 +43,36 @@ serve(async (req) => {
     });
 
     const freepikUrl = `https://api.freepik.com/v1/resources?${searchParams}`;
+    console.log('Freepik API URL:', freepikUrl);
     
+    // Search Freepik API
     const freepikApiResponse = await fetch(freepikUrl, {
+      method: 'GET',
       headers: {
         'x-freepik-api-key': freepikApiKey,
+        'Accept': 'application/json',
       },
     });
 
+    console.log('Freepik API response status:', freepikApiResponse.status);
+
     if (!freepikApiResponse.ok) {
-      console.error('Freepik API error:', freepikApiResponse.status, freepikApiResponse.statusText);
+      const errorText = await freepikApiResponse.text();
+      console.error('Freepik API error:', freepikApiResponse.status, freepikApiResponse.statusText, errorText);
+      
+      // Check for authentication error
+      if (freepikApiResponse.status === 401) {
+        console.error('Freepik API key is invalid or expired');
+        return new Response(JSON.stringify({ 
+          templates: [],
+          fallback: true,
+          message: 'Freepik API authentication failed. Please check API key configuration. Showing internal templates only.',
+          error: 'Authentication failed'
+        }), {
+          status: 200, // Return 200 to allow fallback
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       
       // Check rate limit
       const rateLimitRemaining = freepikApiResponse.headers.get('x-ratelimit-remaining');
@@ -71,11 +83,21 @@ serve(async (req) => {
           fallback: true,
           message: 'Rate limit reached, showing internal templates only'
         }), {
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      throw new Error(`Freepik API error: ${freepikApiResponse.status}`);
+      // Return graceful fallback for other errors
+      return new Response(JSON.stringify({ 
+        templates: [],
+        fallback: true,
+        message: 'Freepik API temporarily unavailable. Showing internal templates only.',
+        error: `API Error: ${freepikApiResponse.status}`
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const freepikData = await freepikApiResponse.json();
@@ -145,12 +167,16 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in search-freepik-templates function:', error);
+    console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+    
+    // Return graceful fallback instead of throwing error
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Unknown error',
+      templates: [],
       fallback: true,
-      message: 'Error accessing Freepik, showing internal templates only'
+      message: 'Error accessing Freepik API. Showing internal templates only.',
+      error: error instanceof Error ? error.message : 'Unknown error'
     }), {
-      status: 500,
+      status: 200, // Return 200 so the client can use fallback
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
