@@ -13,6 +13,8 @@ import { useCombinedTemplates, UnifiedTemplate } from '@/hooks/useUnifiedTemplat
 import { useSearchCanvaTemplates } from '@/hooks/useCanvaTemplates';
 import { generateDefaultCanvasData } from '@/utils/canvasHelpers';
 import { toast } from 'sonner';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { Progress } from '@/components/ui/progress';
 
 interface TemplateBrowserProps {
   onTemplateSelect: (templateData: any) => void;
@@ -37,6 +39,8 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
   const [filterIndustry, setFilterIndustry] = useState('all');
   const [filterDifficulty, setFilterDifficulty] = useState('all');
   const [filterSource, setFilterSource] = useState<'all' | 'internal' | 'freepik' | 'canva'>('all');
+  const [importingTemplateId, setImportingTemplateId] = useState<string | null>(null);
+  const [importProgress, setImportProgress] = useState(0);
   
   useEffect(() => {
     searchAllTemplates({ query: '', page: 1, limit: 20 });
@@ -85,15 +89,30 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
   const handleTemplateClick = async (template: any) => {
     // Handle external templates that need importing
     if (template.source === 'freepik' && !template.canvas_data) {
-      toast.info('Importing Freepik template...');
+      setImportingTemplateId(template.id);
+      setImportProgress(10);
+      
+      toast.info('Downloading PSD...');
+      setImportProgress(30);
+      
       const success = await processFreepikPSD(template.id, template.freepik_download_url);
+      
+      setImportProgress(70);
+      
       if (!success) {
         toast.error('Failed to import template');
+        setImportingTemplateId(null);
+        setImportProgress(0);
         return;
       }
+      
+      setImportProgress(100);
       toast.success('Template imported successfully!');
+      
       // Refresh and navigate
       searchAllTemplates({ query: '', page: 1, limit: 20 });
+      setImportingTemplateId(null);
+      setImportProgress(0);
       return;
     }
     
@@ -119,23 +138,23 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
           <FileText className="h-6 w-6" />
           <h2 className="text-lg font-semibold">Template Library</h2>
         </div>
-        <Skeleton className="h-8 w-3/4" />
-        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-8 w-3/4 animate-shimmer" />
+        <Skeleton className="h-10 w-full animate-shimmer" />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full animate-shimmer" />
+          <Skeleton className="h-10 w-full animate-shimmer" />
+          <Skeleton className="h-10 w-full animate-shimmer" />
         </div>
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <Card key={i} className="p-4">
-              <Skeleton className="h-6 w-2/3 mb-2" />
-              <Skeleton className="h-4 w-full mb-4" />
+              <Skeleton className="h-6 w-2/3 mb-2 animate-shimmer" />
+              <Skeleton className="h-4 w-full mb-4 animate-shimmer" />
               <div className="flex gap-2">
-                <Skeleton className="h-6 w-20" />
-                <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-6 w-20 animate-shimmer" />
+                <Skeleton className="h-6 w-24 animate-shimmer" />
               </div>
-              <Skeleton className="h-10 w-full mt-4" />
+              <Skeleton className="h-10 w-full mt-4 animate-shimmer" />
             </Card>
           ))}
         </div>
@@ -184,7 +203,8 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <ErrorBoundary>
+      <div className="max-w-2xl mx-auto space-y-6">
       {/* Header with Icon */}
       <div className="flex items-center gap-2 text-primary">
         <FileText className="h-6 w-6" />
@@ -341,19 +361,36 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
               )}
             </div>
 
-            <Button 
-              className="w-full mt-4 bg-primary text-primary-foreground hover:bg-primary/90"
-              disabled={isProcessingPSD}
-            >
-              {template.source !== 'internal' && !(template as any).canvas_data ? (
-                <>
-                  <Download className="h-4 w-4 mr-2" />
-                  Import & Use
-                </>
+            <div className="mt-4">
+              {importingTemplateId === template.id ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Importing template...</span>
+                    <span className="font-medium">{importProgress}%</span>
+                  </div>
+                  <Progress value={importProgress} className="h-2" />
+                  <p className="text-xs text-muted-foreground">
+                    {importProgress < 30 ? 'Downloading PSD...' :
+                     importProgress < 70 ? 'Processing layers...' :
+                     'Finalizing import...'}
+                  </p>
+                </div>
               ) : (
-                'Load & Customize Template'
+                <Button 
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                  disabled={isProcessingPSD}
+                >
+                  {template.source !== 'internal' && !template.canvas_data ? (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Import & Use
+                    </>
+                  ) : (
+                    'Load & Customize Template'
+                  )}
+                </Button>
               )}
-            </Button>
+            </div>
           </div>
         ))}
       </div>
@@ -370,6 +407,7 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
         </div>
       )}
     </div>
+    </ErrorBoundary>
   );
 };
 

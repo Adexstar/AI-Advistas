@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState, useRef } from 'react';
+import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
 import { Canvas as FabricCanvas, Textbox, Rect, Circle, Triangle } from 'fabric';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 export type EditorMode = 'image' | 'video';
 
@@ -121,6 +122,9 @@ export const VisualEditorProvider: React.FC<{ children: React.ReactNode }> = ({ 
     'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins', 'Source Sans Pro', 'Raleway', 'PT Sans', 'Lora'
   ]);
 
+  const saveAttempts = useRef(0);
+  const maxRetries = 3;
+
   // Auto-save functionality with Supabase persistence
   const projectData = {
     mode,
@@ -139,7 +143,7 @@ export const VisualEditorProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return;
       }
 
-      // Save to Supabase
+      // Save to Supabase with retry logic
       const { error } = await supabase
         .from('user_canvas_drafts')
         .upsert({
@@ -152,12 +156,69 @@ export const VisualEditorProvider: React.FC<{ children: React.ReactNode }> = ({ 
         });
 
       if (error) {
+        saveAttempts.current++;
         console.error('Failed to auto-save to Supabase:', error);
+        
+        if (saveAttempts.current >= maxRetries) {
+          toast({
+            title: "Auto-save failed",
+            description: "Unable to save your work. Please check your connection.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        saveAttempts.current = 0; // Reset on success
       }
     } catch (error) {
       console.error('Auto-save error:', error);
+      saveAttempts.current++;
     }
   };
+
+  // Recovery mechanism
+  useEffect(() => {
+    const checkForDraft = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: draft } = await supabase
+          .from('user_canvas_drafts')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (draft && draft.canvas_data) {
+          toast({
+            title: "Unsaved work found",
+            description: "Would you like to restore your previous session?",
+            action: (
+              <Button
+                size="sm"
+                onClick={() => {
+                  if (fabricCanvas && draft.canvas_data) {
+                    fabricCanvas.loadFromJSON(draft.canvas_data as Record<string, any>, () => {
+                      fabricCanvas.renderAll();
+                      toast({
+                        title: "Session restored",
+                        description: "Your previous work has been recovered",
+                      });
+                    });
+                  }
+                }}
+              >
+                Restore
+              </Button>
+            ),
+          });
+        }
+      } catch (error) {
+        console.error('Error checking for draft:', error);
+      }
+    };
+
+    checkForDraft();
+  }, [fabricCanvas]);
 
   const { restoreFromAutoSave, clearAutoSave } = useAutoSave(
     projectData,
