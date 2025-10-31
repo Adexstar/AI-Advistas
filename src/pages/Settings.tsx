@@ -18,6 +18,7 @@ import {
   Key,
   Database
 } from "lucide-react";
+import { CanvaIntegration } from "@/components/settings/CanvaIntegration";
 
 const Settings = () => {
   const [profile, setProfile] = useState({
@@ -310,6 +311,8 @@ const Settings = () => {
         </TabsContent>
 
         <TabsContent value="integrations" className="space-y-6">
+          <CanvaIntegration />
+          
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

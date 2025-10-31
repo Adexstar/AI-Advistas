@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.53.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,46 +13,128 @@ serve(async (req) => {
 
   try {
     const { query } = await req.json();
-    const canvaApiKey = Deno.env.get('CANVA_API_KEY');
+    const authHeader = req.headers.get('Authorization');
     
-    // If API key is available, use real Canva API
-    if (canvaApiKey) {
-      console.log('Using Canva API with query:', query);
-      
-      try {
-        const response = await fetch(
-          `https://api.canva.com/v1/designs?query=${encodeURIComponent(query || '')}&category=social-media&limit=20`,
-          {
-            headers: {
-              'Authorization': `Bearer ${canvaApiKey}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+    if (!authHeader) {
+      throw new Error('Missing authorization header');
+    }
 
-        if (response.ok) {
-          const data = await response.json();
-          const templates = data.designs?.map((design: any) => ({
-            id: design.id,
-            name: design.name,
-            thumbnail_url: design.thumbnail_url,
-            template_source: 'canva',
-            canvas_data: design,
-          })) || [];
-
-          return new Response(
-            JSON.stringify({ templates, source: 'canva_api' }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-      } catch (apiError) {
-        console.error('Canva API error, falling back to mocks:', apiError);
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: authHeader },
+        },
       }
+    );
+
+    // Get the authenticated user
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    
+    if (userError || !user) {
+      console.log('User not authenticated, returning mock templates');
+      return getMockTemplates(query);
+    }
+
+    // Get user's Canva access token
+    const { data: tokenData, error: tokenError } = await supabaseClient
+      .from('user_canva_tokens')
+      .select('access_token, expires_at')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (tokenError || !tokenData) {
+      console.log('No Canva connection found, returning mock templates');
+      return getMockTemplates(query);
+    }
+
+    // Check if token is expired
+    if (new Date(tokenData.expires_at) < new Date()) {
+      console.log('Token expired, attempting refresh');
+      
+      // Call refresh endpoint
+      const refreshResponse = await supabaseClient.functions.invoke('canva-refresh-token');
+      
+      if (refreshResponse.error) {
+        console.error('Failed to refresh token:', refreshResponse.error);
+        return getMockTemplates(query);
+      }
+      
+      // Get updated token
+      const { data: newTokenData } = await supabaseClient
+        .from('user_canva_tokens')
+        .select('access_token')
+        .eq('user_id', user.id)
+        .single();
+      
+      tokenData.access_token = newTokenData.access_token;
+    }
+
+    console.log('Using real Canva API with query:', query);
+    
+    // Call Canva API to search designs
+    try {
+      const searchParams = new URLSearchParams({
+        query: query || '',
+        limit: '20',
+      });
+
+      const response = await fetch(
+        `https://api.canva.com/rest/v1/designs?${searchParams.toString()}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${tokenData.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const templates = data.items?.map((design: any) => ({
+          id: design.id,
+          name: design.name || design.title || 'Untitled Design',
+          thumbnail_url: design.thumbnail?.url || design.thumbnail_url,
+          template_source: 'canva',
+          canvas_data: design,
+          external_id: design.id,
+          category: 'canva',
+          description: `Canva design - ${design.design_type || 'template'}`,
+        })) || [];
+
+        console.log(`Found ${templates.length} Canva templates`);
+
+        return new Response(
+          JSON.stringify({ templates, source: 'canva_api' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } else {
+        const errorText = await response.text();
+        console.error('Canva API error:', response.status, errorText);
+        return getMockTemplates(query);
+      }
+    } catch (apiError) {
+      console.error('Canva API request failed:', apiError);
+      return getMockTemplates(query);
     }
     
-    // Fallback to mock templates
-    console.log('Using mock Canva templates');
-    const mockTemplates = [
+  } catch (error) {
+    console.error('Error in search-canva-templates:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
+  }
+});
+
+// Helper function to return mock templates
+function getMockTemplates(query: string) {
+  console.log('Returning mock Canva templates');
+  const mockTemplates = [
       {
         id: 'canva-instagram-story-1',
         name: 'Instagram Story - Product Launch',
@@ -126,20 +209,10 @@ serve(async (req) => {
         )
       : mockTemplates;
 
-    return new Response(
-      JSON.stringify({ templates: filteredTemplates, source: 'mock' }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-  } catch (error) {
-    console.error('Error in search-canva-templates:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-  }
-});
+  return new Response(
+    JSON.stringify({ templates: filteredTemplates, source: 'mock' }),
+    { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    }
+  );
+}
