@@ -12,22 +12,25 @@ serve(async (req) => {
   }
 
   try {
-    const { code, state, redirectUri } = await req.json();
+    const { code, state, redirectUri, codeVerifier } = await req.json();
     
     if (!code) {
       throw new Error('Authorization code is required');
     }
 
-    const canvaClientId = Deno.env.get('CANVA_CLIENT_ID');
-    const canvaClientSecret = Deno.env.get('CANVA_CLIENT_SECRET');
-    
-    if (!canvaClientId || !canvaClientSecret) {
-      throw new Error('Canva credentials not configured');
+    if (!codeVerifier) {
+      throw new Error('Code verifier is required for PKCE flow');
     }
 
-    console.log('Exchanging authorization code for tokens');
+    const canvaClientId = Deno.env.get('CANVA_CLIENT_ID');
+    
+    if (!canvaClientId) {
+      throw new Error('Canva client ID not configured');
+    }
 
-    // Exchange authorization code for access token
+    console.log('Exchanging authorization code for tokens with PKCE');
+
+    // Exchange authorization code for access token using PKCE
     const tokenResponse = await fetch('https://api.canva.com/rest/v1/oauth/token', {
       method: 'POST',
       headers: {
@@ -37,7 +40,7 @@ serve(async (req) => {
         grant_type: 'authorization_code',
         code,
         client_id: canvaClientId,
-        client_secret: canvaClientSecret,
+        code_verifier: codeVerifier,
         redirect_uri: redirectUri,
       }).toString(),
     });

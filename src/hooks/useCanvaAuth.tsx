@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { generateCodeVerifier, generateCodeChallenge } from '@/utils/pkce';
 
 export const useCanvaAuth = () => {
   const [isConnecting, setIsConnecting] = useState(false);
@@ -40,7 +41,17 @@ export const useCanvaAuth = () => {
     try {
       setIsConnecting(true);
       
-      const { data, error } = await supabase.functions.invoke('canva-auth-init');
+      // Generate PKCE parameters
+      const codeVerifier = generateCodeVerifier();
+      const codeChallenge = await generateCodeChallenge(codeVerifier);
+      
+      // Store verifier securely in sessionStorage
+      sessionStorage.setItem('canva_code_verifier', codeVerifier);
+      
+      // Send challenge to edge function
+      const { data, error } = await supabase.functions.invoke('canva-auth-init', {
+        body: { codeChallenge }
+      });
       
       if (error) {
         throw error;
@@ -67,11 +78,18 @@ export const useCanvaAuth = () => {
         throw new Error('Invalid state parameter - possible CSRF attack');
       }
 
+      // Retrieve code verifier
+      const codeVerifier = sessionStorage.getItem('canva_code_verifier');
+      if (!codeVerifier) {
+        throw new Error('Code verifier not found - OAuth flow compromised');
+      }
+
       const origin = window.location.origin;
       const redirectUri = `${origin}/auth/canva/callback`;
 
+      // Send verifier to complete PKCE flow
       const { data, error } = await supabase.functions.invoke('canva-auth-callback', {
-        body: { code, state, redirectUri },
+        body: { code, state, redirectUri, codeVerifier },
       });
 
       if (error) {
@@ -81,7 +99,10 @@ export const useCanvaAuth = () => {
       return data;
     },
     onSuccess: () => {
+      // Clean up stored PKCE parameters
       sessionStorage.removeItem('canva_oauth_state');
+      sessionStorage.removeItem('canva_code_verifier');
+      
       queryClient.invalidateQueries({ queryKey: ['canva-connection'] });
       queryClient.invalidateQueries({ queryKey: ['canva-templates'] });
       toast.success('Canva account connected successfully!');
