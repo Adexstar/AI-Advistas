@@ -19,8 +19,10 @@ import AdEditor from "./pages/AdEditor";
 import TemplateCustomizer from "./pages/TemplateCustomizer";
 import TemplateLibrary from "./pages/TemplateLibrary";
 import CanvaCallback from "./pages/CanvaCallback";
+import AdminDashboard from "./pages/AdminDashboard";
 import { AuthProvider } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 import { AppProvider } from "./contexts/AppContext";
 import { VisualEditorProvider } from "./contexts/VisualEditorContext";
 
@@ -157,6 +159,15 @@ const AppContent = () => {
                 <CanvaCallback />
               </ProtectedRoute>
             } />
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <DashboardLayout />
+                </AdminRoute>
+              </ProtectedRoute>
+            }>
+              <Route index element={<AdminDashboard />} />
+            </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
