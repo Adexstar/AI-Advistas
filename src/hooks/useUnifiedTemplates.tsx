@@ -10,7 +10,7 @@ export interface UnifiedTemplate {
   description: string | null;
   thumbnail_url?: string | null;
   preview_url?: string | null;
-  template_source: 'freepik' | 'internal' | 'canva';
+  template_source: 'freepik' | 'internal';
   freepik_id?: string | null;
   external_id?: string | null;
   cached_data?: any;
