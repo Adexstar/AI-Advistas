@@ -79,15 +79,3 @@ verify_jwt = false
 
 [functions.analyze-performance]
 verify_jwt = true
-
-[functions.canva-auth-init]
-verify_jwt = false
-
-[functions.canva-auth-callback]
-verify_jwt = true
-
-[functions.canva-refresh-token]
-verify_jwt = true
-
-[functions.search-canva-templates]
-verify_jwt = true
