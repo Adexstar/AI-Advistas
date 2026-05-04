@@ -18,7 +18,6 @@ import VisualEditorPage from "./pages/VisualEditorPage";
 import AdEditor from "./pages/AdEditor";
 import TemplateCustomizer from "./pages/TemplateCustomizer";
 import TemplateLibrary from "./pages/TemplateLibrary";
-import CanvaCallback from "./pages/CanvaCallback";
 import AdminDashboard from "./pages/AdminDashboard";
 import { AuthProvider } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -152,11 +151,6 @@ const AppContent = () => {
                 <VisualEditorProvider>
                   <TemplateCustomizer />
                 </VisualEditorProvider>
-              </ProtectedRoute>
-            } />
-            <Route path="/auth/canva/callback" element={
-              <ProtectedRoute>
-                <CanvaCallback />
               </ProtectedRoute>
             } />
             <Route path="/admin" element={

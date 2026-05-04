@@ -10,7 +10,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTemplates, AdTemplate, useTrackTemplateUsage } from '@/hooks/useTemplates';
 import { useCombinedTemplates, UnifiedTemplate } from '@/hooks/useUnifiedTemplates';
-import { useSearchCanvaTemplates } from '@/hooks/useCanvaTemplates';
 import { generateDefaultCanvasData } from '@/utils/canvasHelpers';
 import { toast } from 'sonner';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -31,14 +30,12 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
     processFreepikPSD,
     isProcessingPSD 
   } = useCombinedTemplates();
-  const { data: canvaTemplates = [], isLoading: isLoadingCanva } = useSearchCanvaTemplates();
-  
   const trackUsage = useTrackTemplateUsage();
   const [search, setSearch] = useState('');
   const [filterGoal, setFilterGoal] = useState('all');
   const [filterIndustry, setFilterIndustry] = useState('all');
   const [filterDifficulty, setFilterDifficulty] = useState('all');
-  const [filterSource, setFilterSource] = useState<'all' | 'internal' | 'freepik' | 'canva'>('all');
+  const [filterSource, setFilterSource] = useState<'all' | 'internal' | 'freepik'>('all');
   const [importingTemplateId, setImportingTemplateId] = useState<string | null>(null);
   const [importProgress, setImportProgress] = useState(0);
   
@@ -46,13 +43,12 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
     searchAllTemplates({ query: '', page: 1, limit: 20 });
   }, []);
   
-  const isLoading = isLoadingInternal || isLoadingFreepik || isLoadingCanva;
+  const isLoading = isLoadingInternal || isLoadingFreepik;
   
   // Combine all templates
   const allTemplates = [
     ...(internalTemplates || []).map(t => ({ ...t, source: 'internal' as const })),
     ...freepikTemplates.map(t => ({ ...t, source: 'freepik' as const })),
-    ...canvaTemplates.map(t => ({ ...t, source: 'canva' as const }))
   ];
 
   const filteredTemplates = allTemplates
@@ -83,7 +79,6 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
   const sourceCounts = {
     internal: allTemplates.filter(t => t.source === 'internal').length,
     freepik: allTemplates.filter(t => t.source === 'freepik').length,
-    canva: allTemplates.filter(t => t.source === 'canva').length,
   };
 
   const handleTemplateClick = async (template: any) => {
@@ -215,11 +210,10 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
 
       {/* Source Tabs */}
       <Tabs value={filterSource} onValueChange={(v) => setFilterSource(v as any)} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="all">All ({allTemplates.length})</TabsTrigger>
           <TabsTrigger value="internal">Internal ({sourceCounts.internal})</TabsTrigger>
           <TabsTrigger value="freepik">Freepik ({sourceCounts.freepik})</TabsTrigger>
-          <TabsTrigger value="canva">Canva ({sourceCounts.canva})</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -299,9 +293,7 @@ const TemplateBrowser = ({ onTemplateSelect }: TemplateBrowserProps) => {
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-semibold">{template.name}</h2>
                 <Badge variant="outline" className="text-xs">
-                  {template.source === 'internal' ? '🏠 Internal' : 
-                   template.source === 'freepik' ? '🎨 Freepik' : 
-                   '🎨 Canva'}
+                  {template.source === 'internal' ? '🏠 Internal' : '🎨 Freepik'}
                 </Badge>
               </div>
               <div className="flex flex-col gap-1.5">

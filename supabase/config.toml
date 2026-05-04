@@ -1,1 +1,81 @@
-project_id = "mvfmasacpbjnyfakdwfp"
+project_id = "nseqinedckubsypjjcpa"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+port = 54325
+
+[auth]
+enabled = true
+port = 54326
+
+[functions.get-dashboard]
+verify_jwt = true
+
+[functions.export-dashboard]
+verify_jwt = true
+
+[functions.ai-score-ad]
+verify_jwt = true
+
+[functions.create-checkout]
+verify_jwt = true
+
+[functions.flutterwave-webhook]
+verify_jwt = false
+
+[functions.generate-ad-content]
+verify_jwt = true
+
+[functions.generate-ad-image]
+verify_jwt = true
+
+[functions.generate-ad-video]
+verify_jwt = true
+
+[functions.save-generated-ad]
+verify_jwt = true
+
+[functions.generate-ai-campaign]
+verify_jwt = true
+
+[functions.generate-ad-copy]
+verify_jwt = true
+
+[functions.suggest-ad-style]
+verify_jwt = true
+
+[functions.auto-fill-template]
+verify_jwt = true
+
+[functions.search-freepik-templates]
+verify_jwt = true
+
+[functions.get-freepik-template]
+verify_jwt = true
+
+[functions.process-freepik-psd]
+verify_jwt = true
+
+[functions.generate-ad-draft]
+verify_jwt = false
+
+[functions.analyze-performance]
+verify_jwt = true
