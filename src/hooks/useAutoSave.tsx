@@ -13,7 +13,7 @@ export const useAutoSave = (
   options: AutoSaveOptions
 ) => {
   const { delay = 2000, enabled = true, key } = options;
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const lastSavedRef = useRef<string>('');
   const isInitialRender = useRef(true);
 
