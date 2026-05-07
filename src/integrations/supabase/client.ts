@@ -2,8 +2,10 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://nseqinedckubsypjjcpa.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zZXFpbmVkY2t1YnN5cGpqY3BhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxNTA0MzIsImV4cCI6MjA2OTcyNjQzMn0.NUG6HcgBlwoq7FNmZp4M1WhnJYjejBPSFLyrspxXpBQ";
+const FALLBACK_SUPABASE_URL = "https://nseqinedckubsypjjcpa.supabase.co";
+const FALLBACK_SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zZXFpbmVkY2t1YnN5cGpqY3BhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxNTA0MzIsImV4cCI6MjA2OTcyNjQzMn0.NUG6HcgBlwoq7FNmZp4M1WhnJYjejBPSFLyrspxXpBQ";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || FALLBACK_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || FALLBACK_SUPABASE_PUBLISHABLE_KEY;
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
