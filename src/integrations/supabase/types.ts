@@ -14,16 +14,497 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      ad_simulations: {
+        Row: {
+          ad_id: string | null
+          created_at: string
+          id: string
+          score: number
+          user_id: string
+        }
+        Insert: {
+          ad_id?: string | null
+          created_at?: string
+          id?: string
+          score: number
+          user_id: string
+        }
+        Update: {
+          ad_id?: string | null
+          created_at?: string
+          id?: string
+          score?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ad_templates: {
+        Row: {
+          canvas_data: Json | null
+          category: string | null
+          created_at: string
+          customizable_fields: Json | null
+          description: string | null
+          difficulty_level: string | null
+          estimated_setup_time_minutes: number | null
+          external_id: string | null
+          goal: string | null
+          id: string
+          industry: string | null
+          is_popular: boolean
+          name: string
+          performance_score: number | null
+          platforms: string[] | null
+          preview_url: string | null
+          tags: string[] | null
+          template_json: Json
+          template_source: string
+          thumbnail_url: string | null
+          updated_at: string
+          usage_count: number
+        }
+        Insert: {
+          canvas_data?: Json | null
+          category?: string | null
+          created_at?: string
+          customizable_fields?: Json | null
+          description?: string | null
+          difficulty_level?: string | null
+          estimated_setup_time_minutes?: number | null
+          external_id?: string | null
+          goal?: string | null
+          id?: string
+          industry?: string | null
+          is_popular?: boolean
+          name: string
+          performance_score?: number | null
+          platforms?: string[] | null
+          preview_url?: string | null
+          tags?: string[] | null
+          template_json?: Json
+          template_source?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          usage_count?: number
+        }
+        Update: {
+          canvas_data?: Json | null
+          category?: string | null
+          created_at?: string
+          customizable_fields?: Json | null
+          description?: string | null
+          difficulty_level?: string | null
+          estimated_setup_time_minutes?: number | null
+          external_id?: string | null
+          goal?: string | null
+          id?: string
+          industry?: string | null
+          is_popular?: boolean
+          name?: string
+          performance_score?: number | null
+          platforms?: string[] | null
+          preview_url?: string | null
+          tags?: string[] | null
+          template_json?: Json
+          template_source?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          usage_count?: number
+        }
+        Relationships: []
+      }
+      ads: {
+        Row: {
+          content: Json
+          created_at: string
+          id: string
+          preview_url: string | null
+          template_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          id?: string
+          preview_url?: string | null
+          template_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          id?: string
+          preview_url?: string | null
+          template_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ads_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_suggestions: {
+        Row: {
+          created_at: string
+          id: string
+          suggestion_type: string
+          suggestions: Json
+          template_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          suggestion_type: string
+          suggestions?: Json
+          template_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          suggestion_type?: string
+          suggestions?: Json
+          template_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      generated_ads: {
+        Row: {
+          ad_type: string
+          content: Json
+          created_at: string
+          generation_prompt: string | null
+          id: string
+          platform: string
+          product_name: string
+          user_id: string
+        }
+        Insert: {
+          ad_type: string
+          content?: Json
+          created_at?: string
+          generation_prompt?: string | null
+          id?: string
+          platform: string
+          product_name: string
+          user_id: string
+        }
+        Update: {
+          ad_type?: string
+          content?: Json
+          created_at?: string
+          generation_prompt?: string | null
+          id?: string
+          platform?: string
+          product_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          plan: string
+          provider: string
+          provider_subscription_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan?: string
+          provider?: string
+          provider_subscription_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan?: string
+          provider?: string
+          provider_subscription_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      templates: {
+        Row: {
+          canvas_data: Json | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          dimensions: Json | null
+          external_id: string | null
+          file_path: string | null
+          file_size: number | null
+          file_type: string | null
+          id: string
+          is_file_based: boolean
+          name: string
+          placeholders: Json | null
+          preview_url: string | null
+          template_source: string
+          thumbnail_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          canvas_data?: Json | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          dimensions?: Json | null
+          external_id?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          is_file_based?: boolean
+          name: string
+          placeholders?: Json | null
+          preview_url?: string | null
+          template_source?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          canvas_data?: Json | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          dimensions?: Json | null
+          external_id?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          is_file_based?: boolean
+          name?: string
+          placeholders?: Json | null
+          preview_url?: string | null
+          template_source?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_ads: {
+        Row: {
+          content: Json
+          created_at: string
+          export_format: string | null
+          file_path: string | null
+          id: string
+          name: string
+          status: string
+          template_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          export_format?: string | null
+          file_path?: string | null
+          id?: string
+          name: string
+          status?: string
+          template_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          export_format?: string | null
+          file_path?: string | null
+          id?: string
+          name?: string
+          status?: string
+          template_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_ads_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_canvas_drafts: {
+        Row: {
+          canvas_data: Json | null
+          created_at: string
+          id: string
+          last_saved_at: string
+          template_id: string | null
+          user_id: string
+        }
+        Insert: {
+          canvas_data?: Json | null
+          created_at?: string
+          id?: string
+          last_saved_at?: string
+          template_id?: string | null
+          user_id: string
+        }
+        Update: {
+          canvas_data?: Json | null
+          created_at?: string
+          id?: string
+          last_saved_at?: string
+          template_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_dashboards: {
+        Row: {
+          created_at: string
+          id: string
+          layout: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          layout?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          layout?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_usage: {
+        Row: {
+          feature: string
+          id: string
+          last_reset: string
+          updated_at: string
+          usage_count: number
+          user_id: string
+        }
+        Insert: {
+          feature: string
+          id?: string
+          last_reset?: string
+          updated_at?: string
+          usage_count?: number
+          user_id: string
+        }
+        Update: {
+          feature?: string
+          id?: string
+          last_reset?: string
+          updated_at?: string
+          usage_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      increment_template_usage: {
+        Args: { template_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +631,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const
