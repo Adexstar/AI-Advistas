@@ -243,7 +243,7 @@ export const VisualEditorProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Type cast the data to match our Template interface
       const templatesData = (data || []).map(template => ({
         ...template,
-        schema: template.schema as Template['schema']
+        schema: (template as any).schema as Template['schema']
       }));
       
       setTemplates(templatesData);
