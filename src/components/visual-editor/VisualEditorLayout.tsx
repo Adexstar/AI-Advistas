@@ -15,6 +15,14 @@ export const VisualEditorLayout: React.FC = () => {
   const { mode, sidebarOpen, propertiesPanelOpen, setSidebarOpen, setPropertiesPanelOpen } = useVisualEditor() as any;
   const isMobile = useIsMobile();
 
+  React.useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen?.(false);
+      setPropertiesPanelOpen?.(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMobile]);
+
   if (isMobile) {
     return (
       <div className="h-full flex flex-col w-full min-w-0 overflow-x-hidden">
