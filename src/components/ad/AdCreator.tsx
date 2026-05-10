@@ -389,8 +389,8 @@ const AdCreator = ({
 
   const audienceSummary = useMemo(() => buildAudienceSummary(formData), [formData]);
   const manualAudienceReady = Boolean((formData.locations || []).length && formData.ageRange?.min && formData.ageRange?.max);
-  const selectedPlacementCount = useMemo(
-    () => Object.values(formData.placementOptions || {}).reduce((count, placements) => count + (placements as string[]).length, 0),
+  const selectedPlacementCount = useMemo<number>(
+    () => Object.values(formData.placementOptions || {}).reduce<number>((count, placements) => count + (placements as string[]).length, 0),
     [formData.placementOptions]
   );
   const scheduleIsValid = Boolean(
