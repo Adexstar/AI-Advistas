@@ -2,12 +2,25 @@ import { createContext, useContext, useReducer, ReactNode } from 'react';
 import { toast } from '@/hooks/use-toast';
 
 // Types
+export type BudgetPeriod = 'daily' | 'total';
+export type AudienceMode = 'advantage_plus' | 'manual';
+export type AudienceGender = 'all' | 'male' | 'female';
+
+export interface CampaignDraftSettings {
+  budget: number;
+  budgetPeriod: BudgetPeriod;
+  startDate: string;
+  endDate?: string;
+  runContinuously: boolean;
+}
+
 export interface Campaign {
   id: string;
   name: string;
   status: 'active' | 'paused' | 'draft' | 'completed';
   platform: string[];
   budget: number;
+  budgetPeriod?: BudgetPeriod;
   spent: number;
   impressions: number;
   clicks: number;
@@ -18,7 +31,8 @@ export interface Campaign {
   roas?: number;
   revenue?: number;
   startDate: string;
-  endDate: string;
+  endDate?: string;
+  runContinuously?: boolean;
   createdAt: string;
   adContent?: AdContent;
 }
@@ -50,6 +64,15 @@ export interface AdContent {
   cta?: string;
   placementOptions?: Record<string, string[]>;
   simpleAudience?: string;
+  audienceMode?: AudienceMode;
+  ageRange?: {
+    min: number;
+    max: number;
+  };
+  locations?: string[];
+  interests?: string[];
+  gender?: AudienceGender;
+  suggestedHeadlines?: string[];
   aiGenerated?: boolean;
   aiMetadata?: {
     suggestedHeadlines?: string[];
@@ -72,7 +95,10 @@ export interface AppState {
 type AppAction =
   | { type: 'CREATE_CAMPAIGN'; payload: Omit<Campaign, 'id' | 'createdAt'> }
   | { type: 'UPDATE_CAMPAIGN'; payload: { id: string; updates: Partial<Campaign> } }
+  | { type: 'BULK_UPDATE_CAMPAIGNS'; payload: { ids: string[]; updates: Partial<Campaign> } }
   | { type: 'DELETE_CAMPAIGN'; payload: string }
+  | { type: 'BULK_DELETE_CAMPAIGNS'; payload: string[] }
+  | { type: 'DUPLICATE_CAMPAIGNS'; payload: string[] }
   | { type: 'CREATE_AD'; payload: Omit<Ad, 'id' | 'createdAt'> }
   | { type: 'UPDATE_AD'; payload: { id: string; updates: Partial<Ad> } }
   | { type: 'DELETE_AD'; payload: string }
@@ -198,14 +224,70 @@ function appReducer(state: AppState, action: AppAction): AppState {
           campaign.id === action.payload.id
             ? { ...campaign, ...action.payload.updates }
             : campaign
-        )
+        ),
+        selectedCampaign:
+          state.selectedCampaign?.id === action.payload.id
+            ? { ...state.selectedCampaign, ...action.payload.updates }
+            : state.selectedCampaign
+      };
+
+    case 'BULK_UPDATE_CAMPAIGNS':
+      return {
+        ...state,
+        campaigns: state.campaigns.map(campaign =>
+          action.payload.ids.includes(campaign.id)
+            ? { ...campaign, ...action.payload.updates }
+            : campaign
+        ),
+        selectedCampaign:
+          state.selectedCampaign && action.payload.ids.includes(state.selectedCampaign.id)
+            ? { ...state.selectedCampaign, ...action.payload.updates }
+            : state.selectedCampaign
       };
 
     case 'DELETE_CAMPAIGN':
       return {
         ...state,
         campaigns: state.campaigns.filter(campaign => campaign.id !== action.payload),
-        ads: state.ads.filter(ad => ad.campaignId !== action.payload)
+        ads: state.ads.filter(ad => ad.campaignId !== action.payload),
+        selectedCampaign: state.selectedCampaign?.id === action.payload ? null : state.selectedCampaign
+      };
+
+    case 'BULK_DELETE_CAMPAIGNS':
+      return {
+        ...state,
+        campaigns: state.campaigns.filter(campaign => !action.payload.includes(campaign.id)),
+        ads: state.ads.filter(ad => !action.payload.includes(ad.campaignId)),
+        selectedCampaign:
+          state.selectedCampaign && action.payload.includes(state.selectedCampaign.id)
+            ? null
+            : state.selectedCampaign
+      };
+
+    case 'DUPLICATE_CAMPAIGNS':
+      return {
+        ...state,
+        campaigns: [
+          ...state.campaigns,
+          ...state.campaigns
+            .filter(campaign => action.payload.includes(campaign.id))
+            .map((campaign, index) => ({
+              ...campaign,
+              id: `${Date.now()}-${index}`,
+              name: `${campaign.name} Copy`,
+              status: 'draft' as const,
+              spent: 0,
+              impressions: 0,
+              clicks: 0,
+              ctr: 0,
+              conversions: 0,
+              cpa: undefined,
+              cpc: undefined,
+              roas: undefined,
+              revenue: undefined,
+              createdAt: new Date().toISOString(),
+            }))
+        ]
       };
 
     case 'CREATE_AD':
@@ -303,7 +385,10 @@ const AppContext = createContext<{
   actions: {
     createCampaign: (campaign: Omit<Campaign, 'id' | 'createdAt'>) => void;
     updateCampaign: (id: string, updates: Partial<Campaign>) => void;
+    bulkUpdateCampaigns: (ids: string[], updates: Partial<Campaign>) => void;
     deleteCampaign: (id: string) => void;
+    bulkDeleteCampaigns: (ids: string[]) => void;
+    duplicateCampaigns: (ids: string[]) => void;
     createAd: (ad: Omit<Ad, 'id' | 'createdAt'>) => void;
     updateAd: (id: string, updates: Partial<Ad>) => void;
     deleteAd: (id: string) => void;
@@ -337,11 +422,35 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       });
     },
 
+    bulkUpdateCampaigns: (ids: string[], updates: Partial<Campaign>) => {
+      dispatch({ type: 'BULK_UPDATE_CAMPAIGNS', payload: { ids, updates } });
+      toast({
+        title: "Campaigns Updated",
+        description: `${ids.length} campaign${ids.length === 1 ? '' : 's'} updated successfully.`,
+      });
+    },
+
     deleteCampaign: (id: string) => {
       dispatch({ type: 'DELETE_CAMPAIGN', payload: id });
       toast({
         title: "Campaign Deleted",
         description: "Campaign has been deleted successfully.",
+      });
+    },
+
+    bulkDeleteCampaigns: (ids: string[]) => {
+      dispatch({ type: 'BULK_DELETE_CAMPAIGNS', payload: ids });
+      toast({
+        title: "Campaigns Deleted",
+        description: `${ids.length} campaign${ids.length === 1 ? '' : 's'} deleted successfully.`,
+      });
+    },
+
+    duplicateCampaigns: (ids: string[]) => {
+      dispatch({ type: 'DUPLICATE_CAMPAIGNS', payload: ids });
+      toast({
+        title: "Campaigns Duplicated",
+        description: `${ids.length} campaign${ids.length === 1 ? '' : 's'} copied as drafts.`,
       });
     },
 

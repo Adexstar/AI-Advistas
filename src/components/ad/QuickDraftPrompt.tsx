@@ -64,30 +64,32 @@ const QuickDraftPrompt = ({ onDraftGenerated, onSkip }: QuickDraftPromptProps) =
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="container max-w-4xl mx-auto py-12"
+      className="mx-auto w-full max-w-2xl py-2 sm:max-w-3xl sm:py-4"
     >
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full mb-4">
+      <div className="mb-6 text-center sm:mb-8">
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2">
           <Sparkles className="h-4 w-4 text-primary" />
           <span className="text-sm font-medium text-primary">AI-Powered Ad Creation</span>
         </div>
-        <h1 className="text-4xl font-bold mb-3">Create Your Ad in Seconds</h1>
-        <p className="text-lg text-muted-foreground">
+        <h1 className="mb-3 break-words text-3xl font-bold leading-tight sm:text-4xl">
+          Create Your Ad in Seconds
+        </h1>
+        <p className="mx-auto max-w-2xl text-sm leading-relaxed text-foreground/80 sm:text-base">
           Describe your ad in plain language, and let AI generate a complete draft for you
         </p>
       </div>
 
-      <Card className="shadow-lg">
-        <CardHeader>
+      <Card className="w-full rounded-2xl border border-border/80 bg-card shadow-lg">
+        <CardHeader className="space-y-3 p-4 sm:p-6">
           <CardTitle className="flex items-center gap-2">
             <Wand2 className="h-5 w-5 text-primary" />
             Quick Draft Generator
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm leading-relaxed text-foreground/75">
             Tell us about your ad, and we'll pre-fill everything. You'll have full control to edit afterwards.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-5 p-4 pt-0 sm:p-6 sm:pt-0">
           <div className="space-y-2">
             <Label htmlFor="prompt">Describe Your Ad *</Label>
             <Textarea
@@ -96,18 +98,18 @@ const QuickDraftPrompt = ({ onDraftGenerated, onSkip }: QuickDraftPromptProps) =
               rows={4}
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              className="resize-none"
+              className="min-w-0 w-full resize-none"
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-foreground/65">
               {prompt.length}/500 characters • Minimum 20 characters
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="goal">Campaign Goal (Optional)</Label>
               <Select value={goal} onValueChange={setGoal}>
-                <SelectTrigger id="goal">
+                <SelectTrigger id="goal" className="min-w-0 w-full">
                   <SelectValue placeholder="Select goal" />
                 </SelectTrigger>
                 <SelectContent>
@@ -122,7 +124,7 @@ const QuickDraftPrompt = ({ onDraftGenerated, onSkip }: QuickDraftPromptProps) =
             <div className="space-y-2">
               <Label htmlFor="platform">Primary Platform (Optional)</Label>
               <Select value={platform} onValueChange={setPlatform}>
-                <SelectTrigger id="platform">
+                <SelectTrigger id="platform" className="min-w-0 w-full">
                   <SelectValue placeholder="Select platform" />
                 </SelectTrigger>
                 <SelectContent>
@@ -137,14 +139,14 @@ const QuickDraftPrompt = ({ onDraftGenerated, onSkip }: QuickDraftPromptProps) =
             </div>
           </div>
 
-          <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+          <div className="space-y-2 rounded-2xl bg-secondary/35 p-4">
             <p className="text-sm font-medium">Need inspiration? Try these examples:</p>
             <div className="space-y-2">
               {examplePrompts.map((example, index) => (
                 <button
                   key={index}
                   onClick={() => setPrompt(example)}
-                  className="w-full text-left text-sm text-muted-foreground hover:text-foreground transition-colors p-2 rounded hover:bg-background"
+                  className="w-full rounded-xl p-2 text-left text-sm leading-relaxed text-foreground/72 transition-colors hover:bg-background hover:text-foreground"
                 >
                   • {example}
                 </button>
@@ -152,11 +154,11 @@ const QuickDraftPrompt = ({ onDraftGenerated, onSkip }: QuickDraftPromptProps) =
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <Button
               onClick={handleGenerate}
               disabled={generateDraftMutation.isPending || prompt.length < 20}
-              className="flex-1"
+              className="w-full flex-1"
               size="lg"
             >
               {generateDraftMutation.isPending ? (
@@ -175,7 +177,7 @@ const QuickDraftPrompt = ({ onDraftGenerated, onSkip }: QuickDraftPromptProps) =
               onClick={onSkip}
               variant="outline"
               size="lg"
-              className="sm:w-auto"
+              className="w-full sm:w-auto"
             >
               Start from Scratch
               <ArrowRight className="h-4 w-4" />
@@ -186,7 +188,7 @@ const QuickDraftPrompt = ({ onDraftGenerated, onSkip }: QuickDraftPromptProps) =
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-center text-sm text-muted-foreground"
+              className="text-center text-sm text-foreground/70"
             >
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Sparkles className="h-4 w-4 animate-pulse text-primary" />
@@ -198,7 +200,7 @@ const QuickDraftPrompt = ({ onDraftGenerated, onSkip }: QuickDraftPromptProps) =
         </CardContent>
       </Card>
 
-      <div className="mt-6 text-center text-sm text-muted-foreground">
+      <div className="mt-6 text-center text-sm text-foreground/70">
         <p>✨ AI will generate copy, select platforms, suggest audiences, and more</p>
         <p className="mt-1">You'll be able to review and customize everything before creating your ad</p>
       </div>

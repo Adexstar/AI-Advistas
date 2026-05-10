@@ -31,7 +31,7 @@ const AIAdEditor = () => {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="relative z-10 px-4 lg:px-6 pt-6 pb-4 text-center"
+        className="relative z-10 page-container pt-6 pb-4 text-center"
       >
         <h1 className="text-2xl lg:text-4xl font-bold text-white mb-2 flex items-center justify-center gap-3">
           <Sparkles className="h-6 w-6 lg:h-8 lg:w-8 text-yellow-400" />
@@ -43,12 +43,12 @@ const AIAdEditor = () => {
       </motion.div>
 
       {/* Content Area */}
-      <div className="relative z-10 px-4 lg:px-6 pb-6">
+      <div className="relative z-10 page-container pb-6">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="max-w-7xl mx-auto space-y-6"
+          className="space-y-6"
         >
           {/* Setup Card */}
           <Card className="bg-white/95 backdrop-blur-sm shadow-2xl border-0">
@@ -61,10 +61,11 @@ const AIAdEditor = () => {
             <CardContent className="p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  <label htmlFor="product-name" className="text-sm font-medium text-muted-foreground mb-2 block">
                     Product Name
                   </label>
                   <input
+                    id="product-name"
                     type="text"
                     value={productName}
                     onChange={(e) => setProductName(e.target.value)}
@@ -73,10 +74,11 @@ const AIAdEditor = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  <label htmlFor="platform" className="text-sm font-medium text-muted-foreground mb-2 block">
                     Platform
                   </label>
                   <select
+                    id="platform"
                     value={platform}
                     onChange={(e) => setPlatform(e.target.value)}
                     className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"

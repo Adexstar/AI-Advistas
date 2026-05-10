@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,11 +20,11 @@ import {
 } from "lucide-react";
 const Settings = () => {
   const [profile, setProfile] = useState({
-    firstName: "John",
-    lastName: "Doe",
-    email: "john.doe@example.com",
-    company: "AdVista Pro",
-    bio: "Digital marketing professional with 5+ years of experience in advertising and campaign optimization.",
+    firstName: "Alex",
+    lastName: "Morgan",
+    email: "alex.morgan@example.com",
+    company: "Northstar Studio",
+    bio: "Campaign operator focused on moving briefs, creative, and launch decisions through one clear workflow.",
     phone: "+1 (555) 123-4567"
   });
 
@@ -54,10 +54,10 @@ const Settings = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="page-container space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">Manage your account settings and preferences</p>
+        <h1 className="text-3xl font-bold">Workspace Settings</h1>
+        <p className="text-muted-foreground">Tune profile, alerts, security, and connected channels so the team operates from one calmer control surface.</p>
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
@@ -73,8 +73,11 @@ const Settings = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5 text-primary" />
-                Profile Information
+                Workspace Profile
               </CardTitle>
+              <CardDescription>
+                Set the identity and contact details that travel with your campaigns, approvals, and billing flow.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-4 md:grid-cols-2">
@@ -149,6 +152,9 @@ const Settings = () => {
                 <Bell className="h-5 w-5 text-primary" />
                 Notification Preferences
               </CardTitle>
+              <CardDescription>
+                Control which updates should reach the team and which ones should stay inside the workspace.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
@@ -160,7 +166,7 @@ const Settings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">Campaign Updates</p>
-                      <p className="text-sm text-muted-foreground">Get notified about campaign performance and status changes</p>
+                      <p className="text-sm text-muted-foreground">Know when campaign status, performance, or readiness changes need attention.</p>
                     </div>
                     <Switch
                       checked={notifications.emailCampaigns}
@@ -170,7 +176,7 @@ const Settings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">Billing & Payments</p>
-                      <p className="text-sm text-muted-foreground">Receive billing statements and payment confirmations</p>
+                      <p className="text-sm text-muted-foreground">Receive invoices, checkout confirmations, and renewal reminders.</p>
                     </div>
                     <Switch
                       checked={notifications.emailBilling}
@@ -180,7 +186,7 @@ const Settings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">Feature Updates</p>
-                      <p className="text-sm text-muted-foreground">Stay informed about new features and improvements</p>
+                      <p className="text-sm text-muted-foreground">Hear about meaningful workspace improvements, not every minor release.</p>
                     </div>
                     <Switch
                       checked={notifications.emailFeatures}
@@ -190,7 +196,7 @@ const Settings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">Tips & Tutorials</p>
-                      <p className="text-sm text-muted-foreground">Educational content to improve your advertising</p>
+                      <p className="text-sm text-muted-foreground">Get practical guidance for briefs, templates, and campaign operations.</p>
                     </div>
                     <Switch
                       checked={notifications.emailTips}
@@ -211,7 +217,7 @@ const Settings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">Campaign Alerts</p>
-                      <p className="text-sm text-muted-foreground">Real-time alerts for important campaign events</p>
+                      <p className="text-sm text-muted-foreground">Receive real-time nudges when launch-critical events need action.</p>
                     </div>
                     <Switch
                       checked={notifications.pushCampaigns}
@@ -221,7 +227,7 @@ const Settings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">Billing Reminders</p>
-                      <p className="text-sm text-muted-foreground">Credit low alerts and payment reminders</p>
+                      <p className="text-sm text-muted-foreground">Stay ahead of low credits, renewals, and payment follow-up.</p>
                     </div>
                     <Switch
                       checked={notifications.pushBilling}
@@ -246,6 +252,9 @@ const Settings = () => {
                 <Shield className="h-5 w-5 text-primary" />
                 Security Settings
               </CardTitle>
+              <CardDescription>
+                Protect the workspace, control access, and keep launch activity tied to trusted sessions.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
@@ -277,7 +286,7 @@ const Settings = () => {
                 <div className="flex items-center justify-between max-w-md">
                   <div>
                     <p className="font-medium">Enable 2FA</p>
-                    <p className="text-sm text-muted-foreground">Add an extra layer of security to your account</p>
+                    <p className="text-sm text-muted-foreground">Add a second layer of protection before anyone can access the workspace.</p>
                   </div>
                   <Button variant="outline">Setup 2FA</Button>
                 </div>
@@ -315,6 +324,9 @@ const Settings = () => {
                 <Link className="h-5 w-5 text-primary" />
                 Platform Integrations
               </CardTitle>
+              <CardDescription>
+                Connect the channels that receive your campaigns so the workspace stays in sync with where you launch.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -341,6 +353,9 @@ const Settings = () => {
                 <Database className="h-5 w-5 text-primary" />
                 API & Webhooks
               </CardTitle>
+              <CardDescription>
+                Extend the workspace into your own systems when you need automations beyond the default flow.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>

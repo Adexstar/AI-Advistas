@@ -135,16 +135,16 @@ const Auth = () => {
               Welcome to AdVista
             </h1>
             <p className="text-primary-100">
-              Transform your advertising with AI-powered insights
+              Move from brief to launch in one calmer campaign workspace.
             </p>
           </div>
         </div>
 
         <Card className="backdrop-blur-sm bg-white/95 border-0 shadow-2xl">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Get Started</CardTitle>
+            <CardTitle className="text-2xl">Open Your Workspace</CardTitle>
             <CardDescription>
-              Access your AI-powered advertising dashboard
+              Sign in to continue with drafts, templates, billing, and campaign operations.
             </CardDescription>
           </CardHeader>
           <CardContent>

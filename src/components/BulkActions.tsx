@@ -42,6 +42,11 @@ interface BulkActionsProps {
   onBulkAction: (action: string, itemIds: string[], payload?: any) => void;
   actions?: BulkAction[];
   itemType?: string;
+  showQuickStatusChange?: boolean;
+  quickStatusOptions?: Array<{
+    value: string;
+    label: string;
+  }>;
 }
 
 interface BulkAction {
@@ -61,7 +66,14 @@ export const BulkActions = ({
   onSelectionChange,
   onBulkAction,
   actions = [],
-  itemType = 'items'
+  itemType = 'items',
+  showQuickStatusChange = true,
+  quickStatusOptions = [
+    { value: 'active', label: 'Active' },
+    { value: 'paused', label: 'Paused' },
+    { value: 'draft', label: 'Draft' },
+    { value: 'archived', label: 'Archived' },
+  ]
 }: BulkActionsProps) => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingAction, setPendingAction] = useState<BulkAction | null>(null);
@@ -240,20 +252,23 @@ export const BulkActions = ({
                 ))}
 
                 {/* Quick Status Change */}
-                <div className="flex items-center gap-2 ml-4">
-                  <span className="text-sm text-muted-foreground">Set status:</span>
-                  <Select onValueChange={(value) => onBulkAction('changeStatus', selectedItems, { status: value })}>
-                    <SelectTrigger className="w-32 h-8">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="paused">Paused</SelectItem>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="archived">Archived</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {showQuickStatusChange && quickStatusOptions.length > 0 && (
+                  <div className="flex items-center gap-2 ml-4">
+                    <span className="text-sm text-muted-foreground">Set status:</span>
+                    <Select onValueChange={(value) => onBulkAction('changeStatus', selectedItems, { status: value })}>
+                      <SelectTrigger className="w-32 h-8">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {quickStatusOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 {/* Clear Selection */}
                 <Button

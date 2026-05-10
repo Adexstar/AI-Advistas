@@ -1,11 +1,24 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AdCreator from '@/components/ad/AdCreator';
-import { useApp, type AdContent, type Campaign } from '@/contexts/AppContext';
+import { useApp, type AdContent, type Campaign, type CampaignDraftSettings } from '@/contexts/AppContext';
 import { toast } from '@/hooks/use-toast';
+import {
+  clearCreateFlowSession,
+  readCreateFlowSession,
+  saveCreateFlowSession,
+} from '@/lib/createFlowSession';
+
+const formatDateForInput = (date: Date) => {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+};
 
 const AdEditor = () => {
   const location = useLocation();
@@ -13,12 +26,23 @@ const AdEditor = () => {
   const { campaignId } = useParams();
   const { state, actions } = useApp();
 
-  const locationState = location.state || {};
-  const initialData = locationState.initialData || {};
-  const isAI = locationState.isAI || false;
-  const templateId = locationState.templateId;
-  const isTemplate = locationState.isTemplate || false;
-  const isScratch = locationState.isScratch || false;
+  const locationState = (location.state || {}) as Record<string, any>;
+  const persistedSession = readCreateFlowSession();
+  const activeState = Object.keys(locationState).length > 0 ? locationState : (persistedSession || {});
+  const initialData = activeState.initialData || {};
+  const isAI = activeState.isAI || false;
+  const templateId = activeState.templateId;
+  const isTemplate = activeState.isTemplate || false;
+  const isScratch = activeState.isScratch || false;
+  const templateName = activeState.initialData?.templateName || activeState.templateName;
+
+  const defaultCampaignSettings: CampaignDraftSettings = {
+    budget: 25,
+    budgetPeriod: 'daily',
+    startDate: formatDateForInput(new Date()),
+    endDate: formatDateForInput(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
+    runContinuously: true,
+  };
 
   const [formData, setFormData] = useState<AdContent>({
     ...initialData,
@@ -28,13 +52,39 @@ const AdEditor = () => {
     adType: initialData.adType || 'image',
     platforms: initialData.platforms || [],
     audience: initialData.audience || '',
+    audienceMode: initialData.audienceMode || 'advantage_plus',
+    ageRange: initialData.ageRange || { min: 18, max: 65 },
+    locations: initialData.locations || [],
+    interests: initialData.interests || [],
+    gender: initialData.gender || 'all',
     mediaUrl: initialData.mediaUrl || '',
     mediaType: initialData.mediaType || 'image',
     placementOptions: initialData.placementOptions || {},
-    simpleAudience: initialData.simpleAudience || ''
+    simpleAudience: initialData.simpleAudience || '',
+    suggestedHeadlines: initialData.suggestedHeadlines || initialData.aiMetadata?.suggestedHeadlines || []
+  });
+
+  const [campaignSettings, setCampaignSettings] = useState<CampaignDraftSettings>({
+    ...defaultCampaignSettings,
+    ...(activeState.campaignSettings || {}),
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    if (campaignId) {
+      return;
+    }
+
+    saveCreateFlowSession({
+      initialData: formData,
+      campaignSettings,
+      isAI,
+      isTemplate,
+      isScratch,
+      templateId,
+    });
+  }, [campaignId, formData, campaignSettings, isAI, isTemplate, isScratch, templateId]);
 
   const handleBack = () => {
     if (campaignId) {
@@ -54,17 +104,20 @@ const AdEditor = () => {
         name: formData.product || 'New Campaign',
         status: 'draft',
         platform: formData.platforms,
-        budget: 1000,
+        budget: campaignSettings.budget,
+        budgetPeriod: campaignSettings.budgetPeriod,
         spent: 0,
         impressions: 0,
         clicks: 0,
         ctr: 0,
-        startDate: new Date().toISOString().split('T')[0],
-        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        startDate: campaignSettings.startDate,
+        endDate: campaignSettings.runContinuously ? undefined : campaignSettings.endDate,
+        runContinuously: campaignSettings.runContinuously,
         adContent: formData
       };
       
       actions.createCampaign(newCampaign);
+      clearCreateFlowSession();
       
       toast({
         title: 'Success!',
@@ -87,7 +140,7 @@ const AdEditor = () => {
   const getTitle = () => {
     if (campaignId) return `Edit Campaign: ${campaignId}`;
     if (isAI) return 'Review & Refine AI Ad Draft';
-    if (templateId || isTemplate) return `Customize Template: ${locationState.initialData?.templateName || 'Template Ad'}`;
+    if (templateId || isTemplate) return `Customize Template: ${templateName || 'Template Ad'}`;
     return 'New Ad Setup';
   };
 
@@ -98,7 +151,7 @@ const AdEditor = () => {
     return 'Fill in the details to launch your ad campaign.';
   };
 
-  if (!campaignId && !initialData && !isScratch && !isAI && !templateId) {
+  if (!campaignId && !Object.keys(initialData).length && !isScratch && !isAI && !templateId) {
     return (
       <div className="p-10 text-center">
         <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-4" />
@@ -118,7 +171,7 @@ const AdEditor = () => {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto">
+    <div className="page-container max-w-5xl py-4 md:py-6">
       <Button variant="ghost" onClick={handleBack} className="mb-4 text-primary">
         <ArrowLeft className="h-4 w-4 mr-2" /> Back to Options
       </Button>
@@ -131,9 +184,14 @@ const AdEditor = () => {
       <AdCreator 
         formData={formData}
         setFormData={setFormData}
+        campaignSettings={campaignSettings}
+        setCampaignSettings={setCampaignSettings}
         onGenerate={handleGenerate}
         isGenerating={isGenerating}
         initialData={initialData}
+        isAI={isAI}
+        isTemplate={isTemplate}
+        templateName={templateName}
       />
     </div>
   );

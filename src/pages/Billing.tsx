@@ -19,11 +19,12 @@ const Billing = () => {
       name: "Free",
       price: 0,
       credits: 50,
+      description: "For learning the workspace and launching a first campaign flow.",
       features: [
         "3 active campaigns",
-        "5 AI generations/day",
-        "2 template downloads",
-        "Email support"
+        "5 AI drafts per day",
+        "2 template exports",
+        "Basic email support"
       ],
       planKey: "free",
       current: currentPlan === "free",
@@ -33,10 +34,12 @@ const Billing = () => {
       name: "Pro",
       price: 29,
       credits: 500,
+      description: "For operators running regular launches across the editor, library, and campaign surface.",
       features: [
         "50 active campaigns",
-        "100 AI generations/day",
-        "50 template downloads",
+        "100 AI drafts per day",
+        "50 template exports",
+        "Saved templates and recent history",
         "Priority support",
         "A/B testing",
         "Advanced analytics"
@@ -49,12 +52,14 @@ const Billing = () => {
       name: "Enterprise",
       price: 99,
       credits: 2000,
+      description: "For teams managing larger creative systems, approvals, and higher launch volume.",
       features: [
-        "Unlimited campaigns",
-        "Unlimited AI generations",
-        "Unlimited template downloads",
+        "Unlimited campaign operations",
+        "Unlimited AI drafts",
+        "Unlimited template exports",
         "24/7 phone support",
         "Custom integrations",
+        "Admin template workflows",
         "White-label options",
         "API access"
       ],
@@ -100,27 +105,26 @@ const Billing = () => {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="page-container space-y-8 py-4 md:py-6">
       <div>
-        <h1 className="text-3xl font-bold">Billing & Subscription</h1>
+        <h1 className="text-3xl font-bold">Billing & Plan Controls</h1>
         <p className="text-muted-foreground mt-2">
-          Manage your subscription and billing information
+          Keep credits, limits, and plan access aligned with how your team creates, launches, and operates campaigns.
         </p>
       </div>
 
-      {/* Current Plan & Usage */}
-      <Card>
-        <CardHeader>
+      <Card className="border-border/80 shadow-card">
+        <CardHeader className="space-y-3 p-5 sm:p-6">
           <CardTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
             Current Plan: {subscriptionPlans.find(p => p.current)?.name || 'Free'}
           </CardTitle>
           <CardDescription>
-            Your usage limits and current consumption
+            Track the workspace limits that shape AI drafting, active campaigns, and template usage.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="space-y-6 p-5 pt-0 sm:p-6 sm:pt-0">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>AI Generations</span>
@@ -162,17 +166,17 @@ const Billing = () => {
       </Card>
 
       {/* Subscription Plans */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Subscription Plans</CardTitle>
+      <Card className="border-border/80 shadow-card">
+        <CardHeader className="space-y-3 p-5 sm:p-6">
+          <CardTitle>Workspace Plans</CardTitle>
           <CardDescription>
-            Choose the plan that best fits your needs
+            Choose the plan that matches your launch pace, template usage, and campaign operations load.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             {subscriptionPlans.map((plan, index) => (
-              <Card key={index} className={`relative ${plan.popular ? 'ring-2 ring-primary' : ''} ${plan.current ? 'bg-muted/50' : ''}`}>
+              <Card key={index} className={`relative h-full border-border/80 shadow-sm ${plan.popular ? 'ring-2 ring-primary' : ''} ${plan.current ? 'bg-muted/50' : ''}`}>
                 {plan.popular && (
                   <Badge className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-primary">
                     <Star className="mr-1 h-3 w-3" />
@@ -184,22 +188,25 @@ const Billing = () => {
                     Current Plan
                   </Badge>
                 )}
-                <CardHeader>
+                <CardHeader className="space-y-3 p-5 sm:p-6">
                   <CardTitle>{plan.name}</CardTitle>
                   <div className="space-y-2">
                     <div className="flex items-baseline">
                       <span className="text-3xl font-bold">${plan.price}</span>
                       <span className="text-muted-foreground ml-1">/month</span>
                     </div>
+                    <p className="text-sm leading-6 text-muted-foreground">
+                      {plan.description}
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       {plan.credits} monthly credits included
                     </p>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 p-5 pt-0 sm:p-6 sm:pt-0">
                   <ul className="space-y-2">
                     {plan.features.map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-center text-sm">
+                      <li key={featureIndex} className="flex items-start text-sm leading-6">
                         <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
                         {feature}
                       </li>
@@ -219,7 +226,7 @@ const Billing = () => {
                     ) : plan.current ? (
                       "Current Plan"
                     ) : (
-                      `Upgrade to ${plan.name}`
+                      `Move to ${plan.name}`
                     )}
                   </Button>
                 </CardContent>
@@ -232,12 +239,15 @@ const Billing = () => {
       {/* Additional Information */}
       <Card>
         <CardHeader>
-          <CardTitle>Billing Information</CardTitle>
+          <CardTitle>Billing Details</CardTitle>
+          <CardDescription>
+            Payment and renewal details for the current workspace subscription.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between py-2">
             <span className="text-sm text-muted-foreground">Payment Method</span>
-            <span className="text-sm">Flutterwave (Cards, Bank Transfer, USSD)</span>
+            <span className="text-sm">Flutterwave checkout for cards, bank transfer, and USSD</span>
           </div>
           <div className="flex items-center justify-between py-2">
             <span className="text-sm text-muted-foreground">Billing Cycle</span>
@@ -246,6 +256,9 @@ const Billing = () => {
           <div className="flex items-center justify-between py-2">
             <span className="text-sm text-muted-foreground">Next Billing Date</span>
             <span className="text-sm">{currentPlan !== 'free' ? 'TBD after upgrade' : 'N/A'}</span>
+          </div>
+          <div className="rounded-2xl border border-border/70 bg-secondary/30 p-4 text-sm leading-6 text-muted-foreground">
+            Need a higher-volume setup or a custom rollout? Upgrade here first, then use Settings to connect platforms and align your workspace for launch.
           </div>
         </CardContent>
       </Card>

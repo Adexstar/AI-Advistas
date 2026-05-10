@@ -7,23 +7,67 @@ import { Wand2, LayoutTemplate, Square, ArrowLeft } from 'lucide-react';
 import QuickDraftPrompt from '@/components/ad/QuickDraftPrompt';
 import TemplateBrowser from '@/components/ad/TemplateBrowser';
 import type { AdDraftResponse } from '@/schemas/adDraftSchema';
+import { saveCreateFlowSession } from '@/lib/createFlowSession';
+import type { CampaignDraftSettings } from '@/contexts/AppContext';
 
 type AdCreationMethod = 'AI_DRAFT' | 'TEMPLATE' | 'SCRATCH' | null;
+
+const formatDateForInput = (date: Date) => {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+};
+
+const createDefaultCampaignSettings = (): CampaignDraftSettings => ({
+  budget: 25,
+  budgetPeriod: 'daily',
+  startDate: formatDateForInput(new Date()),
+  endDate: formatDateForInput(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
+  runContinuously: true,
+});
 
 const CreateAdEntry = () => {
   const navigate = useNavigate();
   const [method, setMethod] = useState<AdCreationMethod>(null);
 
+  const handleDataReady = (data: Partial<AdDraftResponse> & { templateId?: string; templateName?: string }) => {
+    const createFlowState = {
+      initialData: data,
+      campaignSettings: createDefaultCampaignSettings(),
+      isAI: !!data.aiGenerated,
+      isTemplate: !!data.templateId,
+      templateId: data.templateId,
+    };
+
+    saveCreateFlowSession(createFlowState);
+
+    navigate('/ad-editor', {
+      state: createFlowState,
+    });
+  };
+
   const handleDraftGenerated = (draft: AdDraftResponse) => {
-    navigate('/ad-editor', { state: { draftData: draft, isAI: true } });
+    handleDataReady(draft);
   };
 
   const handleTemplateSelect = (template: any) => {
-    navigate('/ad-editor', { state: { templateData: template, templateId: template.id } });
+    handleDataReady({
+      ...template,
+      templateId: template.id,
+    });
   };
 
   const handleStartFromScratch = () => {
-    navigate('/ad-editor', { state: { isScratch: true } });
+    const createFlowState = {
+      initialData: {},
+      campaignSettings: createDefaultCampaignSettings(),
+      isScratch: true,
+    };
+
+    saveCreateFlowSession(createFlowState);
+    navigate('/ad-editor', { state: createFlowState });
   };
 
   const handleBack = () => {
@@ -34,7 +78,7 @@ const CreateAdEntry = () => {
   if (method === 'AI_DRAFT') {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container max-w-4xl mx-auto py-6">
+        <div className="page-container py-4 sm:py-6">
           <Button variant="ghost" onClick={handleBack} className="mb-4">
             <ArrowLeft className="h-4 w-4 mr-2" /> Back to Options
           </Button>
@@ -51,7 +95,7 @@ const CreateAdEntry = () => {
   if (method === 'TEMPLATE') {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container max-w-7xl mx-auto py-6">
+        <div className="page-container py-4 sm:py-6">
           <Button variant="ghost" onClick={handleBack} className="mb-4">
             <ArrowLeft className="h-4 w-4 mr-2" /> Back to Options
           </Button>
@@ -66,25 +110,25 @@ const CreateAdEntry = () => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background py-12"
+      className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background py-8 sm:py-10 lg:py-12"
     >
-      <div className="container max-w-6xl mx-auto px-4">
-        <div className="text-center mb-12">
+      <div className="page-container">
+        <div className="mb-8 text-center sm:mb-10 lg:mb-12">
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.1 }}
           >
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            <h1 className="mb-4 break-words text-3xl font-bold leading-tight sm:text-4xl md:text-5xl">
               How Would You Like to Create Your Ad?
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="mx-auto max-w-2xl text-sm leading-relaxed text-foreground/80 sm:text-base md:text-lg">
               Select the option that gets you to launch the fastest. Each path leads to the same powerful editor.
             </p>
           </motion.div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-3 lg:gap-8">
           {/* Option 1: AI Quick Draft */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -92,11 +136,11 @@ const CreateAdEntry = () => {
             transition={{ delay: 0.2 }}
             whileHover={{ scale: 1.02 }}
           >
-            <Card 
+              <Card 
               onClick={() => setMethod('AI_DRAFT')}
-              className="cursor-pointer h-full border-2 border-primary/20 hover:border-primary hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-primary/5 to-primary/10"
+              className="h-full cursor-pointer border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 transition-all duration-300 hover:border-primary hover:shadow-lg"
             >
-              <CardHeader className="text-center pb-4">
+              <CardHeader className="pb-4 text-center">
                 <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                   <Wand2 className="h-8 w-8 text-primary" />
                 </div>
@@ -106,7 +150,7 @@ const CreateAdEntry = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="text-center">
-                <div className="space-y-3 mb-6">
+                <div className="mb-6 space-y-3">
                   <div className="flex items-center gap-2 text-sm">
                     <div className="w-2 h-2 bg-green-500 rounded-full" />
                     <span className="text-muted-foreground">Fastest path to launch</span>
@@ -134,9 +178,9 @@ const CreateAdEntry = () => {
             transition={{ delay: 0.3 }}
             whileHover={{ scale: 1.02 }}
           >
-            <Card 
+              <Card 
               onClick={() => setMethod('TEMPLATE')}
-              className="cursor-pointer h-full border-2 hover:border-secondary hover:shadow-lg transition-all duration-300"
+              className="h-full cursor-pointer border-2 transition-all duration-300 hover:border-secondary hover:shadow-lg"
             >
               <CardHeader className="text-center pb-4">
                 <div className="mx-auto w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center mb-4">
@@ -176,9 +220,9 @@ const CreateAdEntry = () => {
             transition={{ delay: 0.4 }}
             whileHover={{ scale: 1.02 }}
           >
-            <Card 
+              <Card 
               onClick={handleStartFromScratch}
-              className="cursor-pointer h-full border-2 hover:border-muted-foreground/30 hover:shadow-lg transition-all duration-300"
+              className="h-full cursor-pointer border-2 transition-all duration-300 hover:border-muted-foreground/30 hover:shadow-lg"
             >
               <CardHeader className="text-center pb-4">
                 <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
@@ -216,9 +260,9 @@ const CreateAdEntry = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="mt-12 text-center text-sm text-muted-foreground"
+          className="mt-10 text-center text-sm text-foreground/70"
         >
-          <p>💡 Don't worry - you can customize everything in the next step, regardless of which option you choose</p>
+          <p>Don't worry. You can customize everything in the next step, regardless of which option you choose.</p>
         </motion.div>
       </div>
     </motion.div>

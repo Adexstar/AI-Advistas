@@ -61,7 +61,7 @@ export const NextBestActionWidget = () => {
 
   if (isLoading) {
     return (
-      <Card className="border-l-4 border-l-primary">
+      <Card className="surface-outline border-l-4 border-l-primary shadow-card">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Lightbulb className="h-5 w-5 text-primary" />
@@ -79,7 +79,7 @@ export const NextBestActionWidget = () => {
 
   if (error) {
     return (
-      <Card className="border-l-4 border-l-destructive">
+      <Card className="surface-outline border-l-4 border-l-destructive shadow-card">
         <CardHeader>
           <CardTitle>Analysis Error</CardTitle>
           <CardDescription>Failed to load recommendations. Please try again.</CardDescription>
@@ -90,7 +90,7 @@ export const NextBestActionWidget = () => {
 
   if (!actions || actions.length === 0) {
     return (
-      <Card className="border-l-4 border-l-primary bg-gradient-to-br from-background to-muted/20">
+      <Card className="surface-outline border-l-4 border-l-primary bg-gradient-to-br from-white to-secondary/45 shadow-card">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -111,7 +111,7 @@ export const NextBestActionWidget = () => {
   }
 
   return (
-    <Card className="border-l-4 border-l-primary shadow-lg">
+    <Card className="surface-outline border-l-4 border-l-primary shadow-soft">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -136,12 +136,12 @@ export const NextBestActionWidget = () => {
               exit={{ opacity: 0, x: -100 }}
               transition={{ delay: index * 0.05 }}
             >
-              <Card className="overflow-hidden hover:shadow-md transition-shadow">
+              <Card className="surface-panel overflow-hidden rounded-[24px] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card">
                 <CardContent className="p-4">
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3 flex-1">
-                        <div className="mt-1">
+                        <div className="mt-1 rounded-xl bg-primary/10 p-2 text-primary">
                           {getTypeIcon(action.type)}
                         </div>
                         <div className="space-y-1 flex-1">
@@ -179,7 +179,7 @@ export const NextBestActionWidget = () => {
                           animate={{ height: 'auto', opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
                           transition={{ duration: 0.2 }}
-                          className="space-y-3 pt-3 border-t"
+                          className="space-y-3 border-t pt-3"
                         >
                           {action.metadata && (
                             <div className="grid grid-cols-3 gap-2 text-xs">
@@ -199,7 +199,7 @@ export const NextBestActionWidget = () => {
                           )}
                           
                           {action.metadata?.impact && (
-                            <div className="bg-primary/5 p-3 rounded-md">
+                            <div className="rounded-md bg-primary/5 p-3">
                               <p className="text-xs font-medium text-primary">
                                 Expected Impact: {action.metadata.impact}
                               </p>
