@@ -12,6 +12,7 @@ export interface CreateFlowSession {
   isTemplate?: boolean;
   isScratch?: boolean;
   templateId?: string;
+  templateName?: string;
 }
 
 export const readCreateFlowSession = (): CreateFlowSession | null => {

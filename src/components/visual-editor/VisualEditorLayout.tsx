@@ -21,15 +21,23 @@ export const VisualEditorLayout: React.FC = () => {
   } = useVisualEditor();
   const isMobile = useIsMobile();
 
+  React.useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false);
+      setPropertiesPanelOpen(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMobile]);
+
   if (isMobile) {
     return (
-      <div className="flex h-full min-h-screen flex-col overflow-hidden">
+      <div className="flex h-full min-h-screen w-full min-w-0 flex-col overflow-hidden">
         <EditorHeader />
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <EnhancedToolbar />
 
-          <div className="min-h-0 flex-1 overflow-y-auto bg-muted/10">
+          <div className="relative min-h-0 flex-1 overflow-y-auto bg-muted/10">
             <EditorCanvas />
           </div>
 
@@ -41,15 +49,15 @@ export const VisualEditorLayout: React.FC = () => {
         </div>
 
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-          <SheetContent side="left" className="w-[min(22rem,calc(100vw-1rem))] p-0">
-            <div className="h-full min-h-0 overflow-hidden">
+          <SheetContent side="left" className="w-[min(22rem,calc(100vw-1rem))] max-w-sm p-0">
+            <div className="h-full min-h-0 overflow-y-auto">
               <MultiTabSidebar />
             </div>
           </SheetContent>
         </Sheet>
 
         <Sheet open={propertiesPanelOpen} onOpenChange={setPropertiesPanelOpen}>
-          <SheetContent side="right" className="w-[min(22rem,calc(100vw-1rem))] p-0">
+          <SheetContent side="right" className="w-[min(22rem,calc(100vw-1rem))] max-w-sm p-0">
             <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
               <div className="min-h-0 flex-1 overflow-y-auto">
                 <PropertiesPanel />
@@ -70,7 +78,6 @@ export const VisualEditorLayout: React.FC = () => {
       
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <ResizablePanelGroup direction="horizontal" className="h-full min-w-0">
-          {/* Left Sidebar */}
           {sidebarOpen && (
             <>
               <ResizablePanel defaultSize={22} minSize={18} maxSize={35}>
@@ -79,19 +86,14 @@ export const VisualEditorLayout: React.FC = () => {
               <ResizableHandle />
             </>
           )}
-          
-          {/* Main content area */}
+
           <ResizablePanel defaultSize={sidebarOpen && propertiesPanelOpen ? 56 : sidebarOpen ? 78 : propertiesPanelOpen ? 78 : 100}>
             <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
-              {/* Enhanced Toolbar */}
               <EnhancedToolbar />
               
-              {/* Canvas/Preview area */}
               <div className="relative min-h-0 flex-1 bg-muted/10">
                 <EditorCanvas />
               </div>
-              
-              {/* Timeline (for video mode) */}
               {mode === 'video' && (
                 <div className="h-32 border-t bg-background">
                   <EditorTimeline />
@@ -99,8 +101,7 @@ export const VisualEditorLayout: React.FC = () => {
               )}
             </div>
           </ResizablePanel>
-          
-          {/* Right Properties Panel */}
+
           {propertiesPanelOpen && (
             <>
               <ResizableHandle />
