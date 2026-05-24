@@ -573,6 +573,8 @@ const AIVideoGenerator: React.FC = () => {
                                 <img 
                                   src={generatedContent.imageUrl} 
                                   alt="Generated ad content"
+                                  loading="lazy"
+                                  decoding="async"
                                   className="w-full h-64 object-cover"
                                 />
                               </div>
@@ -600,6 +602,8 @@ const AIVideoGenerator: React.FC = () => {
                                   src={generatedContent.videoUrl}
                                   poster={generatedContent.thumbnailUrl}
                                   controls
+                                  playsInline
+                                  preload="metadata"
                                   className="w-full h-full object-cover"
                                 >
                                   Your browser does not support the video tag.

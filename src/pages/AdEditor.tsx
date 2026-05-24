@@ -171,7 +171,7 @@ const AdEditor = () => {
   }
 
   return (
-    <div className="page-container max-w-5xl py-4 md:py-6">
+    <div className="page-container py-4 md:py-6">
       <Button variant="ghost" onClick={handleBack} className="mb-4 text-primary">
         <ArrowLeft className="h-4 w-4 mr-2" /> Back to Options
       </Button>

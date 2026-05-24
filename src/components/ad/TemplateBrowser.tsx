@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertTriangle, Clock, Download, FileText, Heart, History, Layers3, Search, Sparkles, Target, Zap } from 'lucide-react';
+import { AlertTriangle, Clock, Download, FileText, Gauge, Heart, History, Layers3, Megaphone, RefreshCcw, Rocket, Search, Sparkles, Target, Zap } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -49,6 +49,19 @@ const labelize = (value: string) =>
   value
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (character) => character.toUpperCase());
+
+const getSourceTheme = (source: 'internal' | 'freepik') =>
+  source === 'internal'
+    ? {
+        panel: 'border-sky-500/20 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.22),_transparent_55%),linear-gradient(135deg,rgba(14,165,233,0.12),rgba(15,23,42,0.02))]',
+        accent: 'bg-sky-500 text-white',
+        button: 'bg-sky-600 text-white hover:bg-sky-700',
+      }
+    : {
+        panel: 'border-amber-500/20 bg-[radial-gradient(circle_at_top_left,_rgba(245,158,11,0.22),_transparent_55%),linear-gradient(135deg,rgba(245,158,11,0.14),rgba(127,29,29,0.03))]',
+        accent: 'bg-amber-500 text-amber-950',
+        button: 'bg-amber-500 text-amber-950 hover:bg-amber-400',
+      };
 
 const TemplateBrowser = ({
   onTemplateSelect,
@@ -168,6 +181,14 @@ const TemplateBrowser = ({
     [allTemplates, favoriteTemplateKeys.length]
   );
 
+  const activeFilterCount = [
+    search.trim().length > 0,
+    filterGoal !== 'all',
+    filterIndustry !== 'all',
+    filterDifficulty !== 'all',
+    filterSource !== 'all',
+  ].filter(Boolean).length;
+
   const favoriteTemplates = useMemo(
     () => favoriteTemplateKeys.map((key) => allTemplates.find((template) => getTemplateStorageKey(template) === key)).filter(Boolean),
     [allTemplates, favoriteTemplateKeys]
@@ -208,6 +229,14 @@ const TemplateBrowser = ({
     const templateKey = getTemplateStorageKey(template);
 
     setRecentTemplateKeys((currentKeys) => [templateKey, ...currentKeys.filter((key) => key !== templateKey)].slice(0, MAX_RECENT_TEMPLATES));
+  };
+
+  const resetFilters = () => {
+    setSearch('');
+    setFilterGoal('all');
+    setFilterIndustry('all');
+    setFilterDifficulty('all');
+    setFilterSource('all');
   };
 
   const openTemplate = (template: any) => {
@@ -336,10 +365,42 @@ const TemplateBrowser = ({
 
   const renderTemplateCard = (template: any) => {
     const isFavorite = favoriteTemplateKeys.includes(getTemplateStorageKey(template));
+    const sourceTheme = getSourceTheme(template.source);
+    const performanceScore = (template as any).performance_score || 0;
+    const platformCount = Array.isArray((template as any).platforms) ? (template as any).platforms.length : 0;
+    const primaryPlatform = platformCount > 0 ? (template as any).platforms[0] : 'Cross-channel';
 
     return (
-      <Card key={template.id} className="flex h-full flex-col border-border/80 shadow-card transition-transform hover:-translate-y-1">
+      <Card key={template.id} className="group relative flex h-full flex-col overflow-hidden border-border/70 bg-background/95 shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-2xl">
+        <div className="pointer-events-none absolute inset-x-10 top-0 h-24 rounded-full bg-primary/10 blur-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
         <CardHeader className="space-y-4">
+          <div className={`relative overflow-hidden rounded-[26px] border p-4 ${sourceTheme.panel}`}>
+            <div className="absolute right-4 top-4 rounded-full border border-white/40 bg-white/40 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-foreground/70 backdrop-blur-sm">
+              {primaryPlatform}
+            </div>
+            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground/70">
+              <span className={`inline-flex rounded-full px-2 py-1 ${sourceTheme.accent}`}>
+                {template.source === 'internal' ? 'Studio Ready' : 'Import Flow'}
+              </span>
+              {(template as any).goal && <span>{(template as any).goal} Campaign</span>}
+            </div>
+            <div className="mt-10 max-w-[85%] space-y-3">
+              <div className="h-2 w-16 rounded-full bg-foreground/15" />
+              <p className="line-clamp-2 text-lg font-semibold leading-6 text-foreground">{template.name}</p>
+              <p className="line-clamp-2 text-sm text-foreground/70">
+                {(template as any).description || 'Creative system tuned for launch-ready ad assembly.'}
+              </p>
+            </div>
+            <div className="mt-6 flex flex-wrap items-center gap-2 text-xs text-foreground/70">
+              <span className="rounded-full border border-foreground/10 bg-white/50 px-2.5 py-1 backdrop-blur-sm">
+                {platformCount > 0 ? `${platformCount} placement${platformCount === 1 ? '' : 's'}` : 'Flexible placements'}
+              </span>
+              <span className="rounded-full border border-foreground/10 bg-white/50 px-2.5 py-1 backdrop-blur-sm">
+                {performanceScore > 0 ? `${performanceScore}/100 score` : 'New creative'}
+              </span>
+            </div>
+          </div>
+
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-2">
               <CardTitle className="text-xl leading-7">{template.name}</CardTitle>
@@ -383,6 +444,23 @@ const TemplateBrowser = ({
         </CardHeader>
 
         <CardContent className="flex flex-1 flex-col gap-4">
+          <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground xl:grid-cols-3">
+            <div className="rounded-2xl border border-border/70 bg-secondary/35 p-3">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Setup</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">
+                {(template as any).estimated_setup_time_minutes ? `${(template as any).estimated_setup_time_minutes} min` : 'Fast start'}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-border/70 bg-secondary/35 p-3">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Placements</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">{platformCount || 'Multi'}</p>
+            </div>
+            <div className="rounded-2xl border border-border/70 bg-secondary/35 p-3 col-span-2 xl:col-span-1">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Source</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">{template.source === 'internal' ? 'Advista Studio' : 'Imported PSD'}</p>
+            </div>
+          </div>
+
           <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
             {(template as any).goal && (
               <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 ${getGoalBadgeColor((template as any).goal)}`}>
@@ -390,9 +468,10 @@ const TemplateBrowser = ({
                 {(template as any).goal}
               </span>
             )}
-            {(template as any).performance_score && (
+            {performanceScore > 0 && (
               <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1">
-                {(template as any).performance_score}/100 score
+                <Gauge className="h-3 w-3" />
+                {performanceScore}/100 score
               </span>
             )}
             {(template as any).estimated_setup_time_minutes && (
@@ -403,9 +482,13 @@ const TemplateBrowser = ({
             )}
           </div>
 
-          <div className="space-y-2 rounded-2xl border border-border/70 bg-secondary/35 p-3 text-xs text-muted-foreground">
+          <div className="space-y-3 rounded-[24px] border border-border/70 bg-secondary/35 p-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/70">
+              <Megaphone className="h-3.5 w-3.5" />
+              Campaign fit
+            </div>
             {(template as any).industry && <p>Industry: {labelize((template as any).industry)}</p>}
-            {(template as any).difficulty_level && <p>Level: {labelize((template as any).difficulty_level)}</p>}
+            {(template as any).difficulty_level && <p>Production level: {labelize((template as any).difficulty_level)}</p>}
             {(template as any).platforms?.length > 0 && (
               <p>
                 Platforms: <span className={`mr-1 inline-block h-2 w-2 rounded-full ${getPlatformDotColor((template as any).platforms)}`}></span>
@@ -416,7 +499,7 @@ const TemplateBrowser = ({
 
           <div className="mt-auto">
             {importingTemplateId === template.id ? (
-              <div className="space-y-2 rounded-2xl border border-border/70 bg-background p-3">
+              <div className="space-y-2 rounded-[24px] border border-border/70 bg-background p-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Importing template...</span>
                   <span className="font-medium">{importProgress}%</span>
@@ -434,7 +517,7 @@ const TemplateBrowser = ({
               <Button
                 type="button"
                 onClick={() => handleTemplateClick(template)}
-                className="w-full rounded-2xl"
+                className={`w-full rounded-[24px] ${template.source !== 'internal' && !template.canvas_data ? sourceTheme.button : ''}`}
                 disabled={isProcessingPSD}
               >
                 {template.source !== 'internal' && !template.canvas_data ? (
@@ -457,47 +540,65 @@ const TemplateBrowser = ({
     <ErrorBoundary>
       <div className="w-full space-y-6">
         {showHeader && (
-          <Card className="overflow-hidden border-border/80 bg-gradient-to-br from-background via-secondary/30 to-background shadow-card">
-            <CardContent className="grid gap-6 p-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-end">
-              <div className="space-y-4">
-                <Badge variant="outline" className="rounded-full border-border/80 bg-background/70">
+          <Card className="relative overflow-hidden border-border/80 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(245,158,11,0.18),_transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(248,250,252,0.9))] shadow-card">
+            <div className="pointer-events-none absolute -left-12 top-10 h-32 w-32 rounded-full bg-sky-400/20 blur-3xl" />
+            <div className="pointer-events-none absolute -right-12 bottom-4 h-36 w-36 rounded-full bg-amber-400/20 blur-3xl" />
+            <CardContent className="relative grid gap-6 p-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-end">
+              <div className="space-y-5">
+                <Badge variant="outline" className="rounded-full border-border/80 bg-background/80 px-3 py-1">
                   {browserCopy.eyebrow}
                 </Badge>
-                <div className="space-y-2">
-                  <h2 className="text-3xl font-semibold tracking-tight text-foreground">{browserCopy.title}</h2>
+                <div className="space-y-3">
+                  <h2 className="max-w-3xl text-3xl font-semibold tracking-tight text-foreground lg:text-4xl">{browserCopy.title}</h2>
                   <p className="max-w-2xl text-sm leading-6 text-muted-foreground">{browserCopy.subtitle}</p>
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1.5">
+                    <Rocket className="h-3.5 w-3.5 text-sky-600" />
+                    Ready-to-run launch systems
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1.5">
+                    <Megaphone className="h-3.5 w-3.5 text-amber-600" />
+                    Goal-led creative directions
+                  </span>
                 </div>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-2">
-                <Card className="border-border/70 bg-background/80 shadow-none">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Card className="border-border/70 bg-background/85 shadow-none backdrop-blur-sm">
                   <CardContent className="p-4">
                     <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Available</p>
                     <p className="mt-2 text-2xl font-semibold">{stats.total}</p>
                   </CardContent>
                 </Card>
-                <Card className="border-border/70 bg-background/80 shadow-none">
+                <Card className="border-border/70 bg-background/85 shadow-none backdrop-blur-sm">
                   <CardContent className="p-4">
                     <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">High Performer</p>
                     <p className="mt-2 text-2xl font-semibold">{stats.highPerformers}</p>
                   </CardContent>
                 </Card>
-                <Card className="border-border/70 bg-background/80 shadow-none">
+                <Card className="border-border/70 bg-background/85 shadow-none backdrop-blur-sm">
                   <CardContent className="p-4">
                     <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Ready Now</p>
                     <p className="mt-2 text-2xl font-semibold">{stats.readyNow}</p>
                   </CardContent>
                 </Card>
-                <Card className="border-border/70 bg-background/80 shadow-none">
+                <Card className="border-border/70 bg-background/85 shadow-none backdrop-blur-sm">
                   <CardContent className="p-4">
                     <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">External</p>
                     <p className="mt-2 text-2xl font-semibold">{stats.imported}</p>
                   </CardContent>
                 </Card>
-                <Card className="border-border/70 bg-background/80 shadow-none">
-                  <CardContent className="p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Saved</p>
-                    <p className="mt-2 text-2xl font-semibold">{stats.favorites}</p>
+                <Card className="border-border/70 bg-background/85 shadow-none backdrop-blur-sm sm:col-span-2">
+                  <CardContent className="flex items-center justify-between gap-4 p-4">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Saved</p>
+                      <p className="mt-2 text-2xl font-semibold">{stats.favorites}</p>
+                    </div>
+                    <div className="text-right text-xs text-muted-foreground">
+                      <p>Use favorites to build a short list</p>
+                      <p>before moving into customization.</p>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
@@ -505,8 +606,28 @@ const TemplateBrowser = ({
           </Card>
         )}
 
-        <Card className="border-border/80 shadow-card">
+        <Card className="border-border/80 bg-background/95 shadow-card">
           <CardContent className="space-y-4 p-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Creative filters</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Narrow by campaign objective, industry context, or import source to reach the right creative faster.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className="rounded-full border-border/80 bg-background/70 px-3 py-1">
+                  {activeFilterCount} active filter{activeFilterCount === 1 ? '' : 's'}
+                </Badge>
+                {activeFilterCount > 0 && (
+                  <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="rounded-full px-3">
+                    <RefreshCcw className="mr-2 h-3.5 w-3.5" />
+                    Reset filters
+                  </Button>
+                )}
+              </div>
+            </div>
+
             <Tabs value={filterSource} onValueChange={(value) => setFilterSource(value as typeof filterSource)}>
               <TabsList className="grid w-full grid-cols-3 rounded-2xl bg-secondary/60 p-1">
                 <TabsTrigger value="all">All ({allTemplates.length})</TabsTrigger>
@@ -519,7 +640,7 @@ const TemplateBrowser = ({
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Search by template name or description..."
+                  placeholder="Search by template, offer, hook, or creative angle..."
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   className="pl-9"
@@ -577,6 +698,7 @@ const TemplateBrowser = ({
               <div className="flex flex-wrap gap-2 text-xs">
                 <Badge variant="outline" className="rounded-full border-border/80 bg-background/70">{sourceCounts.internal} internal</Badge>
                 <Badge variant="outline" className="rounded-full border-border/80 bg-background/70">{sourceCounts.freepik} external</Badge>
+                <Badge variant="outline" className="rounded-full border-border/80 bg-background/70">{stats.highPerformers} score-led</Badge>
               </div>
             </div>
           </CardContent>
@@ -584,7 +706,7 @@ const TemplateBrowser = ({
 
         {(favoriteTemplates.length > 0 || recentTemplates.length > 0) && (
           <div className="grid gap-4 xl:grid-cols-2">
-            <Card className="border-border/80 shadow-card">
+            <Card className="border-border/80 bg-background/95 shadow-card">
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <Heart className="h-4 w-4 text-primary" />
@@ -600,7 +722,7 @@ const TemplateBrowser = ({
                         key={getTemplateStorageKey(template)}
                         type="button"
                         onClick={() => handleTemplateClick(template)}
-                        className="flex w-full items-start justify-between gap-3 rounded-2xl border border-border/70 bg-background p-3 text-left transition hover:border-primary/40 hover:bg-secondary/30"
+                        className="flex w-full items-start justify-between gap-3 rounded-[24px] border border-border/70 bg-background p-3 text-left transition hover:border-primary/40 hover:bg-secondary/30"
                       >
                         <div className="space-y-1">
                           <p className="font-medium text-foreground">{template.name}</p>
@@ -620,7 +742,7 @@ const TemplateBrowser = ({
               </CardContent>
             </Card>
 
-            <Card className="border-border/80 shadow-card">
+            <Card className="border-border/80 bg-background/95 shadow-card">
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <History className="h-4 w-4 text-primary" />
@@ -636,7 +758,7 @@ const TemplateBrowser = ({
                         key={getTemplateStorageKey(template)}
                         type="button"
                         onClick={() => handleTemplateClick(template)}
-                        className="flex w-full items-start justify-between gap-3 rounded-2xl border border-border/70 bg-background p-3 text-left transition hover:border-primary/40 hover:bg-secondary/30"
+                        className="flex w-full items-start justify-between gap-3 rounded-[24px] border border-border/70 bg-background p-3 text-left transition hover:border-primary/40 hover:bg-secondary/30"
                       >
                         <div className="space-y-1">
                           <p className="font-medium text-foreground">{template.name}</p>
@@ -668,7 +790,7 @@ const TemplateBrowser = ({
               <FileText className="h-8 w-8" />
               <div className="space-y-1">
                 <p className="font-medium text-foreground">No templates match the current filters.</p>
-                <p className="text-sm">Try broader keywords or reset one of the filter controls.</p>
+                <p className="text-sm">Try broader keywords, swap the campaign goal, or reset the current filter stack.</p>
               </div>
             </CardContent>
           </Card>
@@ -680,7 +802,7 @@ const TemplateBrowser = ({
               <FileText className="h-8 w-8" />
               <div className="space-y-1">
                 <p className="font-medium text-foreground">No templates available yet.</p>
-                <p className="text-sm">Upload a new batch or check back once the library sync finishes.</p>
+                <p className="text-sm">Upload a new creative batch or check back once the library sync finishes.</p>
               </div>
             </CardContent>
           </Card>

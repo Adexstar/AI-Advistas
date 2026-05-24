@@ -57,9 +57,9 @@ const AdSimulatorPage = () => {
       <div className="relative">
         {/* Header */}
         <div className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-10">
-          <div className="container mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+          <div className="page-container py-4">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex min-w-0 flex-wrap items-center gap-4">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -96,7 +96,7 @@ const AdSimulatorPage = () => {
         </div>
 
         {/* Main Content */}
-        <div className="container mx-auto px-6 py-8">
+        <div className="page-container py-8">
           {/* Ad Summary Card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -105,7 +105,7 @@ const AdSimulatorPage = () => {
           >
             <Card className="bg-gradient-to-r from-primary-600 to-primary-700 text-white border-0">
               <CardContent className="p-6">
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
                       <Badge variant="secondary" className="bg-white/20 text-white border-0">
@@ -119,7 +119,7 @@ const AdSimulatorPage = () => {
                     <p className="text-primary-100 mb-4 max-w-2xl">
                       {sampleAdContent.description}
                     </p>
-                    <div className="flex items-center gap-6 text-sm">
+                    <div className="flex flex-wrap items-center gap-4 text-sm">
                       <div className="flex items-center gap-2">
                         <Eye className="h-4 w-4" />
                         <span>Est. Reach: 250K</span>
@@ -134,12 +134,14 @@ const AdSimulatorPage = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex-shrink-0 ml-6">
+                  <div className="w-full max-w-xs lg:ml-6 lg:w-auto lg:flex-shrink-0">
                     <div className="w-32 h-20 bg-white/10 rounded-lg overflow-hidden">
                       {sampleAdContent.imageUrl ? (
                         <img 
                           src={sampleAdContent.imageUrl} 
                           alt="Ad preview" 
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover"
                         />
                       ) : (

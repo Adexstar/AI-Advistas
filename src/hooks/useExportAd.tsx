@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Canvas as FabricCanvas } from 'fabric';
+import type { Canvas as FabricCanvas } from 'fabric';
 
 export interface ExportOptions {
   format: 'png' | 'jpg' | 'pdf' | 'svg';

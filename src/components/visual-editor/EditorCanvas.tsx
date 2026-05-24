@@ -94,14 +94,14 @@ export const EditorCanvas: React.FC = () => {
 
   if (mode === 'image') {
     return (
-      <div className="h-full flex items-center justify-center p-4 bg-muted/20">
-        <Card className="relative bg-white rounded-lg shadow-lg overflow-hidden">
+      <div className="flex h-full min-h-0 w-full items-center justify-center overflow-auto bg-muted/20 p-3 sm:p-4">
+        <Card className="relative w-full max-w-[min(100%,56rem)] bg-white shadow-lg">
           <div className="absolute top-2 left-2 z-10">
             <Badge variant="secondary" className="text-xs">
               Image Editor
             </Badge>
           </div>
-          <canvas ref={canvasRef} className="max-w-full max-h-full block" />
+          <canvas ref={canvasRef} className="block h-auto max-w-full" />
         </Card>
       </div>
     );
@@ -109,8 +109,8 @@ export const EditorCanvas: React.FC = () => {
 
   // Video mode
   return (
-    <div className="h-full flex items-center justify-center p-4 bg-muted/20">
-      <Card className="relative bg-black rounded-lg overflow-hidden max-w-4xl w-full">
+    <div className="flex h-full min-h-0 w-full items-center justify-center overflow-auto bg-muted/20 p-3 sm:p-4">
+      <Card className="relative w-full max-w-[min(100%,64rem)] bg-black">
         <div className="absolute top-2 left-2 z-10">
           <Badge variant="secondary" className="text-xs">
             Video Editor
@@ -120,7 +120,7 @@ export const EditorCanvas: React.FC = () => {
           <video
             ref={playerRef}
             src={videoUrl}
-            className="w-full h-96 rounded-lg"
+            className="h-auto max-h-[70vh] min-h-[220px] w-full rounded-lg object-contain"
             controls
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
@@ -128,7 +128,7 @@ export const EditorCanvas: React.FC = () => {
             onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
           />
         ) : (
-          <div className="w-full h-96 flex items-center justify-center bg-muted text-muted-foreground rounded-lg">
+          <div className="flex min-h-[220px] w-full items-center justify-center rounded-lg bg-muted p-6 text-muted-foreground sm:min-h-[420px]">
             <div className="text-center">
               <div className="text-6xl mb-4">🎬</div>
               <p className="text-lg font-medium mb-2">Video Editor</p>

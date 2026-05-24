@@ -13,6 +13,7 @@ import { EditorCanvas } from '@/components/visual-editor/EditorCanvas';
 import { PlatformPreviews } from '@/components/ad/PlatformPreviews';
 import { detectEditableFields } from '@/utils/canvasHelpers';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Textbox, FabricImage } from 'fabric';
 
 const TemplateCustomizer: React.FC = () => {
@@ -24,6 +25,7 @@ const TemplateCustomizer: React.FC = () => {
   const [editableFields, setEditableFields] = useState<any[]>([]);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [activeField, setActiveField] = useState<string | null>(null);
+  const isMobile = useIsMobile();
   
   // Refs for auto-focusing inputs
   const inputRefs = useRef<Record<string, HTMLInputElement | HTMLTextAreaElement | null>>({});
@@ -205,20 +207,178 @@ const TemplateCustomizer: React.FC = () => {
     return null;
   }
 
+  const customizationPanel = (
+    <Card className="shadow-lg">
+      <CardHeader className="border-b bg-muted/30 pb-3">
+        <CardTitle className="text-lg">Customize Your Ad</CardTitle>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Click text on the canvas or edit here.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4 p-4">
+        {editableFields.some((field) => field.type === 'text') && (
+          <Card className={`transition-all duration-200 ${editableFields.filter((field) => field.type === 'text').some((field) => activeField === field.path) ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-base text-primary">
+                <Type className="mr-2 h-4 w-4" />
+                Text Content
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {editableFields.filter((field) => field.type === 'text').map((field, index) => (
+                <div key={index} className="space-y-1.5">
+                  <Label htmlFor={field.path} className="text-sm font-medium">
+                    {field.label}
+                  </Label>
+                  {field.label.toLowerCase().includes('text 2') || field.label.toLowerCase().includes('details') || field.label.toLowerCase().includes('body') ? (
+                    <Textarea
+                      id={field.path}
+                      ref={(element) => (inputRefs.current[field.path] = element)}
+                      value={fieldValues[field.path] || ''}
+                      onChange={(event) => handleFieldChange(field, event.target.value)}
+                      onFocus={() => handleFieldFocus(field.path)}
+                      placeholder={`Enter ${field.label.toLowerCase()}`}
+                      rows={3}
+                      className={`transition-all ${activeField === field.path ? 'ring-1 ring-primary' : ''}`}
+                    />
+                  ) : (
+                    <Input
+                      id={field.path}
+                      ref={(element) => (inputRefs.current[field.path] = element)}
+                      value={fieldValues[field.path] || ''}
+                      onChange={(event) => handleFieldChange(field, event.target.value)}
+                      onFocus={() => handleFieldFocus(field.path)}
+                      placeholder={`Enter ${field.label.toLowerCase()}`}
+                      className={`transition-all ${activeField === field.path ? 'ring-1 ring-primary' : ''}`}
+                    />
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {editableFields.some((field) => field.type === 'image') && (
+          <Card className={`transition-all duration-200 ${editableFields.filter((field) => field.type === 'image').some((field) => activeField === field.path) ? 'ring-2 ring-secondary ring-offset-2' : ''}`}>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-base text-secondary">
+                <ImageIcon className="mr-2 h-4 w-4" />
+                Media & Images
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {editableFields.filter((field) => field.type === 'image').map((field, index) => (
+                <div key={index} className="space-y-2">
+                  <Label className="text-sm font-medium">{field.label}</Label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => handleImageUpload(field, event)}
+                    onFocus={() => handleFieldFocus(field.path)}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => document.querySelector<HTMLInputElement>(`input[type="file"]`)?.click()}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Image
+                  </Button>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {editableFields.length === 0 && (
+          <Card>
+            <CardContent className="p-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                Click on elements in the canvas to start editing.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  const visualEditorPanel = (
+    <Card className="flex min-h-[420px] flex-col shadow-lg">
+      <CardHeader className="flex flex-row items-center justify-between gap-3 border-b pb-3">
+        <CardTitle className="text-lg">Visual Editor</CardTitle>
+        <div className="flex gap-2">
+          <Button
+            variant={previewDevice === 'mobile' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setPreviewDevice('mobile')}
+          >
+            <Smartphone className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={previewDevice === 'desktop' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setPreviewDevice('desktop')}
+          >
+            <Monitor className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-1 items-center justify-center bg-muted/10 p-3 sm:p-6">
+        <div className={previewDevice === 'mobile' ? 'w-full max-w-md min-w-0' : 'w-full max-w-4xl min-w-0'}>
+          <EditorCanvas />
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const platformPreviewPanel = (
+    <Card className="shadow-lg">
+      <CardHeader className="border-b pb-3">
+        <CardTitle className="text-base">Platform Preview</CardTitle>
+      </CardHeader>
+      <CardContent className="p-4">
+        <Tabs value={selectedPlatform} onValueChange={setSelectedPlatform}>
+          <TabsList className="mb-4 grid h-auto w-full grid-cols-2 gap-2 rounded-2xl bg-secondary/55 p-2 sm:grid-cols-4">
+            <TabsTrigger value="facebook" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Facebook</TabsTrigger>
+            <TabsTrigger value="instagram" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Instagram</TabsTrigger>
+            <TabsTrigger value="tiktok" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">TikTok</TabsTrigger>
+            <TabsTrigger value="google" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Google</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="facebook" className="mt-0">
+            <PlatformPreviews canvas={fabricCanvas} platform="facebook" />
+          </TabsContent>
+          <TabsContent value="instagram" className="mt-0">
+            <PlatformPreviews canvas={fabricCanvas} platform="instagram" />
+          </TabsContent>
+          <TabsContent value="tiktok" className="mt-0">
+            <PlatformPreviews canvas={fabricCanvas} platform="tiktok" />
+          </TabsContent>
+          <TabsContent value="google" className="mt-0">
+            <PlatformPreviews canvas={fabricCanvas} platform="google" />
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+
   return (
-    <div className="h-screen flex flex-col bg-background">
-      <div className="border-b bg-card p-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-background">
+      <div className="border-b bg-card/95 backdrop-blur">
+        <div className="page-container flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           <Button variant="ghost" size="sm" onClick={() => navigate('/create')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
-          <h1 className="text-xl font-bold">{templateData.templateName || 'Customize Template'}</h1>
+          <h1 className="break-words text-lg font-bold leading-tight sm:text-xl">{templateData.templateName || 'Customize Template'}</h1>
         </div>
-        <div className="flex gap-2">
+        <div className="flex w-full gap-2 sm:w-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
                 <Download className="h-4 w-4 mr-2" />
                 Export
                 <ChevronDown className="h-4 w-4 ml-2" />
@@ -241,169 +401,39 @@ const TemplateCustomizer: React.FC = () => {
           </DropdownMenu>
         </div>
       </div>
+      </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-5 gap-6 p-6 overflow-hidden">
-        {/* LEFT PANEL: Customization Controls (2/5 width) */}
-        <div className="lg:col-span-2 space-y-4 overflow-y-auto max-h-[calc(100vh-100px)]">
-          <Card className="shadow-lg">
-            <CardHeader className="bg-muted/30 border-b pb-3">
-              <CardTitle className="text-lg">Customize Your Ad</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                Click text on the canvas or edit here
-              </p>
-            </CardHeader>
-            <CardContent className="p-4 space-y-4">
-              {/* Text Content Card */}
-              {editableFields.some(f => f.type === 'text') && (
-                <Card className={`transition-all duration-200 ${editableFields.filter(f => f.type === 'text').some(f => activeField === f.path) ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center text-primary">
-                      <Type className="h-4 w-4 mr-2" />
-                      Text Content
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {editableFields.filter(f => f.type === 'text').map((field, index) => (
-                      <div key={index} className="space-y-1.5">
-                        <Label htmlFor={field.path} className="text-sm font-medium">
-                          {field.label}
-                        </Label>
-                        {field.label.toLowerCase().includes('text 2') || field.label.toLowerCase().includes('details') || field.label.toLowerCase().includes('body') ? (
-                          <Textarea
-                            id={field.path}
-                            ref={(el) => (inputRefs.current[field.path] = el)}
-                            value={fieldValues[field.path] || ''}
-                            onChange={(e) => handleFieldChange(field, e.target.value)}
-                            onFocus={() => handleFieldFocus(field.path)}
-                            placeholder={`Enter ${field.label.toLowerCase()}`}
-                            rows={3}
-                            className={`transition-all ${activeField === field.path ? 'ring-1 ring-primary' : ''}`}
-                          />
-                        ) : (
-                          <Input
-                            id={field.path}
-                            ref={(el) => (inputRefs.current[field.path] = el)}
-                            value={fieldValues[field.path] || ''}
-                            onChange={(e) => handleFieldChange(field, e.target.value)}
-                            onFocus={() => handleFieldFocus(field.path)}
-                            placeholder={`Enter ${field.label.toLowerCase()}`}
-                            className={`transition-all ${activeField === field.path ? 'ring-1 ring-primary' : ''}`}
-                          />
-                        )}
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Image/Media Card */}
-              {editableFields.some(f => f.type === 'image') && (
-                <Card className={`transition-all duration-200 ${editableFields.filter(f => f.type === 'image').some(f => activeField === f.path) ? 'ring-2 ring-secondary ring-offset-2' : ''}`}>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center text-secondary">
-                      <ImageIcon className="h-4 w-4 mr-2" />
-                      Media & Images
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {editableFields.filter(f => f.type === 'image').map((field, index) => (
-                      <div key={index} className="space-y-2">
-                        <Label className="text-sm font-medium">{field.label}</Label>
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleImageUpload(field, e)}
-                          onFocus={() => handleFieldFocus(field.path)}
-                          className="w-full"
-                        />
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="w-full"
-                          onClick={() => document.querySelector<HTMLInputElement>(`input[type="file"]`)?.click()}
-                        >
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload Image
-                        </Button>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              )}
-
-              {editableFields.length === 0 && (
-                <Card>
-                  <CardContent className="p-6 text-center">
-                    <p className="text-sm text-muted-foreground">
-                      Click on elements in the canvas to start editing
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* RIGHT PANEL: Visual Editor & Preview (3/5 width) */}
-        <div className="lg:col-span-3 space-y-4 flex flex-col">
-          {/* Canvas Editor */}
-          <Card className="flex-1 flex flex-col shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between pb-3 border-b">
-              <CardTitle className="text-lg">Visual Editor</CardTitle>
-              <div className="flex gap-2">
-                <Button 
-                  variant={previewDevice === 'mobile' ? 'default' : 'outline'} 
-                  size="sm"
-                  onClick={() => setPreviewDevice('mobile')}
-                >
-                  <Smartphone className="h-4 w-4" />
-                </Button>
-                <Button 
-                  variant={previewDevice === 'desktop' ? 'default' : 'outline'} 
-                  size="sm"
-                  onClick={() => setPreviewDevice('desktop')}
-                >
-                  <Monitor className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1 flex items-center justify-center bg-muted/10 p-6">
-              <div className={previewDevice === 'mobile' ? 'max-w-md w-full' : 'max-w-4xl w-full'}>
-                <EditorCanvas />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Platform Preview */}
-          <Card className="shadow-lg">
-            <CardHeader className="pb-3 border-b">
-              <CardTitle className="text-base">Platform Preview</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4">
-              <Tabs value={selectedPlatform} onValueChange={setSelectedPlatform}>
-                <TabsList className="grid w-full grid-cols-4 mb-4">
-                  <TabsTrigger value="facebook">Facebook</TabsTrigger>
-                  <TabsTrigger value="instagram">Instagram</TabsTrigger>
-                  <TabsTrigger value="tiktok">TikTok</TabsTrigger>
-                  <TabsTrigger value="google">Google</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="facebook" className="mt-0">
-                  <PlatformPreviews canvas={fabricCanvas} platform="facebook" />
-                </TabsContent>
-                <TabsContent value="instagram" className="mt-0">
-                  <PlatformPreviews canvas={fabricCanvas} platform="instagram" />
-                </TabsContent>
-                <TabsContent value="tiktok" className="mt-0">
-                  <PlatformPreviews canvas={fabricCanvas} platform="tiktok" />
-                </TabsContent>
-                <TabsContent value="google" className="mt-0">
-                  <PlatformPreviews canvas={fabricCanvas} platform="google" />
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="min-h-0 flex-1 overflow-x-hidden">
+        {isMobile ? (
+          <div className="page-container py-4">
+            <Tabs defaultValue="controls" className="w-full">
+              <TabsList className="grid h-auto w-full grid-cols-3 gap-2 rounded-2xl bg-secondary/55 p-2">
+                <TabsTrigger value="controls" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Controls</TabsTrigger>
+                <TabsTrigger value="canvas" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Canvas</TabsTrigger>
+                <TabsTrigger value="preview" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Preview</TabsTrigger>
+              </TabsList>
+              <TabsContent value="controls" className="mt-4">
+                {customizationPanel}
+              </TabsContent>
+              <TabsContent value="canvas" className="mt-4">
+                {visualEditorPanel}
+              </TabsContent>
+              <TabsContent value="preview" className="mt-4">
+                {platformPreviewPanel}
+              </TabsContent>
+            </Tabs>
+          </div>
+        ) : (
+          <div className="page-container grid min-h-0 grid-cols-1 gap-6 py-6 lg:grid-cols-5">
+            <div className="min-h-0 space-y-4 overflow-y-auto lg:col-span-2">
+              {customizationPanel}
+            </div>
+            <div className="flex min-h-0 flex-col space-y-4 lg:col-span-3">
+              {visualEditorPanel}
+              {platformPreviewPanel}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

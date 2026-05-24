@@ -23,18 +23,18 @@ import {
 
 const operatingLanes = [
   {
-    title: "Brief to draft in minutes",
-    description: "Start with AI, templates, or scratch and land in one guided editor instead of three disconnected tools.",
+    title: "Go from offer to draft fast",
+    description: "Start with AI, templates, or scratch and move into one campaign editor instead of juggling separate creation tools.",
     icon: WandSparkles,
   },
   {
-    title: "Template system that stays usable",
-    description: "Browse proven layouts, save favorites, reopen recent picks, and move straight into customization without losing context.",
+    title: "Reuse creative that already works",
+    description: "Browse proven layouts, save favorites, reopen recent picks, and customize winning structures without rebuilding from zero.",
     icon: LibraryBig,
   },
   {
-    title: "Campaign ops in one place",
-    description: "Pause, duplicate, export, and bulk-update campaigns from an operations surface built for daily decision-making.",
+    title: "Operate campaigns from the same room",
+    description: "Pause, duplicate, export, and adjust campaigns from an operations surface designed for real daily ad decisions.",
     icon: Workflow,
   },
 ] as const;
@@ -42,33 +42,33 @@ const operatingLanes = [
 const workflowSteps = [
   {
     step: "01",
-    title: "Choose the fastest path",
-    description: "Use AI draft, template selection, or manual setup depending on how much structure you already have.",
+    title: "Start with the right amount of structure",
+    description: "Use AI draft, a reusable template, or manual setup depending on how close the campaign is to launch.",
   },
   {
     step: "02",
-    title: "Refine in one editor",
-    description: "Work through offer, creative, audience, and review with a live preview rail and readiness checks.",
+    title: "Refine the campaign in one editor",
+    description: "Work through offer, creative, audience, and review with a guided flow that keeps the launch context intact.",
   },
   {
     step: "03",
-    title: "Operate from the workspace",
-    description: "Launch, revisit saved templates, and manage campaigns from dashboards built for speed and clarity.",
+    title: "Launch and manage from the workspace",
+    description: "Revisit saved templates, keep an eye on performance, and make the next campaign move without switching mental models.",
   },
 ] as const;
 
 const proofPoints = [
   {
-    value: "3 entry points",
-    label: "AI draft, template, or scratch",
+    value: "AI, templates, or scratch",
+    label: "Choose the fastest way to start the next campaign",
   },
   {
-    value: "1 guided editor",
-    label: "Offer, creative, audience, and review",
+    value: "One campaign editor",
+    label: "Offer, creative, audience, and review stay connected",
   },
   {
-    value: "Bulk campaign ops",
-    label: "Pause, duplicate, export, and status control",
+    value: "Built-in operations",
+    label: "Pause, duplicate, export, and status control from one surface",
   },
 ] as const;
 
@@ -76,21 +76,21 @@ const plans = [
   {
     name: "Starter",
     price: "$0",
-    description: "For solo builders validating offers and testing the create workflow.",
+    description: "For solo advertisers validating offers and learning the campaign workflow.",
     features: ["AI draft entry", "Template browsing", "Guided editor", "Basic workspace shell"],
     emphasis: false,
   },
   {
     name: "Growth",
     price: "$49",
-    description: "For operators running multiple campaigns who need speed without losing control.",
+    description: "For marketers running multiple campaigns who need speed without losing control.",
     features: ["Saved and recent templates", "Campaign operations workspace", "Visual template customization", "Export-ready setup"],
     emphasis: true,
   },
   {
     name: "Studio",
     price: "$149",
-    description: "For teams managing creative systems, approvals, and larger launch velocity.",
+    description: "For teams managing creative systems, approvals, and heavier launch velocity.",
     features: ["Admin template uploads", "Batch-ready template library", "Shared campaign management", "Priority support"],
     emphasis: false,
   },
@@ -154,15 +154,15 @@ const Index = () => {
               className="space-y-8"
             >
               <Badge variant="outline" className="rounded-full border-primary/20 bg-white/80 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-primary shadow-sm backdrop-blur">
-                Ad operations, simplified
+                Ads workspace for launch teams
               </Badge>
 
               <div className="space-y-5">
                 <h1 className="max-w-4xl text-5xl font-semibold leading-[1.02] tracking-[-0.04em] text-foreground md:text-6xl lg:text-7xl">
-                  Launch better campaigns without bouncing between tools, tabs, and half-finished drafts.
+                  Create, customize, and operate campaigns from one calmer command system.
                 </h1>
                 <p className="max-w-2xl text-lg leading-8 text-muted-foreground">
-                  AdVista now combines AI draft generation, a reusable template library, a guided editor, and campaign operations into one workspace built for real launch velocity.
+                  AdVista brings AI draft generation, reusable creative systems, guided editing, and day-to-day campaign operations into one workflow built for teams that ship ads often.
                 </p>
               </div>
 
@@ -197,7 +197,7 @@ const Index = () => {
                 <div className="mb-4 flex items-center justify-between">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/55">Command surface</p>
-                    <h2 className="mt-1 text-2xl font-semibold text-white">From idea to launch</h2>
+                    <h2 className="mt-1 text-2xl font-semibold text-white">From brief to live campaign</h2>
                   </div>
                   <Badge className="rounded-full border border-white/15 bg-white/10 text-white">Live preview</Badge>
                 </div>
@@ -209,8 +209,8 @@ const Index = () => {
                         <Bot className="h-5 w-5" />
                       </div>
                       <div className="space-y-1">
-                        <p className="font-medium text-white">AI draft ready</p>
-                        <p className="text-sm leading-6 text-white/68">Offer, audience, and headline are prefilled so the team starts from momentum instead of a blank form.</p>
+                        <p className="font-medium text-white">Campaign brief, already moving</p>
+                        <p className="text-sm leading-6 text-white/68">Offer, audience, and message angle are prefilled so the team starts with momentum instead of a blank form.</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -218,14 +218,14 @@ const Index = () => {
                   <Card className="border-white/10 bg-white shadow-none">
                     <CardContent className="grid gap-3 p-4 sm:grid-cols-2">
                       <div className="rounded-2xl border border-primary/10 bg-secondary/40 p-4">
-                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Template library</p>
-                        <p className="mt-2 text-lg font-semibold">Saved + recent</p>
-                        <p className="mt-2 text-sm leading-6 text-muted-foreground">Pin reliable systems and reopen recent templates without re-filtering the catalog.</p>
+                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Creative library</p>
+                        <p className="mt-2 text-lg font-semibold">Saved and reusable</p>
+                        <p className="mt-2 text-sm leading-6 text-muted-foreground">Pin reliable systems and reopen proven creative faster than rebuilding another layout.</p>
                       </div>
                       <div className="rounded-2xl border border-primary/10 bg-secondary/40 p-4">
                         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Campaign ops</p>
-                        <p className="mt-2 text-lg font-semibold">Bulk actions</p>
-                        <p className="mt-2 text-sm leading-6 text-muted-foreground">Pause, duplicate, export, and update statuses from one operations view.</p>
+                        <p className="mt-2 text-lg font-semibold">Faster decisions</p>
+                        <p className="mt-2 text-sm leading-6 text-muted-foreground">Pause, duplicate, export, and update statuses from one surface built for daily ad work.</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -257,13 +257,13 @@ const Index = () => {
           <div className="page-container space-y-10 px-0">
             <div className="max-w-3xl space-y-3">
               <Badge variant="outline" className="rounded-full border-border/80 bg-background/80 px-4 py-2 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                Product surface
+                Operating lanes
               </Badge>
               <h2 className="text-4xl font-semibold tracking-[-0.03em] text-foreground md:text-5xl">
-                One landing promise, one product model, one clearer path to launch.
+                Everything your ad team needs to move from brief to creative to launch.
               </h2>
               <p className="text-lg leading-8 text-muted-foreground">
-                The public experience now mirrors what the app actually does: help teams move from idea, to creative, to launch, to campaign operations without losing the thread.
+                The product is organized around one operating loop: generate direction, shape the creative, reuse what works, and manage the account from the same workspace.
               </p>
             </div>
 
@@ -301,13 +301,13 @@ const Index = () => {
           <div className="page-container grid gap-10 px-0 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-start">
             <div className="surface-panel surface-outline rounded-[32px] p-8 space-y-4">
               <Badge variant="outline" className="rounded-full border-border/80 bg-background/80 px-4 py-2 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                Workflow clarity
+                How it works
               </Badge>
               <h2 className="text-4xl font-semibold tracking-[-0.03em] text-foreground md:text-5xl">
-                The landing page now explains the exact operating loop inside the app.
+                A clearer route from first idea to live campaign.
               </h2>
               <p className="text-lg leading-8 text-muted-foreground">
-                No vague promises about AI magic. The experience shows the same structured flow your workspace actually supports today.
+                No vague product story. Each step maps to the actual way performance teams draft, customize, and operate campaigns inside the workspace.
               </p>
             </div>
 
@@ -341,13 +341,13 @@ const Index = () => {
           <div className="page-container space-y-10 px-0">
             <div className="max-w-3xl space-y-3">
               <Badge variant="outline" className="rounded-full border-border/80 bg-background/80 px-4 py-2 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                Why it matters
+                Why teams switch
               </Badge>
               <h2 className="text-4xl font-semibold tracking-[-0.03em] text-foreground md:text-5xl">
-                Built for operators who need focus more than feature sprawl.
+                Built for ad teams that need speed without losing campaign control.
               </h2>
               <p className="text-lg leading-8 text-muted-foreground">
-                Every recent product phase sharpened the same goal: reduce mode-switching, keep context alive, and make campaign execution easier to trust.
+                The goal is not to add more surfaces. It is to keep creative decisions, launch setup, and performance follow-up close enough that teams stop losing context.
               </p>
             </div>
 
@@ -396,23 +396,23 @@ const Index = () => {
 
               <Card className="surface-outline rounded-[32px] border-0 bg-gradient-hero text-primary-foreground shadow-soft">
                 <CardHeader>
-                  <CardTitle className="text-2xl tracking-[-0.02em]">What this page now promises</CardTitle>
+                  <CardTitle className="text-2xl tracking-[-0.02em]">What the workspace gives you</CardTitle>
                   <CardDescription className="text-primary-foreground/75">
-                    A simpler route from idea to launch, backed by surfaces that already exist in the product.
+                    A tighter operating loop for ad creation, creative reuse, and campaign follow-through.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 text-sm leading-7 text-primary-foreground/85">
                   <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-                    <p className="font-medium text-primary-foreground">Start from the way you think</p>
-                    <p className="mt-2">AI when you need speed, templates when you need structure, scratch when you need full control.</p>
+                    <p className="font-medium text-primary-foreground">Start from the way the campaign exists today</p>
+                    <p className="mt-2">Use AI when you need speed, templates when you need structure, and manual setup when you already know the angle.</p>
                   </div>
                   <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-                    <p className="font-medium text-primary-foreground">Work from the same source of truth</p>
-                    <p className="mt-2">The landing narrative, create flow, library surface, and campaign ops now describe the same product model.</p>
+                    <p className="font-medium text-primary-foreground">Reuse what already performs</p>
+                    <p className="mt-2">Saved templates, recent picks, and campaign duplication make strong creative easier to repeat without redoing the setup work.</p>
                   </div>
                   <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-                    <p className="font-medium text-primary-foreground">Operate without guesswork</p>
-                    <p className="mt-2">Clearer calls to action, stronger grouping, and fewer dead-end hops reduce friction across the whole experience.</p>
+                    <p className="font-medium text-primary-foreground">Operate with fewer dead ends</p>
+                    <p className="mt-2">Clearer decisions, stronger grouping, and a tighter flow reduce friction when the team is moving quickly.</p>
                   </div>
                 </CardContent>
               </Card>
@@ -427,10 +427,10 @@ const Index = () => {
                 Pricing
               </Badge>
               <h2 className="text-4xl font-semibold tracking-[-0.03em] text-foreground md:text-5xl">
-                Choose the pace that matches your campaign team.
+                Choose the plan that matches your campaign pace.
               </h2>
               <p className="text-lg leading-8 text-muted-foreground">
-                Start free to learn the workflow, then scale into the library, visual customization, and campaign operations surfaces as the team grows.
+                Start free to learn the workflow, then scale into stronger creative reuse, customization, and campaign operations as the team grows.
               </p>
             </div>
 
@@ -477,10 +477,10 @@ const Index = () => {
                 <div className="space-y-4">
                   <Badge className="rounded-full border border-white/12 bg-white/10 text-white">Ready to move faster</Badge>
                   <h2 className="max-w-3xl text-4xl font-semibold tracking-[-0.03em] md:text-5xl">
-                    Build, customize, and operate campaigns from one calmer workspace.
+                    Give your ad team one place to build, launch, and adjust campaigns.
                   </h2>
                   <p className="max-w-2xl text-base leading-8 text-primary-foreground/80">
-                    The landing surface now reflects the product you actually ship: one flow for creation, one surface for operations, and fewer places for teams to get lost.
+                    Move from draft to template to campaign action without scattering the workflow across separate tools and disconnected screens.
                   </p>
                 </div>
 
@@ -489,8 +489,8 @@ const Index = () => {
                     {user ? "Go to Dashboard" : "Start Free"}
                     <Rocket className="ml-2 h-4 w-4" />
                   </Button>
-                  <Button size="lg" variant="outline" className="rounded-full border-white/30 text-white hover:bg-white/10" onClick={() => navigate(user ? "/templates" : "/auth") }>
-                    {user ? "Browse Library" : "See the Product"}
+                  <Button size="lg" variant="outline" className="rounded-full border-white/30 text-white hover:bg-white/10" onClick={() => navigate(user ? "/template-library" : "/auth") }>
+                    {user ? "Browse Library" : "See the Workflow"}
                   </Button>
                 </div>
               </CardContent>

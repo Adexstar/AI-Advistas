@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout, DashboardData } from '@/types/dashboard';
 import { useToast } from '@/hooks/use-toast';
-import { jsPDF } from 'jspdf';
 
 export const useDashboard = () => {
   const [isCustomizing, setIsCustomizing] = useState(false);
@@ -62,7 +61,7 @@ export const useDashboard = () => {
       if (error) throw error;
       return { data, format };
     },
-    onSuccess: ({ data, format }) => {
+    onSuccess: async ({ data, format }) => {
       if (format === 'csv') {
         // For CSV, the data is already formatted as CSV string
         const blob = new Blob([data], { type: 'text/csv' });
@@ -73,7 +72,7 @@ export const useDashboard = () => {
         a.click();
         window.URL.revokeObjectURL(url);
       } else if (format === 'pdf') {
-        generatePDF(data as DashboardData);
+        await generatePDF(data as DashboardData);
       }
       
       toast({
@@ -91,7 +90,8 @@ export const useDashboard = () => {
     },
   });
 
-  const generatePDF = (data: DashboardData) => {
+  const generatePDF = async (data: DashboardData) => {
+    const { jsPDF } = await import('jspdf');
     const doc = new jsPDF();
     
     // Title

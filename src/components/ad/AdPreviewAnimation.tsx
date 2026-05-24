@@ -152,6 +152,8 @@ const AdPreviewAnimation = ({ formData, device }: AdPreviewAnimationProps) => {
                             className="w-full h-full object-cover"
                             muted
                             loop
+                            playsInline
+                            preload="metadata"
                             autoPlay={animationStep === 2}
                           />
                           <AnimatePresence>
@@ -172,6 +174,7 @@ const AdPreviewAnimation = ({ formData, device }: AdPreviewAnimationProps) => {
                         <img
                           src={formData.mediaUrl}
                           alt="Ad preview"
+                          decoding="async"
                           className="w-full h-full object-cover"
                         />
                       )}

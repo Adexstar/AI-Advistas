@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   AlertTriangle,
@@ -26,6 +27,8 @@ const Dashboard = () => {
   const totalSpent = campaigns.reduce((accumulator, campaign) => accumulator + campaign.spent, 0);
   const totalRevenue = campaigns.reduce((accumulator, campaign) => accumulator + (campaign.revenue || 0), 0);
   const avgROAS = totalSpent > 0 ? (totalRevenue / totalSpent).toFixed(2) : '0.00';
+  const activeCampaigns = campaigns.filter((campaign) => campaign.status === 'active').length;
+  const profitableCampaigns = campaigns.filter((campaign) => (campaign.roas || 0) >= 2).length;
   const draftCampaign = campaigns.find((campaign) => campaign.status === 'draft');
   const issueCampaigns = campaigns.filter(
     (campaign) => campaign.status === 'paused' || (campaign.status === 'active' && campaign.ctr < 2.2)
@@ -121,19 +124,34 @@ const Dashboard = () => {
   if (!hasCampaigns) {
     return (
       <div className="page-container grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <Card className="surface-outline overflow-hidden rounded-[32px] border-0 bg-gradient-hero text-primary-foreground shadow-soft">
+        <Card className="surface-outline relative overflow-hidden rounded-[36px] border-0 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.24),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(245,158,11,0.22),_transparent_34%),linear-gradient(135deg,rgba(17,24,39,0.96),rgba(37,99,235,0.88))] text-primary-foreground shadow-soft">
           <CardContent className="flex min-h-[420px] flex-col justify-between p-8 text-left md:p-10">
             <div>
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-sm font-medium text-white">
                 <Wand2 className="h-4 w-4" />
-                Workspace ready
+                Ad command room
               </div>
               <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-white md:text-5xl">
-                Build your first ad in one guided workflow.
+                Build your first campaign system without leaving the workspace.
               </h1>
               <p className="mt-4 max-w-xl text-lg leading-8 text-white/72">
-                Start from AI, pick a template, or build from scratch. The app will keep the next step obvious the whole way through.
+                Start with AI, move into a launch-ready template, and keep campaign operations in the same environment once ads go live.
               </p>
+
+              <div className="mt-6 flex flex-wrap gap-2 text-xs text-white/75">
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5">
+                  <Clock3 className="h-3.5 w-3.5" />
+                  AI brief to draft
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5">
+                  <LayoutTemplate className="h-3.5 w-3.5" />
+                  Template-led creative setup
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5">
+                  <TrendingUp className="h-3.5 w-3.5" />
+                  Campaign ops when ready
+                </span>
+              </div>
             </div>
 
             <div className="flex flex-col gap-4 sm:flex-row">
@@ -174,18 +192,69 @@ const Dashboard = () => {
 
   return (
     <div className="page-container space-y-8">
-      <div className="surface-panel surface-outline flex flex-col gap-4 rounded-[32px] p-5 sm:p-6 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">Home</p>
-          <h1 className="text-3xl font-semibold tracking-tight">Command Center</h1>
-          <p className="mt-2 max-w-2xl text-muted-foreground">
-            Work from the next best move, not from a maze of pages. Resume what is open, fix what is underperforming, and launch the next ad fast.
-          </p>
-        </div>
-        <Button size="lg" onClick={() => navigate('/create')} className="w-full rounded-2xl shadow-soft sm:w-auto sm:min-w-[200px]">
-          <Plus className="h-5 w-5 mr-2" /> Create New Ad
-        </Button>
-      </div>
+      <Card className="surface-outline relative overflow-hidden rounded-[36px] border-border/80 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.14),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(245,158,11,0.16),_transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.92))] shadow-soft">
+        <div className="pointer-events-none absolute -left-10 top-8 h-28 w-28 rounded-full bg-sky-400/20 blur-3xl" />
+        <div className="pointer-events-none absolute -right-12 bottom-4 h-36 w-36 rounded-full bg-amber-400/20 blur-3xl" />
+        <CardContent className="relative grid gap-6 p-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end lg:p-8">
+          <div className="space-y-5">
+            <Badge variant="outline" className="rounded-full border-border/80 bg-background/80 px-3 py-1 text-[11px] uppercase tracking-[0.2em]">
+              Ad operations workspace
+            </Badge>
+            <div className="space-y-3">
+              <h1 className="text-3xl font-semibold tracking-tight lg:text-5xl">Run daily campaign moves from one command center.</h1>
+              <p className="max-w-2xl text-sm leading-6 text-muted-foreground lg:text-base">
+                Resume drafts, duplicate what is winning, fix underperforming campaigns, and move straight into the next launch without bouncing between views.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/75 px-3 py-1.5">
+                <Clock3 className="h-3.5 w-3.5 text-sky-600" />
+                Pick up active drafts faster
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/75 px-3 py-1.5">
+                <LayoutTemplate className="h-3.5 w-3.5 text-amber-600" />
+                Reuse proven creative systems
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/75 px-3 py-1.5">
+                <AlertTriangle className="h-3.5 w-3.5 text-rose-600" />
+                Surface issues before they spread
+              </span>
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Card className="border-border/70 bg-background/85 shadow-none">
+              <CardContent className="p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Active campaigns</p>
+                <p className="mt-2 text-2xl font-semibold">{activeCampaigns}</p>
+              </CardContent>
+            </Card>
+            <Card className="border-border/70 bg-background/85 shadow-none">
+              <CardContent className="p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Drafts waiting</p>
+                <p className="mt-2 text-2xl font-semibold">{draftCampaign ? 1 : 0}</p>
+              </CardContent>
+            </Card>
+            <Card className="border-border/70 bg-background/85 shadow-none">
+              <CardContent className="p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Healthy ROAS</p>
+                <p className="mt-2 text-2xl font-semibold">{profitableCampaigns}</p>
+              </CardContent>
+            </Card>
+            <Card className="border-border/70 bg-background/85 shadow-none">
+              <CardContent className="space-y-3 p-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Next launch</p>
+                  <p className="mt-2 text-lg font-semibold">Build a fresh campaign</p>
+                </div>
+                <Button size="sm" onClick={() => navigate('/create')} className="w-full rounded-2xl shadow-soft">
+                  <Plus className="mr-2 h-4 w-4" /> Create New Ad
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
         {actionBoard.map((item) => (
@@ -211,6 +280,14 @@ const Dashboard = () => {
         ))}
       </div>
 
+      <div className="space-y-3">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Performance snapshot</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight">Read the account before you make the next move.</h2>
+          </div>
+        </div>
+
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <SimpleSummaryCard
           title="Total Spend (Today)"
@@ -232,6 +309,7 @@ const Dashboard = () => {
           trend="Check recommendations below"
           variant={criticalActions > 0 ? 'warning' : 'default'}
         />
+      </div>
       </div>
 
       <NextBestActionWidget />

@@ -3,33 +3,33 @@ import { Facebook, Instagram, Twitter, Linkedin, Youtube } from "lucide-react";
 const Footer = () => {
   const footerSections = [
     {
-      title: "Product",
+      title: "Workspace",
       links: [
-        { name: "Features", href: "#features" },
+        { name: "Operating Lanes", href: "#features" },
         { name: "Pricing", href: "#pricing" },
         { name: "Workflow", href: "#workflow" },
-        { name: "Template Library", href: "/templates" },
+        { name: "Template Library", href: "/template-library" },
         { name: "Campaign Operations", href: "/campaigns" },
         { name: "Create Flow", href: "/create" }
       ]
     },
     {
-      title: "Resources", 
+      title: "Launch Tools", 
       links: [
-        { name: "Saved Templates", href: "/templates" },
+        { name: "Saved Templates", href: "/template-library" },
         { name: "Quick Draft", href: "/create" },
-        { name: "Visual Customizer", href: "/templates" },
+        { name: "Visual Customizer", href: "/template-library" },
         { name: "Billing", href: "/billing" },
         { name: "Settings", href: "/settings" },
-        { name: "Dashboard", href: "/dashboard" }
+        { name: "Command Center", href: "/dashboard" }
       ]
     },
     {
-      title: "Company",
+      title: "Why AdVista",
       links: [
-        { name: "Why AdVista", href: "#about" },
+        { name: "Why Teams Switch", href: "#about" },
         { name: "Pricing", href: "#pricing" },
-        { name: "Product Surface", href: "#features" },
+        { name: "Campaign Workflow", href: "#features" },
         { name: "Workflow", href: "#workflow" },
         { name: "Sign In", href: "/auth" },
         { name: "Get Started", href: "/auth" }
@@ -60,11 +60,11 @@ const Footer = () => {
               <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-primary-800 text-sm font-bold shadow-lg">A</span>
               <div>
                 <h2 className="text-2xl font-bold tracking-[-0.04em] text-white">AdVista</h2>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/60">Creative Ops Workspace</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/60">Campaign Command Workspace</p>
               </div>
             </div>
             <p className="mb-6 max-w-md leading-relaxed text-white/72">
-              One calmer workspace for AI draft generation, template customization, and day-to-day campaign operations.
+              One calmer workspace for AI briefs, reusable creative systems, and day-to-day campaign decisions.
             </p>
             
             <div className="flex items-center gap-4">

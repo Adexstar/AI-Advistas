@@ -54,18 +54,18 @@ const Settings = () => {
   };
 
   return (
-    <div className="page-container space-y-6">
+    <div className="page-container space-y-6 py-4 md:py-6">
       <div>
         <h1 className="text-3xl font-bold">Workspace Settings</h1>
         <p className="text-muted-foreground">Tune profile, alerts, security, and connected channels so the team operates from one calmer control surface.</p>
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="integrations">Integrations</TabsTrigger>
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-2xl bg-secondary/55 p-2 sm:grid-cols-4">
+          <TabsTrigger value="profile" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Profile</TabsTrigger>
+          <TabsTrigger value="notifications" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Notifications</TabsTrigger>
+          <TabsTrigger value="security" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Security</TabsTrigger>
+          <TabsTrigger value="integrations" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Integrations</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="space-y-6">

@@ -127,41 +127,41 @@ export const MultiTabSidebar: React.FC = () => {
   ];
 
   return (
-    <div className="h-full bg-background border-r">
-      <Tabs defaultValue="templates" className="h-full flex flex-col">
+    <div className="flex h-full min-h-0 min-w-0 flex-col bg-background">
+      <Tabs defaultValue="templates" className="flex h-full min-h-0 flex-col">
         <div className="p-3 border-b">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="templates" className="text-xs">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-2xl bg-secondary/55 p-2 sm:grid-cols-3">
+            <TabsTrigger value="templates" className="min-w-0 whitespace-normal px-2 py-2 text-[11px] sm:text-xs">
               <Layout className="h-3 w-3 mr-1" />
               Templates
             </TabsTrigger>
-            <TabsTrigger value="text" className="text-xs">
+            <TabsTrigger value="text" className="min-w-0 whitespace-normal px-2 py-2 text-[11px] sm:text-xs">
               <Type className="h-3 w-3 mr-1" />
               Text
             </TabsTrigger>
-            <TabsTrigger value="elements" className="text-xs">
+            <TabsTrigger value="elements" className="min-w-0 whitespace-normal px-2 py-2 text-[11px] sm:text-xs">
               <Shapes className="h-3 w-3 mr-1" />
               Elements
             </TabsTrigger>
           </TabsList>
-          <TabsList className="grid w-full grid-cols-3 mt-2">
-            <TabsTrigger value="photos" className="text-xs">
+          <TabsList className="mt-2 grid h-auto w-full grid-cols-2 gap-2 rounded-2xl bg-secondary/55 p-2 sm:grid-cols-3">
+            <TabsTrigger value="photos" className="min-w-0 whitespace-normal px-2 py-2 text-[11px] sm:text-xs">
               <Image className="h-3 w-3 mr-1" />
               Photos
             </TabsTrigger>
-            <TabsTrigger value="uploads" className="text-xs">
+            <TabsTrigger value="uploads" className="min-w-0 whitespace-normal px-2 py-2 text-[11px] sm:text-xs">
               <Upload className="h-3 w-3 mr-1" />
               Uploads
             </TabsTrigger>
-            <TabsTrigger value="my-ads" className="text-xs">
+            <TabsTrigger value="my-ads" className="min-w-0 whitespace-normal px-2 py-2 text-[11px] sm:text-xs">
               <Heart className="h-3 w-3 mr-1" />
               My Ads
             </TabsTrigger>
           </TabsList>
         </div>
 
-        <div className="flex-1 overflow-hidden">
-          <TabsContent value="templates" className="h-full m-0">
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <TabsContent value="templates" className="m-0 flex h-full min-h-0 flex-col">
             <div className="p-3">
               <div className="relative mb-3">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -174,7 +174,7 @@ export const MultiTabSidebar: React.FC = () => {
               </div>
             </div>
             
-            <ScrollArea className="flex-1">
+            <ScrollArea className="min-h-0 flex-1">
               <div className="p-3 pt-0">
                 {isLoadingFileTemplates ? (
                   <div className="space-y-2">
@@ -183,7 +183,7 @@ export const MultiTabSidebar: React.FC = () => {
                     ))}
                   </div>
                 ) : filteredTemplates.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {filteredTemplates.map((template) => (
                       <Card key={template.id} className="cursor-pointer hover:bg-muted/50 transition-colors group">
                         <CardContent className="p-2" onClick={() => loadTemplate(template as any)}>
@@ -192,6 +192,8 @@ export const MultiTabSidebar: React.FC = () => {
                               <img 
                                 src={template.thumbnail_url || template.preview_url} 
                                 alt={template.name}
+                                loading="lazy"
+                                decoding="async"
                                 className="w-full h-full object-cover rounded group-hover:scale-105 transition-transform"
                                 onError={(e) => {
                                   e.currentTarget.style.display = 'none';
@@ -238,13 +240,7 @@ export const MultiTabSidebar: React.FC = () => {
                       onClick={() => addTextElement(preset.label, preset.style)}
                     >
                       <div className="text-left">
-                        <div 
-                          className="font-medium"
-                          style={{ 
-                            fontSize: Math.min(preset.style.fontSize / 2, 16),
-                            fontWeight: preset.style.fontWeight 
-                          }}
-                        >
+                        <div className={preset.style.fontWeight === 'bold' ? 'text-base font-semibold' : 'text-sm font-medium'}>
                           {preset.label}
                         </div>
                       </div>
@@ -262,7 +258,7 @@ export const MultiTabSidebar: React.FC = () => {
                         className="w-full justify-start h-auto p-3"
                         onClick={() => addTextElement('Sample Text', { fontFamily: font })}
                       >
-                        <div style={{ fontFamily: font }}>
+                        <div className="text-left">
                           <div className="font-medium">{font}</div>
                           <div className="text-xs text-muted-foreground">Sample Text</div>
                         </div>
@@ -296,7 +292,7 @@ export const MultiTabSidebar: React.FC = () => {
 
                 <div>
                   <h4 className="text-sm font-medium mb-2">Icons</h4>
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                     {[Star, Heart, Circle, Square].map((Icon, index) => (
                       <Button
                         key={index}
@@ -364,6 +360,8 @@ export const MultiTabSidebar: React.FC = () => {
                               <img 
                                 src={URL.createObjectURL(file)}
                                 alt={file.name}
+                                loading="lazy"
+                                decoding="async"
                                 className="w-full h-full object-cover rounded"
                               />
                             ) : (

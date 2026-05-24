@@ -29,6 +29,20 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    --space-12: 3rem;
+    --space-16: 4rem;
+
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+
     --background: 252 100% 98%;
     --foreground: 236 31% 13%;
 
@@ -143,9 +157,21 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  @supports (text-size-adjust: 100%) {
+    html {
+      text-size-adjust: 100%;
+    }
+  }
+
   body {
     @apply bg-background text-foreground;
     min-height: 100vh;
+    overflow-x: hidden;
     font-family: "Space Grotesk", "Segoe UI", sans-serif;
     line-height: 1.5;
     letter-spacing: -0.01em;
@@ -159,6 +185,25 @@ All colors MUST be HSL.
 
   #root {
     min-height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  img,
+  video,
+  canvas,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+
+  button,
+  [role="button"],
+  [role="tab"],
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
   }
 }
 
@@ -167,6 +212,7 @@ All colors MUST be HSL.
     width: 100%;
     max-width: 1280px;
     margin-inline: auto;
+    min-width: 0;
     padding-inline: 1rem;
   }
 
@@ -239,6 +285,54 @@ All colors MUST be HSL.
       radial-gradient(circle at 50% 100%, hsl(var(--primary) / 0.1), transparent 28%);
     pointer-events: none;
     z-index: -1;
+  }
+
+  .safe-bottom {
+    padding-bottom: max(var(--space-4), var(--safe-bottom));
+  }
+
+  .touch-target {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+  }
+
+  .mobile-sticky-actions {
+    position: sticky;
+    bottom: calc(var(--safe-bottom) + var(--space-4));
+    z-index: 20;
+    border: 1px solid hsl(var(--border) / 0.8);
+    background: linear-gradient(160deg, hsl(var(--background) / 0.94), hsl(var(--card) / 0.9));
+    box-shadow: var(--shadow-soft);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+  }
+
+  .fab-action {
+    position: fixed;
+    right: calc(var(--safe-right) + var(--space-4));
+    bottom: calc(var(--safe-bottom) + var(--space-4));
+    z-index: 40;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3.5rem;
+    min-width: 3.5rem;
+    border-radius: 9999px;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .media-cover {
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .media-contain {
+    height: 100%;
+    width: 100%;
+    object-fit: contain;
+    object-position: center;
   }
 }
 

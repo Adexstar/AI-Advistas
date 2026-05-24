@@ -40,8 +40,9 @@ export const EditorHeader: React.FC = () => {
   };
 
   return (
-    <header className="h-14 bg-background border-b flex items-center justify-between px-4">
-      <div className="flex items-center gap-4">
+    <header className="border-b bg-background px-3 sm:px-4">
+      <div className="flex min-h-14 flex-wrap items-center justify-between gap-2 py-2 sm:flex-nowrap">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:flex-nowrap sm:gap-4">
         <Button 
           variant="ghost" 
           size="icon"
@@ -58,24 +59,24 @@ export const EditorHeader: React.FC = () => {
           {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         </Button>
         
-        <div className="flex items-center gap-2">
-          <h1 className="font-semibold">Visual Editor</h1>
+        <div className="flex min-w-0 items-center gap-2">
+          <h1 className="truncate text-sm font-semibold sm:text-base">Visual Editor</h1>
           {currentProject && (
-            <Badge variant="secondary">{currentProject.name}</Badge>
+            <Badge variant="secondary" className="hidden max-w-[180px] truncate sm:inline-flex">{currentProject.name}</Badge>
           )}
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         {/* Mode Toggle */}
-        <div className="flex bg-muted rounded-lg p-1">
+        <div className="hidden rounded-lg bg-muted p-1 sm:flex">
           <Button
             variant={mode === 'image' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setMode('image')}
             className="h-8 px-3"
           >
-            <FileImage className="h-4 w-4 mr-1" />
+            <FileImage className="mr-1 h-4 w-4" />
             Image
           </Button>
           <Button
@@ -84,16 +85,26 @@ export const EditorHeader: React.FC = () => {
             onClick={() => setMode('video')}
             className="h-8 px-3"
           >
-            <FileVideo className="h-4 w-4 mr-1" />
+            <FileVideo className="mr-1 h-4 w-4" />
             Video
           </Button>
         </div>
+
+        <Select value={mode} onValueChange={(value) => setMode(value as 'image' | 'video')}>
+          <SelectTrigger className="h-8 w-[92px] sm:hidden">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="image">Image</SelectItem>
+            <SelectItem value="video">Video</SelectItem>
+          </SelectContent>
+        </Select>
 
         <div className="flex items-center gap-2">
           {/* Export Format Selector for Images */}
           {mode === 'image' && (
             <Select defaultValue="png" onValueChange={handleExport}>
-              <SelectTrigger className="w-20">
+              <SelectTrigger className="hidden w-20 sm:flex">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -103,13 +114,13 @@ export const EditorHeader: React.FC = () => {
             </Select>
           )}
           
-          <Button variant="outline" size="sm" onClick={saveProject}>
-            <Save className="h-4 w-4 mr-1" />
-            Save
+          <Button variant="outline" size="sm" onClick={saveProject} className="h-8 px-2 sm:px-3">
+            <Save className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">Save</span>
           </Button>
-          <Button size="sm" onClick={() => handleExport()}>
-            <Download className="h-4 w-4 mr-1" />
-            Export
+          <Button size="sm" onClick={() => handleExport()} className="h-8 px-2 sm:px-3">
+            <Download className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">Export</span>
           </Button>
           
           <Button
@@ -120,6 +131,7 @@ export const EditorHeader: React.FC = () => {
             <Menu className="h-4 w-4" />
           </Button>
         </div>
+      </div>
       </div>
     </header>
   );

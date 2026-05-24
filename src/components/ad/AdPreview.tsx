@@ -66,6 +66,8 @@ const AdPreview = ({ formData, device }: AdPreviewProps) => {
                     className="w-full h-full object-cover"
                     muted
                     loop
+                    playsInline
+                    preload="metadata"
                   />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <Button size="lg" className="rounded-full w-16 h-16 p-0">
@@ -77,6 +79,7 @@ const AdPreview = ({ formData, device }: AdPreviewProps) => {
                 <img
                   src={formData.mediaUrl}
                   alt="Ad preview"
+                  decoding="async"
                   className="w-full h-full object-cover"
                 />
               )}

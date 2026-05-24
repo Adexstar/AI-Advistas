@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { 
   ChevronRight,
   CreditCard,
@@ -108,6 +109,9 @@ const DashboardLayout = () => {
 
   const activePage =
     pageMeta.find((item) => item.match(location.pathname)) || pageMeta[0];
+  const showCreateFab =
+    !location.pathname.startsWith("/create") &&
+    !location.pathname.startsWith("/ad-editor");
 
   const getNavClassName = (isActive: boolean) =>
     cn(
@@ -117,142 +121,137 @@ const DashboardLayout = () => {
         : "text-white/72 hover:bg-white/10 hover:text-white"
     );
 
-  return (
-    <div className="page-aura flex min-h-screen w-full bg-transparent text-left">
-      {/* Mobile sidebar backdrop */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-72 border-r border-white/10 bg-gradient-to-b from-primary-900 via-primary-800 to-[hsl(247_52%_19%/.98)] text-white backdrop-blur-sm transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
-        <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="flex min-h-16 items-center justify-between border-b border-white/10 px-6 py-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-primary-800 font-bold shadow-lg">A</div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/45">Workspace</p>
-                <h1 className="text-xl font-semibold text-white">
-                  AdVista
-                </h1>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-white hover:bg-white/10 hover:text-white lg:hidden"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-
-          <div className="px-4 pt-4">
-            <Button className="h-11 w-full justify-center rounded-2xl bg-white text-primary-800 shadow-lg hover:bg-white/92" onClick={() => setSidebarOpen(false)} asChild>
-              <NavLink to="/create">
-                <Plus className="h-4 w-4" />
-                Create Ad
-              </NavLink>
-            </Button>
-          </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 overflow-y-auto">
-            <div className="mb-6">
-              <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-[0.22em] text-white/45">Main</p>
-            <ul className="space-y-2">
-              {mainNavigation.map((item) => (
-                <li key={item.name}>
-                  <NavLink
-                    to={item.href}
-                    className={({ isActive }) => cn(
-                      getNavClassName(isActive)
-                    )}
-                    onClick={() => setSidebarOpen(false)}
-                  >
-                    <item.icon className="mt-0.5 h-5 w-5 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium">{item.name}</div>
-                      <div className="text-xs opacity-80 line-clamp-2">{item.description}</div>
-                    </div>
-                    <ChevronRight className="h-4 w-4 opacity-40 transition-transform group-hover:translate-x-0.5" />
-                  </NavLink>
-                </li>
-              ))}
-            </ul>
-            </div>
-            
-            {/* Secondary Navigation */}
-            <div className="mt-4 border-t border-white/10 pt-4">
-              <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-[0.22em] text-white/45">More</p>
-              <ul className="space-y-2">
-                {secondaryNavigation.map((item) => (
-                  <li key={item.name}>
-                    <NavLink
-                      to={item.href}
-                      className={({ isActive }) => cn(
-                        getNavClassName(isActive)
-                      )}
-                      onClick={() => setSidebarOpen(false)}
-                    >
-                      <item.icon className="mt-0.5 h-5 w-5 shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium">{item.name}</div>
-                      </div>
-                    </NavLink>
-                  </li>
-                ))}
-                {adminNavigation.map((item) => (
-                  <li key={item.name}>
-                    <NavLink
-                      to={item.href}
-                      className={({ isActive }) => cn(getNavClassName(isActive))}
-                      onClick={() => setSidebarOpen(false)}
-                    >
-                      <item.icon className="mt-0.5 h-5 w-5 shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium">{item.name}</div>
-                      </div>
-                    </NavLink>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="mt-6 rounded-3xl border border-white/10 bg-white/8 p-4 backdrop-blur">
-              <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white">
-                <Sparkles className="h-4 w-4 text-accent" />
-                Guided workspace
-              </div>
-              <p className="text-sm leading-6 text-white/65">
-                Start from AI, templates, or scratch. The rest of the workflow stays in one place.
-              </p>
-            </div>
-          </nav>
-
-          {/* User menu */}
-          <div className="border-t border-white/10 p-4">
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start rounded-2xl text-white/72 hover:bg-white/10 hover:text-white"
-              onClick={signOut}
-            >
-              <LogOut className="mr-3 h-5 w-5" />
-              Sign Out
-            </Button>
+  const renderSidebarContent = (isMobile = false) => (
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex min-h-16 items-center justify-between border-b border-white/10 px-6 py-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white font-bold text-primary-800 shadow-lg">A</div>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/45">Workspace</p>
+            <h1 className="truncate text-xl font-semibold text-white">AdVista</h1>
           </div>
         </div>
-      </aside>
+        {isMobile ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-white hover:bg-white/10 hover:text-white"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        ) : null}
+      </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="px-4 pt-4">
+        <Button className="h-11 w-full justify-center rounded-2xl bg-white text-primary-800 shadow-lg hover:bg-white/92" asChild>
+          <NavLink to="/create" onClick={() => setSidebarOpen(false)}>
+            <Plus className="h-4 w-4" />
+            Create Ad
+          </NavLink>
+        </Button>
+      </div>
+
+      <nav className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
+        <div className="mb-6">
+          <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-[0.22em] text-white/45">Main</p>
+          <ul className="space-y-2">
+            {mainNavigation.map((item) => (
+              <li key={item.name}>
+                <NavLink
+                  to={item.href}
+                  className={({ isActive }) => cn(getNavClassName(isActive))}
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  <item.icon className="mt-0.5 h-5 w-5 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium">{item.name}</div>
+                    <div className="line-clamp-2 text-xs opacity-80">{item.description}</div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 opacity-40 transition-transform group-hover:translate-x-0.5" />
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="mt-4 border-t border-white/10 pt-4">
+          <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-[0.22em] text-white/45">More</p>
+          <ul className="space-y-2">
+            {secondaryNavigation.map((item) => (
+              <li key={item.name}>
+                <NavLink
+                  to={item.href}
+                  className={({ isActive }) => cn(getNavClassName(isActive))}
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  <item.icon className="mt-0.5 h-5 w-5 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium">{item.name}</div>
+                  </div>
+                </NavLink>
+              </li>
+            ))}
+            {adminNavigation.map((item) => (
+              <li key={item.name}>
+                <NavLink
+                  to={item.href}
+                  className={({ isActive }) => cn(getNavClassName(isActive))}
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  <item.icon className="mt-0.5 h-5 w-5 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium">{item.name}</div>
+                  </div>
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="mt-6 rounded-3xl border border-white/10 bg-white/8 p-4 backdrop-blur">
+          <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white">
+            <Sparkles className="h-4 w-4 text-accent" />
+            Guided workspace
+          </div>
+          <p className="text-sm leading-6 text-white/65">
+            Start from AI, templates, or scratch. The rest of the workflow stays in one place.
+          </p>
+        </div>
+      </nav>
+
+      <div className="border-t border-white/10 p-4">
+        <Button
+          variant="ghost"
+          className="w-full justify-start rounded-2xl text-white/72 hover:bg-white/10 hover:text-white"
+          onClick={signOut}
+        >
+          <LogOut className="mr-3 h-5 w-5" />
+          Sign Out
+        </Button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen w-full overflow-x-hidden bg-background">
+      <div className="page-aura flex w-full text-left">
+        <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+          <SheetContent
+            side="left"
+            className="w-[min(20rem,calc(100vw-1rem))] border-r-0 bg-transparent p-0 shadow-none [&>button]:hidden lg:hidden"
+          >
+            <aside className="flex h-full w-full flex-col border-r border-white/10 bg-gradient-to-b from-primary-900 via-primary-800 to-[hsl(247_52%_19%/.98)] text-white backdrop-blur-sm">
+              {renderSidebarContent(true)}
+            </aside>
+          </SheetContent>
+        </Sheet>
+
+        <aside className="hidden min-h-screen w-72 shrink-0 border-r border-white/10 bg-gradient-to-b from-primary-900 via-primary-800 to-[hsl(247_52%_19%/.98)] text-white backdrop-blur-sm lg:flex lg:flex-col">
+          {renderSidebarContent()}
+        </aside>
+
+        <div className="flex min-w-0 flex-1 flex-col">
         {/* Mobile header */}
         <header className="flex h-16 items-center justify-between border-b border-border/70 bg-white/60 px-4 backdrop-blur-xl lg:hidden">
           <Button
@@ -273,14 +272,14 @@ const DashboardLayout = () => {
           </Button>
         </header>
 
-        <header className="hidden items-center justify-between border-b border-border/70 bg-white/55 px-8 py-5 backdrop-blur-xl lg:flex">
+        <header className="hidden items-center justify-between gap-6 border-b border-border/70 bg-white/55 px-6 py-5 backdrop-blur-xl xl:px-8 lg:flex">
           <div className="min-w-0">
             <p className="mb-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">AdVista Workspace</p>
             <h2 className="text-2xl font-semibold tracking-tight text-foreground">{activePage.title}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{activePage.description}</p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-3">
             <Button variant="outline" className="rounded-2xl border-border/70 bg-white/70 text-muted-foreground hover:bg-white hover:text-foreground">
               Quick actions
             </Button>
@@ -294,9 +293,19 @@ const DashboardLayout = () => {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto bg-transparent py-4 lg:py-6">
+        <main className="flex-1 w-full min-w-0 overflow-x-hidden overflow-y-auto bg-transparent py-4 lg:py-6">
           <Outlet />
         </main>
+
+        {showCreateFab ? (
+          <Button className="fab-action touch-target rounded-full px-5 lg:hidden" asChild>
+            <NavLink to="/create" aria-label="Create Ad">
+              <Plus className="h-4 w-4" />
+              Create Ad
+            </NavLink>
+          </Button>
+        ) : null}
+      </div>
       </div>
     </div>
   );

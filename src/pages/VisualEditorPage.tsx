@@ -5,7 +5,7 @@ import { VisualEditorLayout } from '@/components/visual-editor/VisualEditorLayou
 const VisualEditorPage: React.FC = () => {
   return (
     <VisualEditorProvider>
-      <div className="h-screen w-full bg-background">
+      <div className="min-h-screen w-full overflow-x-hidden bg-background">
         <VisualEditorLayout />
       </div>
     </VisualEditorProvider>

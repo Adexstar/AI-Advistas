@@ -387,11 +387,11 @@ const AdCreator = ({
     handleFileUpload(e.dataTransfer.files);
   };
 
-  const audienceSummary = useMemo(() => buildAudienceSummary(formData), [formData]);
+  const audienceSummary: string = buildAudienceSummary(formData);
   const manualAudienceReady = Boolean((formData.locations || []).length && formData.ageRange?.min && formData.ageRange?.max);
-  const selectedPlacementCount = useMemo(
-    () => Object.values(formData.placementOptions || {}).reduce((count, placements) => count + (placements as string[]).length, 0),
-    [formData.placementOptions]
+  const selectedPlacementCount: number = (Object.values(formData.placementOptions || {}) as unknown[]).reduce<number>(
+    (count, placements) => count + (Array.isArray(placements) ? placements.length : 0),
+    0
   );
   const scheduleIsValid = Boolean(
     campaignSettings.startDate &&
@@ -528,8 +528,8 @@ const AdCreator = ({
   const selectedPlatforms = Array.isArray(formData.platforms) ? formData.platforms : [];
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <div className="space-y-6 lg:col-span-2">
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.75fr)_minmax(19rem,0.95fr)]">
+      <div className="min-w-0 space-y-6">
         <Card className="border-border/80 shadow-card">
           <CardHeader className="space-y-4 border-b border-border/80 pb-5">
             <div className="flex flex-wrap items-center gap-2">
@@ -543,11 +543,11 @@ const AdCreator = ({
               ) : null}
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <CardTitle className="text-2xl">Build the ad step by step</CardTitle>
-                  <CardDescription className="mt-1 text-sm leading-6">
+            <div className="space-y-2 min-w-0">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <CardTitle className="break-words text-2xl leading-tight">Build the ad step by step</CardTitle>
+                  <CardDescription className="mt-1 break-words text-sm leading-6">
                     Start with the essential inputs, then open advanced options only when you need more control.
                   </CardDescription>
                 </div>
@@ -611,18 +611,18 @@ const AdCreator = ({
 
           <CardContent className="pt-6">
             <Tabs value={activeStep} onValueChange={(value) => setActiveStep(value as EditorStep)}>
-              <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-3xl bg-secondary/60 p-2 lg:grid-cols-5">
+              <TabsList className="grid h-auto w-full grid-cols-1 gap-2 rounded-3xl bg-secondary/60 p-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
                 {editorSteps.map((step, index) => (
                   <TabsTrigger
                     key={step.value}
                     value={step.value}
-                    className="flex h-auto min-h-[76px] flex-col items-start rounded-2xl px-4 py-3 text-left data-[state=active]:shadow-card"
+                    className="flex h-auto min-h-[84px] min-w-0 flex-col items-start overflow-hidden rounded-2xl px-4 py-3 text-left data-[state=active]:shadow-card"
                   >
                     <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                       Step {index + 1}
                     </span>
-                    <span className="mt-1 text-sm font-semibold text-foreground">{step.label}</span>
-                    <span className="mt-1 text-xs leading-5 text-muted-foreground">{step.description}</span>
+                    <span className="mt-1 break-words text-sm font-semibold leading-tight text-foreground">{step.label}</span>
+                    <span className="mt-1 break-words text-xs leading-5 text-muted-foreground">{step.description}</span>
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -1250,7 +1250,7 @@ const AdCreator = ({
             <div
               className={cn(
                 'mt-6 flex flex-col gap-3 border-t border-border/80 pt-5 sm:flex-row sm:items-center sm:justify-between',
-                isMobile && 'sticky bottom-4 z-20 rounded-3xl border border-border/80 bg-background/95 p-3 shadow-soft backdrop-blur'
+                isMobile && 'mobile-sticky-actions rounded-3xl p-3'
               )}
             >
               <Button type="button" variant="ghost" onClick={goToPreviousStep} disabled={activeStepIndex === 0}>
@@ -1277,13 +1277,13 @@ const AdCreator = ({
         </Card>
       </div>
 
-      <div className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+      <div className="min-w-0 space-y-4 lg:sticky lg:top-6 lg:self-start">
         <Card className="border-border/80 shadow-card">
           <CardHeader className="space-y-4">
             <div className="flex items-center justify-between gap-3">
-              <div>
+              <div className="min-w-0">
                 <CardTitle className="text-base">Preview rail</CardTitle>
-                <CardDescription>See the current ad state as you edit.</CardDescription>
+                <CardDescription className="break-words">See the current ad state as you edit.</CardDescription>
               </div>
               <div className="inline-flex rounded-full border border-border/80 bg-secondary/60 p-1">
                 <Button

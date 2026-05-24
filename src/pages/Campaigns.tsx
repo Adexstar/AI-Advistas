@@ -308,7 +308,7 @@ const Campaigns = () => {
 
               <Separator className="block md:hidden" />
 
-              <div className="grid w-full grid-cols-2 gap-4 text-center md:w-auto md:min-w-[360px] md:grid-cols-4 md:text-left">
+              <div className="grid min-w-0 w-full grid-cols-2 gap-4 text-center sm:grid-cols-4 md:w-auto md:text-left">
                 <div className="space-y-0.5">
                   <p className="text-xs text-muted-foreground">Budget</p>
                   <p className="font-semibold">

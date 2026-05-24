@@ -44,7 +44,13 @@ export const PlatformPreviews: React.FC<PlatformPreviewsProps> = ({ canvas, plat
           </div>
           <p className="text-sm mb-2">Check out our latest offer!</p>
           {previewImage && (
-            <img src={previewImage} alt="Ad Preview" className="w-full rounded-lg mb-2" />
+            <img
+              src={previewImage}
+              alt="Ad Preview"
+              loading="lazy"
+              decoding="async"
+              className="mb-2 aspect-[1.91/1] w-full rounded-lg object-cover"
+            />
           )}
           <div className="flex gap-2 mt-3">
             <div className="flex-1 py-2 px-3 bg-primary/10 text-primary rounded-md text-center text-sm font-medium cursor-pointer hover:bg-primary/20 transition-colors">
@@ -55,7 +61,13 @@ export const PlatformPreviews: React.FC<PlatformPreviewsProps> = ({ canvas, plat
       </Card>
     );
   }
-
+            <img
+              src={previewImage}
+              alt="Ad Preview"
+              loading="lazy"
+              decoding="async"
+              className="w-full aspect-square object-cover"
+            />
   if (platform === 'instagram') {
     return (
       <Card className="bg-muted/20 p-4">
@@ -88,7 +100,13 @@ export const PlatformPreviews: React.FC<PlatformPreviewsProps> = ({ canvas, plat
       <Card className="bg-muted/20 p-4">
         <div className="bg-background rounded-lg shadow-lg relative aspect-[9/16] overflow-hidden">
           {previewImage && (
-            <img src={previewImage} alt="Ad Preview" className="w-full h-full object-cover" />
+            <img
+              src={previewImage}
+              alt="Ad Preview"
+              loading="lazy"
+              decoding="async"
+              className="w-full h-full object-cover"
+            />
           )}
           <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent text-white">
             <p className="font-semibold text-sm mb-1">@yourbusiness</p>
@@ -108,7 +126,13 @@ export const PlatformPreviews: React.FC<PlatformPreviewsProps> = ({ canvas, plat
         <div className="bg-background rounded-lg shadow-lg p-3">
           <div className="flex items-start gap-3">
             {previewImage && (
-              <img src={previewImage} alt="Ad Preview" className="w-24 h-24 rounded object-cover" />
+              <img
+                src={previewImage}
+                alt="Ad Preview"
+                loading="lazy"
+                decoding="async"
+                className="w-24 h-24 rounded object-cover"
+              />
             )}
             <div className="flex-1">
               <p className="text-xs text-primary mb-1">Ad · www.yourbusiness.com</p>

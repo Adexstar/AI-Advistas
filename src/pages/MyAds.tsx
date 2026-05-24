@@ -136,9 +136,9 @@ const MyAds: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-background">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="page-container py-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-4">
               <Button
                 variant="ghost"
                 size="icon"
@@ -159,7 +159,7 @@ const MyAds: React.FC = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="page-container py-8">
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -199,6 +199,8 @@ const MyAds: React.FC = () => {
                       <img
                         src={ad.preview_url}
                         alt="Ad preview"
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover"
                       />
                     ) : (
