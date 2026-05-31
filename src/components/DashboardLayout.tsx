@@ -238,16 +238,16 @@ const DashboardLayout = () => {
       <div className="page-aura flex w-full text-left">
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetContent
-            side="left"
-            className="w-[min(20rem,calc(100vw-1rem))] border-r-0 bg-transparent p-0 shadow-none [&>button]:hidden lg:hidden"
-          >
+              side="left"
+              className="w-[min(22rem,calc(100vw-1rem))] border-r-0 bg-transparent p-0 shadow-none [&>button]:hidden lg:hidden"
+            >
             <aside className="flex h-full w-full flex-col border-r border-white/10 bg-gradient-to-b from-primary-900 via-primary-800 to-[hsl(247_52%_19%/.98)] text-white backdrop-blur-sm">
               {renderSidebarContent(true)}
             </aside>
           </SheetContent>
         </Sheet>
 
-        <aside className="hidden min-h-screen w-72 shrink-0 border-r border-white/10 bg-gradient-to-b from-primary-900 via-primary-800 to-[hsl(247_52%_19%/.98)] text-white backdrop-blur-sm lg:flex lg:flex-col">
+        <aside className="hidden min-h-screen w-80 shrink-0 border-r border-white/10 bg-gradient-to-b from-primary-900 via-primary-800 to-[hsl(247_52%_19%/.98)] text-white backdrop-blur-sm lg:flex lg:flex-col">
           {renderSidebarContent()}
         </aside>
 
@@ -272,7 +272,7 @@ const DashboardLayout = () => {
           </Button>
         </header>
 
-        <header className="hidden items-center justify-between gap-6 border-b border-border/70 bg-white/55 px-6 py-5 backdrop-blur-xl xl:px-8 lg:flex">
+        <header className="hidden items-center justify-between gap-6 border-b border-border/70 bg-white/55 px-6 py-6 backdrop-blur-xl xl:px-8 lg:flex">
           <div className="min-w-0">
             <p className="mb-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">AdVista Workspace</p>
             <h2 className="text-2xl font-semibold tracking-tight text-foreground">{activePage.title}</h2>
@@ -293,7 +293,7 @@ const DashboardLayout = () => {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 w-full min-w-0 overflow-x-hidden overflow-y-auto bg-transparent py-4 lg:py-6">
+        <main className="flex-1 w-full min-w-0 overflow-x-hidden overflow-y-auto bg-transparent py-6 lg:py-8 px-4 lg:px-6">
           <Outlet />
         </main>
 
