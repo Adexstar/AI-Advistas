@@ -16,6 +16,11 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
 import { NextBestActionWidget } from '@/components/dashboard/NextBestActionWidget';
 import { SimpleSummaryCard } from '@/components/dashboard/SimpleSummaryCard';
+import { PerformanceChart } from '@/components/dashboard/PerformanceChart';
+import { PlatformPerformance } from '@/components/dashboard/PlatformPerformance';
+import { RecentCampaigns } from '@/components/dashboard/RecentCampaigns';
+import { TopCampaignsWidget } from '@/components/dashboard/widgets/TopCampaignsWidget';
+import { useState } from 'react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -23,6 +28,29 @@ const Dashboard = () => {
 
   const campaigns = state.campaigns || [];
   const hasCampaigns = campaigns.length > 0;
+
+  const [timeRange, setTimeRange] = useState('7');
+
+  const platforms = Array.from(new Set(campaigns.map((c) => c.platform || 'Unknown'))).slice(0, 3).map((p, i) => ({
+    platform: p,
+    icon: [Clock3, LayoutTemplate, TrendingUp][i] || Clock3,
+    color: ['text-sky-600', 'text-amber-600', 'text-emerald-600'][i] || 'text-sky-600',
+    performance: Math.min(95, Math.max(20, Math.round((Math.random() * 50) + 50))),
+    revenue: `$${Math.round(Math.random() * 10000)}`,
+    ctr: `${(Math.random() * 3 + 0.5).toFixed(2)}%`,
+  }));
+
+  const recentCampaignsData = campaigns.slice(0, 6).map((c) => ({
+    id: c.id || c.name,
+    name: c.name,
+    status: c.status || 'Active',
+    platform: c.platform || 'Unknown',
+    ctr: c.ctr ? `${c.ctr}%` : '1.2%',
+    impressions: c.impressions ? String(c.impressions) : '0',
+    budget: c.budget ? `$${c.budget.toLocaleString()}` : '$0',
+    spent: c.spent ? `$${c.spent.toLocaleString()}` : '$0',
+    thumbnail: c.adContent?.mediaUrl ? '🖼️' : '🎯',
+  }));
 
   const totalSpent = campaigns.reduce((accumulator, campaign) => accumulator + campaign.spent, 0);
   const totalRevenue = campaigns.reduce((accumulator, campaign) => accumulator + (campaign.revenue || 0), 0);
@@ -191,138 +219,118 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="page-container space-y-8">
-      <Card className="surface-outline relative overflow-hidden rounded-[36px] border-border/80 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.14),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(245,158,11,0.16),_transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.92))] shadow-soft">
-        <div className="pointer-events-none absolute -left-10 top-8 h-28 w-28 rounded-full bg-sky-400/20 blur-3xl" />
-        <div className="pointer-events-none absolute -right-12 bottom-4 h-36 w-36 rounded-full bg-amber-400/20 blur-3xl" />
-        <CardContent className="relative grid gap-6 p-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end lg:p-8">
-          <div className="space-y-5">
-            <Badge variant="outline" className="rounded-full border-border/80 bg-background/80 px-3 py-1 text-[11px] uppercase tracking-[0.2em]">
+    <div className="page-container space-y-6">
+      {/* Top hero + KPI row */}
+      <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
+        <Card className="surface-outline relative overflow-hidden rounded-[28px] shadow-soft">
+          <CardContent className="p-6">
+            <Badge variant="outline" className="mb-3 rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.2em]">
               Ad operations workspace
             </Badge>
-            <div className="space-y-3">
-              <h1 className="text-3xl font-semibold tracking-tight lg:text-5xl">Run daily campaign moves from one command center.</h1>
-              <p className="max-w-2xl text-sm leading-6 text-muted-foreground lg:text-base">
-                Resume drafts, duplicate what is winning, fix underperforming campaigns, and move straight into the next launch without bouncing between views.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/75 px-3 py-1.5">
-                <Clock3 className="h-3.5 w-3.5 text-sky-600" />
-                Pick up active drafts faster
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/75 px-3 py-1.5">
-                <LayoutTemplate className="h-3.5 w-3.5 text-amber-600" />
-                Reuse proven creative systems
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/75 px-3 py-1.5">
-                <AlertTriangle className="h-3.5 w-3.5 text-rose-600" />
-                Surface issues before they spread
-              </span>
-            </div>
-          </div>
+            <h1 className="text-2xl font-semibold lg:text-4xl">Run daily campaign moves from one command center.</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Resume drafts, duplicate winners, and act on recommendations without leaving the workspace.</p>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Card className="border-border/70 bg-background/85 shadow-none">
-              <CardContent className="p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Active campaigns</p>
-                <p className="mt-2 text-2xl font-semibold">{activeCampaigns}</p>
-              </CardContent>
-            </Card>
-            <Card className="border-border/70 bg-background/85 shadow-none">
-              <CardContent className="p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Drafts waiting</p>
-                <p className="mt-2 text-2xl font-semibold">{draftCampaign ? 1 : 0}</p>
-              </CardContent>
-            </Card>
-            <Card className="border-border/70 bg-background/85 shadow-none">
-              <CardContent className="p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Healthy ROAS</p>
-                <p className="mt-2 text-2xl font-semibold">{profitableCampaigns}</p>
-              </CardContent>
-            </Card>
-            <Card className="border-border/70 bg-background/85 shadow-none">
-              <CardContent className="space-y-3 p-4">
+            {/* KPI row: Total Spend, Conversions, Reach, Avg CTR, Avg ROAS */}
+            {(() => {
+              const totalConversions = campaigns.reduce((acc, c) => acc + (c.conversions || 0), 0);
+              const totalImpressions = campaigns.reduce((acc, c) => acc + (c.impressions || 0), 0);
+              const avgCtrVal = campaigns.length
+                ? campaigns.reduce((acc, c) => {
+                    const raw = c.ctr;
+                    const num = typeof raw === 'number' ? raw : (typeof raw === 'string' ? parseFloat(String(raw).replace('%', '')) || 0 : 0);
+                    return acc + num;
+                  }, 0) / campaigns.length
+                : 0;
+              const avgCtr = `${avgCtrVal.toFixed(2)}%`;
+
+              return (
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+                  <SimpleSummaryCard title="Total spend" value={`$${totalSpent.toLocaleString()}`} icon={DollarSign} />
+                  <SimpleSummaryCard title="Conversions" value={`${totalConversions.toLocaleString()}`} icon={CopyPlus} />
+                  <SimpleSummaryCard title="Reach" value={`${totalImpressions.toLocaleString()}`} icon={LayoutTemplate} />
+                  <SimpleSummaryCard title="Avg CTR" value={avgCtr} icon={Clock3} />
+                  <SimpleSummaryCard title="Avg ROAS" value={`${avgROAS}`} icon={TrendingUp} />
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+
+        <div className="flex flex-col gap-4">
+          <Card className="surface-panel surface-outline rounded-[20px]">
+            <CardContent className="p-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Next launch</p>
+              <div className="mt-2 flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Next launch</p>
-                  <p className="mt-2 text-lg font-semibold">Build a fresh campaign</p>
+                  <p className="text-lg font-semibold">Build a fresh campaign</p>
+                  <p className="text-sm text-muted-foreground">Guided steps to launch faster.</p>
                 </div>
-                <Button size="sm" onClick={() => navigate('/create')} className="w-full rounded-2xl shadow-soft">
-                  <Plus className="mr-2 h-4 w-4" /> Create New Ad
+                <Button size="sm" onClick={() => navigate('/create')} className="rounded-2xl">
+                  <Plus className="mr-2 h-4 w-4" /> Create
                 </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
-        {actionBoard.map((item) => (
-          <Card key={item.title} className="surface-panel surface-outline rounded-[28px] transition-transform duration-200 hover:-translate-y-1 hover:shadow-soft">
-            <CardHeader className="space-y-4 pb-3 text-left">
-              <div className="flex items-center justify-between">
-                <div className="rounded-2xl bg-gradient-primary p-3 text-white shadow-glow">
-                  <item.icon className="h-5 w-5" />
-                </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
               </div>
-              <div>
-                <CardTitle className="text-lg">{item.title}</CardTitle>
-                <CardDescription className="mt-2 text-sm leading-6">{item.description}</CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0 text-left">
-              <Button variant="outline" className="w-full rounded-2xl border-border/80" onClick={item.onClick}>
-                {item.cta}
-              </Button>
             </CardContent>
           </Card>
-        ))}
+
+          <Card className="surface-panel surface-outline rounded-[20px]">
+            <CardContent className="p-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Account health</p>
+              <p className="mt-2 text-2xl font-semibold">ROAS {avgROAS}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{criticalActions} issues flagged</p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
-      <div className="space-y-3">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Performance snapshot</p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight">Read the account before you make the next move.</h2>
-          </div>
+      {/* Main grid: Performance chart + right column widgets */}
+      <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+        <Card className="surface-panel surface-outline rounded-[28px]">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Performance snapshot</p>
+                <h2 className="mt-1 text-xl font-semibold">Read the account before you make the next move.</h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm">Last 7 days</Button>
+                <Button variant="ghost" size="sm">Last 30 days</Button>
+              </div>
+            </div>
+          </CardHeader>
+            <CardContent>
+            <PerformanceChart timeRange={timeRange} onTimeRangeChange={setTimeRange} campaigns={campaigns} />
+          </CardContent>
+        </Card>
+
+        <div className="flex flex-col gap-4">
+          <TopCampaignsWidget />
+          <PlatformPerformance platforms={platforms} />
+        </div>
+      </div>
+
+      {/* Lower row: Recent campaigns + recommendations */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <Card className="surface-panel surface-outline rounded-[28px]">
+            <CardHeader>
+              <h3 className="text-lg font-semibold">Recent Campaigns</h3>
+            </CardHeader>
+            <CardContent>
+              <RecentCampaigns campaigns={recentCampaignsData} />
+            </CardContent>
+          </Card>
         </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        <SimpleSummaryCard
-          title="Total Spend (Today)"
-          value={`$${totalSpent.toFixed(2)}`}
-          icon={DollarSign}
-          trend="Live performance tracking"
-        />
-        <SimpleSummaryCard
-          title="ROAS (Last 7 Days)"
-          value={avgROAS}
-          icon={TrendingUp}
-          trend={parseFloat(avgROAS) > 2 ? 'Performing well' : 'Room for improvement'}
-          variant={parseFloat(avgROAS) > 2 ? 'success' : 'default'}
-        />
-        <SimpleSummaryCard
-          title="Critical Alerts"
-          value={criticalActions}
-          icon={AlertTriangle}
-          trend="Check recommendations below"
-          variant={criticalActions > 0 ? 'warning' : 'default'}
-        />
-      </div>
+        <div>
+          <NextBestActionWidget />
+        </div>
       </div>
 
-      <NextBestActionWidget />
-
-      <Card className="surface-panel surface-outline rounded-[28px] bg-secondary/55">
-        <CardContent className="flex flex-col gap-3 p-5 text-left md:flex-row md:items-center md:justify-between">
+      <Card className="surface-panel surface-outline rounded-[20px]">
+        <CardContent className="flex items-center justify-between p-4">
           <div>
-            <p className="text-sm font-semibold text-foreground">
-              Looking for detailed charts or full campaign operations?
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Open Campaigns to pause, resume, review performance, and continue drafts without breaking your flow.
-            </p>
+            <p className="text-sm font-semibold">Looking for detailed charts or full campaign operations?</p>
+            <p className="text-sm text-muted-foreground">Open Campaigns to pause, resume, and review performance in depth.</p>
           </div>
           <Button variant="link" onClick={() => navigate('/campaigns')} className="px-0">
             Open Campaigns
