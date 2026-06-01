@@ -1,340 +1,622 @@
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Activity,
+  ArrowUpRight,
+  Bell,
+  CheckCircle2,
+  ChevronRight,
+  CircleDollarSign,
+  Download,
+  Eye,
+  FileImage,
+  Filter,
+  Image as ImageIcon,
+  Megaphone,
+  MousePointerClick,
+  Palette,
+  PieChart as PieChartIcon,
+  Plus,
+  Search,
+  ShoppingCart,
+  Sparkles,
+  TrendingUp,
+  Upload,
+  Users,
+  Video,
+  Zap,
+} from 'lucide-react';
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  AlertTriangle,
-  ArrowRight,
-  Clock3,
-  CopyPlus,
-  DollarSign,
-  LayoutTemplate,
-  Plus,
-  TrendingUp,
-  Wand2,
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useApp } from '@/contexts/AppContext';
-import { NextBestActionWidget } from '@/components/dashboard/NextBestActionWidget';
-import { SimpleSummaryCard } from '@/components/dashboard/SimpleSummaryCard';
-import { PerformanceChart } from '@/components/dashboard/PerformanceChart';
-import { PlatformPerformance } from '@/components/dashboard/PlatformPerformance';
-import { RecentCampaigns } from '@/components/dashboard/RecentCampaigns';
-import { TopCampaignsWidget } from '@/components/dashboard/widgets/TopCampaignsWidget';
-import { useState } from 'react';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
+// ---------- demo data (replace with Supabase hooks later) ----------
+const kpis = [
+  { label: 'Campaigns', value: '48', change: '+12.5%', icon: Megaphone },
+  { label: 'Reach', value: '2.4M', change: '+18.7%', icon: Users },
+  { label: 'Clicks', value: '187K', change: '+15.3%', icon: MousePointerClick },
+  { label: 'Conversions', value: '12,540', change: '+21.6%', icon: ShoppingCart },
+  { label: 'Revenue', value: '$48,290', change: '+23.8%', icon: CircleDollarSign },
+  { label: 'ROAS', value: '4.21x', change: '+20.4%', icon: TrendingUp },
+];
+
+const perfDaily = [
+  { name: 'Mon', reach: 32000, clicks: 2800, conversions: 180, revenue: 4200 },
+  { name: 'Tue', reach: 41000, clicks: 3400, conversions: 220, revenue: 5300 },
+  { name: 'Wed', reach: 38000, clicks: 3100, conversions: 190, revenue: 4800 },
+  { name: 'Thu', reach: 52000, clicks: 4200, conversions: 290, revenue: 6900 },
+  { name: 'Fri', reach: 61000, clicks: 4900, conversions: 340, revenue: 8200 },
+  { name: 'Sat', reach: 58000, clicks: 4600, conversions: 320, revenue: 7800 },
+  { name: 'Sun', reach: 67000, clicks: 5300, conversions: 380, revenue: 9100 },
+];
+
+const topCampaigns = [
+  { name: 'Summer Sale Campaign', status: 'Active', reach: '420K', ctr: 4.8, color: 'from-purple-500 to-pink-500' },
+  { name: 'Black Friday Blast', status: 'Active', reach: '380K', ctr: 5.2, color: 'from-orange-500 to-red-500' },
+  { name: 'Fitness Launch', status: 'Paused', reach: '210K', ctr: 3.1, color: 'from-emerald-500 to-teal-500' },
+  { name: 'New Product Promo', status: 'Active', reach: '290K', ctr: 4.2, color: 'from-sky-500 to-indigo-500' },
+];
+
+const exportData = [
+  { name: 'PNG', value: 980, color: 'hsl(252 83% 61%)' },
+  { name: 'JPG', value: 620, color: 'hsl(278 94% 76%)' },
+  { name: 'MP4', value: 510, color: 'hsl(43 96% 62%)' },
+  { name: 'PDF', value: 230, color: 'hsl(142 71% 45%)' },
+];
+
+const integrations = [
+  { name: 'Meta Ads', status: 'Connected', color: 'bg-blue-500' },
+  { name: 'Google Ads', status: 'Connected', color: 'bg-red-500' },
+  { name: 'TikTok Ads', status: 'Coming Soon', color: 'bg-black' },
+];
+
+const topTemplates = [
+  { name: 'Real Estate Ad #1', usage: 248, ctr: 4.6 },
+  { name: 'E-commerce Sale #4', usage: 192, ctr: 5.2 },
+  { name: 'Agency Promo #2', usage: 168, ctr: 3.9 },
+  { name: 'Product Launch #7', usage: 145, ctr: 4.1 },
+];
+
+const campaignRows = [
+  { name: 'Summer Sale Campaign', status: 'Active', reach: '420K', ctr: '4.8%', conv: '1,240', roas: '5.24x' },
+  { name: 'Black Friday Blast', status: 'Active', reach: '380K', ctr: '5.2%', conv: '1,180', roas: '4.92x' },
+  { name: 'Fitness Launch', status: 'Paused', reach: '210K', ctr: '3.1%', conv: '540', roas: '2.85x' },
+  { name: 'New Product Promo', status: 'Active', reach: '290K', ctr: '4.2%', conv: '880', roas: '4.15x' },
+  { name: 'Spring Collection', status: 'Completed', reach: '510K', ctr: '4.7%', conv: '1,420', roas: '4.62x' },
+];
+
+const mediaAssets = [
+  { name: 'Product Image 1', usage: 86, icon: ImageIcon },
+  { name: 'Promo Video 2', usage: 72, icon: Video },
+  { name: 'Brand Logo', usage: 94, icon: Sparkles },
+  { name: 'Background 3', usage: 48, icon: FileImage },
+];
+
+const brandMetrics = [
+  { label: 'Logo Usage', value: 88 },
+  { label: 'Color Consistency', value: 92 },
+  { label: 'Font Usage', value: 76 },
+  { label: 'Brand Compliance', value: 82 },
+];
+
+const activity = [
+  { icon: FileImage, text: 'Template "Summer Sale" imported', time: '2m ago' },
+  { icon: Megaphone, text: 'Campaign "Black Friday" published', time: '1h ago' },
+  { icon: Upload, text: 'Asset "hero-banner.png" uploaded', time: '3h ago' },
+  { icon: Download, text: 'Ad "Promo May" exported as MP4', time: '6h ago' },
+  { icon: Palette, text: 'Brand Kit colors updated', time: '1d ago' },
+];
+
+const statusColor = (s: string) =>
+  s === 'Active'
+    ? 'bg-success/15 text-success'
+    : s === 'Paused'
+    ? 'bg-accent/20 text-accent-foreground'
+    : 'bg-muted text-muted-foreground';
+
+// ---------- component ----------
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { state } = useApp();
+  const [range, setRange] = useState<'daily' | 'weekly' | 'monthly'>('daily');
 
-  const campaigns = state.campaigns || [];
-  const hasCampaigns = campaigns.length > 0;
-
-  const [timeRange, setTimeRange] = useState('7');
-
-  const platforms = Array.from(new Set(campaigns.map((c) => c.platform || 'Unknown'))).slice(0, 3).map((p, i) => ({
-    platform: p,
-    icon: [Clock3, LayoutTemplate, TrendingUp][i] || Clock3,
-    color: ['text-sky-600', 'text-amber-600', 'text-emerald-600'][i] || 'text-sky-600',
-    performance: Math.min(95, Math.max(20, Math.round((Math.random() * 50) + 50))),
-    revenue: `$${Math.round(Math.random() * 10000)}`,
-    ctr: `${(Math.random() * 3 + 0.5).toFixed(2)}%`,
-  }));
-
-  const recentCampaignsData = campaigns.slice(0, 6).map((c) => ({
-    id: c.id || c.name,
-    name: c.name,
-    status: c.status || 'Active',
-    platform: c.platform || 'Unknown',
-    ctr: c.ctr ? `${c.ctr}%` : '1.2%',
-    impressions: c.impressions ? String(c.impressions) : '0',
-    budget: c.budget ? `$${c.budget.toLocaleString()}` : '$0',
-    spent: c.spent ? `$${c.spent.toLocaleString()}` : '$0',
-    thumbnail: c.adContent?.mediaUrl ? '🖼️' : '🎯',
-  }));
-
-  const totalSpent = campaigns.reduce((accumulator, campaign) => accumulator + campaign.spent, 0);
-  const totalRevenue = campaigns.reduce((accumulator, campaign) => accumulator + (campaign.revenue || 0), 0);
-  const avgROAS = totalSpent > 0 ? (totalRevenue / totalSpent).toFixed(2) : '0.00';
-  const activeCampaigns = campaigns.filter((campaign) => campaign.status === 'active').length;
-  const profitableCampaigns = campaigns.filter((campaign) => (campaign.roas || 0) >= 2).length;
-  const draftCampaign = campaigns.find((campaign) => campaign.status === 'draft');
-  const issueCampaigns = campaigns.filter(
-    (campaign) => campaign.status === 'paused' || (campaign.status === 'active' && campaign.ctr < 2.2)
+  const totalExports = useMemo(
+    () => exportData.reduce((acc, d) => acc + d.value, 0),
+    [],
   );
-  const bestPerformer = [...campaigns].sort((left, right) => {
-    const leftScore = left.roas || left.revenue || left.ctr || 0;
-    const rightScore = right.roas || right.revenue || right.ctr || 0;
-
-    return rightScore - leftScore;
-  })[0];
-  const criticalActions = issueCampaigns.length;
-
-  const createInitialDataFromCampaign = (campaign: (typeof campaigns)[number]) => ({
-    product: campaign.adContent?.product || campaign.name,
-    details: campaign.adContent?.details || `${campaign.name} campaign ready for refinement.`,
-    websiteUrl: campaign.adContent?.websiteUrl || '',
-    adType: campaign.adContent?.adType || 'image',
-    platforms: campaign.adContent?.platforms || campaign.platform,
-    audience: campaign.adContent?.audience || '',
-    mediaUrl: campaign.adContent?.mediaUrl || '',
-    mediaType: campaign.adContent?.mediaType || 'image',
-    placementOptions: campaign.adContent?.placementOptions || {},
-    simpleAudience: campaign.adContent?.simpleAudience || '',
-    aiGenerated: campaign.adContent?.aiGenerated || false,
-    aiMetadata: campaign.adContent?.aiMetadata,
-  });
-
-  const handleContinueDraft = () => {
-    if (!draftCampaign) {
-      navigate('/create');
-      return;
-    }
-
-    navigate('/ad-editor', {
-      state: {
-        initialData: createInitialDataFromCampaign(draftCampaign),
-        isScratch: !draftCampaign.adContent,
-      },
-    });
-  };
-
-  const handleDuplicateBestPerformer = () => {
-    if (!bestPerformer) {
-      navigate('/create');
-      return;
-    }
-
-    navigate('/ad-editor', {
-      state: {
-        initialData: createInitialDataFromCampaign(bestPerformer),
-        isTemplate: true,
-      },
-    });
-  };
-
-  const actionBoard = [
-    {
-      title: 'Continue Draft',
-      description: draftCampaign
-        ? `${draftCampaign.name} is waiting for a final review before launch.`
-        : 'Start a new guided draft and pick up exactly where the workflow begins.',
-      icon: Clock3,
-      cta: draftCampaign ? 'Open Draft' : 'Start Draft',
-      onClick: handleContinueDraft,
-    },
-    {
-      title: 'Launch Recommended Template',
-      description: 'Move straight into a proven layout built for your platform and goal.',
-      icon: LayoutTemplate,
-      cta: 'Browse Library',
-      onClick: () => navigate('/template-library'),
-    },
-    {
-      title: `Fix ${criticalActions || 0} Campaign Issue${criticalActions === 1 ? '' : 's'}`,
-      description: criticalActions
-        ? 'Review paused campaigns and low-performing creatives that need attention.'
-        : 'Your campaigns are stable. Open operations view to check performance health.',
-      icon: AlertTriangle,
-      cta: 'Open Campaigns',
-      onClick: () => navigate('/campaigns'),
-    },
-    {
-      title: 'Duplicate Best Performer',
-      description: bestPerformer
-        ? `Use ${bestPerformer.name} as a head start for your next launch.`
-        : 'Once campaigns are running, you will be able to clone your top performer here.',
-      icon: CopyPlus,
-      cta: bestPerformer ? 'Create Variation' : 'Create Ad',
-      onClick: handleDuplicateBestPerformer,
-    },
-  ];
-
-  if (!hasCampaigns) {
-    return (
-      <div className="page-container grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <Card className="surface-outline relative overflow-hidden rounded-[36px] border-0 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.24),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(245,158,11,0.22),_transparent_34%),linear-gradient(135deg,rgba(17,24,39,0.96),rgba(37,99,235,0.88))] text-primary-foreground shadow-soft">
-          <CardContent className="flex min-h-[420px] flex-col justify-between p-8 text-left md:p-10">
-            <div>
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-sm font-medium text-white">
-                <Wand2 className="h-4 w-4" />
-                Ad command room
-              </div>
-              <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-white md:text-5xl">
-                Build your first campaign system without leaving the workspace.
-              </h1>
-              <p className="mt-4 max-w-xl text-lg leading-8 text-white/72">
-                Start with AI, move into a launch-ready template, and keep campaign operations in the same environment once ads go live.
-              </p>
-
-              <div className="mt-6 flex flex-wrap gap-2 text-xs text-white/75">
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5">
-                  <Clock3 className="h-3.5 w-3.5" />
-                  AI brief to draft
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5">
-                  <LayoutTemplate className="h-3.5 w-3.5" />
-                  Template-led creative setup
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  Campaign ops when ready
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-4 sm:flex-row">
-              <Button size="lg" className="h-12 rounded-2xl bg-white px-6 text-primary-800 hover:bg-white/92" onClick={() => navigate('/create')}>
-                <Plus className="h-5 w-5" />
-                Create Ad
-              </Button>
-              <Button size="lg" variant="outline" className="h-12 rounded-2xl border-white/30 px-6 text-white hover:bg-white/10 hover:text-white" onClick={() => navigate('/template-library')}>
-                <LayoutTemplate className="h-5 w-5" />
-                Browse Templates
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid gap-4">
-          {actionBoard.map((item) => (
-            <Card key={item.title} className="surface-panel surface-outline rounded-[28px]">
-              <CardContent className="flex items-start gap-4 p-5 text-left">
-                <div className="rounded-2xl bg-gradient-primary p-3 text-white shadow-glow">
-                  <item.icon className="h-5 w-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-base font-semibold text-foreground">{item.title}</h2>
-                  <p className="mt-1 text-sm leading-6 text-muted-foreground">{item.description}</p>
-                  <Button variant="link" className="mt-2 h-auto px-0 text-sm" onClick={item.onClick}>
-                    {item.cta}
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="page-container space-y-6">
-      {/* Top hero + KPI row */}
-      <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
-        <Card className="surface-outline relative overflow-hidden rounded-[28px] shadow-soft">
-          <CardContent className="p-6">
-            <Badge variant="outline" className="mb-3 rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.2em]">
-              Ad operations workspace
-            </Badge>
-            <h1 className="text-2xl font-semibold lg:text-4xl">Run daily campaign moves from one command center.</h1>
-            <p className="mt-2 text-sm text-muted-foreground">Resume drafts, duplicate winners, and act on recommendations without leaving the workspace.</p>
-
-            {/* KPI row: Total Spend, Conversions, Reach, Avg CTR, Avg ROAS */}
-            {(() => {
-              const totalConversions = campaigns.reduce((acc, c) => acc + (c.conversions || 0), 0);
-              const totalImpressions = campaigns.reduce((acc, c) => acc + (c.impressions || 0), 0);
-              const avgCtrVal = campaigns.length
-                ? campaigns.reduce((acc, c) => {
-                    const raw = c.ctr;
-                    const num = typeof raw === 'number' ? raw : (typeof raw === 'string' ? parseFloat(String(raw).replace('%', '')) || 0 : 0);
-                    return acc + num;
-                  }, 0) / campaigns.length
-                : 0;
-              const avgCtr = `${avgCtrVal.toFixed(2)}%`;
-
-              return (
-                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-                  <SimpleSummaryCard title="Total spend" value={`$${totalSpent.toLocaleString()}`} icon={DollarSign} />
-                  <SimpleSummaryCard title="Conversions" value={`${totalConversions.toLocaleString()}`} icon={CopyPlus} />
-                  <SimpleSummaryCard title="Reach" value={`${totalImpressions.toLocaleString()}`} icon={LayoutTemplate} />
-                  <SimpleSummaryCard title="Avg CTR" value={avgCtr} icon={Clock3} />
-                  <SimpleSummaryCard title="Avg ROAS" value={`${avgROAS}`} icon={TrendingUp} />
-                </div>
-              );
-            })()}
-          </CardContent>
-        </Card>
-
-        <div className="flex flex-col gap-4">
-          <Card className="surface-panel surface-outline rounded-[20px]">
-            <CardContent className="p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Next launch</p>
-              <div className="mt-2 flex items-center justify-between">
-                <div>
-                  <p className="text-lg font-semibold">Build a fresh campaign</p>
-                  <p className="text-sm text-muted-foreground">Guided steps to launch faster.</p>
-                </div>
-                <Button size="sm" onClick={() => navigate('/create')} className="rounded-2xl">
-                  <Plus className="mr-2 h-4 w-4" /> Create
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="surface-panel surface-outline rounded-[20px]">
-            <CardContent className="p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Account health</p>
-              <p className="mt-2 text-2xl font-semibold">ROAS {avgROAS}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{criticalActions} issues flagged</p>
-            </CardContent>
-          </Card>
+    <div className="w-full min-w-0 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+            Dashboard
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Manage campaigns, templates, assets and performance from one place.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative hidden md:block">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search campaigns, templates..."
+              className="h-10 w-64 rounded-2xl border-border/70 bg-card/80 pl-9"
+            />
+          </div>
+          <Button variant="outline" size="icon" className="h-10 w-10 rounded-2xl">
+            <Bell className="h-4 w-4" />
+          </Button>
+          <Button onClick={() => navigate('/create')} className="h-10 rounded-2xl">
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Create Campaign</span>
+          </Button>
         </div>
       </div>
 
-      {/* Main grid: Performance chart + right column widgets */}
-      <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-        <Card className="surface-panel surface-outline rounded-[28px]">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Performance snapshot</p>
-                <h2 className="mt-1 text-xl font-semibold">Read the account before you make the next move.</h2>
+      {/* KPI grid */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {kpis.map((k) => (
+          <Card
+            key={k.label}
+            className="group rounded-2xl border-border/60 bg-card shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-card"
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <k.icon className="h-4 w-4" />
+                </div>
+                <Badge className="rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-semibold text-success hover:bg-success/15">
+                  {k.change}
+                </Badge>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm">Last 7 days</Button>
-                <Button variant="ghost" size="sm">Last 30 days</Button>
+              <p className="mt-3 text-xl font-semibold text-foreground md:text-2xl">{k.value}</p>
+              <p className="text-xs text-muted-foreground">{k.label}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Performance + Export breakdown */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="rounded-2xl border-border/60 bg-card shadow-sm lg:col-span-2">
+          <CardHeader className="flex flex-col gap-3 pb-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle className="text-base font-semibold">Performance Overview</CardTitle>
+              <p className="text-xs text-muted-foreground">Track reach, clicks, conversions and revenue.</p>
+            </div>
+            <Tabs value={range} onValueChange={(v) => setRange(v as typeof range)}>
+              <TabsList className="rounded-xl bg-muted">
+                <TabsTrigger value="daily" className="rounded-lg text-xs">Daily</TabsTrigger>
+                <TabsTrigger value="weekly" className="rounded-lg text-xs">Weekly</TabsTrigger>
+                <TabsTrigger value="monthly" className="rounded-lg text-xs">Monthly</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <div className="h-[280px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={perfDaily} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="reachGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(252 83% 61%)" stopOpacity={0.4} />
+                      <stop offset="100%" stopColor="hsl(252 83% 61%)" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="convGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(142 71% 45%)" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="hsl(142 71% 45%)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: 12,
+                      border: '1px solid hsl(var(--border))',
+                      background: 'hsl(var(--card))',
+                      fontSize: 12,
+                    }}
+                  />
+                  <Area type="monotone" dataKey="reach" stroke="hsl(252 83% 61%)" strokeWidth={2.5} fill="url(#reachGrad)" />
+                  <Area type="monotone" dataKey="conversions" stroke="hsl(142 71% 45%)" strokeWidth={2.5} fill="url(#convGrad)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-border/60 bg-card shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <PieChartIcon className="h-4 w-4 text-primary" />
+              Export Statistics
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">Asset exports this month</p>
+          </CardHeader>
+          <CardContent>
+            <div className="relative mx-auto h-[180px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={exportData}
+                    innerRadius={55}
+                    outerRadius={80}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {exportData.map((d, i) => (
+                      <Cell key={i} fill={d.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: 12,
+                      border: '1px solid hsl(var(--border))',
+                      background: 'hsl(var(--card))',
+                      fontSize: 12,
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <p className="text-2xl font-semibold text-foreground">{totalExports.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">Total Exports</p>
               </div>
             </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              {exportData.map((d) => (
+                <div key={d.name} className="flex items-center gap-2 text-xs">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: d.color }} />
+                  <span className="text-muted-foreground">{d.name}</span>
+                  <span className="ml-auto font-medium text-foreground">{d.value}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Top Campaigns + Integrations + Templates */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="rounded-2xl border-border/60 bg-card shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-base font-semibold">Top Campaigns</CardTitle>
+            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => navigate('/campaigns')}>
+              View all <ChevronRight className="h-3 w-3" />
+            </Button>
           </CardHeader>
-            <CardContent>
-            <PerformanceChart timeRange={timeRange} onTimeRangeChange={setTimeRange} campaigns={campaigns} />
+          <CardContent className="space-y-3">
+            {topCampaigns.map((c) => (
+              <button
+                key={c.name}
+                onClick={() => navigate('/campaigns')}
+                className="group flex w-full items-center gap-3 rounded-xl border border-transparent p-2 text-left transition-all hover:border-border hover:bg-muted/50"
+              >
+                <div className={`h-10 w-10 shrink-0 rounded-xl bg-gradient-to-br ${c.color}`} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate text-sm font-medium text-foreground">{c.name}</p>
+                    <Badge className={`shrink-0 rounded-full px-2 py-0 text-[10px] ${statusColor(c.status)}`}>
+                      {c.status}
+                    </Badge>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Reach {c.reach}</span>
+                    <span>CTR {c.ctr}%</span>
+                  </div>
+                  <Progress value={c.ctr * 18} className="mt-1.5 h-1" />
+                </div>
+              </button>
+            ))}
           </CardContent>
         </Card>
 
-        <div className="flex flex-col gap-4">
-          <TopCampaignsWidget />
-          <PlatformPerformance platforms={platforms} />
-        </div>
+        <Card className="rounded-2xl border-border/60 bg-card shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">Platform Integrations</CardTitle>
+            <p className="text-xs text-muted-foreground">Connect ad platforms in one click.</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {integrations.map((p) => (
+              <div key={p.name} className="flex items-center justify-between rounded-xl border border-border/60 p-3">
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${p.color} text-white`}>
+                    <Zap className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{p.name}</p>
+                    <p className="text-xs text-muted-foreground">{p.status}</p>
+                  </div>
+                </div>
+                <Button size="sm" variant="outline" className="h-8 rounded-xl text-xs">
+                  {p.status === 'Connected' ? 'Manage' : 'Connect'}
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-border/60 bg-card shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-base font-semibold">Best Performing Templates</CardTitle>
+            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => navigate('/template-library')}>
+              View all <ChevronRight className="h-3 w-3" />
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {topTemplates.map((t) => (
+              <div key={t.name} className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground">
+                  <ImageIcon className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="truncate text-sm font-medium text-foreground">{t.name}</p>
+                    <span className="text-xs text-muted-foreground">CTR {t.ctr}%</span>
+                  </div>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Progress value={(t.usage / 248) * 100} className="h-1 flex-1" />
+                    <span className="text-xs text-muted-foreground">{t.usage} uses</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Lower row: Recent campaigns + recommendations */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <Card className="surface-panel surface-outline rounded-[28px]">
-            <CardHeader>
-              <h3 className="text-lg font-semibold">Recent Campaigns</h3>
-            </CardHeader>
-            <CardContent>
-              <RecentCampaigns campaigns={recentCampaignsData} />
-            </CardContent>
-          </Card>
-        </div>
-
-        <div>
-          <NextBestActionWidget />
-        </div>
-      </div>
-
-      <Card className="surface-panel surface-outline rounded-[20px]">
-        <CardContent className="flex items-center justify-between p-4">
+      {/* Campaign Performance Table */}
+      <Card className="rounded-2xl border-border/60 bg-card shadow-sm">
+        <CardHeader className="flex flex-col gap-2 pb-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-semibold">Looking for detailed charts or full campaign operations?</p>
-            <p className="text-sm text-muted-foreground">Open Campaigns to pause, resume, and review performance in depth.</p>
+            <CardTitle className="text-base font-semibold">Campaign Performance</CardTitle>
+            <p className="text-xs text-muted-foreground">Live status across all your active campaigns.</p>
           </div>
-          <Button variant="link" onClick={() => navigate('/campaigns')} className="px-0">
-            Open Campaigns
-            <ArrowRight className="h-4 w-4" />
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="h-9 rounded-xl">
+              <Filter className="h-3.5 w-3.5" />
+              Filter
+            </Button>
+            <Button variant="outline" size="sm" className="h-9 rounded-xl">
+              <Download className="h-3.5 w-3.5" />
+              Export
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* Desktop table */}
+          <div className="hidden overflow-x-auto md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Campaign</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Reach</TableHead>
+                  <TableHead>CTR</TableHead>
+                  <TableHead>Conversions</TableHead>
+                  <TableHead>ROAS</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {campaignRows.map((c) => (
+                  <TableRow key={c.name} className="cursor-pointer" onClick={() => navigate('/campaigns')}>
+                    <TableCell className="font-medium">{c.name}</TableCell>
+                    <TableCell>
+                      <Badge className={`rounded-full px-2 py-0 text-[10px] ${statusColor(c.status)}`}>{c.status}</Badge>
+                    </TableCell>
+                    <TableCell>{c.reach}</TableCell>
+                    <TableCell>{c.ctr}</TableCell>
+                    <TableCell>{c.conv}</TableCell>
+                    <TableCell className="font-semibold text-primary">{c.roas}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          {/* Mobile cards */}
+          <div className="space-y-2 md:hidden">
+            {campaignRows.map((c) => (
+              <div key={c.name} className="rounded-xl border border-border/60 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-sm font-medium">{c.name}</p>
+                  <Badge className={`rounded-full px-2 py-0 text-[10px] ${statusColor(c.status)}`}>{c.status}</Badge>
+                </div>
+                <div className="mt-2 grid grid-cols-4 gap-2 text-xs text-muted-foreground">
+                  <div><p className="text-foreground font-medium">{c.reach}</p>Reach</div>
+                  <div><p className="text-foreground font-medium">{c.ctr}</p>CTR</div>
+                  <div><p className="text-foreground font-medium">{c.conv}</p>Conv.</div>
+                  <div><p className="text-primary font-semibold">{c.roas}</p>ROAS</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Media + Brand + Activity */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="rounded-2xl border-border/60 bg-card shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">Media Asset Usage</CardTitle>
+            <p className="text-xs text-muted-foreground">Most-used assets across campaigns.</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {mediaAssets.map((a) => (
+              <div key={a.name} className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
+                  <a.icon className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="truncate text-sm font-medium">{a.name}</p>
+                    <span className="text-xs text-muted-foreground">{a.usage}%</span>
+                  </div>
+                  <Progress value={a.usage} className="mt-1.5 h-1.5" />
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-border/60 bg-card shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">Brand Kit Performance</CardTitle>
+            <p className="text-xs text-muted-foreground">How consistently you use your brand.</p>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-5">
+              <div className="relative h-24 w-24 shrink-0">
+                <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
+                  <circle cx="50" cy="50" r="42" stroke="hsl(var(--muted))" strokeWidth="10" fill="none" />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="42"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="10"
+                    fill="none"
+                    strokeDasharray={2 * Math.PI * 42}
+                    strokeDashoffset={2 * Math.PI * 42 * (1 - 0.82)}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <p className="text-xl font-semibold">82</p>
+                  <p className="text-[10px] text-muted-foreground">Score</p>
+                </div>
+              </div>
+              <div className="flex-1 space-y-2">
+                {brandMetrics.map((m) => (
+                  <div key={m.label}>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">{m.label}</span>
+                      <span className="font-medium">{m.value}%</span>
+                    </div>
+                    <Progress value={m.value} className="mt-1 h-1" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-border/60 bg-card shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <Activity className="h-4 w-4 text-primary" />
+              Recent Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ol className="relative space-y-4 border-l border-border/70 pl-4">
+              {activity.map((a, i) => (
+                <li key={i} className="relative">
+                  <span className="absolute -left-[22px] flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary ring-4 ring-card">
+                    <a.icon className="h-3.5 w-3.5" />
+                  </span>
+                  <p className="text-sm text-foreground">{a.text}</p>
+                  <p className="text-xs text-muted-foreground">{a.time}</p>
+                </li>
+              ))}
+            </ol>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Insights */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="overflow-hidden rounded-2xl border-border/60 bg-gradient-to-br from-primary/10 via-card to-card shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <Badge className="rounded-full bg-success/15 text-success hover:bg-success/15">Growth</Badge>
+              <TrendingUp className="h-4 w-4 text-success" />
+            </div>
+            <p className="mt-3 text-2xl font-semibold">+18.7%</p>
+            <p className="text-xs text-muted-foreground">Reach increased this week</p>
+            <div className="mt-3 h-12">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={perfDaily}>
+                  <Line type="monotone" dataKey="reach" stroke="hsl(142 71% 45%)" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="overflow-hidden rounded-2xl border-border/60 bg-gradient-to-br from-accent/15 via-card to-card shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <Badge className="rounded-full bg-primary/15 text-primary hover:bg-primary/15">Top Performer</Badge>
+              <Eye className="h-4 w-4 text-primary" />
+            </div>
+            <p className="mt-3 truncate text-base font-semibold">Summer Sale Campaign</p>
+            <p className="text-xs text-muted-foreground">ROAS 4.32x · 420K reach</p>
+            <div className="mt-3 h-12">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={perfDaily}>
+                  <Line type="monotone" dataKey="revenue" stroke="hsl(252 83% 61%)" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="overflow-hidden rounded-2xl border-border/60 bg-gradient-to-br from-primary-glow/15 via-card to-card shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <Badge className="rounded-full bg-accent/20 text-accent-foreground hover:bg-accent/20">Recommendation</Badge>
+              <Sparkles className="h-4 w-4 text-primary" />
+            </div>
+            <p className="mt-3 text-sm font-semibold leading-snug">
+              Use more video assets to boost engagement by an estimated +24%.
+            </p>
+            <Button size="sm" className="mt-4 h-9 w-full rounded-xl">
+              Try suggestion <ArrowUpRight className="h-3.5 w-3.5" />
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Health footer */}
+      <Card className="rounded-2xl border-border/60 bg-card shadow-sm">
+        <CardContent className="flex flex-col items-start justify-between gap-3 p-4 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/15 text-success">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">All systems healthy</p>
+              <p className="text-xs text-muted-foreground">No issues detected across your campaigns and integrations.</p>
+            </div>
+          </div>
+          <Button variant="outline" className="h-9 rounded-xl" onClick={() => navigate('/campaigns')}>
+            Open Campaigns <ArrowUpRight className="h-3.5 w-3.5" />
           </Button>
         </CardContent>
       </Card>
