@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action: string
+          created_at: string
+          description: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          metadata: Json
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          metadata?: Json
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          metadata?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       ad_simulations: {
         Row: {
           ad_id: string | null
@@ -178,6 +211,126 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics: {
+        Row: {
+          campaign_id: string | null
+          clicks: number
+          conversions: number
+          created_at: string
+          id: string
+          impressions: number
+          recorded_at: string
+          revenue: number
+          roas: number
+          user_id: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          clicks?: number
+          conversions?: number
+          created_at?: string
+          id?: string
+          impressions?: number
+          recorded_at?: string
+          revenue?: number
+          roas?: number
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string | null
+          clicks?: number
+          conversions?: number
+          created_at?: string
+          id?: string
+          impressions?: number
+          recorded_at?: string
+          revenue?: number
+          roas?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      brand_kits: {
+        Row: {
+          colors: Json
+          created_at: string
+          fonts: Json
+          id: string
+          logos: Json
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          colors?: Json
+          created_at?: string
+          fonts?: Json
+          id?: string
+          logos?: Json
+          name?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          colors?: Json
+          created_at?: string
+          fonts?: Json
+          id?: string
+          logos?: Json
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      campaigns: {
+        Row: {
+          budget: number
+          clicks: number
+          created_at: string
+          ctr: number
+          id: string
+          name: string
+          platform: string | null
+          reach: number
+          roas: number
+          spend: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget?: number
+          clicks?: number
+          created_at?: string
+          ctr?: number
+          id?: string
+          name: string
+          platform?: string | null
+          reach?: number
+          roas?: number
+          spend?: number
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget?: number
+          clicks?: number
+          created_at?: string
+          ctr?: number
+          id?: string
+          name?: string
+          platform?: string | null
+          reach?: number
+          roas?: number
+          spend?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       generated_ads: {
         Row: {
           ad_type: string
@@ -207,6 +360,42 @@ export type Database = {
           id?: string
           platform?: string
           product_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      media_assets: {
+        Row: {
+          created_at: string
+          file_path: string | null
+          file_size: number
+          id: string
+          mime_type: string | null
+          name: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_path?: string | null
+          file_size?: number
+          id?: string
+          mime_type?: string | null
+          name: string
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_path?: string | null
+          file_size?: number
+          id?: string
+          mime_type?: string | null
+          name?: string
+          type?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
