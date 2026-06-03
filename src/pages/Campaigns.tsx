@@ -1,390 +1,332 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useApp } from '@/contexts/AppContext';
-import { BulkActions } from '@/components/BulkActions';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
+import {
+  Activity, Archive, Copy, Edit, Eye, Filter, MoreVertical, Pause,
+  Play, Plus, Search, ShoppingCart, Target, Trash2, TrendingUp,
+} from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Separator } from '@/components/ui/separator';
-import { AlertTriangle, Copy, Download, Edit, Pause, Play, Plus, Search, Trash2 } from 'lucide-react';
-import { usePauseCampaign, useResumeCampaign } from '@/hooks/useCampaignActions';
-import { toast } from 'sonner';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import {
+  CampaignRow, useCampaigns, useDeleteCampaign, useDuplicateCampaign, useUpdateCampaign,
+} from '@/hooks/useCampaigns';
+import { CampaignFormDialog } from '@/components/campaigns/CampaignFormDialog';
+import { cn } from '@/lib/utils';
 
-const statusFilters = ['all', 'active', 'paused', 'draft', 'completed'] as const;
+const STATUS_STYLES: Record<string, string> = {
+  active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
+  paused: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
+  draft: 'bg-slate-200 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300',
+  completed: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
+  archived: 'bg-muted text-muted-foreground',
+};
+
+function StatusBadge({ status }: { status: string }) {
+  return <Badge className={cn('capitalize border-0', STATUS_STYLES[status] || STATUS_STYLES.draft)}>{status}</Badge>;
+}
+
+function KpiCard({ icon: Icon, label, value, iconBg }: { icon: any; label: string; value: string | number; iconBg: string }) {
+  return (
+    <Card className="rounded-2xl border-border/60 shadow-sm">
+      <CardContent className="p-5 flex items-center gap-4">
+        <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center shrink-0', iconBg)}>
+          <Icon className="w-5 h-5" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs text-muted-foreground">{label}</p>
+          <p className="text-2xl font-bold tracking-tight truncate">{value}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 const Campaigns = () => {
-  const navigate = useNavigate();
-  const { state, actions } = useApp();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<(typeof statusFilters)[number]>('all');
-  const [selectedCampaignIds, setSelectedCampaignIds] = useState<string[]>([]);
+  const [search, setSearch] = useState('');
+  const [tab, setTab] = useState<'all' | 'active' | 'draft' | 'paused' | 'completed'>('all');
+  const [showArchived, setShowArchived] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<CampaignRow | null>(null);
 
-  const pauseMutation = usePauseCampaign();
-  const resumeMutation = useResumeCampaign();
+  const { data: campaigns = [], isLoading, isError, refetch } = useCampaigns({ includeArchived: showArchived });
+  const updateMut = useUpdateCampaign();
+  const duplicateMut = useDuplicateCampaign();
+  const deleteMut = useDeleteCampaign();
 
-  const campaigns = state.campaigns || [];
+  const counts = useMemo(() => ({
+    total: campaigns.length,
+    active: campaigns.filter((c) => c.status === 'active').length,
+    paused: campaigns.filter((c) => c.status === 'paused').length,
+    draft: campaigns.filter((c) => c.status === 'draft').length,
+    completed: campaigns.filter((c) => c.status === 'completed').length,
+  }), [campaigns]);
 
-  const filteredCampaigns = useMemo(
-    () =>
-      campaigns.filter((campaign) => {
-        const matchesSearch =
-          campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          campaign.platform.some((platform) => platform.toLowerCase().includes(searchTerm.toLowerCase()));
-        const matchesStatus = statusFilter === 'all' || campaign.status === statusFilter;
-
-        return matchesSearch && matchesStatus;
-      }),
-    [campaigns, searchTerm, statusFilter]
-  );
-
-  useEffect(() => {
-    setSelectedCampaignIds((currentIds) =>
-      currentIds.filter((id) => filteredCampaigns.some((campaign) => campaign.id === id))
-    );
-  }, [filteredCampaigns]);
-
-  const activeCount = campaigns.filter((campaign) => campaign.status === 'active').length;
-  const attentionCount = campaigns.filter((campaign) => campaign.status === 'paused' || campaign.status === 'draft').length;
-  const totalBudget = campaigns.reduce((sum, campaign) => sum + campaign.budget, 0);
-
-  const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return <Badge className="bg-green-500 hover:bg-green-600 text-white">Active</Badge>;
-      case 'paused':
-        return <Badge variant="secondary">Paused</Badge>;
-      case 'draft':
-        return <Badge variant="outline">Draft</Badge>;
-      case 'completed':
-        return <Badge variant="default">Completed</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
-  };
-
-  const handleEdit = (campaignId: string) => {
-    const campaign = campaigns.find(c => c.id === campaignId);
-    if (campaign) {
-      actions.selectCampaign(campaign);
-      navigate('/ad-editor', { 
-        state: { 
-          campaignId, 
-          isEdit: true 
-        } 
-      });
-    }
-  };
-  
-  const handlePause = (campaignId: string) => {
-    pauseMutation.mutate(campaignId);
-  };
-
-  const handleResume = (campaignId: string) => {
-    resumeMutation.mutate(campaignId);
-  };
-
-  const handleDuplicate = (campaignId: string) => {
-    actions.duplicateCampaigns([campaignId]);
-  };
-
-  const exportCampaigns = (campaignIds: string[]) => {
-    const campaignsToExport = campaigns.filter((campaign) => campaignIds.includes(campaign.id));
-
-    if (campaignsToExport.length === 0) {
-      toast.info('No campaigns selected', {
-        description: 'Select at least one campaign to export.',
-      });
-      return;
-    }
-
-    const blob = new Blob([JSON.stringify(campaignsToExport, null, 2)], {
-      type: 'application/json',
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return campaigns.filter((c) => {
+      const matchesTab = tab === 'all' || c.status === tab;
+      const matchesSearch = !q || c.name.toLowerCase().includes(q) || (c.platform || '').toLowerCase().includes(q);
+      return matchesTab && matchesSearch;
     });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `campaigns-${new Date().toISOString().slice(0, 10)}.json`;
-    link.click();
-    window.URL.revokeObjectURL(url);
+  }, [campaigns, search, tab]);
 
-    toast.success('Campaign export ready', {
-      description: `${campaignsToExport.length} campaign${campaignsToExport.length === 1 ? '' : 's'} exported.`,
-    });
+  const openCreate = () => { setEditing(null); setFormOpen(true); };
+  const openEdit = (c: CampaignRow) => { setEditing(c); setFormOpen(true); };
+
+  const togglePauseResume = (c: CampaignRow) => {
+    const next = c.status === 'active' ? 'paused' : 'active';
+    updateMut.mutate({ id: c.id, updates: { status: next } });
   };
 
-  const handleBulkAction = (action: string, campaignIds: string[], payload?: { status?: string }) => {
-    switch (action) {
-      case 'activate':
-        actions.bulkUpdateCampaigns(campaignIds, { status: 'active' });
-        break;
-      case 'pause':
-        actions.bulkUpdateCampaigns(campaignIds, { status: 'paused' });
-        break;
-      case 'duplicate':
-        actions.duplicateCampaigns(campaignIds);
-        break;
-      case 'delete':
-        actions.bulkDeleteCampaigns(campaignIds);
-        break;
-      case 'export':
-        exportCampaigns(campaignIds);
-        break;
-      case 'changeStatus':
-        if (payload?.status) {
-          actions.bulkUpdateCampaigns(campaignIds, {
-            status: payload.status as 'active' | 'paused' | 'draft' | 'completed',
-          });
-        }
-        break;
-      default:
-        toast.info('Action unavailable', {
-          description: 'This campaign action is not configured yet.',
-        });
+  const archive = (c: CampaignRow) => updateMut.mutate({ id: c.id, updates: { archived: true, status: 'archived' } });
+  const unarchive = (c: CampaignRow) => updateMut.mutate({ id: c.id, updates: { archived: false, status: 'draft' } });
+
+  const handleDelete = (c: CampaignRow) => {
+    if (confirm(`Delete "${c.name}"? This cannot be undone.`)) {
+      deleteMut.mutate(c);
     }
   };
-
-  const toggleCampaignSelection = (campaignId: string, checked: boolean) => {
-    setSelectedCampaignIds((currentIds) =>
-      checked ? [...new Set([...currentIds, campaignId])] : currentIds.filter((id) => id !== campaignId)
-    );
-  };
-
-  if (campaigns.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
-        <AlertTriangle className="h-16 w-16 text-muted-foreground mb-4" />
-        <h1 className="text-4xl font-bold mb-2">No Campaigns Found</h1>
-        <p className="text-lg text-muted-foreground mb-8">
-          Start your first campaign to see it tracked here.
-        </p>
-        <Button size="lg" onClick={() => navigate('/create')} className="text-lg">
-          <Plus className="h-6 w-6 mr-2" /> Create Your First Ad
-        </Button>
-      </div>
-    );
-  }
 
   return (
-    <div className="page-container space-y-6 py-4 md:py-6">
-      <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-3xl font-bold tracking-tight">Campaigns & Ads Management</h1>
-          <p className="text-muted-foreground mt-1">View status and take action on your campaigns</p>
-        </div>
-        <Button size="lg" onClick={() => navigate('/create')} className="w-full sm:w-auto sm:min-w-[200px]">
-          <Plus className="h-5 w-5 mr-2" /> Create New Ad
-        </Button>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="border-border/80 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardDescription>Live campaigns</CardDescription>
-            <CardTitle className="text-3xl">{activeCount}</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 text-sm text-muted-foreground">
-            Campaigns currently running across your connected channels.
-          </CardContent>
-        </Card>
-        <Card className="border-border/80 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardDescription>Needs attention</CardDescription>
-            <CardTitle className="text-3xl">{attentionCount}</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 text-sm text-muted-foreground">
-            Draft or paused campaigns ready for revision or activation.
-          </CardContent>
-        </Card>
-        <Card className="border-border/80 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardDescription>Managed budget</CardDescription>
-            <CardTitle className="text-3xl">${totalBudget.toLocaleString()}</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 text-sm text-muted-foreground">
-            Total allocated budget across every campaign in this workspace.
-          </CardContent>
-        </Card>
-      </div>
-
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-[1600px]">
+      {/* Header */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="relative w-full max-w-lg flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
-          <Input
-            placeholder="Search by campaign name or platform..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Campaigns</h1>
+          <p className="text-sm text-muted-foreground mt-1">Manage all advertising campaigns from one place.</p>
         </div>
-
-        <div className="flex flex-wrap gap-2">
-          {statusFilters.map((status) => (
-            <Button
-              key={status}
-              type="button"
-              variant={statusFilter === status ? 'default' : 'outline'}
-              className="rounded-full"
-              onClick={() => setStatusFilter(status)}
-            >
-              {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      <BulkActions
-        items={filteredCampaigns}
-        selectedItems={selectedCampaignIds}
-        onSelectionChange={setSelectedCampaignIds}
-        onBulkAction={handleBulkAction}
-        itemType="campaigns"
-        quickStatusOptions={[
-          { value: 'active', label: 'Active' },
-          { value: 'paused', label: 'Paused' },
-          { value: 'draft', label: 'Draft' },
-          { value: 'completed', label: 'Completed' },
-        ]}
-        actions={[
-          {
-            id: 'activate',
-            label: 'Activate',
-            icon: <Play className="h-4 w-4" />,
-          },
-          {
-            id: 'pause',
-            label: 'Pause',
-            icon: <Pause className="h-4 w-4" />,
-            variant: 'outline',
-          },
-          {
-            id: 'duplicate',
-            label: 'Duplicate',
-            icon: <Copy className="h-4 w-4" />,
-            variant: 'outline',
-          },
-          {
-            id: 'export',
-            label: 'Export',
-            icon: <Download className="h-4 w-4" />,
-            variant: 'outline',
-          },
-          {
-            id: 'delete',
-            label: 'Delete',
-            icon: <Trash2 className="h-4 w-4" />,
-            variant: 'destructive',
-            requiresConfirmation: true,
-            confirmationMessage: 'Delete the selected campaigns and their ads? This action cannot be undone.',
-          },
-        ]}
-      />
-
-      <div className="space-y-4">
-        {filteredCampaigns.map((campaign) => (
-          <Card key={campaign.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="flex flex-col gap-4 p-4 sm:p-5 md:flex-row md:items-center md:justify-between">
-              <div className="flex min-w-0 flex-1 items-start gap-3">
-                <Checkbox
-                  checked={selectedCampaignIds.includes(campaign.id)}
-                  onCheckedChange={(checked) => toggleCampaignSelection(campaign.id, checked === true)}
-                  aria-label={`Select ${campaign.name}`}
-                  className="mt-1"
-                />
-                <div className="flex min-w-0 flex-col space-y-1">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <CardTitle className="min-w-0 text-lg font-semibold leading-tight break-words">{campaign.name}</CardTitle>
-                    {getStatusBadge(campaign.status)}
-                  </div>
-                  <p className="text-xs leading-relaxed text-muted-foreground">{campaign.platform.join(', ')}</p>
-                  <p className="text-xs leading-relaxed text-muted-foreground">
-                    {campaign.runContinuously
-                      ? `Starts ${campaign.startDate} • Runs continuously`
-                      : `Runs ${campaign.startDate} to ${campaign.endDate}`}
-                  </p>
-                </div>
-              </div>
-
-              <Separator className="block md:hidden" />
-
-              <div className="grid min-w-0 w-full grid-cols-2 gap-4 text-center sm:grid-cols-4 md:w-auto md:text-left">
-                <div className="space-y-0.5">
-                  <p className="text-xs text-muted-foreground">Budget</p>
-                  <p className="font-semibold">
-                    ${campaign.budget.toLocaleString()}
-                    <span className="ml-1 text-xs font-medium text-muted-foreground">
-                      / {campaign.budgetPeriod || 'total'}
-                    </span>
-                  </p>
-                </div>
-                <div className="space-y-0.5">
-                  <p className="text-xs text-muted-foreground">Spend</p>
-                  <p className="font-semibold">${campaign.spent.toFixed(2)}</p>
-                </div>
-                <div className="space-y-0.5">
-                  <p className="text-xs text-muted-foreground">Clicks</p>
-                  <p className="font-semibold">{campaign.clicks?.toLocaleString() || 0}</p>
-                </div>
-                <div className="space-y-0.5">
-                  <p className="text-xs text-muted-foreground">CPA</p>
-                  <p className="font-semibold">
-                    {campaign.cpa ? `$${campaign.cpa.toFixed(2)}` : '--'}
-                  </p>
-                </div>
-              </div>
-
-              <Separator className="block md:hidden" />
-
-              <div className="flex w-full flex-wrap justify-end gap-2 md:w-auto md:flex-nowrap">
-                {campaign.status === 'active' ? (
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    onClick={() => handlePause(campaign.id)}
-                    disabled={pauseMutation.isPending}
-                  >
-                    <Pause className="h-4 w-4 mr-1" /> Pause
-                  </Button>
-                ) : (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => handleResume(campaign.id)}
-                    disabled={resumeMutation.isPending}
-                  >
-                    <Play className="h-4 w-4 mr-1" /> Resume
-                  </Button>
-                )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDuplicate(campaign.id)}
-                  title="Duplicate Campaign"
-                >
-                  <Copy className="h-4 w-4 mr-1" /> Duplicate
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleEdit(campaign.id)}
-                  title="Edit Campaign"
-                >
-                  <Edit className="h-4 w-4 mr-1" /> Edit
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        
-        {filteredCampaigns.length === 0 && (searchTerm.length > 0 || statusFilter !== 'all') && (
-          <div className="text-center text-muted-foreground p-8">
-            <p>No campaigns match the current filters.</p>
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <div className="relative flex-1 sm:flex-initial sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search campaigns..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
           </div>
-        )}
+          <Button variant="outline" size="icon" className="hidden sm:inline-flex" aria-label="Filter">
+            <Filter className="w-4 h-4" />
+          </Button>
+          <Button onClick={openCreate} className="gap-2">
+            <Plus className="w-4 h-4" /> Create Campaign
+          </Button>
+        </div>
       </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <KpiCard icon={TrendingUp} label="Total Campaigns" value={counts.total} iconBg="bg-violet-100 text-violet-600" />
+        <KpiCard icon={ShoppingCart} label="Active" value={counts.active} iconBg="bg-emerald-100 text-emerald-600" />
+        <KpiCard icon={Pause} label="Paused" value={counts.paused} iconBg="bg-amber-100 text-amber-600" />
+        <KpiCard icon={Target} label="Completed" value={counts.completed} iconBg="bg-blue-100 text-blue-600" />
+      </div>
+
+      {/* Filter row */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full sm:w-auto">
+          <TabsList className="flex-wrap h-auto">
+            <TabsTrigger value="all">All <span className="ml-1.5 text-xs text-muted-foreground">{counts.total}</span></TabsTrigger>
+            <TabsTrigger value="active">Active <span className="ml-1.5 text-xs text-muted-foreground">{counts.active}</span></TabsTrigger>
+            <TabsTrigger value="draft">Draft <span className="ml-1.5 text-xs text-muted-foreground">{counts.draft}</span></TabsTrigger>
+            <TabsTrigger value="paused">Paused <span className="ml-1.5 text-xs text-muted-foreground">{counts.paused}</span></TabsTrigger>
+            <TabsTrigger value="completed">Completed <span className="ml-1.5 text-xs text-muted-foreground">{counts.completed}</span></TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="flex items-center gap-2">
+          <Switch id="archived" checked={showArchived} onCheckedChange={setShowArchived} />
+          <Label htmlFor="archived" className="text-sm text-muted-foreground cursor-pointer">Show archived</Label>
+        </div>
+      </div>
+
+      {/* Content */}
+      {isError ? (
+        <Card className="rounded-2xl">
+          <CardContent className="p-10 text-center space-y-3">
+            <p className="text-destructive">Failed to load campaigns.</p>
+            <Button onClick={() => refetch()}>Retry</Button>
+          </CardContent>
+        </Card>
+      ) : isLoading ? (
+        <Card className="rounded-2xl">
+          <CardContent className="p-4 space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-14 w-full" />
+            ))}
+          </CardContent>
+        </Card>
+      ) : filtered.length === 0 ? (
+        <Card className="rounded-2xl">
+          <CardContent className="p-12 text-center space-y-4">
+            <div className="w-16 h-16 mx-auto rounded-full bg-violet-100 text-violet-600 flex items-center justify-center">
+              <TrendingUp className="w-8 h-8" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold">No campaigns yet</h3>
+              <p className="text-sm text-muted-foreground">Get started by creating your first campaign.</p>
+            </div>
+            <Button onClick={openCreate} className="gap-2">
+              <Plus className="w-4 h-4" /> Create First Campaign
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Desktop Table */}
+          <Card className="rounded-2xl hidden md:block overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Campaign</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Platform</TableHead>
+                    <TableHead className="text-right">Budget</TableHead>
+                    <TableHead className="text-right">Reach</TableHead>
+                    <TableHead className="text-right">CTR</TableHead>
+                    <TableHead className="text-right">Conv.</TableHead>
+                    <TableHead className="text-right">ROAS</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((c, i) => (
+                    <motion.tr
+                      key={c.id}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.02 }}
+                      className="border-b last:border-b-0 hover:bg-muted/40"
+                    >
+                      <TableCell>
+                        <div className="font-medium">{c.name}</div>
+                        <div className="text-xs text-muted-foreground capitalize">{c.objective}</div>
+                      </TableCell>
+                      <TableCell><StatusBadge status={c.status} /></TableCell>
+                      <TableCell className="text-sm">{c.platform || '—'}</TableCell>
+                      <TableCell className="text-right tabular-nums">${Number(c.budget).toLocaleString()}</TableCell>
+                      <TableCell className="text-right tabular-nums">{c.reach.toLocaleString()}</TableCell>
+                      <TableCell className="text-right tabular-nums">{Number(c.ctr).toFixed(2)}%</TableCell>
+                      <TableCell className="text-right tabular-nums">{c.conversions.toLocaleString()}</TableCell>
+                      <TableCell className="text-right tabular-nums">{Number(c.roas).toFixed(2)}x</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {new Date(c.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <CampaignActions
+                          c={c}
+                          onView={() => openEdit(c)}
+                          onEdit={() => openEdit(c)}
+                          onDuplicate={() => duplicateMut.mutate(c)}
+                          onTogglePause={() => togglePauseResume(c)}
+                          onArchive={() => archive(c)}
+                          onUnarchive={() => unarchive(c)}
+                          onDelete={() => handleDelete(c)}
+                        />
+                      </TableCell>
+                    </motion.tr>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden space-y-3">
+            {filtered.map((c) => (
+              <Card key={c.id} className="rounded-2xl">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h4 className="font-semibold truncate">{c.name}</h4>
+                      <p className="text-xs text-muted-foreground capitalize">{c.objective} • {c.platform || '—'}</p>
+                    </div>
+                    <CampaignActions
+                      c={c}
+                      onView={() => openEdit(c)}
+                      onEdit={() => openEdit(c)}
+                      onDuplicate={() => duplicateMut.mutate(c)}
+                      onTogglePause={() => togglePauseResume(c)}
+                      onArchive={() => archive(c)}
+                      onUnarchive={() => unarchive(c)}
+                      onDelete={() => handleDelete(c)}
+                    />
+                  </div>
+                  <StatusBadge status={c.status} />
+                  <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t">
+                    <div>
+                      <p className="text-[10px] uppercase text-muted-foreground">Budget</p>
+                      <p className="text-sm font-semibold">${Number(c.budget).toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-muted-foreground">Reach</p>
+                      <p className="text-sm font-semibold">{c.reach.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-muted-foreground">ROAS</p>
+                      <p className="text-sm font-semibold">{Number(c.roas).toFixed(2)}x</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
+
+      <CampaignFormDialog open={formOpen} onOpenChange={setFormOpen} campaign={editing} />
     </div>
   );
 };
+
+function CampaignActions({
+  c, onView, onEdit, onDuplicate, onTogglePause, onArchive, onUnarchive, onDelete,
+}: {
+  c: CampaignRow;
+  onView: () => void;
+  onEdit: () => void;
+  onDuplicate: () => void;
+  onTogglePause: () => void;
+  onArchive: () => void;
+  onUnarchive: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label="Actions">
+          <MoreVertical className="w-4 h-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuItem onClick={onView}><Eye className="w-4 h-4 mr-2" /> View</DropdownMenuItem>
+        <DropdownMenuItem onClick={onEdit}><Edit className="w-4 h-4 mr-2" /> Edit</DropdownMenuItem>
+        <DropdownMenuItem onClick={onDuplicate}><Copy className="w-4 h-4 mr-2" /> Duplicate</DropdownMenuItem>
+        {c.status === 'active' ? (
+          <DropdownMenuItem onClick={onTogglePause}><Pause className="w-4 h-4 mr-2" /> Pause</DropdownMenuItem>
+        ) : c.status === 'paused' ? (
+          <DropdownMenuItem onClick={onTogglePause}><Play className="w-4 h-4 mr-2" /> Resume</DropdownMenuItem>
+        ) : null}
+        <DropdownMenuSeparator />
+        {c.archived ? (
+          <DropdownMenuItem onClick={onUnarchive}><Activity className="w-4 h-4 mr-2" /> Unarchive</DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem onClick={onArchive}><Archive className="w-4 h-4 mr-2" /> Archive</DropdownMenuItem>
+        )}
+        <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+          <Trash2 className="w-4 h-4 mr-2" /> Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 export default Campaigns;

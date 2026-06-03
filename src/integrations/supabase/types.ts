@@ -285,46 +285,67 @@ export type Database = {
       }
       campaigns: {
         Row: {
+          archived: boolean
           budget: number
           clicks: number
+          conversions: number
           created_at: string
           ctr: number
+          end_date: string | null
           id: string
+          impressions: number
           name: string
+          objective: string
           platform: string | null
           reach: number
+          revenue: number
           roas: number
           spend: number
+          start_date: string | null
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          archived?: boolean
           budget?: number
           clicks?: number
+          conversions?: number
           created_at?: string
           ctr?: number
+          end_date?: string | null
           id?: string
+          impressions?: number
           name: string
+          objective?: string
           platform?: string | null
           reach?: number
+          revenue?: number
           roas?: number
           spend?: number
+          start_date?: string | null
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          archived?: boolean
           budget?: number
           clicks?: number
+          conversions?: number
           created_at?: string
           ctr?: number
+          end_date?: string | null
           id?: string
+          impressions?: number
           name?: string
+          objective?: string
           platform?: string | null
           reach?: number
+          revenue?: number
           roas?: number
           spend?: number
+          start_date?: string | null
           status?: string
           updated_at?: string
           user_id?: string
