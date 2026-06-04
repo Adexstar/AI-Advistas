@@ -209,7 +209,7 @@ const TemplateLibrary = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: templates = [], isLoading } = useTemplates();
-  const { campaigns = [] } = useCampaigns();
+  const { data: campaigns = [] } = useCampaigns();
   const trackUsage = useTrackTemplateUsage();
 
   const [search, setSearch] = useState('');
