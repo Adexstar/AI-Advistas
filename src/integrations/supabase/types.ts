@@ -388,34 +388,79 @@ export type Database = {
       media_assets: {
         Row: {
           created_at: string
+          favorite: boolean
           file_path: string | null
           file_size: number
+          file_url: string | null
+          folder: string | null
           id: string
           mime_type: string | null
           name: string
+          source: string
+          tags: string[]
+          thumbnail_url: string | null
           type: string
+          updated_at: string
+          usage_count: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          favorite?: boolean
+          file_path?: string | null
+          file_size?: number
+          file_url?: string | null
+          folder?: string | null
+          id?: string
+          mime_type?: string | null
+          name: string
+          source?: string
+          tags?: string[]
+          thumbnail_url?: string | null
+          type?: string
+          updated_at?: string
+          usage_count?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          favorite?: boolean
+          file_path?: string | null
+          file_size?: number
+          file_url?: string | null
+          folder?: string | null
+          id?: string
+          mime_type?: string | null
+          name?: string
+          source?: string
+          tags?: string[]
+          thumbnail_url?: string | null
+          type?: string
+          updated_at?: string
+          usage_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      media_folders: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
-          file_path?: string | null
-          file_size?: number
           id?: string
-          mime_type?: string | null
           name: string
-          type?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
-          file_path?: string | null
-          file_size?: number
           id?: string
-          mime_type?: string | null
           name?: string
-          type?: string
           updated_at?: string
           user_id?: string
         }
