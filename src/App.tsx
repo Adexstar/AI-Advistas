@@ -27,6 +27,7 @@ const AdEditor = lazy(() => import("./pages/AdEditor"));
 const TemplateCustomizer = lazy(() => import("./pages/TemplateCustomizer"));
 const TemplateLibrary = lazy(() => import("./pages/TemplateLibrary"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const MediaLibrary = lazy(() => import("./pages/MediaLibrary"));
 
 const RouteFallback = () => (
   <div className="min-h-screen w-full bg-background">
