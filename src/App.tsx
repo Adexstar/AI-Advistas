@@ -137,6 +137,13 @@ const AppContent = () => {
             }>
               <Route index element={<TemplateLibrary />} />
             </Route>
+            <Route path="/media-library" element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<MediaLibrary />} />
+            </Route>
             
             {/* Redirects from old routes to new consolidated structure */}
             <Route path="/templates" element={<Navigate to="/template-library" replace />} />
