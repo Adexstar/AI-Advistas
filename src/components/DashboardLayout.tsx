@@ -48,7 +48,7 @@ const mainNav: NavItem[] = [
   { name: "Templates", href: "/template-library", icon: LayoutTemplate, description: "Browse and edit templates" },
   { name: "Visual Editor", href: "/visual-editor", icon: PenTool, description: "Design and edit creatives" },
   { name: "Media Library", href: "/media-library", icon: ImageIcon, description: "Manage images and videos" },
-  { name: "Brand Kit", href: "/brand-kit", icon: Palette, description: "Manage brand identity", badge: "Soon" },
+  { name: "Brand Kit", href: "/brand-kit", icon: Palette, description: "Manage brand identity" },
   { name: "Analytics", href: "/analytics", icon: BarChart3, description: "Track performance and insights", badge: "Soon" },
 ];
 
