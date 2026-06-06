@@ -28,6 +28,7 @@ const TemplateCustomizer = lazy(() => import("./pages/TemplateCustomizer"));
 const TemplateLibrary = lazy(() => import("./pages/TemplateLibrary"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const MediaLibrary = lazy(() => import("./pages/MediaLibrary"));
+const BrandKit = lazy(() => import("./pages/BrandKit"));
 
 const RouteFallback = () => (
   <div className="min-h-screen w-full bg-background">
@@ -143,6 +144,13 @@ const AppContent = () => {
               </ProtectedRoute>
             }>
               <Route index element={<MediaLibrary />} />
+            </Route>
+            <Route path="/brand-kit" element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<BrandKit />} />
             </Route>
             
             {/* Redirects from old routes to new consolidated structure */}
