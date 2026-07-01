@@ -20,6 +20,7 @@ const DashboardLayout = lazy(() => import("./components/DashboardLayout"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Campaigns = lazy(() => import("./pages/Campaigns"));
 const CreateAdEntry = lazy(() => import("./pages/CreateAdEntry"));
+const CreateAd = lazy(() => import("./pages/CreateAd"));
 const Billing = lazy(() => import("./pages/Billing"));
 const Settings = lazy(() => import("./pages/Settings"));
 const VisualEditorPage = lazy(() => import("./pages/VisualEditorPage"));
@@ -107,7 +108,8 @@ const AppContent = () => {
                 <DashboardLayout />
               </ProtectedRoute>
             }>
-              <Route index element={<CreateAdEntry />} />
+              <Route index element={<CreateAd />} />
+              <Route path="start" element={<CreateAdEntry />} />
             </Route>
             <Route path="/ad-editor" element={
               <ProtectedRoute>
