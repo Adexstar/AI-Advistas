@@ -30,6 +30,7 @@ const TemplateLibrary = lazy(() => import("./pages/TemplateLibrary"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const MediaLibrary = lazy(() => import("./pages/MediaLibrary"));
 const BrandKit = lazy(() => import("./pages/BrandKit"));
+const Analytics = lazy(() => import("./pages/Analytics"));
 
 const RouteFallback = () => (
   <div className="min-h-screen w-full bg-background">
@@ -153,6 +154,13 @@ const AppContent = () => {
               </ProtectedRoute>
             }>
               <Route index element={<BrandKit />} />
+            </Route>
+            <Route path="/analytics" element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<Analytics />} />
             </Route>
             
             {/* Redirects from old routes to new consolidated structure */}

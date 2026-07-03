@@ -49,7 +49,7 @@ const mainNav: NavItem[] = [
   { name: "Visual Editor", href: "/visual-editor", icon: PenTool, description: "Design and edit creatives" },
   { name: "Media Library", href: "/media-library", icon: ImageIcon, description: "Manage images and videos" },
   { name: "Brand Kit", href: "/brand-kit", icon: Palette, description: "Manage brand identity" },
-  { name: "Analytics", href: "/analytics", icon: BarChart3, description: "Track performance and insights", badge: "Soon" },
+  { name: "Analytics", href: "/analytics", icon: BarChart3, description: "Track performance and insights" },
 ];
 
 const workspaceNav: NavItem[] = [
@@ -72,6 +72,7 @@ const pageMeta: { match: (p: string) => boolean; title: string; description: str
   { match: (p) => p.startsWith("/create"), title: "Create Ad", description: "Launch a new ad with AI." },
   { match: (p) => p.startsWith("/billing"), title: "Billing", description: "Manage your plan and credits." },
   { match: (p) => p.startsWith("/settings"), title: "Settings", description: "Preferences and account details." },
+  { match: (p) => p.startsWith("/analytics"), title: "Analytics & Reports", description: "Track performance, analyze results, and grow your advertising impact." },
   { match: (p) => p.startsWith("/admin"), title: "Admin", description: "Workspace controls." },
 ];
 
