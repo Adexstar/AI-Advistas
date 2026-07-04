@@ -9,59 +9,87 @@ import {
   BarChart3,
   Bell,
   ChevronLeft,
+  Code2,
   CreditCard,
   Download,
   HelpCircle,
   ImageIcon,
   LayoutDashboard,
   LayoutTemplate,
-  LifeBuoy,
   LogOut,
   Megaphone,
   Menu,
-  MessageSquare,
   Palette,
   PenTool,
   Plug,
   Plus,
-  Search,
   Settings,
   Shield,
   Sparkles,
+  Store,
+  Users,
   X,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdmin } from "@/hooks/useAdmin";
+import SidebarSearch from "@/components/sidebar/SidebarSearch";
+import GlobalSearch from "@/components/GlobalSearch";
+import MobileBottomNav from "@/components/MobileBottomNav";
+import AIStatusPill from "@/components/ai/AIStatusPill";
+import NotifyBadge from "@/components/ui/NotifyBadge";
+import { AIStatusProvider } from "@/contexts/AIStatusContext";
 
 type NavItem = {
   name: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  description?: string;
   badge?: string;
+  disabled?: boolean;
+  notify?: number;
 };
 
-const mainNav: NavItem[] = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, description: "Overview of business performance" },
-  { name: "Campaigns", href: "/campaigns", icon: Megaphone, description: "Manage ad campaigns" },
-  { name: "Templates", href: "/template-library", icon: LayoutTemplate, description: "Browse and edit templates" },
-  { name: "Visual Editor", href: "/visual-editor", icon: PenTool, description: "Design and edit creatives" },
-  { name: "Media Library", href: "/media-library", icon: ImageIcon, description: "Manage images and videos" },
-  { name: "Brand Kit", href: "/brand-kit", icon: Palette, description: "Manage brand identity" },
-  { name: "Analytics", href: "/analytics", icon: BarChart3, description: "Track performance and insights" },
-];
+type NavGroup = { title: string; items: NavItem[] };
 
-const workspaceNav: NavItem[] = [
-  { name: "Integrations", href: "/integrations", icon: Plug, description: "Canva, Freepik, Meta, Google", badge: "Soon" },
-  { name: "Export Center", href: "/exports", icon: Download, description: "Manage exported designs", badge: "Soon" },
-  { name: "Billing", href: "/billing", icon: CreditCard, description: "Subscription management" },
-  { name: "Settings", href: "/settings", icon: Settings, description: "Account preferences" },
-];
-
-const supportNav: NavItem[] = [
-  { name: "Help Center", href: "/help", icon: LifeBuoy, badge: "Soon" },
-  { name: "Feedback", href: "/feedback", icon: MessageSquare, badge: "Soon" },
+const navGroups: NavGroup[] = [
+  {
+    title: "Creative Workspace",
+    items: [
+      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { name: "Campaigns", href: "/campaigns", icon: Megaphone },
+      { name: "Create Ad", href: "/create", icon: Plus },
+      { name: "Templates", href: "/template-library", icon: LayoutTemplate },
+      { name: "Visual Editor", href: "/visual-editor", icon: PenTool },
+      { name: "Brand Kit", href: "/brand-kit", icon: Palette },
+      { name: "Media Library", href: "/media-library", icon: ImageIcon },
+      { name: "Analytics & Reports", href: "/analytics", icon: BarChart3 },
+    ],
+  },
+  {
+    title: "Operations",
+    items: [
+      { name: "Export Center", href: "/exports", icon: Download },
+      { name: "Integrations Hub", href: "/integrations", icon: Plug },
+      { name: "Notifications", href: "/notifications", icon: Bell, notify: 4 },
+      { name: "Automation Center", href: "/automation", icon: Zap },
+      { name: "Team Workspace", href: "/team", icon: Users },
+    ],
+  },
+  {
+    title: "Account",
+    items: [
+      { name: "Settings", href: "/settings", icon: Settings },
+      { name: "Billing", href: "/billing", icon: CreditCard },
+    ],
+  },
+  {
+    title: "Future",
+    items: [
+      { name: "Asset Marketplace", href: "/marketplace", icon: Store, badge: "Soon", disabled: true },
+      { name: "Developer Center", href: "/developer", icon: Code2, badge: "Soon", disabled: true },
+    ],
+  },
 ];
 
 const pageMeta: { match: (p: string) => boolean; title: string; description: string }[] = [
@@ -73,6 +101,14 @@ const pageMeta: { match: (p: string) => boolean; title: string; description: str
   { match: (p) => p.startsWith("/billing"), title: "Billing", description: "Manage your plan and credits." },
   { match: (p) => p.startsWith("/settings"), title: "Settings", description: "Preferences and account details." },
   { match: (p) => p.startsWith("/analytics"), title: "Analytics & Reports", description: "Track performance, analyze results, and grow your advertising impact." },
+  { match: (p) => p.startsWith("/exports"), title: "Export Center", description: "Render creatives in every format and preset." },
+  { match: (p) => p.startsWith("/integrations"), title: "Integrations Hub", description: "Connect your ad, creative and storage platforms." },
+  { match: (p) => p.startsWith("/notifications"), title: "Notifications", description: "Every important signal, in one place." },
+  { match: (p) => p.startsWith("/automation"), title: "Automation Center", description: "Operations dashboard for AdVista AI." },
+  { match: (p) => p.startsWith("/team"), title: "Team Workspace", description: "Members, roles, permissions and approvals." },
+  { match: (p) => p.startsWith("/marketplace"), title: "Asset Marketplace", description: "Templates, stock and brand packs." },
+  { match: (p) => p.startsWith("/developer"), title: "Developer Center", description: "API keys, webhooks and SDKs." },
+  { match: (p) => p.startsWith("/system"), title: "System Monitor", description: "Admin-only infrastructure health." },
   { match: (p) => p.startsWith("/admin"), title: "Admin", description: "Workspace controls." },
 ];
 
@@ -86,10 +122,43 @@ const NavItemRow = ({
   onNavigate?: () => void;
 }) => {
   const Icon = item.icon;
+
+  if (item.disabled) {
+    const disabled = (
+      <div
+        aria-disabled
+        className={cn(
+          "group flex cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/40",
+          collapsed && "justify-center px-2"
+        )}
+      >
+        <Icon className="h-[18px] w-[18px] shrink-0" />
+        {!collapsed && (
+          <>
+            <span className="flex-1 truncate">{item.name}</span>
+            {item.badge && (
+              <Badge className="h-5 rounded-full bg-primary/20 px-2 text-[10px] font-semibold text-primary-foreground hover:bg-primary/20">
+                {item.badge}
+              </Badge>
+            )}
+          </>
+        )}
+      </div>
+    );
+    if (!collapsed) return disabled;
+    return (
+      <Tooltip delayDuration={100}>
+        <TooltipTrigger asChild>{disabled}</TooltipTrigger>
+        <TooltipContent side="right" className="font-medium">{item.name} · Coming soon</TooltipContent>
+      </Tooltip>
+    );
+  }
+
   const link = (
     <NavLink
       to={item.href}
       onClick={onNavigate}
+      end={item.href === "/dashboard"}
       className={({ isActive }) =>
         cn(
           "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
@@ -104,6 +173,7 @@ const NavItemRow = ({
       {!collapsed && (
         <>
           <span className="flex-1 truncate">{item.name}</span>
+          {item.notify ? <NotifyBadge count={item.notify} variant="unread" /> : null}
           {item.badge && (
             <Badge variant="secondary" className="h-5 rounded-full bg-white/10 px-2 text-[10px] font-semibold text-white/70 hover:bg-white/10">
               {item.badge}
@@ -117,9 +187,7 @@ const NavItemRow = ({
   return (
     <Tooltip delayDuration={100}>
       <TooltipTrigger asChild>{link}</TooltipTrigger>
-      <TooltipContent side="right" className="font-medium">
-        {item.name}
-      </TooltipContent>
+      <TooltipContent side="right" className="font-medium">{item.name}</TooltipContent>
     </Tooltip>
   );
 };
@@ -132,6 +200,7 @@ const SidebarBody = ({
   user,
   isAdmin,
   signOut,
+  onOpenSearch,
 }: {
   collapsed: boolean;
   onToggleCollapse?: () => void;
@@ -140,6 +209,7 @@ const SidebarBody = ({
   user: any;
   isAdmin: boolean;
   signOut: () => void;
+  onOpenSearch: () => void;
 }) => {
   const close = () => onClose?.();
   const planLabel = "Pro Plan";
@@ -178,8 +248,13 @@ const SidebarBody = ({
           )}
         </div>
 
+        {/* Search */}
+        <div className={cn("px-4 pt-4", collapsed && "flex justify-center px-2")}>
+          <SidebarSearch onOpen={onOpenSearch} collapsed={collapsed} />
+        </div>
+
         {/* Create button */}
-        <div className={cn("px-4 pt-4", collapsed && "px-2")}>
+        <div className={cn("px-4 pt-3", collapsed && "px-2")}>
           {collapsed ? (
             <Tooltip delayDuration={100}>
               <TooltipTrigger asChild>
@@ -201,41 +276,27 @@ const SidebarBody = ({
           )}
         </div>
 
-        {/* Nav */}
-        <nav className={cn("min-h-0 flex-1 space-y-6 overflow-y-auto px-4 pb-4 pt-5", collapsed && "px-2")}>
-          <div className="space-y-1">
-            {!collapsed && (
-              <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40">Main</p>
-            )}
-            {mainNav.map((item) => (
-              <NavItemRow key={item.name} item={item} collapsed={collapsed} onNavigate={close} />
-            ))}
-          </div>
-
-          <div className="space-y-1 border-t border-white/10 pt-4">
-            {!collapsed && (
-              <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40">Workspace</p>
-            )}
-            {workspaceNav.map((item) => (
-              <NavItemRow key={item.name} item={item} collapsed={collapsed} onNavigate={close} />
-            ))}
-            {isAdmin && (
-              <NavItemRow
-                item={{ name: "Admin", href: "/admin", icon: Shield, description: "Workspace controls" }}
-                collapsed={collapsed}
-                onNavigate={close}
-              />
-            )}
-          </div>
-
-          <div className="space-y-1 border-t border-white/10 pt-4">
-            {!collapsed && (
-              <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40">Support</p>
-            )}
-            {supportNav.map((item) => (
-              <NavItemRow key={item.name} item={item} collapsed={collapsed} onNavigate={close} />
-            ))}
-          </div>
+        {/* Nav groups */}
+        <nav className={cn("min-h-0 flex-1 space-y-5 overflow-y-auto px-4 pb-4 pt-5", collapsed && "px-2")}>
+          {navGroups.map((group, idx) => (
+            <div key={group.title} className={cn("space-y-1", idx > 0 && "border-t border-white/10 pt-4")}>
+              {!collapsed && (
+                <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40">
+                  {group.title}
+                </p>
+              )}
+              {group.items.map((item) => (
+                <NavItemRow key={item.name} item={item} collapsed={collapsed} onNavigate={close} />
+              ))}
+              {group.title === "Account" && isAdmin && (
+                <NavItemRow
+                  item={{ name: "Admin", href: "/admin", icon: Shield }}
+                  collapsed={collapsed}
+                  onNavigate={close}
+                />
+              )}
+            </div>
+          ))}
 
           {/* Usage Widget */}
           {!collapsed && (
@@ -311,17 +372,20 @@ const SidebarBody = ({
   );
 };
 
-const DashboardLayout = () => {
+const DashboardShell = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const location = useLocation();
   const { signOut, user } = useAuth();
   const { isAdmin } = useAdmin();
 
   const activePage = pageMeta.find((item) => item.match(location.pathname)) || pageMeta[0];
+  const openSearch = () => setSearchOpen(true);
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-background">
+      <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
       <div className="flex w-full">
         {/* Mobile drawer */}
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
@@ -336,6 +400,7 @@ const DashboardLayout = () => {
               user={user}
               isAdmin={isAdmin}
               signOut={signOut}
+              onOpenSearch={() => { setSidebarOpen(false); setSearchOpen(true); }}
             />
           </SheetContent>
         </Sheet>
@@ -353,6 +418,7 @@ const DashboardLayout = () => {
             user={user}
             isAdmin={isAdmin}
             signOut={signOut}
+            onOpenSearch={openSearch}
           />
           {collapsed && (
             <button
@@ -371,8 +437,8 @@ const DashboardLayout = () => {
             <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
               <Menu className="h-5 w-5" />
             </Button>
-            <div className="min-w-0 text-center">
-              <h1 className="truncate text-sm font-semibold text-foreground">{activePage.title}</h1>
+            <div className="min-w-0 flex-1 px-2 text-center">
+              <AIStatusPill compact />
             </div>
             <Button size="icon" className="h-9 w-9 rounded-xl" asChild>
               <NavLink to="/create" aria-label="Create Ad">
@@ -388,17 +454,19 @@ const DashboardLayout = () => {
               <p className="truncate text-xs text-muted-foreground">{activePage.description}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="search"
-                  placeholder="Search…"
-                  className="h-10 w-64 rounded-xl border border-border bg-card pl-9 pr-3 text-sm outline-none transition focus:border-primary"
-                />
-              </div>
-              <Button variant="outline" size="icon" className="relative h-10 w-10 rounded-xl">
-                <Bell className="h-4 w-4" />
-                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500" />
+              <AIStatusPill />
+              <button
+                onClick={openSearch}
+                className="flex h-10 w-64 items-center gap-2 rounded-xl border border-border bg-card px-3 text-left text-sm text-muted-foreground transition hover:border-primary/40"
+              >
+                <span className="flex-1 truncate">Search anything…</span>
+                <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px]">⌘K</kbd>
+              </button>
+              <Button asChild variant="outline" size="icon" className="relative h-10 w-10 rounded-xl">
+                <NavLink to="/notifications" aria-label="Notifications">
+                  <Bell className="h-4 w-4" />
+                  <span className="absolute -right-1 -top-1"><NotifyBadge count={4} variant="unread" /></span>
+                </NavLink>
               </Button>
               <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl">
                 <HelpCircle className="h-4 w-4" />
@@ -406,13 +474,21 @@ const DashboardLayout = () => {
             </div>
           </header>
 
-          <main className="w-full min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-6 lg:px-6 lg:py-8">
+          <main className="w-full min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-6 pb-24 lg:px-6 lg:py-8 lg:pb-8">
             <Outlet />
           </main>
         </div>
       </div>
+
+      <MobileBottomNav />
     </div>
   );
 };
+
+const DashboardLayout = () => (
+  <AIStatusProvider>
+    <DashboardShell />
+  </AIStatusProvider>
+);
 
 export default DashboardLayout;
