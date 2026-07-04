@@ -66,12 +66,54 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-2xl bg-secondary/55 p-2 sm:grid-cols-4">
-          <TabsTrigger value="profile" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Profile</TabsTrigger>
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-2xl bg-secondary/55 p-2 sm:grid-cols-4 lg:grid-cols-8">
+          <TabsTrigger value="profile" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">General</TabsTrigger>
+          <TabsTrigger value="workspace" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Workspace</TabsTrigger>
+          <TabsTrigger value="ai" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">AI Preferences</TabsTrigger>
           <TabsTrigger value="notifications" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Notifications</TabsTrigger>
           <TabsTrigger value="security" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Security</TabsTrigger>
-          <TabsTrigger value="integrations" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Integrations</TabsTrigger>
+          <TabsTrigger value="appearance" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Appearance</TabsTrigger>
+          <TabsTrigger value="integrations" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Connected</TabsTrigger>
+          <TabsTrigger value="advanced" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Advanced</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="workspace">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Briefcase className="h-5 w-5 text-primary" />Workspace</CardTitle>
+              <CardDescription>Workspace name, defaults, timezone and locale settings.</CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">Workspace configuration coming soon.</CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="ai">
+          <div className="flex items-center gap-2 pb-2 text-sm text-muted-foreground">
+            <Sparkles className="h-4 w-4 text-primary" /> Tune how AdVista AI behaves across your workspace.
+          </div>
+          <AIPreferences />
+        </TabsContent>
+
+        <TabsContent value="appearance">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><PaletteIcon className="h-5 w-5 text-primary" />Appearance</CardTitle>
+              <CardDescription>Theme, density and accent color.</CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">Theme controls coming soon.</CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="advanced">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Wrench className="h-5 w-5 text-primary" />Advanced</CardTitle>
+              <CardDescription>Data export, workspace deletion and developer tools.</CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">Advanced controls coming soon.</CardContent>
+          </Card>
+        </TabsContent>
+
 
         <TabsContent value="profile" className="space-y-6">
           <Card>
