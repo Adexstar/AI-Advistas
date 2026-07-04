@@ -171,6 +171,31 @@ const AppContent = () => {
               <Route index element={<Analytics />} />
             </Route>
             
+            <Route path="/exports" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route index element={<ExportCenter />} />
+            </Route>
+            <Route path="/integrations" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route index element={<IntegrationsHub />} />
+            </Route>
+            <Route path="/notifications" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route index element={<Notifications />} />
+            </Route>
+            <Route path="/automation" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route index element={<AutomationCenter />} />
+            </Route>
+            <Route path="/team" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route index element={<TeamWorkspace />} />
+            </Route>
+            <Route path="/marketplace" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route index element={<AssetMarketplace />} />
+            </Route>
+            <Route path="/developer" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route index element={<DeveloperCenter />} />
+            </Route>
+            <Route path="/system" element={<ProtectedRoute><AdminRoute><DashboardLayout /></AdminRoute></ProtectedRoute>}>
+              <Route index element={<SystemMonitor />} />
+            </Route>
+
             {/* Redirects from old routes to new consolidated structure */}
             <Route path="/templates" element={<Navigate to="/template-library" replace />} />
             <Route path="/ads" element={<Navigate to="/campaigns" replace />} />
@@ -178,6 +203,7 @@ const AppContent = () => {
             <Route path="/ai-editor" element={<Navigate to="/create" replace />} />
             <Route path="/simulator" element={<Navigate to="/create" replace />} />
             <Route path="/visual-editor" element={<ProtectedRoute><VisualEditorPage /></ProtectedRoute>} />
+
             <Route path="/template-customizer" element={
               <ProtectedRoute>
                 <VisualEditorProvider>
