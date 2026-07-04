@@ -31,6 +31,14 @@ const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const MediaLibrary = lazy(() => import("./pages/MediaLibrary"));
 const BrandKit = lazy(() => import("./pages/BrandKit"));
 const Analytics = lazy(() => import("./pages/Analytics"));
+const ExportCenter = lazy(() => import("./pages/ExportCenter"));
+const IntegrationsHub = lazy(() => import("./pages/IntegrationsHub"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+const AutomationCenter = lazy(() => import("./pages/AutomationCenter"));
+const TeamWorkspace = lazy(() => import("./pages/TeamWorkspace"));
+const AssetMarketplace = lazy(() => import("./pages/AssetMarketplace"));
+const DeveloperCenter = lazy(() => import("./pages/DeveloperCenter"));
+const SystemMonitor = lazy(() => import("./pages/SystemMonitor"));
 
 const RouteFallback = () => (
   <div className="min-h-screen w-full bg-background">
