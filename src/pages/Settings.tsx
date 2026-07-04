@@ -16,8 +16,13 @@ import {
   Mail,
   Smartphone,
   Key,
-  Database
+  Database,
+  Sparkles,
+  Palette as PaletteIcon,
+  Briefcase,
+  Wrench,
 } from "lucide-react";
+import AIPreferences from "@/components/settings/AIPreferences";
 const Settings = () => {
   const [profile, setProfile] = useState({
     firstName: "Alex",
