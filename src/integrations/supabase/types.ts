@@ -184,6 +184,84 @@ export type Database = {
           },
         ]
       }
+      ai_context: {
+        Row: {
+          active_brandkit_id: string | null
+          active_category: string | null
+          active_objective: string | null
+          active_platform: string | null
+          brand_id: string | null
+          current_campaign_id: string | null
+          current_goal: string | null
+          id: string
+          session_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_brandkit_id?: string | null
+          active_category?: string | null
+          active_objective?: string | null
+          active_platform?: string | null
+          brand_id?: string | null
+          current_campaign_id?: string | null
+          current_goal?: string | null
+          id?: string
+          session_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_brandkit_id?: string | null
+          active_category?: string | null
+          active_objective?: string | null
+          active_platform?: string | null
+          brand_id?: string | null
+          current_campaign_id?: string | null
+          current_goal?: string | null
+          id?: string
+          session_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          input: Json | null
+          job_type: string
+          output: Json | null
+          started_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          input?: Json | null
+          job_type: string
+          output?: Json | null
+          started_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          input?: Json | null
+          job_type?: string
+          output?: Json | null
+          started_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_suggestions: {
         Row: {
           created_at: string
@@ -250,6 +328,42 @@ export type Database = {
         }
         Relationships: []
       }
+      automation_rules: {
+        Row: {
+          action: Json | null
+          condition: Json | null
+          created_at: string
+          enabled: boolean
+          id: string
+          name: string
+          trigger: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action?: Json | null
+          condition?: Json | null
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          name: string
+          trigger?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action?: Json | null
+          condition?: Json | null
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          name?: string
+          trigger?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       brand_kits: {
         Row: {
           colors: Json
@@ -280,6 +394,51 @@ export type Database = {
           name?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      campaign_memory: {
+        Row: {
+          best_brand_elements: Json | null
+          best_copy: Json | null
+          brand_id: string | null
+          category_id: string | null
+          failed_copy: Json | null
+          failed_templates: Json | null
+          id: string
+          last_learning: string | null
+          results_summary: Json | null
+          updated_at: string
+          user_id: string
+          winning_templates: Json | null
+        }
+        Insert: {
+          best_brand_elements?: Json | null
+          best_copy?: Json | null
+          brand_id?: string | null
+          category_id?: string | null
+          failed_copy?: Json | null
+          failed_templates?: Json | null
+          id?: string
+          last_learning?: string | null
+          results_summary?: Json | null
+          updated_at?: string
+          user_id: string
+          winning_templates?: Json | null
+        }
+        Update: {
+          best_brand_elements?: Json | null
+          best_copy?: Json | null
+          brand_id?: string | null
+          category_id?: string | null
+          failed_copy?: Json | null
+          failed_templates?: Json | null
+          id?: string
+          last_learning?: string | null
+          results_summary?: Json | null
+          updated_at?: string
+          user_id?: string
+          winning_templates?: Json | null
         }
         Relationships: []
       }
@@ -348,6 +507,96 @@ export type Database = {
           start_date?: string | null
           status?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      category_playbooks: {
+        Row: {
+          audience_patterns: Json | null
+          category: string
+          cta_patterns: Json | null
+          focus_areas: Json | null
+          headline_patterns: Json | null
+          id: string
+          offer_rules: Json | null
+          tone_guidance: string | null
+          updated_at: string
+          visual_rules: Json | null
+          winning_hooks: Json | null
+        }
+        Insert: {
+          audience_patterns?: Json | null
+          category: string
+          cta_patterns?: Json | null
+          focus_areas?: Json | null
+          headline_patterns?: Json | null
+          id?: string
+          offer_rules?: Json | null
+          tone_guidance?: string | null
+          updated_at?: string
+          visual_rules?: Json | null
+          winning_hooks?: Json | null
+        }
+        Update: {
+          audience_patterns?: Json | null
+          category?: string
+          cta_patterns?: Json | null
+          focus_areas?: Json | null
+          headline_patterns?: Json | null
+          id?: string
+          offer_rules?: Json | null
+          tone_guidance?: string | null
+          updated_at?: string
+          visual_rules?: Json | null
+          winning_hooks?: Json | null
+        }
+        Relationships: []
+      }
+      decisions: {
+        Row: {
+          action: string | null
+          campaign_id: string | null
+          category: string | null
+          confidence: number | null
+          created_at: string
+          id: string
+          page: string | null
+          reasoning: string | null
+          resolved_at: string | null
+          signal: string | null
+          status: string
+          trigger_source: string | null
+          user_id: string
+        }
+        Insert: {
+          action?: string | null
+          campaign_id?: string | null
+          category?: string | null
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          page?: string | null
+          reasoning?: string | null
+          resolved_at?: string | null
+          signal?: string | null
+          status?: string
+          trigger_source?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string | null
+          campaign_id?: string | null
+          category?: string | null
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          page?: string | null
+          reasoning?: string | null
+          resolved_at?: string | null
+          signal?: string | null
+          status?: string
+          trigger_source?: string | null
           user_id?: string
         }
         Relationships: []
