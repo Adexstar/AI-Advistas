@@ -438,7 +438,8 @@ const DashboardShell = () => {
             <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
               <Menu className="h-5 w-5" />
             </Button>
-            <div className="min-w-0 flex-1 px-2 text-center">
+            <div className="min-w-0 flex-1 px-2 flex items-center justify-center gap-2">
+              <AIContextPill compact />
               <AIStatusPill compact />
             </div>
             <Button size="icon" className="h-9 w-9 rounded-xl" asChild>
