@@ -38,6 +38,7 @@ import SidebarSearch from "@/components/sidebar/SidebarSearch";
 import GlobalSearch from "@/components/GlobalSearch";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import AIStatusPill from "@/components/ai/AIStatusPill";
+import AIContextPill from "@/components/ai/AIContextPill";
 import NotifyBadge from "@/components/ui/NotifyBadge";
 import { AIStatusProvider } from "@/contexts/AIStatusContext";
 
