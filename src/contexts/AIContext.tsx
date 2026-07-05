@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { AIContextService, BrandService, CategoryService } from "@/services/ai";
-import type { AIContextRow, BrandIdentity, CategoryPlaybook } from "@/services/ai/types";
+import type { AIContextRow, CategoryPlaybook } from "@/services/ai/types";
+import type { BrandIdentity } from "@/services/ai/BrandService";
 
 interface AIContextValue {
   loading: boolean;
