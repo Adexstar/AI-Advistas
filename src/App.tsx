@@ -10,6 +10,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import { AppProvider } from "./contexts/AppContext";
 import { VisualEditorProvider } from "./contexts/VisualEditorContext";
+import { AIStatusProvider } from "./contexts/AIStatusContext";
+import { AIContextProvider } from "./contexts/AIContext";
 
 const queryClient = new QueryClient();
 
@@ -232,11 +234,15 @@ const AppContent = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <AppProvider>
-        <TooltipProvider>
-          <AppContent />
-        </TooltipProvider>
-      </AppProvider>
+      <AIStatusProvider>
+        <AIContextProvider>
+          <AppProvider>
+            <TooltipProvider>
+              <AppContent />
+            </TooltipProvider>
+          </AppProvider>
+        </AIContextProvider>
+      </AIStatusProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
