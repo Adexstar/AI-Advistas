@@ -790,13 +790,18 @@ const EditorInner: React.FC = () => {
           <CanvasSubToolbar />
           <div className="flex flex-1 min-h-0 overflow-hidden">
             <VRuler />
-            <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
+            <div className="relative flex flex-1 min-w-0 flex-col overflow-hidden">
               <HRuler />
               <CanvasStage
                 zoom={zoom}
                 onCanvasReady={(c) => setCanvas(c)}
                 onSelection={(o) => { setSelected(o); forceUpdate((n) => n + 1); }}
               />
+              {selected && (
+                <div className="pointer-events-auto absolute bottom-14 right-4 z-20 animate-in fade-in slide-in-from-bottom-2">
+                  <AIActionsMenu selected={selected} canvas={canvas} align="end" />
+                </div>
+              )}
               <div className="flex justify-center border-t bg-card/40 py-2">
                 <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs"><Plus className="h-3.5 w-3.5" /> Add Page</Button>
               </div>
