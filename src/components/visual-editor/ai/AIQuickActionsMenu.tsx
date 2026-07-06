@@ -24,7 +24,7 @@ export const AIQuickActionsMenu: React.FC<{ compact?: boolean }> = ({ compact })
       brand: brand?.name ?? null,
       category: playbook?.category ?? context?.active_category ?? null,
       platform: context?.active_platform ?? null,
-      goal: context?.active_goal ?? null,
+      goal: context?.current_goal ?? null,
     }),
     [brand, playbook, context],
   );
