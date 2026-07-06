@@ -25,6 +25,9 @@ import {
   Circle as CircleIcon, MousePointer, Volume2, X, Menu, ChevronDown, PanelRight,
   Palette, Sun, Zap, Eye, Pause,
 } from 'lucide-react';
+import { AIActionsMenu } from '@/components/visual-editor/ai/AIActionsMenu';
+import { AIQuickActionsMenu } from '@/components/visual-editor/ai/AIQuickActionsMenu';
+import { AITimelineMenu } from '@/components/visual-editor/ai/AITimelineMenu';
 
 /* ---------- Constants ---------- */
 const LEFT_TABS = [
