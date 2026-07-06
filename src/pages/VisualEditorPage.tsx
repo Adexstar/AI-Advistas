@@ -25,6 +25,9 @@ import {
   Circle as CircleIcon, MousePointer, Volume2, X, Menu, ChevronDown, PanelRight,
   Palette, Sun, Zap, Eye, Pause,
 } from 'lucide-react';
+import { AIActionsMenu } from '@/components/visual-editor/ai/AIActionsMenu';
+import { AIQuickActionsMenu } from '@/components/visual-editor/ai/AIQuickActionsMenu';
+import { AITimelineMenu } from '@/components/visual-editor/ai/AITimelineMenu';
 
 /* ---------- Constants ---------- */
 const LEFT_TABS = [
@@ -170,6 +173,7 @@ const TopToolbar: React.FC<{
       <Button variant="ghost" size="icon" className="hidden lg:inline-flex h-9 w-9" title="Grid"><Grid3x3 className="h-4 w-4" /></Button>
       <Button variant="ghost" size="icon" className="hidden lg:inline-flex h-9 w-9" title="Fit"><Maximize2 className="h-4 w-4" /></Button>
 
+      <AIQuickActionsMenu />
       <Button variant="outline" size="sm" className="h-9 gap-1.5 hidden sm:inline-flex">
         <Play className="h-3.5 w-3.5" /> Preview
       </Button>
@@ -508,6 +512,7 @@ const Timeline: React.FC = () => {
         })}
         <div className="flex items-center gap-2 px-3 py-2">
           <Button size="sm" variant="outline" className="h-7 gap-1 text-xs"><Plus className="h-3 w-3" /> Add Track</Button>
+          <AITimelineMenu />
         </div>
       </div>
     </div>
@@ -692,19 +697,18 @@ const RightPanel: React.FC<{
             </Button>
           </div>
 
-          {/* AI Assistant */}
+          {/* AI Assistant — contextual, human-first (opens on demand only) */}
           <div className="border-t p-3 bg-gradient-to-br from-primary/5 to-accent/5">
-            <div className="mb-2 flex items-center gap-2">
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
-              <span className="text-xs font-semibold">AI Creative Assistant</span>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs font-semibold">AI Creative Assistant</span>
+              </div>
+              <AIActionsMenu selected={selected} canvas={canvas} align="end" />
             </div>
-            <div className="grid grid-cols-2 gap-1.5">
-              {['Rewrite Copy','Generate Variants','Apply Brand Kit','Improve Layout','Replace Image','Generate CTA'].map((a) => (
-                <button key={a} className="rounded-lg border bg-background px-2 py-1.5 text-[10px] font-medium hover:bg-muted text-left">
-                  ✨ {a}
-                </button>
-              ))}
-            </div>
+            <p className="text-[10px] leading-relaxed text-muted-foreground">
+              Every suggestion is previewed with confidence, reasoning and estimated lift before anything is applied.
+            </p>
           </div>
         </Tabs>
       )}
@@ -786,13 +790,18 @@ const EditorInner: React.FC = () => {
           <CanvasSubToolbar />
           <div className="flex flex-1 min-h-0 overflow-hidden">
             <VRuler />
-            <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
+            <div className="relative flex flex-1 min-w-0 flex-col overflow-hidden">
               <HRuler />
               <CanvasStage
                 zoom={zoom}
                 onCanvasReady={(c) => setCanvas(c)}
                 onSelection={(o) => { setSelected(o); forceUpdate((n) => n + 1); }}
               />
+              {selected && (
+                <div className="pointer-events-auto absolute bottom-14 right-4 z-20 animate-in fade-in slide-in-from-bottom-2">
+                  <AIActionsMenu selected={selected} canvas={canvas} align="end" />
+                </div>
+              )}
               <div className="flex justify-center border-t bg-card/40 py-2">
                 <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs"><Plus className="h-3.5 w-3.5" /> Add Page</Button>
               </div>
