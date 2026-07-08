@@ -61,6 +61,7 @@ import {
 } from '@/hooks/useBrandKit';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { BrandGuardian } from '@/components/brand/BrandGuardian';
 
 const INDUSTRIES = ['Marketing & Advertising', 'Technology', 'E-commerce', 'Real Estate', 'Restaurant', 'Fitness', 'Fashion', 'Education', 'Finance', 'Healthcare'];
 const FONT_PRESETS = ['Inter', 'Poppins', 'Roboto', 'Montserrat', 'Playfair Display', 'DM Sans', 'Space Grotesk', 'Manrope'];
