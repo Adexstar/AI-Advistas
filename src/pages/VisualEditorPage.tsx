@@ -737,11 +737,25 @@ const EditorInner: React.FC = () => {
   const [zoom, setZoom] = useState(100);
   const [canvas, setCanvas] = useState<FabricCanvas | null>(null);
   const [selected, setSelected] = useState<any>(null);
-  const [, forceUpdate] = useState(0);
+  const [scoreVersion, forceUpdate] = useState(0);
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
   const [bottomTab, setBottomTab] = useState<string | null>(null);
+  const designId = React.useMemo(() => crypto.randomUUID(), []);
   const isMobile = useIsMobile();
+
+  React.useEffect(() => {
+    if (!canvas) return;
+    const bump = () => forceUpdate((n) => n + 1);
+    canvas.on('object:added', bump);
+    canvas.on('object:removed', bump);
+    canvas.on('object:modified', bump);
+    return () => {
+      canvas.off('object:added', bump);
+      canvas.off('object:removed', bump);
+      canvas.off('object:modified', bump);
+    };
+  }, [canvas]);
 
   const addText = (text: string, size: number, weight: string) => {
     if (!canvas) return;
