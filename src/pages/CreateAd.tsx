@@ -892,9 +892,10 @@ export default function CreateAd() {
             </div>
           </div>
 
-          {/* Sticky preview rail (desktop only) */}
+          {/* Sticky preview + AI rail (desktop) */}
           <aside className="hidden lg:block">
             <div className="sticky top-24 space-y-3">
+              <AICreativeAssistant step={step} />
               <SectionCard>
                 <div className="mb-2 flex items-center justify-between">
                   <p className="text-sm font-semibold">Ad Preview</p>
@@ -906,6 +907,7 @@ export default function CreateAd() {
           </aside>
         </div>
       </div>
+      <AIRecommendationBanner />
     </div>
   );
 }
