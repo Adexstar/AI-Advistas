@@ -840,7 +840,7 @@ const EditorInner: React.FC = () => {
 
         {/* Desktop right panel */}
         <div className="hidden lg:flex w-[300px] shrink-0">
-          <RightPanel selected={selected} canvas={canvas} />
+          <RightPanel selected={selected} canvas={canvas} designId={designId} scoreVersion={scoreVersion} />
         </div>
       </div>
 
@@ -891,7 +891,7 @@ const EditorInner: React.FC = () => {
       {/* Mobile right sheet */}
       <Sheet open={rightOpen} onOpenChange={setRightOpen}>
         <SheetContent side="right" className="w-[min(20rem,calc(100vw-2rem))] p-0">
-          <RightPanel selected={selected} canvas={canvas} onClose={() => setRightOpen(false)} />
+          <RightPanel selected={selected} canvas={canvas} designId={designId} scoreVersion={scoreVersion} onClose={() => setRightOpen(false)} />
         </SheetContent>
       </Sheet>
     </div>
