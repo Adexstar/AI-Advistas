@@ -37,7 +37,7 @@ import { useAdmin } from "@/hooks/useAdmin";
 import SidebarSearch from "@/components/sidebar/SidebarSearch";
 import GlobalSearch from "@/components/GlobalSearch";
 import MobileBottomNav from "@/components/MobileBottomNav";
-import AIContextPill from "@/components/ai/AIContextPill";
+import AIContextBar from "@/components/dashboard/AIContextBar";
 import NotifyBadge from "@/components/ui/NotifyBadge";
 import { AIStatusProvider } from "@/contexts/AIStatusContext";
 
