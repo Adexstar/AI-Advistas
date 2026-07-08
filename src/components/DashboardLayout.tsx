@@ -452,7 +452,7 @@ const DashboardShell = () => {
               <p className="truncate text-xs text-muted-foreground">{activePage.description}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <AIContextPill />
+              
               <button
                 onClick={openSearch}
                 className="flex h-10 w-64 items-center gap-2 rounded-xl border border-border bg-card px-3 text-left text-sm text-muted-foreground transition hover:border-primary/40"
