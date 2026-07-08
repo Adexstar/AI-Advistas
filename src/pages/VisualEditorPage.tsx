@@ -825,6 +825,7 @@ const EditorInner: React.FC = () => {
                 onCanvasReady={(c) => setCanvas(c)}
                 onSelection={(o) => { setSelected(o); forceUpdate((n) => n + 1); }}
               />
+              <EmptyCanvasAIStart visible={!!canvas && (canvas.getObjects()?.length ?? 0) === 0} />
               {selected && (
                 <div className="pointer-events-auto absolute bottom-14 right-4 z-20 animate-in fade-in slide-in-from-bottom-2">
                   <AIActionsMenu selected={selected} canvas={canvas} align="end" />
