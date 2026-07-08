@@ -323,6 +323,11 @@ const MediaLibrary: React.FC = () => {
         />
       </div>
 
+      {/* Content grid: main + AI Asset Assistant right rail */}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 space-y-6">
+          <AIPoweredSearch value={query} onChange={setQuery} />
+
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <KpiCard
