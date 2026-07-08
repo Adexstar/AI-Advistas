@@ -28,6 +28,9 @@ import {
 import { AIActionsMenu } from '@/components/visual-editor/ai/AIActionsMenu';
 import { AIQuickActionsMenu } from '@/components/visual-editor/ai/AIQuickActionsMenu';
 import { AITimelineMenu } from '@/components/visual-editor/ai/AITimelineMenu';
+import { DesignScorePanel, computeScores } from '@/components/visual-editor/DesignScorePanel';
+import { AISuggestionsList } from '@/components/visual-editor/AISuggestionsList';
+import { EmptyCanvasAIStart } from '@/components/visual-editor/EmptyCanvasAIStart';
 
 /* ---------- Constants ---------- */
 const LEFT_TABS = [
@@ -523,9 +526,12 @@ const Timeline: React.FC = () => {
 const RightPanel: React.FC<{
   selected: any;
   canvas: FabricCanvas | null;
+  designId: string;
+  scoreVersion: number;
   onClose?: () => void;
-}> = ({ selected, canvas, onClose }) => {
+}> = ({ selected, canvas, designId, scoreVersion, onClose }) => {
   const isText = selected?.type === 'textbox' || selected?.type === 'text';
+  const scores = React.useMemo(() => computeScores(canvas), [canvas, scoreVersion]);
 
   const update = (prop: string, val: any) => {
     if (!selected || !canvas) return;
@@ -540,13 +546,21 @@ const RightPanel: React.FC<{
         {onClose && <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onClose}><X className="h-4 w-4" /></Button>}
       </div>
 
+      {/* Persistent AI Creative Director surface — visible with or without a selection */}
+      <ScrollArea className="border-b">
+        <div className="p-3 space-y-3">
+          <DesignScorePanel canvas={canvas} version={scoreVersion} />
+          <AISuggestionsList canvas={canvas} scores={scores} designId={designId} />
+        </div>
+      </ScrollArea>
+
       {!selected ? (
-        <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
-          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-            <MousePointer className="h-6 w-6 text-primary" />
+        <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+            <MousePointer className="h-5 w-5 text-primary" />
           </div>
           <p className="text-sm font-medium">No selection</p>
-          <p className="mt-1 text-xs text-muted-foreground">Select an element on the canvas to edit its properties.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Select an element to edit its properties.</p>
         </div>
       ) : (
         <Tabs defaultValue="design" className="flex flex-1 min-h-0 flex-col">
@@ -723,11 +737,25 @@ const EditorInner: React.FC = () => {
   const [zoom, setZoom] = useState(100);
   const [canvas, setCanvas] = useState<FabricCanvas | null>(null);
   const [selected, setSelected] = useState<any>(null);
-  const [, forceUpdate] = useState(0);
+  const [scoreVersion, forceUpdate] = useState(0);
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
   const [bottomTab, setBottomTab] = useState<string | null>(null);
+  const designId = React.useMemo(() => crypto.randomUUID(), []);
   const isMobile = useIsMobile();
+
+  React.useEffect(() => {
+    if (!canvas) return;
+    const bump = () => forceUpdate((n) => n + 1);
+    canvas.on('object:added', bump);
+    canvas.on('object:removed', bump);
+    canvas.on('object:modified', bump);
+    return () => {
+      canvas.off('object:added', bump);
+      canvas.off('object:removed', bump);
+      canvas.off('object:modified', bump);
+    };
+  }, [canvas]);
 
   const addText = (text: string, size: number, weight: string) => {
     if (!canvas) return;
@@ -797,6 +825,7 @@ const EditorInner: React.FC = () => {
                 onCanvasReady={(c) => setCanvas(c)}
                 onSelection={(o) => { setSelected(o); forceUpdate((n) => n + 1); }}
               />
+              <EmptyCanvasAIStart visible={!!canvas && (canvas.getObjects()?.length ?? 0) === 0} />
               {selected && (
                 <div className="pointer-events-auto absolute bottom-14 right-4 z-20 animate-in fade-in slide-in-from-bottom-2">
                   <AIActionsMenu selected={selected} canvas={canvas} align="end" />
@@ -812,7 +841,7 @@ const EditorInner: React.FC = () => {
 
         {/* Desktop right panel */}
         <div className="hidden lg:flex w-[300px] shrink-0">
-          <RightPanel selected={selected} canvas={canvas} />
+          <RightPanel selected={selected} canvas={canvas} designId={designId} scoreVersion={scoreVersion} />
         </div>
       </div>
 
@@ -863,7 +892,7 @@ const EditorInner: React.FC = () => {
       {/* Mobile right sheet */}
       <Sheet open={rightOpen} onOpenChange={setRightOpen}>
         <SheetContent side="right" className="w-[min(20rem,calc(100vw-2rem))] p-0">
-          <RightPanel selected={selected} canvas={canvas} onClose={() => setRightOpen(false)} />
+          <RightPanel selected={selected} canvas={canvas} designId={designId} scoreVersion={scoreVersion} onClose={() => setRightOpen(false)} />
         </SheetContent>
       </Sheet>
     </div>
