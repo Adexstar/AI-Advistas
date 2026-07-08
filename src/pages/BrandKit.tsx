@@ -61,7 +61,6 @@ import {
 } from '@/hooks/useBrandKit';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { BrandGuardian } from '@/components/brand/BrandGuardian';
 
 const INDUSTRIES = ['Marketing & Advertising', 'Technology', 'E-commerce', 'Real Estate', 'Restaurant', 'Fitness', 'Fashion', 'Education', 'Finance', 'Healthcare'];
 const FONT_PRESETS = ['Inter', 'Poppins', 'Roboto', 'Montserrat', 'Playfair Display', 'DM Sans', 'Space Grotesk', 'Manrope'];
@@ -326,13 +325,8 @@ const BrandWorkspace = ({ brand, allKits, onSelect, onEdit }: { brand: BrandKit;
   };
 
   return (
-    <div className="space-y-4">
-      {/* Mobile-first Brand Intelligence surface */}
-      <div className="lg:hidden">
-        <BrandGuardian brand={brand} />
-      </div>
-      <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-        <div className="space-y-4">
+    <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+      <div className="space-y-4">
         {/* KPI Row */}
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <KpiCard icon={ImageIcon} label="Logos" value={brand.logo_url ? 4 : 0} suffix="Uploaded" />
@@ -491,8 +485,6 @@ const BrandWorkspace = ({ brand, allKits, onSelect, onEdit }: { brand: BrandKit;
       <div className="space-y-4">
         <BrandPreview brand={brand} />
 
-        <BrandGuardian brand={brand} />
-
         <Card>
           <div className="flex items-center justify-between p-4">
             <p className="text-sm font-semibold">Brand Kits</p>
@@ -528,7 +520,6 @@ const BrandWorkspace = ({ brand, allKits, onSelect, onEdit }: { brand: BrandKit;
             </Button>
           </div>
         </Card>
-      </div>
       </div>
     </div>
   );

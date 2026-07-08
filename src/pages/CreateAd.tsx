@@ -27,9 +27,6 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useBrandKits } from '@/hooks/useBrandKit';
-import { AIContextBar } from '@/components/dashboard/AIContextBar';
-import { AICreativeAssistant } from '@/components/ai/AICreativeAssistant';
-import { AIRecommendationBanner } from '@/components/dashboard/AIRecommendationBanner';
 
 /* ------------------------------------------------------------------ */
 /* Types & constants                                                   */
@@ -855,10 +852,8 @@ export default function CreateAd() {
       <div className="page-container py-5 sm:py-6">
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="min-w-0 space-y-5">
-            <AIContextBar />
             <ProgressCard step={step} setStep={setStep}
               completion={completion} readiness={readiness} />
-
 
             <motion.div
               key={step}
@@ -892,10 +887,9 @@ export default function CreateAd() {
             </div>
           </div>
 
-          {/* Sticky preview + AI rail (desktop) */}
+          {/* Sticky preview rail (desktop only) */}
           <aside className="hidden lg:block">
             <div className="sticky top-24 space-y-3">
-              <AICreativeAssistant step={step} />
               <SectionCard>
                 <div className="mb-2 flex items-center justify-between">
                   <p className="text-sm font-semibold">Ad Preview</p>
@@ -907,7 +901,6 @@ export default function CreateAd() {
           </aside>
         </div>
       </div>
-      <AIRecommendationBanner />
     </div>
   );
 }
