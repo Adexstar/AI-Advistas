@@ -27,6 +27,9 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useBrandKits } from '@/hooks/useBrandKit';
+import { AIContextBar } from '@/components/dashboard/AIContextBar';
+import { AICreativeAssistant } from '@/components/ai/AICreativeAssistant';
+import { AIRecommendationBanner } from '@/components/dashboard/AIRecommendationBanner';
 
 /* ------------------------------------------------------------------ */
 /* Types & constants                                                   */
