@@ -61,6 +61,7 @@ import {
 } from '@/hooks/useBrandKit';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { BrandGuardian } from '@/components/brand/BrandGuardian';
 
 const INDUSTRIES = ['Marketing & Advertising', 'Technology', 'E-commerce', 'Real Estate', 'Restaurant', 'Fitness', 'Fashion', 'Education', 'Finance', 'Healthcare'];
 const FONT_PRESETS = ['Inter', 'Poppins', 'Roboto', 'Montserrat', 'Playfair Display', 'DM Sans', 'Space Grotesk', 'Manrope'];
@@ -484,6 +485,8 @@ const BrandWorkspace = ({ brand, allKits, onSelect, onEdit }: { brand: BrandKit;
       {/* Right rail */}
       <div className="space-y-4">
         <BrandPreview brand={brand} />
+
+        <BrandGuardian brand={brand} />
 
         <Card>
           <div className="flex items-center justify-between p-4">
