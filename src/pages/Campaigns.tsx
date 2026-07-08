@@ -73,23 +73,24 @@ interface KpiProps {
 function Kpi({ icon: Icon, label, value, delta, deltaTone = 'up', iconClass, sparkColor, seed }: KpiProps) {
   return (
     <Card className="rounded-2xl border-border/60 shadow-sm">
-      <CardContent className="p-4 sm:p-5 space-y-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className={cn('grid h-9 w-9 place-items-center rounded-xl', iconClass)}>
-            <Icon className="h-4 w-4" />
+      <CardContent className="space-y-2 p-3 sm:space-y-3 sm:p-5">
+        <div className="flex items-center gap-2">
+          <div className={cn('grid h-7 w-7 place-items-center rounded-lg sm:h-9 sm:w-9 sm:rounded-xl', iconClass)}>
+            <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </div>
-          <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
+          <p className="truncate text-[10px] font-medium text-muted-foreground sm:text-[11px]">{label}</p>
         </div>
-        <p className="text-2xl font-bold tracking-tight">{value}</p>
+        <p className="text-lg font-bold tracking-tight sm:text-2xl">{value}</p>
         <div className="flex items-center justify-between gap-2">
           {delta && (
-            <span className={cn('inline-flex items-center gap-1 text-[11px] font-semibold',
+            <span className={cn('inline-flex items-center gap-1 text-[10px] font-semibold sm:text-[11px]',
               deltaTone === 'up' ? 'text-emerald-600' : 'text-rose-600')}>
               {deltaTone === 'up' ? '↑' : '↓'} {delta}
-              <span className="text-muted-foreground font-normal">vs last 7d</span>
+              <span className="hidden text-muted-foreground font-normal sm:inline">vs last 7d</span>
+              <span className="text-muted-foreground font-normal sm:hidden">7d</span>
             </span>
           )}
-          <div className="ml-auto w-24">
+          <div className="ml-auto hidden w-24 sm:block">
             <Sparkline data={makeTrend(seed)} color={sparkColor} />
           </div>
         </div>
@@ -97,6 +98,7 @@ function Kpi({ icon: Icon, label, value, delta, deltaTone = 'up', iconClass, spa
     </Card>
   );
 }
+
 
 /* ---------- AI Recommendation Sidebar Cards ---------- */
 interface RecCardProps {
