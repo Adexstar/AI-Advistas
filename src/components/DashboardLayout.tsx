@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -393,6 +394,10 @@ const DashboardShell = () => {
             side="left"
             className="w-[min(20rem,calc(100vw-3rem))] border-r-0 bg-[hsl(240_15%_8%)] p-0 shadow-2xl [&>button]:hidden lg:hidden"
           >
+            <VisuallyHidden.Root>
+              <SheetTitle>Navigation</SheetTitle>
+              <SheetDescription>Main app navigation and account actions.</SheetDescription>
+            </VisuallyHidden.Root>
             <SidebarBody
               collapsed={false}
               isMobile
@@ -404,6 +409,7 @@ const DashboardShell = () => {
             />
           </SheetContent>
         </Sheet>
+
 
         {/* Desktop sidebar */}
         <aside
