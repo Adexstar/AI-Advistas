@@ -601,6 +601,144 @@ export type Database = {
         }
         Relationships: []
       }
+      design_comments: {
+        Row: {
+          author: string
+          comment: string
+          created_at: string
+          design_id: string
+          id: string
+          position: Json | null
+          resolved: boolean
+          user_id: string
+        }
+        Insert: {
+          author: string
+          comment: string
+          created_at?: string
+          design_id: string
+          id?: string
+          position?: Json | null
+          resolved?: boolean
+          user_id: string
+        }
+        Update: {
+          author?: string
+          comment?: string
+          created_at?: string
+          design_id?: string
+          id?: string
+          position?: Json | null
+          resolved?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
+      design_scores: {
+        Row: {
+          accessibility_score: number
+          branding_score: number
+          design_id: string
+          hierarchy_score: number
+          id: string
+          overall_score: number
+          readability_score: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accessibility_score?: number
+          branding_score?: number
+          design_id: string
+          hierarchy_score?: number
+          id?: string
+          overall_score?: number
+          readability_score?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accessibility_score?: number
+          branding_score?: number
+          design_id?: string
+          hierarchy_score?: number
+          id?: string
+          overall_score?: number
+          readability_score?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      design_suggestions: {
+        Row: {
+          accepted: boolean | null
+          category: string | null
+          confidence: number
+          created_at: string
+          design_id: string
+          id: string
+          reasoning: string | null
+          suggestion: string
+          user_id: string
+        }
+        Insert: {
+          accepted?: boolean | null
+          category?: string | null
+          confidence?: number
+          created_at?: string
+          design_id: string
+          id?: string
+          reasoning?: string | null
+          suggestion: string
+          user_id: string
+        }
+        Update: {
+          accepted?: boolean | null
+          category?: string | null
+          confidence?: number
+          created_at?: string
+          design_id?: string
+          id?: string
+          reasoning?: string | null
+          suggestion?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      design_versions: {
+        Row: {
+          ai_assisted: boolean
+          created_at: string
+          created_by: string | null
+          design_id: string
+          id: string
+          snapshot: Json
+          user_id: string
+          version: number
+        }
+        Insert: {
+          ai_assisted?: boolean
+          created_at?: string
+          created_by?: string | null
+          design_id: string
+          id?: string
+          snapshot: Json
+          user_id: string
+          version?: number
+        }
+        Update: {
+          ai_assisted?: boolean
+          created_at?: string
+          created_by?: string | null
+          design_id?: string
+          id?: string
+          snapshot?: Json
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
       generated_ads: {
         Row: {
           ad_type: string
