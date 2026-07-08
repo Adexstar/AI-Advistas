@@ -45,7 +45,7 @@ const Chip = ({ icon: Icon, label, value, onClick, muted, className }: ChipProps
 );
 
 export const AIContextBar = () => {
-  const { context, brand, brands, categories, update } = useAIContext();
+  const { context, effectiveContext, override, brand, brands, categories, update, clearOverride } = useAIContext();
   const { mode, status, setMode } = useAIStatus();
   const [open, setOpen] = useState(false);
 
@@ -56,18 +56,23 @@ export const AIContextBar = () => {
   const [remember, setRemember] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const locked = !!override;
+  const lockLabel = override?.source === "campaign"
+    ? "From Campaign"
+    : override?.source === "brand" ? "From Brand Kit" : "";
+
   useEffect(() => {
     if (open) {
       setDraftBrand(brand?.id ?? "");
-      setDraftCategory(context?.active_category ?? "");
-      setDraftGoal(context?.current_goal ?? "");
+      setDraftCategory(effectiveContext?.active_category ?? "");
+      setDraftGoal(effectiveContext?.current_goal ?? "");
       setDraftMode(mode);
     }
-  }, [open, brand?.id, context?.active_category, context?.current_goal, mode]);
+  }, [open, brand?.id, effectiveContext?.active_category, effectiveContext?.current_goal, mode]);
 
   const workspaceLabel = brand?.name ?? "AdVista Workspace";
-  const categoryLabel = context?.active_category ?? "Set category";
-  const goalLabel = context?.current_goal ?? "Set goal";
+  const categoryLabel = effectiveContext?.active_category ?? "Set category";
+  const goalLabel = effectiveContext?.current_goal ?? "Set goal";
   const modeLabel = MODE_LABEL[mode];
 
   const readyText = useMemo(() => {
@@ -78,6 +83,7 @@ export const AIContextBar = () => {
   }, [status]);
 
   const apply = async () => {
+    if (locked) return;
     setSaving(true);
     try {
       await update({
@@ -92,6 +98,7 @@ export const AIContextBar = () => {
       setSaving(false);
     }
   };
+
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
