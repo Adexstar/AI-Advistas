@@ -687,11 +687,10 @@ const MediaLibrary: React.FC = () => {
                     <Badge key={t} variant="secondary" className="rounded-full">
                       {t}
                     </Badge>
-                      {t}
-                    </Badge>
                   ))}
                 </div>
               )}
+              <AssetAIAnalysis asset={preview} />
               <DialogFooter className="flex-wrap gap-2">
                 <Button variant="outline" onClick={() => navigate('/campaigns')}>
                   <Megaphone className="h-4 w-4 mr-2" />
