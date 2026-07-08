@@ -526,9 +526,12 @@ const Timeline: React.FC = () => {
 const RightPanel: React.FC<{
   selected: any;
   canvas: FabricCanvas | null;
+  designId: string;
+  scoreVersion: number;
   onClose?: () => void;
-}> = ({ selected, canvas, onClose }) => {
+}> = ({ selected, canvas, designId, scoreVersion, onClose }) => {
   const isText = selected?.type === 'textbox' || selected?.type === 'text';
+  const scores = React.useMemo(() => computeScores(canvas), [canvas, scoreVersion]);
 
   const update = (prop: string, val: any) => {
     if (!selected || !canvas) return;
@@ -543,13 +546,21 @@ const RightPanel: React.FC<{
         {onClose && <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onClose}><X className="h-4 w-4" /></Button>}
       </div>
 
+      {/* Persistent AI Creative Director surface — visible with or without a selection */}
+      <ScrollArea className="border-b">
+        <div className="p-3 space-y-3">
+          <DesignScorePanel canvas={canvas} version={scoreVersion} />
+          <AISuggestionsList canvas={canvas} scores={scores} designId={designId} />
+        </div>
+      </ScrollArea>
+
       {!selected ? (
-        <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
-          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-            <MousePointer className="h-6 w-6 text-primary" />
+        <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+            <MousePointer className="h-5 w-5 text-primary" />
           </div>
           <p className="text-sm font-medium">No selection</p>
-          <p className="mt-1 text-xs text-muted-foreground">Select an element on the canvas to edit its properties.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Select an element to edit its properties.</p>
         </div>
       ) : (
         <Tabs defaultValue="design" className="flex flex-1 min-h-0 flex-col">
