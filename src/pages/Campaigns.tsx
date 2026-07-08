@@ -446,8 +446,9 @@ const Campaigns = () => {
           )}
         </div>
 
-        {/* RIGHT COLUMN - AI Sidebar */}
-        <aside className="space-y-4">
+        {/* RIGHT COLUMN - AI Sidebar (desktop only) */}
+        <aside className="hidden space-y-4 xl:block">
+
           {/* AI Campaign Assistant static insight cards */}
           <Card className="rounded-2xl border-border/60 shadow-sm">
             <CardContent className="space-y-3 p-4">
