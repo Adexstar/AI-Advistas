@@ -218,29 +218,51 @@ const Campaigns = () => {
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         {/* LEFT COLUMN */}
         <div className="min-w-0 space-y-5">
-          {/* KPI cards - mobile swipe / desktop grid */}
-          <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-4">
-            <div className="min-w-[75%] snap-start sm:min-w-0">
-              <Kpi icon={Layers} label="Total Campaigns" value={String(counts.total)}
-                delta="14%" iconClass="bg-violet-100 text-violet-600"
-                sparkColor="hsl(var(--primary))" seed={1} />
-            </div>
-            <div className="min-w-[75%] snap-start sm:min-w-0">
-              <Kpi icon={DollarSign} label="Total Spend" value={`$${totals.spend.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
-                delta="6%" deltaTone="down" iconClass="bg-emerald-100 text-emerald-600"
-                sparkColor="hsl(var(--primary))" seed={4} />
-            </div>
-            <div className="min-w-[75%] snap-start sm:min-w-0">
+          {/* Mobile AI Assistant hero card (matches mockup) */}
+          <Card className="rounded-2xl border-primary/20 bg-gradient-to-b from-primary/[0.05] to-primary/[0.02] shadow-sm xl:hidden">
+            <CardContent className="space-y-3 p-4">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <p className="text-sm font-semibold text-primary">AI Campaign Assistant</p>
+                <Badge variant="secondary" className="ml-1 rounded-full bg-primary/15 text-[10px] text-primary">Beta</Badge>
+              </div>
+              <div className="flex items-start gap-3 rounded-xl border border-rose-200/70 bg-white/70 p-3">
+                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-rose-500/15 text-rose-600">
+                  <Activity className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold">Creative fatigue detected</p>
+                  <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+                    3 campaigns are showing signs of fatigue. AI recommends refreshing creatives.
+                  </p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">Confidence: <b className="text-foreground">91%</b></p>
+                </div>
+                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-primary/10">
+                  <TrendingUp className="h-6 w-6 text-primary" />
+                </div>
+              </div>
+              <Button className="w-full rounded-xl">View Affected Campaigns →</Button>
+            </CardContent>
+          </Card>
+
+          {/* KPI cards - compact 3-col mobile / grid desktop */}
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+            <Kpi icon={Layers} label="Total Campaigns" value={String(counts.total)}
+              delta="14%" iconClass="bg-violet-100 text-violet-600"
+              sparkColor="hsl(var(--primary))" seed={1} />
+            <Kpi icon={DollarSign} label="Total Spend" value={`$${totals.spend.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+              delta="6%" deltaTone="down" iconClass="bg-emerald-100 text-emerald-600"
+              sparkColor="hsl(var(--primary))" seed={4} />
+            <Kpi icon={TrendingUp} label="Avg. ROAS" value={`${totals.roas.toFixed(2)}x`}
+              delta="11%" iconClass="bg-amber-100 text-amber-600"
+              sparkColor="#f59e0b" seed={11} />
+            <div className="hidden sm:block">
               <Kpi icon={ShoppingCart} label="Conversions" value={totals.conversions.toLocaleString()}
                 delta="18%" iconClass="bg-blue-100 text-blue-600"
                 sparkColor="#10b981" seed={7} />
             </div>
-            <div className="min-w-[75%] snap-start sm:min-w-0">
-              <Kpi icon={TrendingUp} label="ROAS" value={`${totals.roas.toFixed(2)}x`}
-                delta="11%" iconClass="bg-amber-100 text-amber-600"
-                sparkColor="#f59e0b" seed={11} />
-            </div>
           </div>
+
 
           {/* Tabs + Toolbar */}
           <div className="flex flex-col gap-3">
