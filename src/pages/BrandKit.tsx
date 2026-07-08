@@ -326,8 +326,13 @@ const BrandWorkspace = ({ brand, allKits, onSelect, onEdit }: { brand: BrandKit;
   };
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-      <div className="space-y-4">
+    <div className="space-y-4">
+      {/* Mobile-first Brand Intelligence surface */}
+      <div className="lg:hidden">
+        <BrandGuardian brand={brand} />
+      </div>
+      <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+        <div className="space-y-4">
         {/* KPI Row */}
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <KpiCard icon={ImageIcon} label="Logos" value={brand.logo_url ? 4 : 0} suffix="Uploaded" />
@@ -523,6 +528,7 @@ const BrandWorkspace = ({ brand, allKits, onSelect, onEdit }: { brand: BrandKit;
             </Button>
           </div>
         </Card>
+      </div>
       </div>
     </div>
   );

@@ -49,6 +49,12 @@ import {
 } from '@/hooks/useMediaLibrary';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import {
+  AIPoweredSearch,
+  AIAssetAssistant,
+  AISuggestionBanner,
+  AssetAIAnalysis,
+} from '@/components/media/AIAssetAssistant';
 
 const formatBytes = (b: number) => {
   if (!b) return '0 KB';
@@ -316,6 +322,11 @@ const MediaLibrary: React.FC = () => {
           className="pl-9 rounded-full"
         />
       </div>
+
+      {/* Content grid: main + AI Asset Assistant right rail */}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 space-y-6">
+          <AIPoweredSearch value={query} onChange={setQuery} />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -598,6 +609,22 @@ const MediaLibrary: React.FC = () => {
           </div>
         </Card>
       </div>
+        </div>
+
+        {/* Right rail: AI Asset Assistant */}
+        <aside className="hidden xl:block space-y-6">
+          <AIAssetAssistant assets={assets} selected={preview} />
+        </aside>
+      </div>
+
+      {/* Mobile/tablet inline AI Asset Assistant */}
+      <div className="xl:hidden">
+        <AIAssetAssistant assets={assets} selected={preview} />
+      </div>
+
+      <AISuggestionBanner assets={assets} />
+
+
 
       {/* Mobile floating upload */}
       <button
@@ -663,6 +690,7 @@ const MediaLibrary: React.FC = () => {
                   ))}
                 </div>
               )}
+              <AssetAIAnalysis asset={preview} />
               <DialogFooter className="flex-wrap gap-2">
                 <Button variant="outline" onClick={() => navigate('/campaigns')}>
                   <Megaphone className="h-4 w-4 mr-2" />
