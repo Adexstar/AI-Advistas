@@ -17,30 +17,27 @@ const MODE_LABEL: Record<AIMode, string> = {
   growth: "Growth Agent",
 };
 
-interface ChipProps {
+interface PillProps {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string;
   onClick: () => void;
   muted?: boolean;
-  className?: string;
 }
 
-const Chip = ({ icon: Icon, label, value, onClick, muted, className }: ChipProps) => (
+const Pill = ({ icon: Icon, label, value, onClick, muted }: PillProps) => (
   <button
     type="button"
     onClick={onClick}
+    title={`${label}: ${value}`}
     className={cn(
-      "group flex min-w-0 items-center gap-2 rounded-2xl border border-border/70 bg-card px-3 py-2 text-left transition hover:border-primary/40 hover:bg-accent/40",
-      className
+      "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs transition hover:border-primary/40 hover:bg-accent/40"
     )}
   >
-    <Icon className="h-4 w-4 shrink-0 text-primary" />
-    <div className="min-w-0 flex-1">
-      <p className="truncate text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={cn("truncate text-xs font-semibold", muted ? "text-muted-foreground" : "text-foreground")}>{value}</p>
-    </div>
-    <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
+    <Icon className="h-3.5 w-3.5 text-primary" />
+    <span className="hidden text-muted-foreground sm:inline">{label}:</span>
+    <span className={cn("max-w-[110px] truncate font-medium", muted && "text-muted-foreground")}>{value}</span>
+    <ChevronDown className="h-3 w-3 text-muted-foreground" />
   </button>
 );
 
@@ -65,9 +62,9 @@ export const AIContextBar = () => {
     }
   }, [open, brand?.id, context?.active_category, context?.current_goal, mode]);
 
-  const workspaceLabel = brand?.name ?? "AdVista Workspace";
-  const categoryLabel = context?.active_category ?? "Set category";
-  const goalLabel = context?.current_goal ?? "Set goal";
+  const workspaceLabel = brand?.name ?? "Workspace";
+  const categoryLabel = context?.active_category ?? "Category";
+  const goalLabel = context?.current_goal ?? "Goal";
   const modeLabel = MODE_LABEL[mode];
 
   const readyText = useMemo(() => {
@@ -95,47 +92,43 @@ export const AIContextBar = () => {
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
-        <PopoverTrigger asChild>
-          <div className="contents">
-            <Chip icon={Building2} label="Workspace" value={workspaceLabel} muted={!brand} onClick={() => setOpen(true)} />
-          </div>
-        </PopoverTrigger>
-        <Chip icon={Tag} label="Category" value={categoryLabel} muted={!context?.active_category} onClick={() => setOpen(true)} />
-        <Chip icon={Target} label="Goal" value={goalLabel} muted={!context?.current_goal} onClick={() => setOpen(true)} />
-        <Chip icon={Sparkles} label="Mode" value={modeLabel} onClick={() => setOpen(true)} />
+      <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <Pill icon={Building2} label="Workspace" value={workspaceLabel} muted={!brand} onClick={() => setOpen(true)} />
+        <Pill icon={Tag} label="Category" value={categoryLabel} muted={!context?.active_category} onClick={() => setOpen(true)} />
+        <Pill icon={Target} label="Goal" value={goalLabel} muted={!context?.current_goal} onClick={() => setOpen(true)} />
+        <Pill icon={Sparkles} label="Mode" value={modeLabel} onClick={() => setOpen(true)} />
 
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className={cn(
-            "col-span-2 flex items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-xs font-semibold transition sm:col-span-1",
-            status === "ready" && "border-emerald-500/30 bg-emerald-500/10 text-emerald-600",
-            status === "working" && "border-primary/30 bg-primary/10 text-primary",
-            status === "approval" && "border-amber-500/30 bg-amber-500/10 text-amber-600",
-            status === "learning" && "border-sky-500/30 bg-sky-500/10 text-sky-600",
-          )}
-        >
-          <Sparkles className="h-3.5 w-3.5" />
-          {readyText}
-          <span className="relative flex h-2 w-2">
-            <span className={cn("absolute inline-flex h-full w-full rounded-full opacity-60",
-              status === "ready" && "bg-emerald-500",
-              status === "working" && "bg-primary animate-ping",
-              status === "approval" && "bg-amber-500",
-              status === "learning" && "bg-sky-500",
-            )} />
-            <span className={cn("relative inline-flex h-2 w-2 rounded-full",
-              status === "ready" && "bg-emerald-500",
-              status === "working" && "bg-primary",
-              status === "approval" && "bg-amber-500",
-              status === "learning" && "bg-sky-500",
-            )} />
-          </span>
-        </button>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className={cn(
+              "ml-auto inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition",
+              status === "ready" && "border-emerald-500/30 bg-emerald-500/10 text-emerald-600",
+              status === "working" && "border-primary/30 bg-primary/10 text-primary",
+              status === "approval" && "border-amber-500/30 bg-amber-500/10 text-amber-600",
+              status === "learning" && "border-sky-500/30 bg-sky-500/10 text-sky-600",
+            )}
+          >
+            <span className="relative flex h-2 w-2">
+              <span className={cn("absolute inline-flex h-full w-full rounded-full opacity-60",
+                status === "ready" && "bg-emerald-500",
+                status === "working" && "bg-primary animate-ping",
+                status === "approval" && "bg-amber-500",
+                status === "learning" && "bg-sky-500",
+              )} />
+              <span className={cn("relative inline-flex h-2 w-2 rounded-full",
+                status === "ready" && "bg-emerald-500",
+                status === "working" && "bg-primary",
+                status === "approval" && "bg-amber-500",
+                status === "learning" && "bg-sky-500",
+              )} />
+            </span>
+            {readyText}
+          </button>
+        </PopoverTrigger>
       </div>
 
-      <PopoverContent align="start" className="w-[340px] space-y-4 p-4">
+      <PopoverContent align="end" className="w-[340px] space-y-4 p-4">
         <div>
           <p className="text-sm font-semibold">Working Context</p>
           <p className="text-[11px] text-muted-foreground">AI uses this on every page.</p>
