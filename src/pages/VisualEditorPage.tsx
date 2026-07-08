@@ -28,6 +28,9 @@ import {
 import { AIActionsMenu } from '@/components/visual-editor/ai/AIActionsMenu';
 import { AIQuickActionsMenu } from '@/components/visual-editor/ai/AIQuickActionsMenu';
 import { AITimelineMenu } from '@/components/visual-editor/ai/AITimelineMenu';
+import { DesignScorePanel, computeScores } from '@/components/visual-editor/DesignScorePanel';
+import { AISuggestionsList } from '@/components/visual-editor/AISuggestionsList';
+import { EmptyCanvasAIStart } from '@/components/visual-editor/EmptyCanvasAIStart';
 
 /* ---------- Constants ---------- */
 const LEFT_TABS = [
