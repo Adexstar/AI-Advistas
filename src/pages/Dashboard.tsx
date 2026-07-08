@@ -20,7 +20,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useDashboardData, type Range } from "@/hooks/useDashboardData";
 import { cn } from "@/lib/utils";
 
-import { AIContextBar } from "@/components/dashboard/AIContextBar";
 import { AIAssistantPanel } from "@/components/dashboard/AIAssistantPanel";
 import { AIActionsQueue } from "@/components/dashboard/AIActionsQueue";
 import { AIRecommendationBanner } from "@/components/dashboard/AIRecommendationBanner";

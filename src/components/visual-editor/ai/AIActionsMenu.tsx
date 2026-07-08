@@ -42,7 +42,7 @@ interface Props {
 
 export const AIActionsMenu: React.FC<Props> = ({ selected, canvas, trigger, align = "end" }) => {
   const kind = detectKind(selected);
-  const { brand, playbook, context } = useAIContext();
+  const { brand, playbook, effectiveContext } = useAIContext();
   const { mode, setStatus } = useAIStatus();
   const [open, setOpen] = useState(false);
   const [suggestion, setSuggestion] = useState<AISuggestion | null>(null);
@@ -50,11 +50,11 @@ export const AIActionsMenu: React.FC<Props> = ({ selected, canvas, trigger, alig
   const ctxInput = useMemo(
     () => ({
       brand: brand?.name ?? null,
-      category: playbook?.category ?? context?.active_category ?? null,
-      platform: context?.active_platform ?? null,
-      goal: context?.current_goal ?? null,
+      category: playbook?.category ?? effectiveContext?.active_category ?? null,
+      platform: effectiveContext?.active_platform ?? null,
+      goal: effectiveContext?.current_goal ?? null,
     }),
-    [brand, playbook, context],
+    [brand, playbook, effectiveContext],
   );
 
   if (kind === "none") return null;
