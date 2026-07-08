@@ -18,6 +18,7 @@ import {
   CampaignRow, useCampaigns, useDeleteCampaign, useDuplicateCampaign, useUpdateCampaign,
 } from '@/hooks/useCampaigns';
 import { CampaignFormDialog } from '@/components/campaigns/CampaignFormDialog';
+import { useContextOverride } from '@/contexts/AIContext';
 import { cn } from '@/lib/utils';
 
 const STATUS_STYLES: Record<string, string> = {
@@ -79,6 +80,22 @@ const Campaigns = () => {
 
   const openCreate = () => { setEditing(null); setFormOpen(true); };
   const openEdit = (c: CampaignRow) => { setEditing(c); setFormOpen(true); };
+
+  // While editing an existing campaign, override the global AI context with its metadata.
+  useContextOverride(
+    formOpen && editing
+      ? {
+          source: "campaign",
+          label: editing.name,
+          patch: {
+            current_campaign_id: editing.id,
+            current_goal: editing.objective ?? null,
+            active_platform: editing.platform ?? null,
+          },
+        }
+      : null
+  );
+
 
   const togglePauseResume = (c: CampaignRow) => {
     const next = c.status === 'active' ? 'paused' : 'active';

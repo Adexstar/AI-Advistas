@@ -15,18 +15,18 @@ import { AIPreviewDialog } from "./AIPreviewDialog";
 import { AISuggestion, TIMELINE_ACTIONS, buildTimelineSuggestion } from "./aiSuggestions";
 
 export const AITimelineMenu: React.FC = () => {
-  const { brand, playbook, context } = useAIContext();
+  const { brand, playbook, effectiveContext } = useAIContext();
   const { setStatus } = useAIStatus();
   const [suggestion, setSuggestion] = useState<AISuggestion | null>(null);
 
   const ctx = useMemo(
     () => ({
       brand: brand?.name ?? null,
-      category: playbook?.category ?? context?.active_category ?? null,
-      platform: context?.active_platform ?? null,
-      goal: context?.current_goal ?? null,
+      category: playbook?.category ?? effectiveContext?.active_category ?? null,
+      platform: effectiveContext?.active_platform ?? null,
+      goal: effectiveContext?.current_goal ?? null,
     }),
-    [brand, playbook, context],
+    [brand, playbook, effectiveContext],
   );
 
   return (

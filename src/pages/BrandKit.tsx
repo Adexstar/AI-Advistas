@@ -60,6 +60,7 @@ import {
   type BrandKit,
 } from '@/hooks/useBrandKit';
 import { useToast } from '@/hooks/use-toast';
+import { useContextOverride } from '@/contexts/AIContext';
 import { cn } from '@/lib/utils';
 
 const INDUSTRIES = ['Marketing & Advertising', 'Technology', 'E-commerce', 'Real Estate', 'Restaurant', 'Fitness', 'Fashion', 'Education', 'Finance', 'Healthcare'];
@@ -536,6 +537,14 @@ export default function BrandKitPage() {
   }, [kits, activeId]);
 
   const active = kits.find((k) => k.id === activeId) || kits[0];
+
+  // Temporarily lock global AI context to the brand being edited on this page.
+  useContextOverride(
+    active
+      ? { source: "brand", label: active.name, patch: { brand_id: active.id, active_brandkit_id: active.id } }
+      : null
+  );
+
 
   return (
     <div className="space-y-6">
