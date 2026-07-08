@@ -60,6 +60,7 @@ import {
   type BrandKit,
 } from '@/hooks/useBrandKit';
 import { useToast } from '@/hooks/use-toast';
+import { useContextOverride } from '@/contexts/AIContext';
 import { cn } from '@/lib/utils';
 
 const INDUSTRIES = ['Marketing & Advertising', 'Technology', 'E-commerce', 'Real Estate', 'Restaurant', 'Fitness', 'Fashion', 'Education', 'Finance', 'Healthcare'];
