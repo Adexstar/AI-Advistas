@@ -144,8 +144,6 @@ const Dashboard = () => {
 
   return (
     <div className="w-full min-w-0 space-y-5 pb-32 lg:pb-6">
-      {/* 1. Global AI Context Bar */}
-      <AIContextBar />
 
       {/* Page header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
