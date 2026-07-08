@@ -529,6 +529,7 @@ const BrandWorkspace = ({ brand, allKits, onSelect, onEdit }: { brand: BrandKit;
           </div>
         </Card>
       </div>
+      </div>
     </div>
   );
 };
