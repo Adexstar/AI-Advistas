@@ -108,9 +108,15 @@ export const AIContextBar = () => {
             <Chip icon={Building2} label="Workspace" value={workspaceLabel} muted={!brand} onClick={() => setOpen(true)} />
           </div>
         </PopoverTrigger>
-        <Chip icon={Tag} label="Category" value={categoryLabel} muted={!context?.active_category} onClick={() => setOpen(true)} />
-        <Chip icon={Target} label="Goal" value={goalLabel} muted={!context?.current_goal} onClick={() => setOpen(true)} />
+        <Chip icon={Tag} label="Category" value={categoryLabel} muted={!effectiveContext?.active_category} onClick={() => setOpen(true)} />
+        <Chip icon={Target} label="Goal" value={goalLabel} muted={!effectiveContext?.current_goal} onClick={() => setOpen(true)} />
         <Chip icon={Sparkles} label="Mode" value={modeLabel} onClick={() => setOpen(true)} />
+
+        {locked && (
+          <span className="col-span-2 inline-flex items-center justify-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[10px] font-semibold text-amber-600 sm:col-span-1">
+            <Lock className="h-3 w-3" /> {lockLabel}
+          </span>
+        )}
 
         <button
           type="button"
