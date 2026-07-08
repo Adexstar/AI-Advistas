@@ -1,52 +1,101 @@
-# Visual Editor — Mirror Mockup Exactly
+# Visual Editor V3 — Full Rebuild
 
-The current `/visual-editor` page uses a dark custom icon rail on the far left and a template browser panel. The mockup instead shows the standard AdVista **main app sidebar** on the far left, followed by a light **Elements / Uploads tabbed panel**, a mockup-accurate top bar, formatting toolbar, canvas, right AI Creative Assistant panel, and a bottom AI suggestion banner.
+Rebuild `/visual-editor` from scratch to mirror the uploaded mockup exactly and act as AdVista's core creative workspace (Canva + Adobe Express + CapCut for ads).
 
-## Changes
+## Layout (matches mockup 1:1)
 
-1. **Left rail → main AdVista sidebar**
-   - Wrap `/visual-editor` route in `DashboardLayout` (matches every other app page).
-   - Remove the dark custom `IconRail` from `VisualEditorPage.tsx`.
-   - "Visual Editor" nav item stays highlighted from the main sidebar as in the mockup.
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Logo │ ‹ Project Name ✎  •  Saved ✓  ↶ ↷ │  − 100% +  ▦ ⛶  ▶ Preview  ⤓ Export  ✈ Publish  ? 🔔 👤 │
+├──────┬──────────────────────┬──────────────────────────────┬────────────┤
+│ Tabs │ Contextual Panel     │        Canvas Area            │ Properties │
+│ 📄 T │ (Templates / Media / │  ┌─ ruler ──────────────┐    │   Panel    │
+│ 🖼 M │  Text / Elements /   │  │                      │    │ Design |   │
+│ T Tx │  Brand / Uploads /   │  │      Design canvas   │    │ Animation |│
+│ ⬢ El │  Layers / Projects)  │  │                      │    │ Position   │
+│ 🎨 B │                      │  └──────── + Add Page ──┘    │            │
+│ ⬆ Up │                      │                              │  Dynamic   │
+│ ▤ Ly │                      │  Timeline (only if video)    │  by select │
+│ 📁 Pr│                      │                              │            │
+│ ─────│                      │                              │            │
+│ Pro  │                      │                              │            │
+│ ⚙ ☾ ?│                      │                              │            │
+└──────┴──────────────────────┴──────────────────────────────┴────────────┘
+```
 
-2. **Secondary left panel (Elements / Uploads)**
-   - Replace the multi-tab "Templates / Media / Text / Elements / Brand / Uploads / Layers / Projects" panel with a 2-tab pill switch: **Elements** (default) and **Uploads**, matching the mockup.
-   - Elements tab sections in order: **Search elements**, **Quick Add** (Headline, Subheadline, Body Text, Button), **Brand Kit** summary (Logos 12, Colors 18, Fonts 6 + View all), **Shapes** (5 shape thumbnails + See all), **Graphics** (4 graphic thumbnails + See all), **AI Tools** (BETA badge) with rows: Generate Image, Remove Background, Magic Resize, Text to Image.
-   - Keep click handlers wired to existing canvas actions (add text, add shape) so functionality is preserved.
+Dark theme editor chrome (not the app shell). Route stops using `DashboardLayout` — the editor is a full-viewport surface like Canva.
 
-3. **Top workspace bar**
-   - Above the canvas: Project title `Summer Glow Serum Ad` with inline edit, "Saved a few seconds ago", `1080 × 1350`, zoom `100%`.
-   - Above that: full-width bar with **Workspace** (AdVista Agency), **Category** (Beauty), **Goal** (Conversions), **Mode** (Assisted), **AI Ready** pill, Undo/Redo, **Resize**, **Preview**, **Download**, **Publish**, overflow menu.
+## Component tree (new)
 
-4. **Formatting toolbar** (canvas top)
-   - Alignment / distribute icons, font family (Montserrat), size (48), Bold/Italic, color swatch, alignment, **Effects**, **Animate**, overflow — mirroring the mockup order.
+- `src/pages/VisualEditorPage.tsx` — full rewrite, orchestrator only
+- `src/components/visual-editor/v3/`
+  - `EditorShell.tsx` — dark full-viewport frame
+  - `TopBar.tsx` — logo, project name+save state, undo/redo, zoom, grid/fit, Preview, Export, Publish, help/notif/avatar
+  - `IconTabRail.tsx` — vertical tabs (Templates, Media, Text, Elements, Brand Kit, Uploads, Layers, Projects) + Upgrade card + settings/theme/help
+  - `panels/TemplatesPanel.tsx` — search, chips (All/Social/Ads/Stories/Video), sections: Recommended, Instagram Post, Instagram Story with "See all"
+  - `panels/MediaPanel.tsx` — pulls from `useMediaLibrary`; images/videos/logos/icons/audio + folders + search + drag handle
+  - `panels/TextPanel.tsx` — heading/subhead/body/CTA presets, font browser
+  - `panels/ElementsPanel.tsx` — shapes, lines, arrows, icons, backgrounds, frames, grids, buttons, badges, social icons
+  - `panels/BrandKitPanel.tsx` — pulls `useBrandKit`; logos/colors/fonts/assets + "Apply Brand Kit"
+  - `panels/UploadsPanel.tsx` — dropzone, upload progress list, supported formats
+  - `panels/LayersPanel.tsx` — layer list with lock/hide/duplicate/delete/reorder
+  - `panels/ProjectsPanel.tsx` — recent/saved/drafts/campaign designs from `projects` table
+  - `CanvasWorkspace.tsx` — rulers, ContextToolbar (Animate/Position/align/lock icons), Fabric canvas host, floating selection actions (edit/duplicate/delete/•••), "+ Add Page"
+  - `Timeline.tsx` — video-only bottom dock with tracks (Text/Image/Shape/Video/Audio) + Add Track + playhead + playback
+  - `properties/PropertiesPanel.tsx` — tabbed Design/Animation/Position, dispatches to:
+    - `TextProperties.tsx`, `ImageProperties.tsx`, `VideoProperties.tsx`, `ShapeProperties.tsx`
+  - `PreviewModal.tsx` — live device previews (IG/FB/TikTok/LinkedIn/YT/Google)
+  - `ExportCenter.tsx` — format (PNG/JPG/SVG/PDF/MP4/GIF/WEBP) × quality (Low/Med/High/Ultra)
+  - `MobileEditor.tsx` — mobile shell with top bar, bottom nav (Templates/Media/Text/Brand/Layers), FAB, bottom sheets
 
-5. **Canvas frame**
-   - Center canvas on soft pink/lavender background, floating handles on selection, tiny page thumbnail + **Add Page** below.
-   - Left-of-canvas floating action rail (layers, duplicate, comment, lock, delete).
+Reuse where present: existing Fabric init logic, `DesignScorePanel`, `AISuggestionsList`, `useAutoSave`, `useBrandKit`, `useMediaLibrary`, `useTemplates`.
 
-6. **Right panel — AI Creative Assistant**
-   - Keep existing `DesignScorePanel` + `AISuggestionsList` (already built) but pin them as the persistent right column with **View all** in header.
-   - Add **Layers / Pages** tabbed section below with the layer list (Logo, Headline, Subheadline, Feature List, Product Image, Flowers, CTA Button, Bottom Icons, Background) with eye + overflow icons.
+## Canvas & presets
 
-7. **Bottom AI suggestion banner**
-   - Sticky bar spanning the canvas + right panel: "AI Suggestion: This layout has a 24% higher CTR in Beauty campaigns. Would you like to create 3 variations of this design?" with **Generate Variations** / **Not now** / dismiss.
+- Presets: Instagram Post 1080², IG Story 1080×1920, Facebook Ad 1200×628, TikTok 1080×1920, YouTube Thumb 1280×720, Google Display 300×250 / 728×90, LinkedIn 1200×627, Custom.
+- Rulers, snap-to-grid, guides, infinite zoom (10–400%), pan (space+drag), multi-page via "+ Add Page".
 
-8. **Preserve behavior**
-   - Keep Fabric canvas init, selection handlers, zoom, export, AIActionsMenu, AIQuickActionsMenu, EmptyCanvasAIStart, DesignScorePanel logging.
-   - Mobile: collapse secondary panel + right panel into sheets (already wired).
+## Save / auto-save / versions
 
-## Technical
+- Auto-save every 2s to `projects.canvas_data` (debounced via existing `useAutoSave`).
+- Manual save, Save As Template, Save As Campaign Asset, Save Draft menu on TopBar.
+- Snapshot to `project_versions` on manual save + on export.
 
-- Edit `src/App.tsx`: move `/visual-editor` route inside a `DashboardLayout` parent route (use `<Outlet />` pattern already used by other pages).
-- Rewrite `src/pages/VisualEditorPage.tsx`:
-  - Remove `IconRail`.
-  - Replace `TemplatesPanel` / `TextPanel` / `ElementsPanel` / `BrandKitPanel` / `LayersPanel` etc. with a single new `ElementsUploadsSidebar` component matching mockup sections.
-  - Add `WorkspaceBar` (chips row) above `TopToolbar`.
-  - Extend `RightPanel` with `LayersPagesSection` at bottom.
-  - Add `AIBanner` sticky bottom component.
-- No schema changes. No new dependencies.
+## Data / backend
 
-## Out of scope
-- Wiring the top chips (Workspace/Category/Goal/Mode) to real state — they render as static presets for now, matching the mockup.
-- Building real Shapes/Graphics libraries beyond visual placeholders.
+New migration:
+
+- `projects(id, user_id, name, project_type, canvas_data jsonb, thumbnail_url, width, height, created_at, updated_at)`
+- `project_assets(id, project_id, asset_id, created_at)`
+- `project_versions(id, project_id, version_data jsonb, created_at)`
+- Storage buckets: `projects`, `project-thumbnails`, `project-exports`, `project-assets`
+- RLS: owner-only via `auth.uid() = user_id`; grants per project rules.
+- Activity logging: extend existing `activity_logs` inserts for Created / Edited / Exported / Deleted / Template Applied / Brand Applied / Asset Inserted.
+
+## Integrations wired in
+
+- Brand Kit → one-click Apply (colors/fonts/logos/assets).
+- Media Library → drag assets onto canvas; inserted assets recorded in `project_assets`.
+- Templates → Insert / Replace / Preview from Templates panel.
+- Campaigns → "Attach to campaign" from Save menu.
+- Canva / Freepik → import buttons in Templates panel (Canva via existing OAuth secrets; Freepik via existing key). Sync-back stubbed.
+
+## Mobile
+
+Below `md`: render `MobileEditor` — fullscreen canvas, top bar (Back/Name/Save/Export), bottom nav (Templates/Media/Text/Brand/Layers) opening bottom sheets, FAB for Add Element, pinch/drag/touch.
+
+## States
+
+- Empty: "Start New Design / Choose Template / Upload Design" overlay.
+- Loading: canvas + asset skeletons.
+- Error: retry + "Restore autosave" from `useAutoSave`.
+
+## Out of scope (stubs only)
+
+Real-time collaboration, comments, approvals, Canva sync-back — architecture prepared, UI hooks disabled behind "Coming soon".
+
+## Files touched
+
+Create: 20 files under `src/components/visual-editor/v3/` + 1 migration.
+Rewrite: `src/pages/VisualEditorPage.tsx`.
+Edit: `src/App.tsx` (route no longer wrapped in `DashboardLayout`), `src/integrations/supabase/types.ts` (regenerated by migration).
