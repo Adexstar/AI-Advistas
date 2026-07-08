@@ -1,83 +1,78 @@
+# Global AI Context — Consolidation Plan
 
-## Scope
-Improve AdVista's navigation architecture, add scaffolding for future modules, and prepare AI-ready primitives. Existing page designs (Dashboard, Campaigns, Create Ad, Templates, Brand Kit, Media Library, Visual Editor, Analytics) are **not touched**.
+Goal: One Global AI Context Bar in the header, one service, one hook. Every page consumes it. No dedicated AI page. Support temporary Campaign and Brand Kit overrides.
 
-## 1. Sidebar restructure (`src/components/DashboardLayout.tsx`)
-Replace current 3-group nav with 4 grouped sections. All existing styling (dark chrome, active purple, spacing, icons, usage widget, profile card, create button, upgrade button) preserved.
+## 1. Remove duplicates
+
+- Delete `src/components/ai/AIContextPill.tsx` (superseded by `AIContextBar`).
+- Delete `src/components/ai/AIStatusPill.tsx` (status now lives inside `AIContextBar`).
+- Remove the standalone `<AIContextBar />` from `src/pages/Dashboard.tsx` — keep it only in the global header (`DashboardLayout`).
+- Search the codebase for any lingering AI Context routes/pages; none currently exist, but confirm during implementation and remove if found.
+
+## 2. Single source of truth
+
+Keep exactly one provider chain in `src/App.tsx`:
+`AIStatusProvider → AIContextProvider → routes`.
+
+- `AIContextService` (already present) is the only module that touches the `ai_context` table.
+- `useAIContext()` is the only hook pages use to read/update context. No page queries Supabase for context directly.
+- `AIContextBar` (header) is the only UI that mutates global context via the Context Switcher popover.
+
+## 3. Header integration
+
+- `DashboardLayout` already renders `<AIContextBar />` in mobile and desktop headers — keep as-is.
+- Confirm no other layout/page renders it.
+
+## 4. Context Switcher behavior
+
+Already in `AIContextBar`. Confirm:
+- Fields: Workspace (Brand), Category, Goal, Mode, "Remember this context".
+- Apply → `AIContextService.upsert` → provider updates → all consumers re-render automatically (React context). No page reloads.
+- Cancel discards draft.
+
+## 5. Campaign & Brand overrides (new)
+
+Add temporary override capability without persisting to `ai_context`:
+
+- Extend `AIContext` provider with:
+  - `override: { source: "campaign" | "brand"; ... } | null`
+  - `pushOverride(source, patch)` / `clearOverride()`
+  - `effectiveContext` = `override ?? context` (what consumers actually read for AI calls).
+- `AIContextBar` shows a small `🔒 From Campaign` / `🔒 From Brand Kit` badge when an override is active, and disables Apply while locked (or offers "Exit campaign context").
+- Wire into pages:
+  - `src/pages/Campaigns.tsx` (or campaign detail view): on mount with a selected campaign, call `pushOverride("campaign", { brand_id, active_category, current_goal })` from campaign metadata; `clearOverride()` on unmount/route change.
+  - `src/pages/BrandKit.tsx`: on entering edit for a brand, `pushOverride("brand", { brand_id })`; clear on leave.
+
+## 6. Page consumption pattern
+
+No visual page changes. Each page that runs AI reads `useAIContext().effectiveContext` (falls back to `context`) and passes it to AI service calls (`DecisionService`, `AIJobService`, edge functions). Update the small number of existing call sites:
+
+- `Dashboard.tsx` — already uses context via `AIAssistantPanel`; switch to `effectiveContext`.
+- Visual Editor AI menus (`AIActionsMenu`, `AIQuickActionsMenu`, `AITimelineMenu`) — read `effectiveContext` instead of `context`.
+- Any future page follows the same rule; documented in `src/contexts/AIContext.tsx` header comment.
+
+## 7. Modes
+
+Keep existing four modes in `AIStatusContext`: manual, assisted, smart, growth. Growth remains selectable but non-executing (no automation runner change in this task).
+
+## Technical summary
 
 ```text
-CREATIVE WORKSPACE
-  Dashboard, Campaigns, Create Ad, Templates, Visual Editor,
-  Brand Kit, Media Library, Analytics & Reports
-OPERATIONS
-  Export Center, Integrations Hub, Notifications,
-  Automation Center, Team Workspace
-ACCOUNT
-  Settings, Billing
-FUTURE
-  Asset Marketplace [Soon], Developer Center [Soon]   (non-clickable)
+DashboardLayout (header)
+  └─ AIContextBar  ── opens ──► Context Switcher popover
+                                  └─ AIContextService.upsert → ai_context
+
+AIContextProvider
+  ├─ context      (persisted, from ai_context)
+  ├─ override     (in-memory, campaign/brand scope)
+  └─ effectiveContext = override ?? context   ← all pages read this
+
+Pages: Dashboard, Campaigns, CreateAd, Templates, BrandKit,
+       MediaLibrary, VisualEditor, Analytics
+  └─ useAIContext().effectiveContext → AI services (Decision, Jobs, edge fns)
 ```
-Section titles: uppercase, muted, non-clickable, thin `border-t border-white/10` divider between groups.
 
-## 2. Sidebar search (`src/components/sidebar/SidebarSearch.tsx` — new)
-Reusable input, sits **above** the Create Ad button. Placeholder: `Search campaigns, templates, brands...`. Opens global search palette (⌘K). No search logic yet — UI + event only.
-
-## 3. Global Command Palette (`src/components/GlobalSearch.tsx` — new)
-`shadcn/command` dialog triggered by ⌘K / Ctrl+K, listing categories: Campaigns, Templates, Media, Brand Kits, Exports, Notifications, Settings, AI Decisions, Automation Rules, Users, Integrations. Empty state "Search coming soon". Mounted once in `DashboardLayout`.
-
-## 4. AI Status pill (`src/components/ai/AIStatusPill.tsx` — new + `src/contexts/AIStatusContext.tsx`)
-Small pill in desktop header (left of search) and compact variant in mobile header. Shows: `status` (Ready/Working/Approval/Learning), `category` (e.g. Beauty), `mode` (Manual/Assisted/Smart/Growth). Global context provider wraps app; default `{ status: 'ready', mode: 'manual', category: 'General' }`.
-
-## 5. Notification badge (`src/components/ui/NotifyBadge.tsx` — new)
-Reusable pill with count + variant (unread, ai, automation, export, campaign). Header bell reuses it; sidebar Notifications item accepts optional badge count.
-
-## 6. Coming Soon page + module stubs
-- `src/pages/ComingSoon.tsx` — reusable, accepts `title`, `description`. Uses existing card/spacing tokens.
-- New page shells (each renders `<ComingSoon>` initially, structured for future expansion, using existing DashboardLayout wrapper):
-  - `src/pages/ExportCenter.tsx` — sections: Formats (PNG/JPG/PDF/SVG/MP4/GIF/ZIP), Social Presets, Queue, History (placeholders).
-  - `src/pages/IntegrationsHub.tsx` — category grid: Advertising, Creative, Storage, Backend, Developer with cards (Connected/Not Connected/Last Sync/Connect/Disconnect/Health).
-  - `src/pages/Notifications.tsx` — categories, read/unread/archive/mark-all/filter/search shell.
-  - `src/pages/AutomationCenter.tsx` — sections: Overview, Approval Queue, Rules, Decision History, Running, Scheduled, Growth Agent Status, Recent AI Activity, Autonomy Level selector.
-  - `src/pages/TeamWorkspace.tsx` — Members, Roles, Permissions, Brand/Campaign Access, Template Sharing, Activity Log, Approvals.
-  - `src/pages/AssetMarketplace.tsx` — ComingSoon.
-  - `src/pages/DeveloperCenter.tsx` — ComingSoon.
-  - `src/pages/SystemMonitor.tsx` — admin-only (AdminRoute), sections: AI Jobs, Queue Status, Failed Jobs, API Health (OpenAI/Canva/Freepik/Supabase), Webhook Logs, Rate Limits, DB Health. Not in sidebar.
-
-## 7. Settings restructure (`src/pages/Settings.tsx`)
-Convert to tabbed layout using existing card/tab tokens: General, Workspace, AI Preferences, Notifications, Security, Appearance, Connected Accounts, Advanced. Existing form fields moved into General; other tabs are structured placeholders.
-
-## 8. AI Preferences panel (`src/components/settings/AIPreferences.tsx` — new, used in Settings tab)
-Sections: AI Mode (Manual/Assisted/Smart/Growth Agent [Beta]), Approval Rules, Brand Protection (Lock Logo/Colors/Fonts/Tone), Automation toggles, Learning toggles. Writes into local state hook `useAIPreferences` (in-memory) — backend later.
-
-## 9. Mobile bottom nav (`src/components/MobileBottomNav.tsx` — new)
-5 tabs: Dashboard, Campaigns, ＋Create (raised), Templates, More. "More" opens a `Sheet` bottom-sheet listing the four sidebar groups. Rendered inside `DashboardLayout` for `lg:hidden`. Existing mobile header preserved.
-
-## 10. Routing (`src/App.tsx`)
-Add lazy routes for: `/exports`, `/integrations`, `/notifications`, `/automation`, `/team`, `/marketplace` (coming-soon; visible but non-clickable in sidebar so route is optional), `/developer`, `/system` (admin). All wrapped in `DashboardLayout` + `ProtectedRoute`; `/system` also wrapped in `AdminRoute`.
-
-## 11. Remove standalone AI Assistant
-Grep for any AI Assistant page/route/nav entry and remove. (Current codebase already has none in sidebar; verify no orphan route.)
-
-## Files
-**New**
-- `src/pages/ComingSoon.tsx`
-- `src/pages/ExportCenter.tsx`, `IntegrationsHub.tsx`, `Notifications.tsx`, `AutomationCenter.tsx`, `TeamWorkspace.tsx`, `AssetMarketplace.tsx`, `DeveloperCenter.tsx`, `SystemMonitor.tsx`
-- `src/components/sidebar/SidebarSearch.tsx`
-- `src/components/GlobalSearch.tsx`
-- `src/components/MobileBottomNav.tsx`
-- `src/components/ai/AIStatusPill.tsx`
-- `src/contexts/AIStatusContext.tsx`
-- `src/components/ui/NotifyBadge.tsx`
-- `src/components/settings/AIPreferences.tsx`
-
-**Edited**
-- `src/components/DashboardLayout.tsx` (nav groups, search slot, AI pill, mobile bottom nav mount, global search mount)
-- `src/App.tsx` (new routes, AIStatusProvider)
-- `src/pages/Settings.tsx` (tabbed layout wrapper — existing content preserved in General tab)
-
-## Out of scope
-- No backend/DB changes.
-- No redesign of the eight approved pages.
-- Search logic, notification data, AI job execution — hooks only.
-
-## Approve to build.
+Files touched:
+- Delete: `src/components/ai/AIContextPill.tsx`, `src/components/ai/AIStatusPill.tsx`.
+- Edit: `src/contexts/AIContext.tsx` (add override API), `src/components/dashboard/AIContextBar.tsx` (override badge + lock), `src/pages/Dashboard.tsx` (remove duplicate bar), `src/pages/Campaigns.tsx` and `src/pages/BrandKit.tsx` (push/clear override), visual-editor AI menu files (use `effectiveContext`).
+- No DB migration. No new routes. No UI redesign.
