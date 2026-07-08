@@ -49,6 +49,12 @@ import {
 } from '@/hooks/useMediaLibrary';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import {
+  AIPoweredSearch,
+  AIAssetAssistant,
+  AISuggestionBanner,
+  AssetAIAnalysis,
+} from '@/components/media/AIAssetAssistant';
 
 const formatBytes = (b: number) => {
   if (!b) return '0 KB';
