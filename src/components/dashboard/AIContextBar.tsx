@@ -149,63 +149,84 @@ export const AIContextBar = () => {
       </div>
 
       <PopoverContent align="start" className="w-[340px] space-y-4 p-4">
-        <div>
-          <p className="text-sm font-semibold">Working Context</p>
-          <p className="text-[11px] text-muted-foreground">AI uses this on every page.</p>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="text-sm font-semibold">Working Context</p>
+            <p className="text-[11px] text-muted-foreground">
+              {locked
+                ? "Context is temporarily set by the active workspace."
+                : "AI uses this on every page."}
+            </p>
+          </div>
+          {locked && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[10px] font-semibold text-amber-600">
+              <Lock className="h-3 w-3" /> {lockLabel}
+            </span>
+          )}
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label className="text-[11px]">Brand</Label>
-            <Select value={draftBrand} onValueChange={setDraftBrand}>
-              <SelectTrigger className="h-9"><SelectValue placeholder="Select brand" /></SelectTrigger>
-              <SelectContent>
-                {brands.length === 0 && <div className="px-2 py-1.5 text-xs text-muted-foreground">No brands yet</div>}
-                {brands.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+        <fieldset disabled={locked} className="space-y-4 disabled:opacity-60">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-[11px]">Brand</Label>
+              <Select value={draftBrand} onValueChange={setDraftBrand} disabled={locked}>
+                <SelectTrigger className="h-9"><SelectValue placeholder="Select brand" /></SelectTrigger>
+                <SelectContent>
+                  {brands.length === 0 && <div className="px-2 py-1.5 text-xs text-muted-foreground">No brands yet</div>}
+                  {brands.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[11px]">Category</Label>
+              <Select value={draftCategory} onValueChange={setDraftCategory} disabled={locked}>
+                <SelectTrigger className="h-9"><SelectValue placeholder="Category" /></SelectTrigger>
+                <SelectContent>
+                  {categories.map((c) => <SelectItem key={c.id} value={c.category}>{c.category}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[11px]">Goal</Label>
+              <Select value={draftGoal} onValueChange={setDraftGoal} disabled={locked}>
+                <SelectTrigger className="h-9"><SelectValue placeholder="Goal" /></SelectTrigger>
+                <SelectContent>
+                  {GOALS.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[11px]">Mode</Label>
+              <Select value={draftMode} onValueChange={(v) => setDraftMode(v as AIMode)}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="manual">Manual</SelectItem>
+                  <SelectItem value="assisted">Assisted</SelectItem>
+                  <SelectItem value="smart">Smart</SelectItem>
+                  <SelectItem value="growth">Growth Agent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-[11px]">Category</Label>
-            <Select value={draftCategory} onValueChange={setDraftCategory}>
-              <SelectTrigger className="h-9"><SelectValue placeholder="Category" /></SelectTrigger>
-              <SelectContent>
-                {categories.map((c) => <SelectItem key={c.id} value={c.category}>{c.category}</SelectItem>)}
-              </SelectContent>
-            </Select>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Checkbox checked={remember} onCheckedChange={(v) => setRemember(!!v)} disabled={locked} /> Remember this context
+          </label>
+        </fieldset>
+        <div className="flex items-center justify-between gap-2">
+          {locked ? (
+            <Button variant="outline" size="sm" onClick={() => { clearOverride(); setOpen(false); }}>
+              Exit workspace
+            </Button>
+          ) : <span />}
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button size="sm" onClick={apply} disabled={saving || locked}>
+              {saving && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />}
+              Apply
+            </Button>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-[11px]">Goal</Label>
-            <Select value={draftGoal} onValueChange={setDraftGoal}>
-              <SelectTrigger className="h-9"><SelectValue placeholder="Goal" /></SelectTrigger>
-              <SelectContent>
-                {GOALS.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-[11px]">Mode</Label>
-            <Select value={draftMode} onValueChange={(v) => setDraftMode(v as AIMode)}>
-              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="manual">Manual</SelectItem>
-                <SelectItem value="assisted">Assisted</SelectItem>
-                <SelectItem value="smart">Smart</SelectItem>
-                <SelectItem value="growth">Growth Agent</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <label className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Checkbox checked={remember} onCheckedChange={(v) => setRemember(!!v)} /> Remember this context
-        </label>
-        <div className="flex items-center justify-end gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button size="sm" onClick={apply} disabled={saving}>
-            {saving && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />}
-            Apply
-          </Button>
         </div>
       </PopoverContent>
+
     </Popover>
   );
 };
