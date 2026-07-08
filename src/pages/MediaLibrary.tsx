@@ -687,6 +687,8 @@ const MediaLibrary: React.FC = () => {
                     <Badge key={t} variant="secondary" className="rounded-full">
                       {t}
                     </Badge>
+                      {t}
+                    </Badge>
                   ))}
                 </div>
               )}
