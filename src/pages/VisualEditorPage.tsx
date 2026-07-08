@@ -1124,7 +1124,7 @@ const VisualEditorInner: React.FC = () => {
           <Timeline visible={showTimeline} />
         </div>
 
-        <PropertiesPanel canvas={canvas} selected={selected} version={version} onClose={() => canvas?.discardActiveObject().renderAll()} />
+        <PropertiesPanel canvas={canvas} selected={selected} version={version} onClose={() => { canvas?.discardActiveObject(); canvas?.renderAll(); }} />
 
         {/* Mobile right */}
         <Sheet open={mobileRight} onOpenChange={setMobileRight}>
