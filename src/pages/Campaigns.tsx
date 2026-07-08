@@ -391,57 +391,57 @@ const Campaigns = () => {
                 </div>
               </Card>
 
-              {/* Mobile stacked cards */}
-              <div className="space-y-3 md:hidden">
+              {/* Mobile stacked cards - matches mockup */}
+              <div className="divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/60 bg-card md:hidden">
                 {filtered.map((c) => {
                   const PIcon = platformIcon(c.platform);
                   return (
-                    <Card key={c.id} className="rounded-2xl">
-                      <CardContent className="space-y-3 p-4">
-                        <div className="flex items-start gap-3">
-                          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 text-primary">
-                            <PIcon className="h-5 w-5" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-start justify-between gap-2">
-                              <h4 className="truncate text-sm font-semibold">{c.name}</h4>
-                              <StatusBadge status={c.status} />
-                            </div>
-                            <p className="mt-0.5 truncate text-[11px] text-muted-foreground capitalize">
-                              {c.objective} • {c.platform || '—'}
-                            </p>
-                          </div>
+                    <button key={c.id} type="button" onClick={() => openEdit(c)}
+                      className="flex w-full items-start gap-3 p-3 text-left transition active:bg-muted/40">
+                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-primary/15 to-primary/5">
+                        <div className="grid h-full w-full place-items-center text-primary">
+                          <PIcon className="h-6 w-6" />
                         </div>
-                        <div className="grid grid-cols-3 gap-2 rounded-xl bg-muted/40 p-3">
+                        <div className="absolute -bottom-1 -right-1 grid h-5 w-5 place-items-center rounded-full bg-background shadow ring-1 ring-border">
+                          <PIcon className="h-3 w-3 text-primary" />
+                        </div>
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="truncate text-sm font-semibold">{c.name}</h4>
+                          <StatusBadge status={c.status} />
+                        </div>
+                        <p className="truncate text-[11px] text-muted-foreground capitalize">
+                          {c.objective} • {c.platform || '—'}
+                        </p>
+                        <div className="grid grid-cols-3 gap-2 pt-1">
                           <div>
-                            <p className="text-[10px] uppercase text-muted-foreground">Spend</p>
-                            <p className="text-sm font-semibold">${Number(c.spend).toLocaleString()}</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] uppercase text-muted-foreground">CTR</p>
-                            <p className="text-sm font-semibold">{Number(c.ctr).toFixed(2)}%</p>
+                            <p className="text-[10px] text-muted-foreground">Spend</p>
+                            <p className="text-xs font-semibold">${Number(c.spend).toLocaleString()}</p>
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase text-muted-foreground">ROAS</p>
-                            <p className="text-sm font-semibold">{Number(c.roas).toFixed(2)}x</p>
+                            <p className="text-[10px] text-muted-foreground">ROAS</p>
+                            <p className="text-xs font-semibold text-emerald-600">{Number(c.roas).toFixed(2)}x</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-muted-foreground">Conv.</p>
+                            <p className="text-xs font-semibold">{c.conversions}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm" className="flex-1 rounded-lg text-xs" onClick={() => openEdit(c)}>
-                            <Eye className="mr-1 h-3.5 w-3.5" /> View
-                          </Button>
-                          <Button variant="outline" size="sm" className="flex-1 rounded-lg text-xs" onClick={() => openEdit(c)}>
-                            <Edit className="mr-1 h-3.5 w-3.5" /> Edit
-                          </Button>
-                          <Button size="sm" className="flex-1 rounded-lg text-xs">
-                            <Sparkles className="mr-1 h-3.5 w-3.5" /> AI
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                      <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                        <CampaignActions c={c}
+                          onView={() => openEdit(c)} onEdit={() => openEdit(c)}
+                          onDuplicate={() => duplicateMut.mutate(c)}
+                          onTogglePause={() => togglePauseResume(c)}
+                          onArchive={() => archive(c)} onUnarchive={() => unarchive(c)}
+                          onDelete={() => handleDelete(c)} />
+                      </div>
+                    </button>
                   );
                 })}
               </div>
+
             </>
           )}
         </div>
