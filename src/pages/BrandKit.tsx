@@ -537,6 +537,14 @@ export default function BrandKitPage() {
 
   const active = kits.find((k) => k.id === activeId) || kits[0];
 
+  // Temporarily lock global AI context to the brand being edited on this page.
+  useContextOverride(
+    active
+      ? { source: "brand", label: active.name, patch: { brand_id: active.id, active_brandkit_id: active.id } }
+      : null
+  );
+
+
   return (
     <div className="space-y-6">
       {/* Header */}
