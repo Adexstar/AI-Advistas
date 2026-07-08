@@ -381,14 +381,14 @@ export const BrandGuardian = ({ brand }: { brand: BrandKit }) => {
 
   return (
     <>
-      {/* Desktop: stack all three; Mobile: single collapsible card */}
-      <div className="hidden space-y-4 md:block">
+      {/* Desktop right-rail stack (lg+); mobile/tablet use collapsible above */}
+      <div className="hidden space-y-4 lg:block">
         {IntelligenceCard}
         {HealthCard}
         {SuggestionsCard}
       </div>
 
-      <div className="md:hidden">
+      <div className="lg:hidden">
         <Collapsible open={mobileOpen} onOpenChange={setMobileOpen}>
           <Card className="p-4">
             <CollapsibleTrigger asChild>
