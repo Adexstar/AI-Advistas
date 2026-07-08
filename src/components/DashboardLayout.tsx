@@ -37,7 +37,6 @@ import { useAdmin } from "@/hooks/useAdmin";
 import SidebarSearch from "@/components/sidebar/SidebarSearch";
 import GlobalSearch from "@/components/GlobalSearch";
 import MobileBottomNav from "@/components/MobileBottomNav";
-import AIStatusPill from "@/components/ai/AIStatusPill";
 import AIContextPill from "@/components/ai/AIContextPill";
 import NotifyBadge from "@/components/ui/NotifyBadge";
 import { AIStatusProvider } from "@/contexts/AIStatusContext";
@@ -438,9 +437,8 @@ const DashboardShell = () => {
             <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
               <Menu className="h-5 w-5" />
             </Button>
-            <div className="min-w-0 flex-1 px-2 flex items-center justify-center gap-2">
+            <div className="min-w-0 flex-1 px-2 flex items-center justify-center">
               <AIContextPill compact />
-              <AIStatusPill compact />
             </div>
             <Button size="icon" className="h-9 w-9 rounded-xl" asChild>
               <NavLink to="/create" aria-label="Create Ad">
@@ -457,7 +455,6 @@ const DashboardShell = () => {
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <AIContextPill />
-              <AIStatusPill />
               <button
                 onClick={openSearch}
                 className="flex h-10 w-64 items-center gap-2 rounded-xl border border-border bg-card px-3 text-left text-sm text-muted-foreground transition hover:border-primary/40"
