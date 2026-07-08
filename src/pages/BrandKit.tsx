@@ -485,6 +485,8 @@ const BrandWorkspace = ({ brand, allKits, onSelect, onEdit }: { brand: BrandKit;
       <div className="space-y-4">
         <BrandPreview brand={brand} />
 
+        <BrandGuardian brand={brand} />
+
         <Card>
           <div className="flex items-center justify-between p-4">
             <p className="text-sm font-semibold">Brand Kits</p>
