@@ -855,8 +855,10 @@ export default function CreateAd() {
       <div className="page-container py-5 sm:py-6">
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="min-w-0 space-y-5">
+            <AIContextBar />
             <ProgressCard step={step} setStep={setStep}
               completion={completion} readiness={readiness} />
+
 
             <motion.div
               key={step}
