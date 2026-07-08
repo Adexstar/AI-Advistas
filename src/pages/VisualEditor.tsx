@@ -1,15 +1,6 @@
-import React from 'react';
-import { VisualEditorProvider } from '@/contexts/VisualEditorContext';
-import { VisualEditorLayout } from '@/components/visual-editor/VisualEditorLayout';
+import { Navigate } from 'react-router-dom';
 
-const VisualEditor: React.FC = () => {
-  return (
-    <VisualEditorProvider>
-      <div className="h-screen w-full bg-background">
-        <VisualEditorLayout />
-      </div>
-    </VisualEditorProvider>
-  );
-};
+// Legacy entry — the primary AI Creative Studio lives at /visual-editor
+const VisualEditor = () => <Navigate to="/visual-editor" replace />;
 
 export default VisualEditor;
