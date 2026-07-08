@@ -609,6 +609,22 @@ const MediaLibrary: React.FC = () => {
           </div>
         </Card>
       </div>
+        </div>
+
+        {/* Right rail: AI Asset Assistant */}
+        <aside className="hidden xl:block space-y-6">
+          <AIAssetAssistant assets={assets} selected={preview} />
+        </aside>
+      </div>
+
+      {/* Mobile/tablet inline AI Asset Assistant */}
+      <div className="xl:hidden">
+        <AIAssetAssistant assets={assets} selected={preview} />
+      </div>
+
+      <AISuggestionBanner assets={assets} />
+
+
 
       {/* Mobile floating upload */}
       <button
