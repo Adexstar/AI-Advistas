@@ -1,101 +1,83 @@
-# Visual Editor V3 — Full Rebuild
 
-Rebuild `/visual-editor` from scratch to mirror the uploaded mockup exactly and act as AdVista's core creative workspace (Canva + Adobe Express + CapCut for ads).
+## Scope
+Improve AdVista's navigation architecture, add scaffolding for future modules, and prepare AI-ready primitives. Existing page designs (Dashboard, Campaigns, Create Ad, Templates, Brand Kit, Media Library, Visual Editor, Analytics) are **not touched**.
 
-## Layout (matches mockup 1:1)
+## 1. Sidebar restructure (`src/components/DashboardLayout.tsx`)
+Replace current 3-group nav with 4 grouped sections. All existing styling (dark chrome, active purple, spacing, icons, usage widget, profile card, create button, upgrade button) preserved.
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│ Logo │ ‹ Project Name ✎  •  Saved ✓  ↶ ↷ │  − 100% +  ▦ ⛶  ▶ Preview  ⤓ Export  ✈ Publish  ? 🔔 👤 │
-├──────┬──────────────────────┬──────────────────────────────┬────────────┤
-│ Tabs │ Contextual Panel     │        Canvas Area            │ Properties │
-│ 📄 T │ (Templates / Media / │  ┌─ ruler ──────────────┐    │   Panel    │
-│ 🖼 M │  Text / Elements /   │  │                      │    │ Design |   │
-│ T Tx │  Brand / Uploads /   │  │      Design canvas   │    │ Animation |│
-│ ⬢ El │  Layers / Projects)  │  │                      │    │ Position   │
-│ 🎨 B │                      │  └──────── + Add Page ──┘    │            │
-│ ⬆ Up │                      │                              │  Dynamic   │
-│ ▤ Ly │                      │  Timeline (only if video)    │  by select │
-│ 📁 Pr│                      │                              │            │
-│ ─────│                      │                              │            │
-│ Pro  │                      │                              │            │
-│ ⚙ ☾ ?│                      │                              │            │
-└──────┴──────────────────────┴──────────────────────────────┴────────────┘
+CREATIVE WORKSPACE
+  Dashboard, Campaigns, Create Ad, Templates, Visual Editor,
+  Brand Kit, Media Library, Analytics & Reports
+OPERATIONS
+  Export Center, Integrations Hub, Notifications,
+  Automation Center, Team Workspace
+ACCOUNT
+  Settings, Billing
+FUTURE
+  Asset Marketplace [Soon], Developer Center [Soon]   (non-clickable)
 ```
+Section titles: uppercase, muted, non-clickable, thin `border-t border-white/10` divider between groups.
 
-Dark theme editor chrome (not the app shell). Route stops using `DashboardLayout` — the editor is a full-viewport surface like Canva.
+## 2. Sidebar search (`src/components/sidebar/SidebarSearch.tsx` — new)
+Reusable input, sits **above** the Create Ad button. Placeholder: `Search campaigns, templates, brands...`. Opens global search palette (⌘K). No search logic yet — UI + event only.
 
-## Component tree (new)
+## 3. Global Command Palette (`src/components/GlobalSearch.tsx` — new)
+`shadcn/command` dialog triggered by ⌘K / Ctrl+K, listing categories: Campaigns, Templates, Media, Brand Kits, Exports, Notifications, Settings, AI Decisions, Automation Rules, Users, Integrations. Empty state "Search coming soon". Mounted once in `DashboardLayout`.
 
-- `src/pages/VisualEditorPage.tsx` — full rewrite, orchestrator only
-- `src/components/visual-editor/v3/`
-  - `EditorShell.tsx` — dark full-viewport frame
-  - `TopBar.tsx` — logo, project name+save state, undo/redo, zoom, grid/fit, Preview, Export, Publish, help/notif/avatar
-  - `IconTabRail.tsx` — vertical tabs (Templates, Media, Text, Elements, Brand Kit, Uploads, Layers, Projects) + Upgrade card + settings/theme/help
-  - `panels/TemplatesPanel.tsx` — search, chips (All/Social/Ads/Stories/Video), sections: Recommended, Instagram Post, Instagram Story with "See all"
-  - `panels/MediaPanel.tsx` — pulls from `useMediaLibrary`; images/videos/logos/icons/audio + folders + search + drag handle
-  - `panels/TextPanel.tsx` — heading/subhead/body/CTA presets, font browser
-  - `panels/ElementsPanel.tsx` — shapes, lines, arrows, icons, backgrounds, frames, grids, buttons, badges, social icons
-  - `panels/BrandKitPanel.tsx` — pulls `useBrandKit`; logos/colors/fonts/assets + "Apply Brand Kit"
-  - `panels/UploadsPanel.tsx` — dropzone, upload progress list, supported formats
-  - `panels/LayersPanel.tsx` — layer list with lock/hide/duplicate/delete/reorder
-  - `panels/ProjectsPanel.tsx` — recent/saved/drafts/campaign designs from `projects` table
-  - `CanvasWorkspace.tsx` — rulers, ContextToolbar (Animate/Position/align/lock icons), Fabric canvas host, floating selection actions (edit/duplicate/delete/•••), "+ Add Page"
-  - `Timeline.tsx` — video-only bottom dock with tracks (Text/Image/Shape/Video/Audio) + Add Track + playhead + playback
-  - `properties/PropertiesPanel.tsx` — tabbed Design/Animation/Position, dispatches to:
-    - `TextProperties.tsx`, `ImageProperties.tsx`, `VideoProperties.tsx`, `ShapeProperties.tsx`
-  - `PreviewModal.tsx` — live device previews (IG/FB/TikTok/LinkedIn/YT/Google)
-  - `ExportCenter.tsx` — format (PNG/JPG/SVG/PDF/MP4/GIF/WEBP) × quality (Low/Med/High/Ultra)
-  - `MobileEditor.tsx` — mobile shell with top bar, bottom nav (Templates/Media/Text/Brand/Layers), FAB, bottom sheets
+## 4. AI Status pill (`src/components/ai/AIStatusPill.tsx` — new + `src/contexts/AIStatusContext.tsx`)
+Small pill in desktop header (left of search) and compact variant in mobile header. Shows: `status` (Ready/Working/Approval/Learning), `category` (e.g. Beauty), `mode` (Manual/Assisted/Smart/Growth). Global context provider wraps app; default `{ status: 'ready', mode: 'manual', category: 'General' }`.
 
-Reuse where present: existing Fabric init logic, `DesignScorePanel`, `AISuggestionsList`, `useAutoSave`, `useBrandKit`, `useMediaLibrary`, `useTemplates`.
+## 5. Notification badge (`src/components/ui/NotifyBadge.tsx` — new)
+Reusable pill with count + variant (unread, ai, automation, export, campaign). Header bell reuses it; sidebar Notifications item accepts optional badge count.
 
-## Canvas & presets
+## 6. Coming Soon page + module stubs
+- `src/pages/ComingSoon.tsx` — reusable, accepts `title`, `description`. Uses existing card/spacing tokens.
+- New page shells (each renders `<ComingSoon>` initially, structured for future expansion, using existing DashboardLayout wrapper):
+  - `src/pages/ExportCenter.tsx` — sections: Formats (PNG/JPG/PDF/SVG/MP4/GIF/ZIP), Social Presets, Queue, History (placeholders).
+  - `src/pages/IntegrationsHub.tsx` — category grid: Advertising, Creative, Storage, Backend, Developer with cards (Connected/Not Connected/Last Sync/Connect/Disconnect/Health).
+  - `src/pages/Notifications.tsx` — categories, read/unread/archive/mark-all/filter/search shell.
+  - `src/pages/AutomationCenter.tsx` — sections: Overview, Approval Queue, Rules, Decision History, Running, Scheduled, Growth Agent Status, Recent AI Activity, Autonomy Level selector.
+  - `src/pages/TeamWorkspace.tsx` — Members, Roles, Permissions, Brand/Campaign Access, Template Sharing, Activity Log, Approvals.
+  - `src/pages/AssetMarketplace.tsx` — ComingSoon.
+  - `src/pages/DeveloperCenter.tsx` — ComingSoon.
+  - `src/pages/SystemMonitor.tsx` — admin-only (AdminRoute), sections: AI Jobs, Queue Status, Failed Jobs, API Health (OpenAI/Canva/Freepik/Supabase), Webhook Logs, Rate Limits, DB Health. Not in sidebar.
 
-- Presets: Instagram Post 1080², IG Story 1080×1920, Facebook Ad 1200×628, TikTok 1080×1920, YouTube Thumb 1280×720, Google Display 300×250 / 728×90, LinkedIn 1200×627, Custom.
-- Rulers, snap-to-grid, guides, infinite zoom (10–400%), pan (space+drag), multi-page via "+ Add Page".
+## 7. Settings restructure (`src/pages/Settings.tsx`)
+Convert to tabbed layout using existing card/tab tokens: General, Workspace, AI Preferences, Notifications, Security, Appearance, Connected Accounts, Advanced. Existing form fields moved into General; other tabs are structured placeholders.
 
-## Save / auto-save / versions
+## 8. AI Preferences panel (`src/components/settings/AIPreferences.tsx` — new, used in Settings tab)
+Sections: AI Mode (Manual/Assisted/Smart/Growth Agent [Beta]), Approval Rules, Brand Protection (Lock Logo/Colors/Fonts/Tone), Automation toggles, Learning toggles. Writes into local state hook `useAIPreferences` (in-memory) — backend later.
 
-- Auto-save every 2s to `projects.canvas_data` (debounced via existing `useAutoSave`).
-- Manual save, Save As Template, Save As Campaign Asset, Save Draft menu on TopBar.
-- Snapshot to `project_versions` on manual save + on export.
+## 9. Mobile bottom nav (`src/components/MobileBottomNav.tsx` — new)
+5 tabs: Dashboard, Campaigns, ＋Create (raised), Templates, More. "More" opens a `Sheet` bottom-sheet listing the four sidebar groups. Rendered inside `DashboardLayout` for `lg:hidden`. Existing mobile header preserved.
 
-## Data / backend
+## 10. Routing (`src/App.tsx`)
+Add lazy routes for: `/exports`, `/integrations`, `/notifications`, `/automation`, `/team`, `/marketplace` (coming-soon; visible but non-clickable in sidebar so route is optional), `/developer`, `/system` (admin). All wrapped in `DashboardLayout` + `ProtectedRoute`; `/system` also wrapped in `AdminRoute`.
 
-New migration:
+## 11. Remove standalone AI Assistant
+Grep for any AI Assistant page/route/nav entry and remove. (Current codebase already has none in sidebar; verify no orphan route.)
 
-- `projects(id, user_id, name, project_type, canvas_data jsonb, thumbnail_url, width, height, created_at, updated_at)`
-- `project_assets(id, project_id, asset_id, created_at)`
-- `project_versions(id, project_id, version_data jsonb, created_at)`
-- Storage buckets: `projects`, `project-thumbnails`, `project-exports`, `project-assets`
-- RLS: owner-only via `auth.uid() = user_id`; grants per project rules.
-- Activity logging: extend existing `activity_logs` inserts for Created / Edited / Exported / Deleted / Template Applied / Brand Applied / Asset Inserted.
+## Files
+**New**
+- `src/pages/ComingSoon.tsx`
+- `src/pages/ExportCenter.tsx`, `IntegrationsHub.tsx`, `Notifications.tsx`, `AutomationCenter.tsx`, `TeamWorkspace.tsx`, `AssetMarketplace.tsx`, `DeveloperCenter.tsx`, `SystemMonitor.tsx`
+- `src/components/sidebar/SidebarSearch.tsx`
+- `src/components/GlobalSearch.tsx`
+- `src/components/MobileBottomNav.tsx`
+- `src/components/ai/AIStatusPill.tsx`
+- `src/contexts/AIStatusContext.tsx`
+- `src/components/ui/NotifyBadge.tsx`
+- `src/components/settings/AIPreferences.tsx`
 
-## Integrations wired in
+**Edited**
+- `src/components/DashboardLayout.tsx` (nav groups, search slot, AI pill, mobile bottom nav mount, global search mount)
+- `src/App.tsx` (new routes, AIStatusProvider)
+- `src/pages/Settings.tsx` (tabbed layout wrapper — existing content preserved in General tab)
 
-- Brand Kit → one-click Apply (colors/fonts/logos/assets).
-- Media Library → drag assets onto canvas; inserted assets recorded in `project_assets`.
-- Templates → Insert / Replace / Preview from Templates panel.
-- Campaigns → "Attach to campaign" from Save menu.
-- Canva / Freepik → import buttons in Templates panel (Canva via existing OAuth secrets; Freepik via existing key). Sync-back stubbed.
+## Out of scope
+- No backend/DB changes.
+- No redesign of the eight approved pages.
+- Search logic, notification data, AI job execution — hooks only.
 
-## Mobile
-
-Below `md`: render `MobileEditor` — fullscreen canvas, top bar (Back/Name/Save/Export), bottom nav (Templates/Media/Text/Brand/Layers) opening bottom sheets, FAB for Add Element, pinch/drag/touch.
-
-## States
-
-- Empty: "Start New Design / Choose Template / Upload Design" overlay.
-- Loading: canvas + asset skeletons.
-- Error: retry + "Restore autosave" from `useAutoSave`.
-
-## Out of scope (stubs only)
-
-Real-time collaboration, comments, approvals, Canva sync-back — architecture prepared, UI hooks disabled behind "Coming soon".
-
-## Files touched
-
-Create: 20 files under `src/components/visual-editor/v3/` + 1 migration.
-Rewrite: `src/pages/VisualEditorPage.tsx`.
-Edit: `src/App.tsx` (route no longer wrapped in `DashboardLayout`), `src/integrations/supabase/types.ts` (regenerated by migration).
+## Approve to build.
