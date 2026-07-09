@@ -17,10 +17,8 @@ export interface TemplateGenContext {
 }
 
 export const TemplateService = {
-  async list(filter: { category?: string; platform?: string } = {}) {
-    let q = supabase.from("templates").select("*").limit(200);
-    if (filter.category) q = q.eq("category", filter.category);
-    const { data, error } = await q;
+  async list(_filter: { category?: string; platform?: string } = {}) {
+    const { data, error } = await supabase.from("templates").select("*").limit(200);
     if (error) throw error;
     return data ?? [];
   },
