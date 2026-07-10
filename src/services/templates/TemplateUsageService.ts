@@ -16,12 +16,14 @@ export const TemplateUsageService = {
       const { data: userRes } = await supabase.auth.getUser();
       const uid = userRes.user?.id;
       if (!uid) return; // Anonymous events are dropped for now.
-      await supabase.from("template_usage_events").insert({
-        template_id: templateId,
-        user_id: uid,
-        event,
-        context: context as unknown as Record<string, unknown>,
-      });
+      await supabase.from("template_usage_events").insert([
+        {
+          template_id: templateId,
+          user_id: uid,
+          event,
+          context: context as unknown as Record<string, unknown>,
+        },
+      ]);
     } catch (err) {
       console.warn("[TemplateUsageService]", err);
     }
