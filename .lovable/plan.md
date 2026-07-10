@@ -1,131 +1,104 @@
-# AdVista — Layer 3: External Services & Integration Architecture
+## AdVista Template Engine — Layer 3A
 
-Goal: make AdVista the orchestration layer. Pages talk only to AdVista services; AdVista services talk to external providers through adapters. This plan sets up the scaffolding, refactors existing call sites, and leaves clean seams for future providers — without redesigning any UI.
+Goal: templates become editable "living documents" (Fabric.js JSON + variables + AI metadata), personalized by a Template Engine before hitting the Visual Editor. Pages consume services only.
 
-## Guiding rules (enforced going forward)
+### 1. Database (migration)
 
-- No page or component calls a third-party API directly.
-- No page invokes a provider-specific edge function directly. Pages call an AdVista service, which chooses the adapter.
-- Every AI action reads Brand Kit → Category Intelligence → Campaign Memory → AI Context before generating.
-- Adapters share one interface per capability so providers are swappable.
-- Supabase remains the source of truth for templates, brand kits, media metadata, campaigns, and memory. External providers are cache/enrichment.
+Extend `templates` and add companion tables. Keep existing `ad_templates` as legacy source; new canonical is `templates`.
 
-## Service layer (new)
+- `templates` — add columns if missing: `category text`, `platform text`, `objective text`, `format text`, `width int`, `height int`, `template_json jsonb`, `ai_tags text[]`, `industry_tags text[]`, `brand_compatible bool default true`, `popularity_score int default 0`, `source text default 'advista'`, `premium bool default false`, `metadata jsonb` (emotion, audience, layout_style, visual_weight, primary_color, recommended_platforms, recommended_goal).
+- `template_layers` — id, template_id (fk), layer_type (text|image|shape|font|group), x, y, width, height, rotation, effects jsonb, animation jsonb, editable bool, brand_replaceable bool, ai_replaceable bool, variable_key text, z_index int, props jsonb.
+- `template_versions` — id, template_id, version_number, template_json jsonb, layers jsonb, created_by, created_at, note text.
+- `template_usage_events` — id, template_id, user_id, event (viewed|used|edited|favorited|published), context jsonb, created_at. (Feeds recommendation + Campaign Memory.)
+- GRANTs + RLS for all four tables. `templates` readable by anon+authenticated; writes by owner/service_role. `template_layers`/`template_versions`/`template_usage_events` scoped to owning user or public templates.
 
-Create `src/services/` modules. Each is a thin façade over existing edge functions + Supabase; no provider SDK in the client.
+### 2. Variable system
 
+Standard placeholder keys resolved at instantiate time:
+`{{brand.logo}}`, `{{brand.primaryColor}}`, `{{brand.secondaryColor}}`, `{{brand.font}}`, `{{brand.voice}}`, `{{headline}}`, `{{subheadline}}`, `{{body}}`, `{{cta}}`, `{{website}}`, `{{phone}}`, `{{offer}}`, `{{product_image}}`, `{{hero_image}}`.
+
+Resolver walks Fabric JSON, replaces `text` fields and image `src` for objects carrying `variableKey`. Design geometry never mutated.
+
+### 3. Service layer (`src/services/templates/`)
+
+- `TemplateService` (extend existing) — CRUD, list with filters.
+- `TemplateEngine` — `instantiate(template, ctx)` → runs BrandEngine + AIEngine, returns personalized Fabric JSON + resolved variables.
+- `TemplateRenderer` — takes personalized JSON, hands off to Visual Editor / server-side export.
+- `TemplateRecommendationService` — ranks templates against AI Context (brand, category, goal, platform), returns `{ template, score, reasons[] }`.
+- `TemplateSearchService` — semantic search across `ai_tags`, `category`, `metadata.emotion`, `metadata.audience`, `industry_tags`.
+- `TemplateVersionService` — `snapshot(templateId, note)`, `list(templateId)`, `restore(versionId)`.
+- `TemplateImportService` — routes provider imports (Freepik today, Canva/Bannerbear future) through edge functions only.
+- `TemplateExportService` — PNG/JPG/PDF/MP4 via `export-ad` edge function; keeps JSON as source of truth.
+
+Sub-engines (`src/services/templates/engines/`):
+- `BrandEngine.apply(json, brandKit, { lock })` — swaps `brand_replaceable` layers only. Honors Brand Lock.
+- `AIEngine.personalize(json, ctx)` — calls `generate-ad-copy`/`suggest-ad-style` via edge functions, fills text/image variables. Never rearranges layout.
+
+Barrel exports through `src/services/index.ts`.
+
+### 4. Edge functions
+
+New/updated (all with CORS + zod validation + guardrails from AI Context):
+- `template-search` — unified search over Supabase + Freepik + future providers.
+- `template-import` — normalizes provider payloads → AdVista JSON + layers.
+- `template-personalize` — server-side wrapper: BrandEngine + AIEngine for headless flows.
+- `template-render` — server render for thumbnails/exports.
+
+Providers behind adapter interface (`FreepikAdapter`, `CanvaAdapter` stub, `BannerbearAdapter` stub). Frontend never calls providers directly.
+
+### 5. Visual Editor integration
+
+- On "Use Template": page calls `TemplateEngine.instantiate` → navigates to `/visual-editor` with personalized JSON in route state or draft row.
+- `VisualEditorContext` loads Fabric JSON, tags each object with its `variableKey` for badge overlays ("brand-locked" / "AI-editable").
+- Save flow: on save, snapshot current JSON to `template_versions` (autosave = throttled, manual = named). Restore = load a version into the canvas.
+
+### 6. Template Library UX (small changes)
+
+- Recommendation strip at top: "Recommended for {brand} · {goal}" using `TemplateRecommendationService`.
+- Card hover: Preview, Use Template, Duplicate, Favorite, Preview in Editor.
+- Filters auto-seeded from active AI Context on mount.
+
+### 7. Migration of existing pages/hooks
+
+Any page currently calling `supabase.functions.invoke` for template/media/publishing must route through `@/services`. Scope of this change:
+- `src/pages/TemplateLibrary.tsx`, `TemplateCustomizer.tsx`, `CreateAd.tsx`, `AIAdEditor.tsx`, `VisualEditorPage.tsx`.
+- Hooks `useTemplates`, `useUnifiedTemplates`, `useTemplateStorage`, `useGenerateAdDraft` → thin wrappers over services.
+
+### 8. Non-goals for this pass
+
+- No new secrets required (Freepik/OpenAI/Lovable AI already configured).
+- No new provider integrations implemented — only adapter seams.
+- No AI autonomy: personalization stays preview → accept → apply.
+
+### Technical details
+
+```text
+Template Library ──► TemplateService.list / RecommendationService
+                              │
+                              ▼
+User clicks "Use Template"
+                              │
+                              ▼
+TemplateEngine.instantiate(template, aiContext)
+   ├─ BrandEngine.apply(json, brandKit, { lock })
+   └─ AIEngine.personalize(json, ctx)   ── edge: generate-ad-copy / suggest-ad-style
+                              │
+                              ▼
+Personalized Fabric JSON  ──►  VisualEditor  ──►  autosave → template_versions
+                                                     │
+                                                     ▼
+                                            Export via TemplateExportService
+                                                     │
+                                                     ▼
+                                       edge: export-ad → Cloudinary/download
 ```
-src/services/
-  templates/TemplateService.ts       generate | list | import | save
-  brand/BrandService.ts              existing — extend with lock + brandfetch import
-  media/MediaService.ts              upload | search | generate | list (Cloudinary + AI + stock)
-  publishing/PublishingEngine.ts     publish(asset, targets[]) → routes to adapters
-    adapters/AyrshareAdapter.ts      social
-    adapters/MetaAdsAdapter.ts       paid (stub)
-    adapters/TikTokAdsAdapter.ts     paid (stub)
-    adapters/GoogleAdsAdapter.ts     paid (stub)
-  ai/*                               already exists — unchanged
-```
 
-Each adapter exports the same shape:
+Rollout order: (1) migration, (2) services + engines, (3) edge functions, (4) editor wiring, (5) library UX, (6) hook/page refactor.
 
-```ts
-export interface PublishAdapter {
-  id: string;
-  kind: "social" | "paid";
-  supports(platform: string): boolean;
-  publish(asset: MarketingAsset, opts: PublishOptions): Promise<PublishResult>;
-  fetchMetrics?(externalId: string): Promise<MetricsSnapshot>;
-}
-```
+### Success criteria
 
-## Template architecture
-
-- Keep Supabase `templates` / `ad_templates` as the AdVista Template Library (source of truth).
-- `TemplateService.generate(ctx)` → calls existing `generate-ad-draft` / `auto-fill-template` edge functions with Brand + Category + Memory context, then persists the result to `templates` tagged `source: "ai"`. This becomes the proprietary generator.
-- `TemplateService.importFromFreepik(query)` → wraps existing `search-freepik-templates` + `get-freepik-template` + `process-freepik-psd`. Results normalized and saved to the library.
-- Canva stays optional (import/export only). No UI change in this task; existing Canva secrets remain.
-- Refactor `useTemplates`, `useUnifiedTemplates`, `TemplateBrowser`, `TemplateLibrary`, `TemplateCustomizer` to call `TemplateService` instead of `supabase.functions.invoke` directly.
-
-## Brand Kit architecture
-
-- `BrandService` (already exists) — extend:
-  - `lock(brandId)` / `unlock(brandId)` toggling `locked` on `brand_kits`.
-  - `importFromWebsite(url)` → new edge function `brandfetch-import` (stub with `BRANDFETCH_API_KEY` secret request). Populates a new `brand_kits` row; after that, only Supabase is read.
-  - `toPromptGuardrails()` already returns the constraint string; extend to include a `respectLock` flag so AI jobs refuse logo/color/font/tone mutation when locked (unless `experimental: true`).
-- All AI edge functions that touch branding must accept a `brandGuardrails` string in the body and prepend it to the system prompt. Add this to: `generate-ad-copy`, `suggest-ad-style`, `auto-fill-template`, `generate-ad-content`, `generate-ad-draft`, `generate-ad-image`, `generate-ai-campaign`.
-
-## Media Library architecture
-
-- `MediaService`:
-  - `upload(file)` → uploads to Cloudinary via new edge function `media-upload` (needs `CLOUDINARY_*` secrets), stores metadata in `media_assets`.
-  - `generate(prompt, provider)` → dispatches to OpenAI Images (existing `generate-ad-image`) or Ideogram (new adapter). Saves to `media_assets` with `source: "ai"`.
-  - `search(intent, ctx)` → intent-based search. Fans out to: user assets (Supabase), Freepik, Pexels, Pixabay, Unsplash (stub adapters, feature-flagged by presence of API key). Ranks by brand fit + category + goal.
-  - Adapters live in `src/services/media/providers/{cloudinary,openai,ideogram,freepik,pexels,pixabay,unsplash}.ts`. Only Cloudinary + OpenAI implemented now; the rest are typed stubs returning empty results if the corresponding secret is missing, so the UI degrades gracefully.
-- Refactor `useMediaLibrary` and `MediaLibrary.tsx` to call `MediaService`.
-
-## Publishing architecture
-
-- New `PublishingEngine` singleton:
-  - `publish(asset, targets)` groups targets by adapter and executes in parallel.
-  - `MarketingAsset` normalized shape links brand, campaign, category, platform, goal, audience, status, variants, decisions, analytics, publishing history — mapped from existing `user_ads` / `generated_ads` / `campaigns` rows via a selector.
-- Adapters:
-  - `AyrshareAdapter` — social (Facebook, Instagram, TikTok, LinkedIn, X, Pinterest, YouTube). Calls a new `ayrshare-publish` edge function using `AYRSHARE_API_KEY` (secret to be requested when user enables social publishing).
-  - `MetaAdsAdapter`, `TikTokAdsAdapter`, `GoogleAdsAdapter` — paid. Ship as typed stubs with clear `throw new NotImplementedError()` so the seams exist but no dead OAuth flows ship.
-- Refactor `ExportCenter`, `Campaigns`, `MyAds` publish/export buttons to call `PublishingEngine.publish(...)` instead of any direct function call.
-
-## Analytics feedback loop
-
-- `PublishingEngine.fetchMetrics(assetId)` iterates adapters that published this asset and appends snapshots to `analytics`.
-- On completion, call `CampaignMemoryService.record(result)` (already exists) so wins/losses feed the Decision Engine.
-
-## Refactor targets (call-site sweep)
-
-Replace direct `supabase.functions.invoke(...)` in these files with service calls:
-
-- `src/hooks/useAIAssistant.tsx` → `TemplateService` / `AIJobService`.
-- `src/hooks/useTemplates.tsx`, `useUnifiedTemplates.tsx`, `useTemplateStorage.tsx` → `TemplateService`.
-- `src/hooks/useMediaLibrary.tsx` → `MediaService`.
-- `src/hooks/useRealTimeAdGenerator.tsx`, `useGenerateAdDraft.tsx`, `useExportAd.tsx`, `useSimulateAd.tsx` → respective services.
-- `src/pages/CreateAd.tsx`, `AdEditor.tsx`, `AIAdEditor.tsx`, `AIVideoGenerator.tsx`, `ExportCenter.tsx` → services.
-- `src/components/ad/*`, `src/components/visual-editor/ai/*` → services.
-
-Behavior is preserved; only the transport changes.
-
-## Secrets to request (only when user enables the feature)
-
-- `BRANDFETCH_API_KEY` (onboarding brand import)
-- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
-- `IDEOGRAM_API_KEY`
-- `PEXELS_API_KEY`, `PIXABAY_API_KEY`, `UNSPLASH_ACCESS_KEY`
-- `AYRSHARE_API_KEY`
-- Meta / TikTok / Google Ads app credentials — deferred until paid-ads work starts.
-
-Already present: `OPENAI_API_KEY`, `FREEPIK_API_KEY`, `CANVA_*`, `LOVABLE_API_KEY`, `GOOGLE_GEMINI_API_KEY`, `GROQ_API_KEY`, `RUNWARE_API_KEY`.
-
-## What ships in this task
-
-Scaffolding + refactor, no UI redesign:
-
-1. `src/services/templates/TemplateService.ts` — real, wraps existing edge fns.
-2. `src/services/media/MediaService.ts` + `providers/{cloudinary,openai,ideogram,freepik,pexels,pixabay,unsplash}.ts` — Cloudinary + OpenAI real, others stubbed.
-3. `src/services/publishing/PublishingEngine.ts` + `adapters/{ayrshare,meta,tiktok,google}.ts` — Ayrshare real when key present, paid ads stubbed.
-4. Extend `BrandService` with `lock`, `importFromWebsite`, guardrail flag.
-5. New edge functions: `brandfetch-import`, `media-upload` (Cloudinary), `ayrshare-publish`. Each returns a clear "provider not configured" error when its secret is missing.
-6. Refactor the call sites listed above to route through services.
-7. Update `IntegrationsHub.tsx` to show real connection status per adapter (reads from a `/settings/integrations` service; no visual redesign — just wires the existing tiles).
-8. No changes to sidebar, navigation, dashboard, AI context bar, or any page layout.
-
-## What is deferred
-
-- Meta / TikTok / Google Ads OAuth flows and campaign sync.
-- LinkedIn / Pinterest / Snapchat / Microsoft Ads adapters.
-- Adobe Express / Figma template import.
-- Ideogram, Pexels, Pixabay, Unsplash real implementations (stubs only until secrets provided).
-
-## Success criteria
-
-- `rg "supabase.functions.invoke\\(" src/` returns zero matches inside `src/pages` and `src/components`; only service files call it.
-- Every AI edge function receives a `brandGuardrails` string.
-- Publishing any asset goes through `PublishingEngine.publish`.
-- Adding a new provider = adding one adapter file, no page edits.
+- New template rows carry `template_json` + `template_layers` rows; opening one lands directly in Visual Editor with variables resolved.
+- Brand Lock swaps only `brand_replaceable` layers; layout untouched.
+- Saving in the editor writes a new `template_versions` row; restoring loads it back.
+- `rg "supabase.functions.invoke" src/pages src/components` returns 0 matches for template/media/publish calls.
+- Recommendation strip renders ranked templates with visible "why" reasons from active AI Context.
