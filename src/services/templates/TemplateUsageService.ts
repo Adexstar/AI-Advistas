@@ -21,7 +21,7 @@ export const TemplateUsageService = {
           template_id: templateId,
           user_id: uid,
           event,
-          context: context as unknown as Record<string, unknown>,
+          context: context as any,
         },
       ]);
     } catch (err) {

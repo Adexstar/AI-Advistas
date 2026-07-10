@@ -46,14 +46,16 @@ export const TemplateVersionService = {
 
     const { data, error } = await supabase
       .from("template_versions")
-      .insert({
-        template_id: params.templateId,
-        version_number: nextVersion,
-        template_json: params.templateJson as unknown as Record<string, unknown>,
-        layers: [],
-        note: params.note ?? null,
-        created_by: uid,
-      })
+      .insert([
+        {
+          template_id: params.templateId,
+          version_number: nextVersion,
+          template_json: params.templateJson as any,
+          layers: [] as any,
+          note: params.note ?? null,
+          created_by: uid,
+        },
+      ])
       .select("*")
       .single();
     if (error) throw error;
