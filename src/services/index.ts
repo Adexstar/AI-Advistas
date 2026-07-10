@@ -1,5 +1,14 @@
 // AdVista service layer entrypoint. Import from "@/services".
 export { TemplateService } from "./templates/TemplateService";
+export { TemplateEngine } from "./templates/TemplateEngine";
+export { TemplateRecommendationService } from "./templates/TemplateRecommendationService";
+export { TemplateSearchService } from "./templates/TemplateSearchService";
+export { TemplateVersionService } from "./templates/TemplateVersionService";
+export { TemplateUsageService } from "./templates/TemplateUsageService";
+export { TemplateImportService } from "./templates/TemplateImportService";
+export { TemplateExportService } from "./templates/TemplateExportService";
+export * from "./templates/types";
+
 export { MediaService } from "./media/MediaService";
 export { PublishingEngine } from "./publishing/PublishingEngine";
 export { BrandService } from "./brand/BrandService";

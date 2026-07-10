@@ -922,9 +922,159 @@ export type Database = {
         }
         Relationships: []
       }
+      template_layers: {
+        Row: {
+          ai_replaceable: boolean
+          animation: Json
+          brand_replaceable: boolean
+          created_at: string
+          editable: boolean
+          effects: Json
+          height: number | null
+          id: string
+          layer_type: string
+          props: Json
+          rotation: number | null
+          template_id: string
+          updated_at: string
+          variable_key: string | null
+          width: number | null
+          x: number | null
+          y: number | null
+          z_index: number
+        }
+        Insert: {
+          ai_replaceable?: boolean
+          animation?: Json
+          brand_replaceable?: boolean
+          created_at?: string
+          editable?: boolean
+          effects?: Json
+          height?: number | null
+          id?: string
+          layer_type: string
+          props?: Json
+          rotation?: number | null
+          template_id: string
+          updated_at?: string
+          variable_key?: string | null
+          width?: number | null
+          x?: number | null
+          y?: number | null
+          z_index?: number
+        }
+        Update: {
+          ai_replaceable?: boolean
+          animation?: Json
+          brand_replaceable?: boolean
+          created_at?: string
+          editable?: boolean
+          effects?: Json
+          height?: number | null
+          id?: string
+          layer_type?: string
+          props?: Json
+          rotation?: number | null
+          template_id?: string
+          updated_at?: string
+          variable_key?: string | null
+          width?: number | null
+          x?: number | null
+          y?: number | null
+          z_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_layers_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_usage_events: {
+        Row: {
+          context: Json
+          created_at: string
+          event: string
+          id: string
+          template_id: string
+          user_id: string | null
+        }
+        Insert: {
+          context?: Json
+          created_at?: string
+          event: string
+          id?: string
+          template_id: string
+          user_id?: string | null
+        }
+        Update: {
+          context?: Json
+          created_at?: string
+          event?: string
+          id?: string
+          template_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_usage_events_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_versions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          layers: Json
+          note: string | null
+          template_id: string
+          template_json: Json
+          version_number: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          layers?: Json
+          note?: string | null
+          template_id: string
+          template_json: Json
+          version_number: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          layers?: Json
+          note?: string | null
+          template_id?: string
+          template_json?: Json
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_versions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       templates: {
         Row: {
+          ai_tags: string[] | null
+          brand_compatible: boolean
           canvas_data: Json | null
+          category: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -933,17 +1083,31 @@ export type Database = {
           file_path: string | null
           file_size: number | null
           file_type: string | null
+          format: string | null
+          height: number | null
           id: string
+          industry_tags: string[] | null
           is_file_based: boolean
+          metadata: Json
           name: string
+          objective: string | null
           placeholders: Json | null
+          platform: string | null
+          popularity_score: number
+          premium: boolean
           preview_url: string | null
+          source: string
+          template_json: Json | null
           template_source: string
           thumbnail_url: string | null
           updated_at: string
+          width: number | null
         }
         Insert: {
+          ai_tags?: string[] | null
+          brand_compatible?: boolean
           canvas_data?: Json | null
+          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -952,17 +1116,31 @@ export type Database = {
           file_path?: string | null
           file_size?: number | null
           file_type?: string | null
+          format?: string | null
+          height?: number | null
           id?: string
+          industry_tags?: string[] | null
           is_file_based?: boolean
+          metadata?: Json
           name: string
+          objective?: string | null
           placeholders?: Json | null
+          platform?: string | null
+          popularity_score?: number
+          premium?: boolean
           preview_url?: string | null
+          source?: string
+          template_json?: Json | null
           template_source?: string
           thumbnail_url?: string | null
           updated_at?: string
+          width?: number | null
         }
         Update: {
+          ai_tags?: string[] | null
+          brand_compatible?: boolean
           canvas_data?: Json | null
+          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -971,14 +1149,25 @@ export type Database = {
           file_path?: string | null
           file_size?: number | null
           file_type?: string | null
+          format?: string | null
+          height?: number | null
           id?: string
+          industry_tags?: string[] | null
           is_file_based?: boolean
+          metadata?: Json
           name?: string
+          objective?: string | null
           placeholders?: Json | null
+          platform?: string | null
+          popularity_score?: number
+          premium?: boolean
           preview_url?: string | null
+          source?: string
+          template_json?: Json | null
           template_source?: string
           thumbnail_url?: string | null
           updated_at?: string
+          width?: number | null
         }
         Relationships: []
       }
