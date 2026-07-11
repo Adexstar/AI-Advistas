@@ -61,13 +61,16 @@ const INSTA_STORY = [
 
 /* ---------- Left Icon Rail ---------- */
 const IconRail: React.FC<{ active: string; onChange: (id: string) => void }> = ({ active, onChange }) => (
-  <aside className="hidden md:flex h-full w-[64px] shrink-0 flex-col items-stretch bg-[#1A1A24] text-slate-200 border-r border-[#2E2E40]">
-    <div className="flex items-center justify-center px-2 py-3 border-b border-[#2E2E40]">
+  <aside className="hidden md:flex h-full w-[88px] shrink-0 flex-col items-stretch bg-[hsl(245,45%,10%)] text-slate-200 border-r border-white/5">
+    <div className="flex items-center justify-center gap-2 px-3 py-4 border-b border-white/5">
       <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-glow shadow-lg">
         <Sparkles className="h-4 w-4 text-white" />
       </div>
     </div>
-    <nav className="flex-1 py-2 space-y-0.5 px-1.5 overflow-y-auto">
+    <div className="px-2 pt-3 text-[10px] font-semibold uppercase tracking-wider text-white/40 text-center">
+      AdVista<br /><span className="text-white/30 font-normal normal-case tracking-normal">Creative</span>
+    </div>
+    <nav className="flex-1 py-3 space-y-1 px-2 overflow-y-auto">
       {LEFT_TABS.map((t) => {
         const Icon = t.icon;
         const isActive = active === t.id;
@@ -76,26 +79,30 @@ const IconRail: React.FC<{ active: string; onChange: (id: string) => void }> = (
             key={t.id}
             onClick={() => onChange(t.id)}
             className={[
-              'group flex w-full flex-col items-center gap-1 rounded-lg px-1 py-2 transition-all',
+              'group flex w-full flex-col items-center gap-1 rounded-xl px-2 py-2.5 transition-all',
               isActive
                 ? 'bg-primary/90 text-white shadow-lg shadow-primary/30'
                 : 'text-white/60 hover:bg-white/5 hover:text-white',
             ].join(' ')}
           >
             <Icon className="h-[18px] w-[18px]" />
-            <span className="text-[9px] font-medium leading-none">{t.label}</span>
+            <span className="text-[10px] font-medium leading-none">{t.label}</span>
           </button>
         );
       })}
     </nav>
-    <div className="border-t border-[#2E2E40] px-2 py-2">
-      <button className="flex w-full items-center justify-center gap-1 rounded-md py-1.5 text-[10px] font-medium text-primary/80 hover:text-primary hover:bg-white/5 transition-colors">
-        <Zap className="h-3 w-3" /> Pro
-      </button>
+    <div className="mx-2 mb-3 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/10 border border-white/10 p-3 text-center">
+      <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-accent/90 text-[hsl(236,31%,13%)]">
+        <Zap className="h-4 w-4" />
+      </div>
+      <p className="text-[11px] font-semibold text-white">Upgrade to Pro</p>
+      <p className="mt-1 text-[10px] text-white/60 leading-tight">Unlock all templates, assets and features.</p>
+      <Button size="sm" className="mt-2 h-7 w-full rounded-lg bg-primary hover:bg-primary/90 text-[11px]">Upgrade Now</Button>
     </div>
-    <div className="flex items-center justify-around border-t border-[#2E2E40] py-1.5 text-white/50">
-      <button className="rounded-lg p-1.5 hover:bg-white/5 hover:text-white"><Settings className="h-3.5 w-3.5" /></button>
-      <button className="rounded-lg p-1.5 hover:bg-white/5 hover:text-white"><HelpCircle className="h-3.5 w-3.5" /></button>
+    <div className="flex items-center justify-around border-t border-white/5 py-2 text-white/50">
+      <button className="rounded-lg p-2 hover:bg-white/5 hover:text-white"><Settings className="h-4 w-4" /></button>
+      <button className="rounded-lg p-2 hover:bg-white/5 hover:text-white"><Moon className="h-4 w-4" /></button>
+      <button className="rounded-lg p-2 hover:bg-white/5 hover:text-white"><HelpCircle className="h-4 w-4" /></button>
     </div>
   </aside>
 );
@@ -113,8 +120,7 @@ const TopToolbar: React.FC<{
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   return (
-    <header className="flex h-[52px] shrink-0 items-center gap-2 border-b border-[#2E2E40] bg-[#1A1A24] text-slate-200 px-2 sm:px-4">
-
+    <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-card/95 backdrop-blur px-2 sm:px-4">
       <Button variant="ghost" size="icon" className="md:hidden h-9 w-9" onClick={onToggleLeft}>
         <Menu className="h-4 w-4" />
       </Button>
@@ -444,17 +450,10 @@ const CanvasStage: React.FC<{
   }, [onCanvasReady, onSelection]);
 
   return (
-    <div
-      className="flex-1 overflow-auto bg-[#18181F]"
-      style={{
-        backgroundImage: 'radial-gradient(circle, #2E2E40 1px, transparent 1px)',
-        backgroundSize: '24px 24px',
-      }}
-    >
+    <div className="flex-1 overflow-auto bg-[hsl(248,48%,97%)]">
       <div className="min-h-full flex items-center justify-center p-6">
-        <div className="relative rounded bg-white shadow-[0_32px_80px_rgba(0,0,0,0.6)] p-2 border border-[#2E2E40]"
+        <div className="relative rounded-2xl bg-white shadow-[0_20px_60px_-15px_rgba(72,52,212,0.25)] p-2 border border-border/60"
              style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'center' }}>
-
           <canvas ref={ref} className="rounded-xl block" />
         </div>
       </div>
@@ -781,8 +780,8 @@ const EditorInner: React.FC = () => {
       <div className="flex flex-1 min-h-0 overflow-hidden">
         <IconRail active={activeTab} onChange={setActiveTab} />
 
-        {/* Desktop left panel — combined with IconRail = 240px total (64 + 176) */}
-        <div className="hidden md:flex w-[176px] shrink-0 border-r border-[#2E2E40]">
+        {/* Desktop left panel */}
+        <div className="hidden md:flex w-[300px] shrink-0 border-r">
           {renderLeftPanel()}
         </div>
 
@@ -803,25 +802,19 @@ const EditorInner: React.FC = () => {
                   <AIActionsMenu selected={selected} canvas={canvas} align="end" />
                 </div>
               )}
-              <div className="flex justify-center border-t border-[#2E2E40] bg-[#1A1A24] py-2">
-                <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs border-[#2E2E40] bg-transparent text-slate-300 hover:bg-white/5 hover:text-white"><Plus className="h-3.5 w-3.5" /> Add Page</Button>
+              <div className="flex justify-center border-t bg-card/40 py-2">
+                <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs"><Plus className="h-3.5 w-3.5" /> Add Page</Button>
               </div>
             </div>
           </div>
-          <div className="hidden lg:block h-[220px] shrink-0">
-            <Timeline />
-          </div>
-          <div className="lg:hidden">
-            <Timeline />
-          </div>
+          <Timeline />
         </div>
 
-        {/* Desktop right panel — 280px */}
-        <div className="hidden lg:flex w-[280px] shrink-0 border-l border-[#2E2E40]">
+        {/* Desktop right panel */}
+        <div className="hidden lg:flex w-[300px] shrink-0">
           <RightPanel selected={selected} canvas={canvas} />
         </div>
       </div>
-
 
       {/* Mobile floating bottom tabs */}
       {isMobile && (
