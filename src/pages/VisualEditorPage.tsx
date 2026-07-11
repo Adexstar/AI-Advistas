@@ -444,10 +444,17 @@ const CanvasStage: React.FC<{
   }, [onCanvasReady, onSelection]);
 
   return (
-    <div className="flex-1 overflow-auto bg-[hsl(248,48%,97%)]">
+    <div
+      className="flex-1 overflow-auto bg-[#18181F]"
+      style={{
+        backgroundImage: 'radial-gradient(circle, #2E2E40 1px, transparent 1px)',
+        backgroundSize: '24px 24px',
+      }}
+    >
       <div className="min-h-full flex items-center justify-center p-6">
-        <div className="relative rounded-2xl bg-white shadow-[0_20px_60px_-15px_rgba(72,52,212,0.25)] p-2 border border-border/60"
+        <div className="relative rounded bg-white shadow-[0_32px_80px_rgba(0,0,0,0.6)] p-2 border border-[#2E2E40]"
              style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'center' }}>
+
           <canvas ref={ref} className="rounded-xl block" />
         </div>
       </div>
