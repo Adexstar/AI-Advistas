@@ -781,8 +781,8 @@ const EditorInner: React.FC = () => {
       <div className="flex flex-1 min-h-0 overflow-hidden">
         <IconRail active={activeTab} onChange={setActiveTab} />
 
-        {/* Desktop left panel */}
-        <div className="hidden md:flex w-[300px] shrink-0 border-r">
+        {/* Desktop left panel — combined with IconRail = 240px total (64 + 176) */}
+        <div className="hidden md:flex w-[176px] shrink-0 border-r border-[#2E2E40]">
           {renderLeftPanel()}
         </div>
 
@@ -803,19 +803,25 @@ const EditorInner: React.FC = () => {
                   <AIActionsMenu selected={selected} canvas={canvas} align="end" />
                 </div>
               )}
-              <div className="flex justify-center border-t bg-card/40 py-2">
-                <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs"><Plus className="h-3.5 w-3.5" /> Add Page</Button>
+              <div className="flex justify-center border-t border-[#2E2E40] bg-[#1A1A24] py-2">
+                <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs border-[#2E2E40] bg-transparent text-slate-300 hover:bg-white/5 hover:text-white"><Plus className="h-3.5 w-3.5" /> Add Page</Button>
               </div>
             </div>
           </div>
-          <Timeline />
+          <div className="hidden lg:block h-[220px] shrink-0">
+            <Timeline />
+          </div>
+          <div className="lg:hidden">
+            <Timeline />
+          </div>
         </div>
 
-        {/* Desktop right panel */}
-        <div className="hidden lg:flex w-[300px] shrink-0">
+        {/* Desktop right panel — 280px */}
+        <div className="hidden lg:flex w-[280px] shrink-0 border-l border-[#2E2E40]">
           <RightPanel selected={selected} canvas={canvas} />
         </div>
       </div>
+
 
       {/* Mobile floating bottom tabs */}
       {isMobile && (
