@@ -113,7 +113,8 @@ const TopToolbar: React.FC<{
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-card/95 backdrop-blur px-2 sm:px-4">
+    <header className="flex h-[52px] shrink-0 items-center gap-2 border-b border-[#2E2E40] bg-[#1A1A24] text-slate-200 px-2 sm:px-4">
+
       <Button variant="ghost" size="icon" className="md:hidden h-9 w-9" onClick={onToggleLeft}>
         <Menu className="h-4 w-4" />
       </Button>
