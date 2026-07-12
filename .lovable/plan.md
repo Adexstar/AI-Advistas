@@ -1,104 +1,67 @@
-## AdVista Template Engine — Layer 3A
+# Layer 3C.1 — Template Infrastructure Population
 
-Goal: templates become editable "living documents" (Fabric.js JSON + variables + AI metadata), personalized by a Template Engine before hitting the Visual Editor. Pages consume services only.
+Following your own recommendation, I'm splitting Layer 3C into two milestones and delivering **3C.1 first**. 3C.1 makes the pipeline real end-to-end with a small verified seed (3 templates across 3 industries). 3C.2 then produces the full 30-template pack against a proven pipeline instead of blindly generating 30 records that might not render.
 
-### 1. Database (migration)
+Reasoning: producing 30 full Fabric.js templates + Cloudinary previews + AI metadata before verifying a single one renders in the Visual Editor is high-risk. A seed-first approach catches variable-resolver, Brand Engine, and Visual Editor wiring bugs on 3 templates, not 30.
 
-Extend `templates` and add companion tables. Keep existing `ad_templates` as legacy source; new canonical is `templates`.
+## Scope of 3C.1
 
-- `templates` — add columns if missing: `category text`, `platform text`, `objective text`, `format text`, `width int`, `height int`, `template_json jsonb`, `ai_tags text[]`, `industry_tags text[]`, `brand_compatible bool default true`, `popularity_score int default 0`, `source text default 'advista'`, `premium bool default false`, `metadata jsonb` (emotion, audience, layout_style, visual_weight, primary_color, recommended_platforms, recommended_goal).
-- `template_layers` — id, template_id (fk), layer_type (text|image|shape|font|group), x, y, width, height, rotation, effects jsonb, animation jsonb, editable bool, brand_replaceable bool, ai_replaceable bool, variable_key text, z_index int, props jsonb.
-- `template_versions` — id, template_id, version_number, template_json jsonb, layers jsonb, created_by, created_at, note text.
-- `template_usage_events` — id, template_id, user_id, event (viewed|used|edited|favorited|published), context jsonb, created_at. (Feeds recommendation + Campaign Memory.)
-- GRANTs + RLS for all four tables. `templates` readable by anon+authenticated; writes by owner/service_role. `template_layers`/`template_versions`/`template_usage_events` scoped to owning user or public templates.
+### 1. Collections taxonomy
+- Add a `template_collections` table (`id`, `slug`, `name`, `description`, `sort_order`, `icon`, `is_featured`).
+- Add `template_collection_items` join table (`template_id`, `collection_id`).
+- Seed 15 AdVista Originals collections (Beauty, Fashion, Real Estate, Restaurant & Food, Fitness, SaaS & Technology, Healthcare, Education, Automotive, Finance, Travel, E-commerce, Agency, Seasonal, Business).
+- Add `source = 'advista_original'` marker + `layout_dna jsonb` column on `templates`.
 
-### 2. Variable system
+### 2. Seed pipeline
+- Build `src/services/templates/seed/` with:
+  - `templateBuilder.ts` — helpers to compose Fabric.js JSON objects with `variableKey`, `brandReplaceable`, `aiReplaceable` flags. Enforces layer naming and safe zones.
+  - `layoutDNA.ts` — DNA shapes and validators.
+  - `originals/` — one file per template, each exports `{ metadata, layoutDNA, templateJSON, layers, variables }`.
+- Build `scripts/seedAdvistaOriginals.ts` — idempotent seeder invoked via a new edge function `seed-advista-originals` (so Cloudinary + service-role writes stay server-side).
 
-Standard placeholder keys resolved at instantiate time:
-`{{brand.logo}}`, `{{brand.primaryColor}}`, `{{brand.secondaryColor}}`, `{{brand.font}}`, `{{brand.voice}}`, `{{headline}}`, `{{subheadline}}`, `{{body}}`, `{{cta}}`, `{{website}}`, `{{phone}}`, `{{offer}}`, `{{product_image}}`, `{{hero_image}}`.
+### 3. Preview generation
+- New edge function `render-template-preview`: takes `template_json`, renders on a headless canvas (node-canvas / satori), uploads thumbnail + preview + cover to Cloudinary via existing `media-upload` credentials, returns URLs.
+- Called by the seeder for every template so previews always match the editable JSON (no manual PNGs).
 
-Resolver walks Fabric JSON, replaces `text` fields and image `src` for objects carrying `variableKey`. Design geometry never mutated.
+### 4. Verified seed (3 templates)
+- 1 Beauty — "Glow Naturally" (Instagram 1080x1350, Conversions)
+- 1 SaaS — "Ship Faster" (LinkedIn 1200x627, Awareness)
+- 1 Fitness — "30-Day Reset" (Instagram Story 1080x1920, Traffic)
+- Each: full Fabric JSON, `template_layers` rows, `template_versions` v1 snapshot, metadata, layout DNA, Cloudinary previews.
 
-### 3. Service layer (`src/services/templates/`)
+### 5. End-to-end verification
+- Templates page loads Originals via existing `TemplateService.list`.
+- "Use Template" → `TemplateEngine.instantiate` → Visual Editor renders resolved variables.
+- Recommendation strip shows AdVista Originals when AI Context matches (uses existing `TemplateRecommendationService`).
+- `template_usage_events` records the `used` event.
 
-- `TemplateService` (extend existing) — CRUD, list with filters.
-- `TemplateEngine` — `instantiate(template, ctx)` → runs BrandEngine + AIEngine, returns personalized Fabric JSON + resolved variables.
-- `TemplateRenderer` — takes personalized JSON, hands off to Visual Editor / server-side export.
-- `TemplateRecommendationService` — ranks templates against AI Context (brand, category, goal, platform), returns `{ template, score, reasons[] }`.
-- `TemplateSearchService` — semantic search across `ai_tags`, `category`, `metadata.emotion`, `metadata.audience`, `industry_tags`.
-- `TemplateVersionService` — `snapshot(templateId, note)`, `list(templateId)`, `restore(versionId)`.
-- `TemplateImportService` — routes provider imports (Freepik today, Canva/Bannerbear future) through edge functions only.
-- `TemplateExportService` — PNG/JPG/PDF/MP4 via `export-ad` edge function; keeps JSON as source of truth.
+### 6. Out of scope for 3C.1 (moves to 3C.2)
+- Remaining 27 templates.
+- Fashion / Real Estate / Restaurant categories.
+- Any changes to Templates page UI, Template Engine, Brand Engine, AI Context.
 
-Sub-engines (`src/services/templates/engines/`):
-- `BrandEngine.apply(json, brandKit, { lock })` — swaps `brand_replaceable` layers only. Honors Brand Lock.
-- `AIEngine.personalize(json, ctx)` — calls `generate-ad-copy`/`suggest-ad-style` via edge functions, fills text/image variables. Never rearranges layout.
-
-Barrel exports through `src/services/index.ts`.
-
-### 4. Edge functions
-
-New/updated (all with CORS + zod validation + guardrails from AI Context):
-- `template-search` — unified search over Supabase + Freepik + future providers.
-- `template-import` — normalizes provider payloads → AdVista JSON + layers.
-- `template-personalize` — server-side wrapper: BrandEngine + AIEngine for headless flows.
-- `template-render` — server render for thumbnails/exports.
-
-Providers behind adapter interface (`FreepikAdapter`, `CanvaAdapter` stub, `BannerbearAdapter` stub). Frontend never calls providers directly.
-
-### 5. Visual Editor integration
-
-- On "Use Template": page calls `TemplateEngine.instantiate` → navigates to `/visual-editor` with personalized JSON in route state or draft row.
-- `VisualEditorContext` loads Fabric JSON, tags each object with its `variableKey` for badge overlays ("brand-locked" / "AI-editable").
-- Save flow: on save, snapshot current JSON to `template_versions` (autosave = throttled, manual = named). Restore = load a version into the canvas.
-
-### 6. Template Library UX (small changes)
-
-- Recommendation strip at top: "Recommended for {brand} · {goal}" using `TemplateRecommendationService`.
-- Card hover: Preview, Use Template, Duplicate, Favorite, Preview in Editor.
-- Filters auto-seeded from active AI Context on mount.
-
-### 7. Migration of existing pages/hooks
-
-Any page currently calling `supabase.functions.invoke` for template/media/publishing must route through `@/services`. Scope of this change:
-- `src/pages/TemplateLibrary.tsx`, `TemplateCustomizer.tsx`, `CreateAd.tsx`, `AIAdEditor.tsx`, `VisualEditorPage.tsx`.
-- Hooks `useTemplates`, `useUnifiedTemplates`, `useTemplateStorage`, `useGenerateAdDraft` → thin wrappers over services.
-
-### 8. Non-goals for this pass
-
-- No new secrets required (Freepik/OpenAI/Lovable AI already configured).
-- No new provider integrations implemented — only adapter seams.
-- No AI autonomy: personalization stays preview → accept → apply.
-
-### Technical details
+## Technical details
 
 ```text
-Template Library ──► TemplateService.list / RecommendationService
-                              │
-                              ▼
-User clicks "Use Template"
-                              │
-                              ▼
-TemplateEngine.instantiate(template, aiContext)
-   ├─ BrandEngine.apply(json, brandKit, { lock })
-   └─ AIEngine.personalize(json, ctx)   ── edge: generate-ad-copy / suggest-ad-style
-                              │
-                              ▼
-Personalized Fabric JSON  ──►  VisualEditor  ──►  autosave → template_versions
-                                                     │
-                                                     ▼
-                                            Export via TemplateExportService
-                                                     │
-                                                     ▼
-                                       edge: export-ad → Cloudinary/download
+edge: seed-advista-originals
+  ├─ read originals/*.ts modules
+  ├─ for each:
+  │    ├─ edge: render-template-preview → Cloudinary
+  │    ├─ upsert templates (source='advista_original')
+  │    ├─ replace template_layers
+  │    ├─ insert template_versions v1
+  │    └─ upsert template_collection_items
+  └─ returns { seeded, skipped, errors }
 ```
 
-Rollout order: (1) migration, (2) services + engines, (3) edge functions, (4) editor wiring, (5) library UX, (6) hook/page refactor.
+Migration adds: `template_collections`, `template_collection_items`, `templates.layout_dna`, `templates.collection_slug` (denormalized for fast filters), GRANTs + RLS (public read on collections and originals; writes via service_role only).
 
-### Success criteria
+## Success criteria for 3C.1
 
-- New template rows carry `template_json` + `template_layers` rows; opening one lands directly in Visual Editor with variables resolved.
-- Brand Lock swaps only `brand_replaceable` layers; layout untouched.
-- Saving in the editor writes a new `template_versions` row; restoring loads it back.
-- `rg "supabase.functions.invoke" src/pages src/components` returns 0 matches for template/media/publish calls.
-- Recommendation strip renders ranked templates with visible "why" reasons from active AI Context.
+- Migration applied; 15 collections + 3 seeded templates visible in `/templates`.
+- Clicking any of the 3 opens the Visual Editor with brand + AI variables resolved.
+- Cloudinary previews render on template cards.
+- `rg "advista_original" src` shows only service-layer references, no UI changes.
+- Green light to run 3C.2 (bulk production of the remaining 27).
+
+Approve to proceed with 3C.1, or tell me to adjust the seed set / pipeline before I start.
