@@ -922,6 +922,78 @@ export type Database = {
         }
         Relationships: []
       }
+      template_collection_items: {
+        Row: {
+          collection_id: string
+          created_at: string
+          sort_order: number
+          template_id: string
+        }
+        Insert: {
+          collection_id: string
+          created_at?: string
+          sort_order?: number
+          template_id: string
+        }
+        Update: {
+          collection_id?: string
+          created_at?: string
+          sort_order?: number
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_collection_items_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "template_collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "template_collection_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_collections: {
+        Row: {
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_featured: boolean
+          name: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_featured?: boolean
+          name: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_featured?: boolean
+          name?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       template_layers: {
         Row: {
           ai_replaceable: boolean
@@ -1075,6 +1147,7 @@ export type Database = {
           brand_compatible: boolean
           canvas_data: Json | null
           category: string | null
+          collection_slug: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -1088,6 +1161,7 @@ export type Database = {
           id: string
           industry_tags: string[] | null
           is_file_based: boolean
+          layout_dna: Json
           metadata: Json
           name: string
           objective: string | null
@@ -1108,6 +1182,7 @@ export type Database = {
           brand_compatible?: boolean
           canvas_data?: Json | null
           category?: string | null
+          collection_slug?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -1121,6 +1196,7 @@ export type Database = {
           id?: string
           industry_tags?: string[] | null
           is_file_based?: boolean
+          layout_dna?: Json
           metadata?: Json
           name: string
           objective?: string | null
@@ -1141,6 +1217,7 @@ export type Database = {
           brand_compatible?: boolean
           canvas_data?: Json | null
           category?: string | null
+          collection_slug?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -1154,6 +1231,7 @@ export type Database = {
           id?: string
           industry_tags?: string[] | null
           is_file_based?: boolean
+          layout_dna?: Json
           metadata?: Json
           name?: string
           objective?: string | null
