@@ -79,3 +79,6 @@ verify_jwt = false
 
 [functions.analyze-performance]
 verify_jwt = true
+
+[functions.seed-advista-originals]
+verify_jwt = false
