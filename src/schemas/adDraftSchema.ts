@@ -14,7 +14,7 @@ export const adDraftResponseSchema = z.object({
   audience: z.string(),
   simpleAudience: z.string().optional(),
   websiteUrl: z.string().url().optional().or(z.literal('')),
-  placementOptions: z.record(z.array(z.string())),
+  placementOptions: z.record(z.string(), z.array(z.string())),
   aiGenerated: z.literal(true),
   aiMetadata: z.object({
     suggestedHeadlines: z.array(z.string()),
