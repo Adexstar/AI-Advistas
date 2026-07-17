@@ -291,6 +291,9 @@ const TemplateLibrary = () => {
                 className="h-10 rounded-xl pl-9"
               />
             </div>
+            <Button onClick={() => navigate('/originals')} className="h-10 gap-2 rounded-xl">
+              <Sparkles className="h-4 w-4" /> AdVista Originals
+            </Button>
             <Button variant="outline" className="h-10 rounded-xl gap-2">
               <SlidersHorizontal className="h-4 w-4" /> Filter
             </Button>
