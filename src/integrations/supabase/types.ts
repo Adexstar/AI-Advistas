@@ -1411,6 +1411,61 @@ export type Database = {
         Args: { template_id: string }
         Returns: undefined
       }
+      search_templates: {
+        Args: {
+          p_brand_compat?: string
+          p_brand_compatible?: boolean
+          p_category?: string
+          p_emotion?: string
+          p_goal?: string
+          p_industry?: string
+          p_layout_style?: string
+          p_limit?: number
+          p_platform?: string
+          p_query?: string
+        }
+        Returns: {
+          ai_tags: string[] | null
+          brand_compatible: boolean
+          canvas_data: Json | null
+          category: string | null
+          collection_slug: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          dimensions: Json | null
+          external_id: string | null
+          file_path: string | null
+          file_size: number | null
+          file_type: string | null
+          format: string | null
+          height: number | null
+          id: string
+          industry_tags: string[] | null
+          is_file_based: boolean
+          layout_dna: Json
+          metadata: Json
+          name: string
+          objective: string | null
+          placeholders: Json | null
+          platform: string | null
+          popularity_score: number
+          premium: boolean
+          preview_url: string | null
+          source: string
+          template_json: Json | null
+          template_source: string
+          thumbnail_url: string | null
+          updated_at: string
+          width: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "templates"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
