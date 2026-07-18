@@ -56,7 +56,10 @@ import {
   Dumbbell,
   Cpu,
   ChevronRight,
+  Download,
 } from 'lucide-react';
+import { downloadTemplate } from '@/services/templates/templateDownload';
+
 
 const PLATFORM_TABS = [
   { id: 'all', label: 'All', icon: LayoutGrid },
@@ -556,6 +559,31 @@ const TemplateLibrary = () => {
             >
               <Send className="mr-2 h-4 w-4" /> Assign to Campaign
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (!previewTemplate) return;
+                const t = previewTemplate as any;
+                downloadTemplate({
+                  id: t.id,
+                  name: t.name,
+                  description: t.description,
+                  category: t.category,
+                  platform: t.platforms?.[0],
+                  objective: t.goal,
+                  template_json: t.template_json ?? null,
+                  metadata: t.metadata ?? {},
+                  layout_dna: t.layout_dna ?? t.metadata ?? {},
+                  ai_tags: t.tags ?? [],
+                  industry_tags: t.industry ? [t.industry] : [],
+                  brand_compatible: t.brand_compatible ?? null,
+                });
+                toast({ title: 'Template exported', description: 'Downloaded as .advista.json' });
+              }}
+            >
+              <Download className="mr-2 h-4 w-4" /> Export JSON
+            </Button>
+
             <Button
               onClick={() => {
                 if (previewTemplate) handleEdit(previewTemplate);

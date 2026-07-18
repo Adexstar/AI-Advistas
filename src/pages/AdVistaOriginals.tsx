@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Sparkles, LayoutGrid, X, Filter } from 'lucide-react';
+import { Search, Sparkles, LayoutGrid, X, Filter, Download } from 'lucide-react';
+import { downloadTemplate } from '@/services/templates/templateDownload';
+
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -326,6 +328,29 @@ const AdVistaOriginals = () => {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setPreview(null)}>Close</Button>
+            {preview && (
+              <Button
+                variant="outline"
+                onClick={() =>
+                  downloadTemplate({
+                    id: preview.id,
+                    name: preview.name,
+                    description: preview.description,
+                    category: preview.category,
+                    platform: preview.platform,
+                    objective: preview.objective,
+                    template_json: preview.template_json ?? null,
+                    metadata: preview.metadata,
+                    layout_dna: (preview as any).layout_dna ?? preview.metadata,
+                    ai_tags: preview.ai_tags,
+                    industry_tags: preview.industry_tags,
+                    brand_compatible: preview.brand_compatible,
+                  })
+                }
+              >
+                <Download className="mr-2 h-4 w-4" /> Export JSON
+              </Button>
+            )}
             <Button
               onClick={() => {
                 if (preview) {
@@ -336,6 +361,7 @@ const AdVistaOriginals = () => {
               Customize
             </Button>
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
     </div>
