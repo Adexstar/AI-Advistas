@@ -56,7 +56,10 @@ import {
   Dumbbell,
   Cpu,
   ChevronRight,
+  Download,
 } from 'lucide-react';
+import { downloadTemplate } from '@/services/templates/templateDownload';
+
 
 const PLATFORM_TABS = [
   { id: 'all', label: 'All', icon: LayoutGrid },
