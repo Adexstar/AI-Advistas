@@ -1,7 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Sparkles, LayoutGrid, X, Filter, Download } from 'lucide-react';
+import { Search, Sparkles, LayoutGrid, X, Filter, Download, Wand2, Info } from 'lucide-react';
 import { downloadTemplate } from '@/services/templates/templateDownload';
+import { setPendingEditorTemplate } from '@/lib/templateEditorSession';
+import { toast } from '@/hooks/use-toast';
+import type { TemplateRecord } from '@/services/templates/types';
 
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -273,14 +276,14 @@ const AdVistaOriginals = () => {
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {templates.map((t) => (
-                <TemplateTile key={t.id} t={t} onOpen={() => setPreview(t)} />
+                <TemplateTile key={t.id} t={t} onOpen={() => navigate(`/originals/${t.id}`)} />
               ))}
             </div>
           )}
         </section>
       </div>
 
-      {/* Preview */}
+      {/* Preview (kept as quick-look; primary flow is the detail page) */}
       <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
