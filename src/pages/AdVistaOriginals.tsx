@@ -329,41 +329,55 @@ const AdVistaOriginals = () => {
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPreview(null)}>Close</Button>
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            <Button variant="ghost" onClick={() => setPreview(null)}>Close</Button>
             {preview && (
-              <Button
-                variant="outline"
-                onClick={() =>
-                  downloadTemplate({
-                    id: preview.id,
-                    name: preview.name,
-                    description: preview.description,
-                    category: preview.category,
-                    platform: preview.platform,
-                    objective: preview.objective,
-                    template_json: preview.template_json ?? null,
-                    metadata: preview.metadata,
-                    layout_dna: (preview as any).layout_dna ?? preview.metadata,
-                    ai_tags: preview.ai_tags,
-                    industry_tags: preview.industry_tags,
-                    brand_compatible: preview.brand_compatible,
-                  })
-                }
-              >
-                <Download className="mr-2 h-4 w-4" /> Export JSON
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(`/originals/${preview.id}`)}
+                  className="gap-1.5"
+                >
+                  <Info className="h-4 w-4" /> View details
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    downloadTemplate({
+                      id: preview.id,
+                      name: preview.name,
+                      description: preview.description,
+                      category: preview.category,
+                      platform: preview.platform,
+                      objective: preview.objective,
+                      template_json: preview.template_json ?? null,
+                      metadata: preview.metadata,
+                      layout_dna: (preview as any).layout_dna ?? preview.metadata,
+                      ai_tags: preview.ai_tags,
+                      industry_tags: preview.industry_tags,
+                      brand_compatible: preview.brand_compatible,
+                    })
+                  }
+                >
+                  <Download className="mr-2 h-4 w-4" /> Export JSON
+                </Button>
+                <Button
+                  onClick={() => {
+                    setPendingEditorTemplate(preview as unknown as TemplateRecord, 'originals');
+                    toast({
+                      title: 'Template loaded into editor',
+                      description: 'AI, brand and copy placeholders will be resolved on open.',
+                    });
+                    navigate('/visual-editor');
+                  }}
+                  className="gap-1.5"
+                >
+                  <Wand2 className="h-4 w-4" /> Use this template
+                </Button>
+              </>
             )}
-            <Button
-              onClick={() => {
-                if (preview) {
-                  navigate('/template-customizer', { state: { templateData: preview } });
-                }
-              }}
-            >
-              Customize
-            </Button>
           </DialogFooter>
+
 
         </DialogContent>
       </Dialog>
