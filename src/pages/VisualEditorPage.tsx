@@ -28,6 +28,11 @@ import {
 import { AIActionsMenu } from '@/components/visual-editor/ai/AIActionsMenu';
 import { AIQuickActionsMenu } from '@/components/visual-editor/ai/AIQuickActionsMenu';
 import { AITimelineMenu } from '@/components/visual-editor/ai/AITimelineMenu';
+import { consumePendingEditorTemplate, peekPendingEditorTemplate } from '@/lib/templateEditorSession';
+import { TemplateEngine } from '@/services/templates/TemplateEngine';
+import { useBrandKits as useBrandKitsAll } from '@/hooks/useBrandKit';
+import { useAIContext } from '@/contexts/AIContext';
+import type { TemplateRecord } from '@/services/templates/types';
 
 /* ---------- Constants ---------- */
 const LEFT_TABS = [
