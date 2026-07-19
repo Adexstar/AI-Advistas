@@ -431,7 +431,8 @@ const CanvasStage: React.FC<{
   onCanvasReady: (c: FabricCanvas) => void;
   onSelection: (o: any) => void;
   zoom: number;
-}> = ({ onCanvasReady, onSelection, zoom }) => {
+  seedDefault: boolean;
+}> = ({ onCanvasReady, onSelection, zoom, seedDefault }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const initialized = useRef(false);
 
@@ -443,16 +444,18 @@ const CanvasStage: React.FC<{
       height: 640,
       backgroundColor: '#1a1145',
     });
-    // Seed with mockup-like elements
-    c.add(new Textbox('SUMMER', { left: 40, top: 120, fontSize: 72, fontWeight: 'bold', fill: '#ffffff', fontFamily: 'Poppins', width: 400 }));
-    c.add(new Textbox('SALE', { left: 40, top: 200, fontSize: 96, fontWeight: 'bold', fill: '#FFC107', fontFamily: 'Poppins', width: 400 }));
-    c.add(new Rect({ left: 40, top: 340, width: 240, height: 52, fill: '#8b5cf6', rx: 26, ry: 26 }));
-    c.add(new Textbox('UP TO 50% OFF', { left: 60, top: 356, fontSize: 18, fontWeight: 'bold', fill: '#ffffff', width: 200 }));
+    if (seedDefault) {
+      // Seed with mockup-like elements when no template is being loaded
+      c.add(new Textbox('SUMMER', { left: 40, top: 120, fontSize: 72, fontWeight: 'bold', fill: '#ffffff', fontFamily: 'Poppins', width: 400 }));
+      c.add(new Textbox('SALE', { left: 40, top: 200, fontSize: 96, fontWeight: 'bold', fill: '#FFC107', fontFamily: 'Poppins', width: 400 }));
+      c.add(new Rect({ left: 40, top: 340, width: 240, height: 52, fill: '#8b5cf6', rx: 26, ry: 26 }));
+      c.add(new Textbox('UP TO 50% OFF', { left: 60, top: 356, fontSize: 18, fontWeight: 'bold', fill: '#ffffff', width: 200 }));
+    }
     c.on('selection:created', (e: any) => onSelection(e.selected?.[0]));
     c.on('selection:updated', (e: any) => onSelection(e.selected?.[0]));
     c.on('selection:cleared', () => onSelection(null));
     onCanvasReady(c);
-  }, [onCanvasReady, onSelection]);
+  }, [onCanvasReady, onSelection, seedDefault]);
 
   return (
     <div className="flex-1 overflow-auto bg-[hsl(248,48%,97%)]">
