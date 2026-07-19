@@ -1,7 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Sparkles, LayoutGrid, X, Filter, Download } from 'lucide-react';
+import { Search, Sparkles, LayoutGrid, X, Filter, Download, Wand2, Info } from 'lucide-react';
 import { downloadTemplate } from '@/services/templates/templateDownload';
+import { setPendingEditorTemplate } from '@/lib/templateEditorSession';
+import { toast } from '@/hooks/use-toast';
+import type { TemplateRecord } from '@/services/templates/types';
 
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -273,14 +276,14 @@ const AdVistaOriginals = () => {
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {templates.map((t) => (
-                <TemplateTile key={t.id} t={t} onOpen={() => setPreview(t)} />
+                <TemplateTile key={t.id} t={t} onOpen={() => navigate(`/originals/${t.id}`)} />
               ))}
             </div>
           )}
         </section>
       </div>
 
-      {/* Preview */}
+      {/* Preview (kept as quick-look; primary flow is the detail page) */}
       <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
@@ -326,41 +329,55 @@ const AdVistaOriginals = () => {
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPreview(null)}>Close</Button>
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            <Button variant="ghost" onClick={() => setPreview(null)}>Close</Button>
             {preview && (
-              <Button
-                variant="outline"
-                onClick={() =>
-                  downloadTemplate({
-                    id: preview.id,
-                    name: preview.name,
-                    description: preview.description,
-                    category: preview.category,
-                    platform: preview.platform,
-                    objective: preview.objective,
-                    template_json: preview.template_json ?? null,
-                    metadata: preview.metadata,
-                    layout_dna: (preview as any).layout_dna ?? preview.metadata,
-                    ai_tags: preview.ai_tags,
-                    industry_tags: preview.industry_tags,
-                    brand_compatible: preview.brand_compatible,
-                  })
-                }
-              >
-                <Download className="mr-2 h-4 w-4" /> Export JSON
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(`/originals/${preview.id}`)}
+                  className="gap-1.5"
+                >
+                  <Info className="h-4 w-4" /> View details
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    downloadTemplate({
+                      id: preview.id,
+                      name: preview.name,
+                      description: preview.description,
+                      category: preview.category,
+                      platform: preview.platform,
+                      objective: preview.objective,
+                      template_json: preview.template_json ?? null,
+                      metadata: preview.metadata,
+                      layout_dna: (preview as any).layout_dna ?? preview.metadata,
+                      ai_tags: preview.ai_tags,
+                      industry_tags: preview.industry_tags,
+                      brand_compatible: preview.brand_compatible,
+                    })
+                  }
+                >
+                  <Download className="mr-2 h-4 w-4" /> Export JSON
+                </Button>
+                <Button
+                  onClick={() => {
+                    setPendingEditorTemplate(preview as unknown as TemplateRecord, 'originals');
+                    toast({
+                      title: 'Template loaded into editor',
+                      description: 'AI, brand and copy placeholders will be resolved on open.',
+                    });
+                    navigate('/visual-editor');
+                  }}
+                  className="gap-1.5"
+                >
+                  <Wand2 className="h-4 w-4" /> Use this template
+                </Button>
+              </>
             )}
-            <Button
-              onClick={() => {
-                if (preview) {
-                  navigate('/template-customizer', { state: { templateData: preview } });
-                }
-              }}
-            >
-              Customize
-            </Button>
           </DialogFooter>
+
 
         </DialogContent>
       </Dialog>

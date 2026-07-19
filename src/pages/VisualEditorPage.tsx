@@ -28,6 +28,11 @@ import {
 import { AIActionsMenu } from '@/components/visual-editor/ai/AIActionsMenu';
 import { AIQuickActionsMenu } from '@/components/visual-editor/ai/AIQuickActionsMenu';
 import { AITimelineMenu } from '@/components/visual-editor/ai/AITimelineMenu';
+import { consumePendingEditorTemplate, peekPendingEditorTemplate } from '@/lib/templateEditorSession';
+import { TemplateEngine } from '@/services/templates/TemplateEngine';
+import { useBrandKits as useBrandKitsAll } from '@/hooks/useBrandKit';
+import { useAIContext } from '@/contexts/AIContext';
+import type { TemplateRecord } from '@/services/templates/types';
 
 /* ---------- Constants ---------- */
 const LEFT_TABS = [
@@ -426,7 +431,8 @@ const CanvasStage: React.FC<{
   onCanvasReady: (c: FabricCanvas) => void;
   onSelection: (o: any) => void;
   zoom: number;
-}> = ({ onCanvasReady, onSelection, zoom }) => {
+  seedDefault: boolean;
+}> = ({ onCanvasReady, onSelection, zoom, seedDefault }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const initialized = useRef(false);
 
@@ -438,16 +444,18 @@ const CanvasStage: React.FC<{
       height: 640,
       backgroundColor: '#1a1145',
     });
-    // Seed with mockup-like elements
-    c.add(new Textbox('SUMMER', { left: 40, top: 120, fontSize: 72, fontWeight: 'bold', fill: '#ffffff', fontFamily: 'Poppins', width: 400 }));
-    c.add(new Textbox('SALE', { left: 40, top: 200, fontSize: 96, fontWeight: 'bold', fill: '#FFC107', fontFamily: 'Poppins', width: 400 }));
-    c.add(new Rect({ left: 40, top: 340, width: 240, height: 52, fill: '#8b5cf6', rx: 26, ry: 26 }));
-    c.add(new Textbox('UP TO 50% OFF', { left: 60, top: 356, fontSize: 18, fontWeight: 'bold', fill: '#ffffff', width: 200 }));
+    if (seedDefault) {
+      // Seed with mockup-like elements when no template is being loaded
+      c.add(new Textbox('SUMMER', { left: 40, top: 120, fontSize: 72, fontWeight: 'bold', fill: '#ffffff', fontFamily: 'Poppins', width: 400 }));
+      c.add(new Textbox('SALE', { left: 40, top: 200, fontSize: 96, fontWeight: 'bold', fill: '#FFC107', fontFamily: 'Poppins', width: 400 }));
+      c.add(new Rect({ left: 40, top: 340, width: 240, height: 52, fill: '#8b5cf6', rx: 26, ry: 26 }));
+      c.add(new Textbox('UP TO 50% OFF', { left: 60, top: 356, fontSize: 18, fontWeight: 'bold', fill: '#ffffff', width: 200 }));
+    }
     c.on('selection:created', (e: any) => onSelection(e.selected?.[0]));
     c.on('selection:updated', (e: any) => onSelection(e.selected?.[0]));
     c.on('selection:cleared', () => onSelection(null));
     onCanvasReady(c);
-  }, [onCanvasReady, onSelection]);
+  }, [onCanvasReady, onSelection, seedDefault]);
 
   return (
     <div className="flex-1 overflow-auto bg-[hsl(248,48%,97%)]">
@@ -729,6 +737,63 @@ const EditorInner: React.FC = () => {
   const [bottomTab, setBottomTab] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
+  // Detect a pending template BEFORE the canvas mounts so we skip default seeds.
+  const pendingRef = useRef(peekPendingEditorTemplate());
+  const [hasPending] = useState(() => !!pendingRef.current);
+  const { effectiveContext, brand } = useAIContext();
+  const { data: brandKits } = useBrandKitsAll();
+
+  // On canvas ready + pending template → instantiate via TemplateEngine and load.
+  useEffect(() => {
+    if (!canvas) return;
+    const pending = consumePendingEditorTemplate();
+    if (!pending?.template) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const activeKit = brandKits?.find((k) => k.is_active) || brandKits?.[0];
+        const inst = await TemplateEngine.instantiate(pending.template, {
+          brand: brand
+            ? {
+                id: brand.id,
+                name: brand.name,
+                logo_url: activeKit?.logo_url ?? undefined,
+                colors: [activeKit?.primary_color, activeKit?.secondary_color, activeKit?.accent_color].filter(Boolean) as string[],
+                voice: (brand as any).voice ?? undefined,
+                locked: false,
+              }
+            : null,
+          category: effectiveContext?.active_category ?? pending.template.category ?? null,
+          goal: (effectiveContext as any)?.active_goal ?? pending.template.objective ?? null,
+          platform: pending.template.platform ?? null,
+          productName: pending.template.name,
+        });
+        if (cancelled) return;
+        const json = inst.json;
+        if (json?.background) canvas.backgroundColor = json.background as string;
+        canvas.loadFromJSON(json as any, () => {
+          canvas.renderAll();
+          setProjectName(pending.template.name);
+          toast({
+            title: 'Template loaded',
+            description: `${Object.keys(inst.resolvedVariables).length} placeholders resolved${inst.appliedBrand ? ' • Brand applied' : ''}.`,
+          });
+        });
+      } catch (err) {
+        console.error('[VisualEditor] instantiate failed', err);
+        toast({
+          title: 'Could not load template',
+          description: 'Falling back to a blank canvas.',
+          variant: 'destructive',
+        });
+      }
+    })();
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvas]);
+
   const addText = (text: string, size: number, weight: string) => {
     if (!canvas) return;
     const tb = new Textbox(text, { left: 60, top: 60, fontSize: size, fontWeight: weight, fill: '#ffffff', fontFamily: 'Poppins', width: 320 });
@@ -794,6 +859,7 @@ const EditorInner: React.FC = () => {
               <HRuler />
               <CanvasStage
                 zoom={zoom}
+                seedDefault={!hasPending}
                 onCanvasReady={(c) => setCanvas(c)}
                 onSelection={(o) => { setSelected(o); forceUpdate((n) => n + 1); }}
               />

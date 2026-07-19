@@ -30,6 +30,7 @@ const AdEditor = lazy(() => import("./pages/AdEditor"));
 const TemplateCustomizer = lazy(() => import("./pages/TemplateCustomizer"));
 const TemplateLibrary = lazy(() => import("./pages/TemplateLibrary"));
 const AdVistaOriginals = lazy(() => import("./pages/AdVistaOriginals"));
+const OriginalTemplateDetail = lazy(() => import("./pages/OriginalTemplateDetail"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const MediaLibrary = lazy(() => import("./pages/MediaLibrary"));
 const BrandKit = lazy(() => import("./pages/BrandKit"));
@@ -161,6 +162,7 @@ const AppContent = () => {
               </ProtectedRoute>
             }>
               <Route index element={<AdVistaOriginals />} />
+              <Route path=":id" element={<OriginalTemplateDetail />} />
             </Route>
             <Route path="/media-library" element={
               <ProtectedRoute>
