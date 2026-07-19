@@ -737,6 +737,63 @@ const EditorInner: React.FC = () => {
   const [bottomTab, setBottomTab] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
+  // Detect a pending template BEFORE the canvas mounts so we skip default seeds.
+  const pendingRef = useRef(peekPendingEditorTemplate());
+  const [hasPending] = useState(() => !!pendingRef.current);
+  const { effectiveContext, brand } = useAIContext();
+  const { data: brandKits } = useBrandKitsAll();
+
+  // On canvas ready + pending template → instantiate via TemplateEngine and load.
+  useEffect(() => {
+    if (!canvas) return;
+    const pending = consumePendingEditorTemplate();
+    if (!pending?.template) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const activeKit = brandKits?.find((k) => k.is_active) || brandKits?.[0];
+        const inst = await TemplateEngine.instantiate(pending.template, {
+          brand: brand
+            ? {
+                id: brand.id,
+                name: brand.name,
+                logo_url: activeKit?.logo_url ?? undefined,
+                colors: [activeKit?.primary_color, activeKit?.secondary_color, activeKit?.accent_color].filter(Boolean) as string[],
+                voice: (brand as any).voice ?? undefined,
+                locked: false,
+              }
+            : null,
+          category: effectiveContext?.active_category ?? pending.template.category ?? null,
+          goal: (effectiveContext as any)?.active_goal ?? pending.template.objective ?? null,
+          platform: pending.template.platform ?? null,
+          productName: pending.template.name,
+        });
+        if (cancelled) return;
+        const json = inst.json;
+        if (json?.background) canvas.backgroundColor = json.background as string;
+        canvas.loadFromJSON(json as any, () => {
+          canvas.renderAll();
+          setProjectName(pending.template.name);
+          toast({
+            title: 'Template loaded',
+            description: `${Object.keys(inst.resolvedVariables).length} placeholders resolved${inst.appliedBrand ? ' • Brand applied' : ''}.`,
+          });
+        });
+      } catch (err) {
+        console.error('[VisualEditor] instantiate failed', err);
+        toast({
+          title: 'Could not load template',
+          description: 'Falling back to a blank canvas.',
+          variant: 'destructive',
+        });
+      }
+    })();
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvas]);
+
   const addText = (text: string, size: number, weight: string) => {
     if (!canvas) return;
     const tb = new Textbox(text, { left: 60, top: 60, fontSize: size, fontWeight: weight, fill: '#ffffff', fontFamily: 'Poppins', width: 320 });
