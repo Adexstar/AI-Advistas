@@ -859,6 +859,7 @@ const EditorInner: React.FC = () => {
               <HRuler />
               <CanvasStage
                 zoom={zoom}
+                seedDefault={!hasPending}
                 onCanvasReady={(c) => setCanvas(c)}
                 onSelection={(o) => { setSelected(o); forceUpdate((n) => n + 1); }}
               />
