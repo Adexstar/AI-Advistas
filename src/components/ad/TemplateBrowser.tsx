@@ -14,6 +14,8 @@ import { useCombinedTemplates } from '@/hooks/useUnifiedTemplates';
 import { generateDefaultCanvasData } from '@/utils/canvasHelpers';
 import { toast } from 'sonner';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { TemplatePreviewDialog, type TemplatePreviewLike } from '@/components/templates/TemplatePreviewDialog';
+import { Eye } from 'lucide-react';
 
 interface TemplateBrowserProps {
   onTemplateSelect?: (templateData: any) => void;
@@ -87,6 +89,7 @@ const TemplateBrowser = ({
   const [importProgress, setImportProgress] = useState(0);
   const [favoriteTemplateKeys, setFavoriteTemplateKeys] = useState<string[]>(() => readStoredTemplateKeys(TEMPLATE_FAVORITES_KEY));
   const [recentTemplateKeys, setRecentTemplateKeys] = useState<string[]>(() => readStoredTemplateKeys(TEMPLATE_RECENTS_KEY));
+  const [previewTpl, setPreviewTpl] = useState<TemplatePreviewLike | null>(null);
   
   useEffect(() => {
     searchAllTemplates({ query: '', page: 1, limit: 20 });
@@ -514,21 +517,32 @@ const TemplateBrowser = ({
                 </p>
               </div>
             ) : (
-              <Button
-                type="button"
-                onClick={() => handleTemplateClick(template)}
-                className={`w-full rounded-[24px] ${template.source !== 'internal' && !template.canvas_data ? sourceTheme.button : ''}`}
-                disabled={isProcessingPSD}
-              >
-                {template.source !== 'internal' && !template.canvas_data ? (
-                  <>
-                    <Download className="mr-2 h-4 w-4" />
-                    Import & Use Template
-                  </>
-                ) : (
-                  browserCopy.actionLabel
-                )}
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPreviewTpl(template as TemplatePreviewLike)}
+                  className="rounded-[24px]"
+                  aria-label={`Preview ${template.name}`}
+                >
+                  <Eye className="mr-2 h-4 w-4" /> Preview
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => handleTemplateClick(template)}
+                  className={`flex-1 rounded-[24px] ${template.source !== 'internal' && !template.canvas_data ? sourceTheme.button : ''}`}
+                  disabled={isProcessingPSD}
+                >
+                  {template.source !== 'internal' && !template.canvas_data ? (
+                    <>
+                      <Download className="mr-2 h-4 w-4" />
+                      Import & Use Template
+                    </>
+                  ) : (
+                    browserCopy.actionLabel
+                  )}
+                </Button>
+              </div>
             )}
           </div>
         </CardContent>
@@ -808,6 +822,11 @@ const TemplateBrowser = ({
           </Card>
         )}
       </div>
+      <TemplatePreviewDialog
+        template={previewTpl}
+        onOpenChange={(open) => !open && setPreviewTpl(null)}
+        source="library"
+      />
     </ErrorBoundary>
   );
 };
