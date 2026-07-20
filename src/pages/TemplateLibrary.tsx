@@ -2,6 +2,8 @@ import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTemplates, useTrackTemplateUsage, type AdTemplate } from '@/hooks/useTemplates';
 import { useCampaigns } from '@/hooks/useCampaigns';
+import { setPendingEditorTemplate } from '@/lib/templateEditorSession';
+import type { TemplateRecord } from '@/services/templates/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -510,10 +512,11 @@ const TemplateLibrary = () => {
           </DialogHeader>
           <div className="grid gap-4 sm:grid-cols-[1.4fr_1fr]">
             <div className="aspect-[4/5] overflow-hidden rounded-2xl bg-muted">
-              {(previewTemplate as any)?.thumbnail_url ? (
+              {((previewTemplate as any)?.preview_url || (previewTemplate as any)?.thumbnail_url) ? (
                 <img
-                  src={(previewTemplate as any).thumbnail_url}
-                  alt=""
+                  src={(previewTemplate as any).preview_url || (previewTemplate as any).thumbnail_url}
+                  alt={previewTemplate?.name ?? ''}
+                  loading="lazy"
                   className="h-full w-full object-cover"
                 />
               ) : (
@@ -585,9 +588,22 @@ const TemplateLibrary = () => {
             </Button>
 
             <Button
+              variant="outline"
               onClick={() => {
                 if (previewTemplate) handleEdit(previewTemplate);
                 setPreviewTemplate(null);
+              }}
+            >
+              <Sparkles className="mr-2 h-4 w-4" /> Quick customize
+            </Button>
+
+            <Button
+              onClick={() => {
+                if (!previewTemplate) return;
+                setPendingEditorTemplate(previewTemplate as unknown as TemplateRecord, 'library');
+                toast({ title: 'Template loaded into editor', description: 'Placeholders will resolve on open.' });
+                setPreviewTemplate(null);
+                navigate('/visual-editor');
               }}
             >
               <Pencil className="mr-2 h-4 w-4" /> Open in Visual Editor
