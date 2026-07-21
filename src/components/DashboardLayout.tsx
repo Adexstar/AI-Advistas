@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -384,10 +384,24 @@ const DashboardShell = () => {
   const activePage = pageMeta.find((item) => item.match(location.pathname)) || pageMeta[0];
   const openSearch = () => setSearchOpen(true);
 
+  // Prefetch adjacent routes in the background so navigation is instant.
+  useEffect(() => {
+    const idle = (cb: () => void) =>
+      (window as any).requestIdleCallback ? (window as any).requestIdleCallback(cb) : setTimeout(cb, 400);
+    idle(() => {
+      import("@/pages/Campaigns").catch(() => {});
+      import("@/pages/TemplateLibrary").catch(() => {});
+      import("@/pages/Dashboard").catch(() => {});
+      import("@/pages/CreateAd").catch(() => {});
+    });
+  }, []);
+
+
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-background">
+    <div className="flex h-screen w-full flex-col overflow-hidden bg-background">
       <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
-      <div className="flex w-full">
+      <div className="flex min-h-0 w-full flex-1 overflow-hidden">
+
         {/* Mobile drawer */}
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetContent
@@ -414,7 +428,7 @@ const DashboardShell = () => {
         {/* Desktop sidebar */}
         <aside
           className={cn(
-            "sticky top-0 hidden h-screen shrink-0 border-r border-white/5 bg-[hsl(240_15%_8%)] text-white transition-[width] duration-300 lg:flex lg:flex-col",
+            "hidden h-full shrink-0 overflow-y-auto border-r border-white/5 bg-[hsl(240_15%_8%)] text-white transition-[width] duration-300 lg:flex lg:flex-col",
             collapsed ? "w-[76px]" : "w-[260px]"
           )}
         >
