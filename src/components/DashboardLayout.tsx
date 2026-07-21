@@ -415,7 +415,7 @@ const DashboardShell = () => {
         {/* Desktop sidebar */}
         <aside
           className={cn(
-            "sticky top-0 hidden h-screen shrink-0 border-r border-white/5 bg-[hsl(240_15%_8%)] text-white transition-[width] duration-300 lg:flex lg:flex-col",
+            "hidden h-full shrink-0 overflow-y-auto border-r border-white/5 bg-[hsl(240_15%_8%)] text-white transition-[width] duration-300 lg:flex lg:flex-col",
             collapsed ? "w-[76px]" : "w-[260px]"
           )}
         >
