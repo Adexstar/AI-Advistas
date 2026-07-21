@@ -23,25 +23,25 @@ import {
   AlignLeft, AlignCenter, AlignRight, AlignJustify, Bold, Italic, Underline,
   Copy, Trash2, MoreHorizontal, Search, Filter, Video, Music, Monitor, Square as SquareIcon, Link,
   Circle as CircleIcon, MousePointer, Volume2, X, Menu, ChevronDown, PanelRight,
-  Palette, Sun, Zap, Eye, Pause,
+  Palette, Sun, Zap, Eye, EyeOff, Pause, ChevronRight, RefreshCw, GripVertical, Pipette, Box,
+  ChevronUp,
 } from 'lucide-react';
 import { AIActionsMenu } from '@/components/visual-editor/ai/AIActionsMenu';
 import { AIQuickActionsMenu } from '@/components/visual-editor/ai/AIQuickActionsMenu';
 import { consumePendingEditorTemplate, peekPendingEditorTemplate } from '@/lib/templateEditorSession';
 import { TemplateEngine } from '@/services/templates/TemplateEngine';
-import { useBrandKits as useBrandKitsAll } from '@/hooks/useBrandKit';
 import { useAIContext } from '@/contexts/AIContext';
 
 /* ---------- Constants ---------- */
 const LEFT_TABS = [
   { id: 'templates', label: 'Templates', icon: Layout },
-  { id: 'media', label: 'Media', icon: ImageIcon },
+  { id: 'background', label: 'Background', icon: Palette },
+  { id: 'ai-studio', label: 'AI Studio', icon: Wand2 },
   { id: 'text', label: 'Text', icon: Type },
   { id: 'elements', label: 'Elements', icon: Shapes },
   { id: 'brand', label: 'Brand Kit', icon: Sparkles },
   { id: 'uploads', label: 'Uploads', icon: Upload },
   { id: 'layers', label: 'Layers', icon: LayersIcon },
-  { id: 'projects', label: 'Projects', icon: FolderOpen },
 ] as const;
 
 const TEMPLATE_CATEGORIES = ['All', 'Social Media', 'Ads', 'Stories', 'Video'];
@@ -286,34 +286,237 @@ const SimplePanel: React.FC<{ title: string; children: React.ReactNode }> = ({ t
   </div>
 );
 
-const TextPanel: React.FC<{ onAdd: (text: string, size: number, weight: string) => void }> = ({ onAdd }) => (
-  <SimplePanel title="Text">
-    <div className="space-y-2">
-      {[
-        { l: 'Add a heading', s: 36, w: 'bold' },
-        { l: 'Add a subheading', s: 24, w: '600' },
-        { l: 'Add body text', s: 16, w: 'normal' },
-      ].map((p) => (
-        <button
-          key={p.l}
-          onClick={() => onAdd(p.l, p.s, p.w)}
-          className="w-full rounded-xl border bg-background px-4 py-3 text-left hover:bg-muted/60 transition-colors"
-        >
-          <span style={{ fontSize: p.s * 0.5, fontWeight: p.w as any }}>{p.l}</span>
-        </button>
-      ))}
+/* ---------- Background Panel ---------- */
+const BackgroundPanel: React.FC = () => {
+  const [selectedColor, setSelectedColor] = useState('#FFFFFF');
+  const solidColors = [
+    ['#000000','#555555','#888888','#BBBBBB','#DDDDDD','#FFFFFF'],
+    ['#FF0000','#FF6B6B','#FF69B4','#FFB6C1','#E6E6FA','#800080'],
+    ['#008080','#00CED1','#87CEEB','#0000FF','#4B0082','#000080'],
+    ['#FFA500','#FFD700','#FFFF00','#00FF00','#008000','#006400'],
+  ];
+  return (
+    <div className="flex h-full min-h-0 flex-col bg-[#2D2D2D]">
+      <div className="px-4 py-3 border-b border-[#3D3D3D]">
+        <h2 className="text-base font-bold text-white">Background</h2>
+      </div>
+      <div className="flex-1 min-h-0 overflow-y-auto p-4">
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#888888]" />
+          <input placeholder="Search backgrounds" className="w-full h-10 pl-9 pr-3 rounded-lg text-sm bg-[#3D3D3D] border border-[#555555] text-[#888888] placeholder:text-[#888888] outline-none" />
+        </div>
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+          <div className="w-8 h-8 rounded-full border-2 border-dashed border-[#666666] shrink-0 flex items-center justify-center bg-white/10">
+            <X className="h-3 w-3 text-[#888888]" />
+          </div>
+          {['#CCCCCC','#555555','#1A1A1A','#8B0000','#FF69B4','#800080'].map((c) => (
+            <button key={c} onClick={() => setSelectedColor(c)}
+              className="w-8 h-8 rounded-full shrink-0 border border-white/10 hover:scale-105 transition-transform"
+              style={{ backgroundColor: c }} />
+          ))}
+          <button className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-[#888888]">
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+        <p className="text-sm font-semibold text-white mt-4 mb-2">Colours in this design</p>
+        <div className="flex gap-1.5">
+          <button className="w-8 h-8 rounded-full bg-[#3D3D3D] border-2 border-dashed border-[#666666] flex items-center justify-center">
+            <Plus className="h-3 w-3 text-[#888888]" />
+          </button>
+          <button className="w-8 h-8 rounded-full bg-[#3D3D3D] border border-[#555555] flex items-center justify-center">
+            <Pipette className="h-3.5 w-3.5 text-[#888888]" />
+          </button>
+          {['#FFFFFF','#8B4513','#000000'].map((c) => (
+            <button key={c} className="w-8 h-8 rounded-full border border-white/10" style={{ backgroundColor: c }} />
+          ))}
+        </div>
+        <p className="text-sm font-semibold text-white mt-4 mb-2">Default solid colours</p>
+        {solidColors.map((row, ri) => (
+          <div key={ri} className="grid grid-cols-6 gap-1.5 mb-1.5">
+            {row.map((c) => (
+              <button key={c} onClick={() => setSelectedColor(c)}
+                className="aspect-square rounded-lg hover:ring-2 hover:ring-white hover:scale-105 transition-all"
+                style={{ backgroundColor: c }} />
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
-  </SimplePanel>
-);
+  );
+};
 
-const ElementsPanel: React.FC<{ onAdd: (t: 'rectangle' | 'circle') => void }> = ({ onAdd }) => (
-  <SimplePanel title="Elements">
-    <div className="grid grid-cols-3 gap-2">
-      <button onClick={() => onAdd('rectangle')} className="aspect-square flex items-center justify-center rounded-xl border bg-background hover:bg-muted/60"><SquareIcon className="h-8 w-8" /></button>
-      <button onClick={() => onAdd('circle')} className="aspect-square flex items-center justify-center rounded-xl border bg-background hover:bg-muted/60"><CircleIcon className="h-8 w-8" /></button>
+/* ---------- AI Studio Panel ---------- */
+const AIStudioPanel: React.FC = () => {
+  const [activeTab, setActiveTab] = useState('images');
+  const [prompt, setPrompt] = useState('');
+  const tabs = [
+    { id: 'images', label: 'Images' },
+    { id: 'graphics', label: 'Graphics' },
+    { id: 'videos', label: 'Videos' },
+    { id: '3d', label: '3D' },
+  ];
+  return (
+    <div className="flex h-full min-h-0 flex-col bg-[#2D2D2D]">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[#3D3D3D]">
+        <h2 className="text-base font-bold text-white">AI Studio</h2>
+        <HelpCircle className="h-4 w-4 text-[#888888]" />
+      </div>
+      <div className="flex border-b border-[#3D3D3D]">
+        {tabs.map((t) => (
+          <button key={t.id} onClick={() => setActiveTab(t.id)}
+            className={`px-3 py-2 text-sm ${activeTab === t.id ? 'text-white font-semibold border-b-2 border-[#6C63FF]' : 'text-[#888888]'}`}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <div className="flex-1 min-h-0 overflow-y-auto p-4">
+        <p className="text-sm font-semibold text-white mb-2">Describe what you want to create</p>
+        <div className="relative mb-4">
+          <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)}
+            placeholder="Enter 5+ words to describe..."
+            className="w-full h-24 rounded-lg p-3 text-sm bg-[#3D3D3D] border border-[#555555] text-[#888888] placeholder:text-[#888888] outline-none resize-none" />
+          <button className="absolute bottom-2 left-2 flex items-center gap-1 h-7 px-3 rounded-full bg-[#2D2D2D] border border-[#555555] text-xs text-[#CCCCCC]">
+            💡 Inspire me
+          </button>
+        </div>
+        {activeTab === 'images' && (
+          <>
+            <div className="flex gap-2 mb-4">
+              <button className="flex items-center gap-2 h-9 px-3 rounded-lg border border-[#555555] text-xs text-white">🖼 Styles</button>
+              <button className="flex items-center gap-2 h-9 px-3 rounded-lg border border-[#555555] text-xs text-white">⊡ Square</button>
+            </div>
+            <p className="text-xs font-semibold text-white mb-2">Created by AI Studio</p>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar">
+              {[1,2,3].map((i) => (
+                <div key={i} className="h-20 flex-1 min-w-[80px] rounded-lg bg-gradient-to-br from-purple-600 to-pink-500" />
+              ))}
+            </div>
+          </>
+        )}
+        {activeTab === 'videos' && (
+          <div className="p-3 rounded-lg bg-[#2D2D2D] border border-[#3D3D3D]">
+            <p className="text-xs font-semibold text-white mb-1">🚩 This is experimental new technology</p>
+            <p className="text-xs text-[#888888]">Scenes with people or animals may not look quite right.</p>
+          </div>
+        )}
+        {activeTab === '3d' && (
+          <div className="p-3 rounded-lg bg-[#2D2D2D] border border-[#3D3D3D]">
+            <p className="text-xs font-semibold text-white mb-1">🚩 This is experimental new technology</p>
+            <p className="text-xs text-[#888888]">Some objects may not look quite right.</p>
+          </div>
+        )}
+      </div>
+      <div className="p-4 border-t border-[#3D3D3D]">
+        <button className={`w-full h-11 rounded-lg text-sm font-semibold ${prompt.length > 5 ? 'bg-[#6C63FF] text-white' : 'bg-[#2D2D2D] text-[#888888]'}`}>
+          Generate {activeTab === 'images' ? 'images' : activeTab === 'graphics' ? 'graphics' : activeTab === 'videos' ? 'video' : '3D'}
+        </button>
+      </div>
     </div>
-  </SimplePanel>
-);
+  );
+};
+
+/* ---------- Text Panel ---------- */
+const TextPanel: React.FC<{ onAdd: (text: string, size: number, weight: string) => void }> = ({ onAdd }) => {
+  const [search, setSearch] = useState('');
+  return (
+    <div className="flex h-full min-h-0 flex-col bg-[#2D2D2D]">
+      <div className="px-4 py-3 border-b border-[#3D3D3D]">
+        <h2 className="text-base font-bold text-white">Text</h2>
+      </div>
+      <div className="flex-1 min-h-0 overflow-y-auto p-4">
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#888888]" />
+          <input placeholder="Search fonts and combinations"
+            className="w-full h-10 pl-9 pr-3 rounded-lg text-sm bg-[#3D3D3D] border border-[#555555] text-[#888888] placeholder:text-[#888888] outline-none" />
+        </div>
+        <button onClick={() => onAdd('Add a heading', 36, 'bold')}
+          className="w-full h-11 rounded-lg bg-[#6C63FF] text-white text-sm font-semibold flex items-center justify-center gap-2 mb-2 hover:bg-[#5B52E0]">
+          <Type className="h-4 w-4" /> Add a text box
+        </button>
+        <button className="w-full h-11 rounded-lg bg-[#2D2D2D] border border-[#555555] text-white text-sm flex items-center justify-center gap-2 mb-4 hover:border-[#6C63FF]">
+          <Sparkles className="h-4 w-4" /> AI Copy
+        </button>
+        <p className="text-xs font-semibold text-[#888888] uppercase tracking-wider mb-2">Default text styles</p>
+        <button onClick={() => onAdd('Add a heading', 36, 'bold')}
+          className="w-full h-[52px] rounded-lg bg-[#2D2D2D] flex items-center px-4 mb-1 hover:bg-[#3D3D3D] hover:border hover:border-[#555555]">
+          <span className="text-2xl font-extrabold text-white">Add a heading</span>
+        </button>
+        <button onClick={() => onAdd('Add a subheading', 24, '600')}
+          className="w-full h-11 rounded-lg bg-[#2D2D2D] flex items-center px-4 mb-1 hover:bg-[#3D3D3D] hover:border hover:border-[#555555]">
+          <span className="text-lg font-semibold text-white">Add a subheading</span>
+        </button>
+        <button onClick={() => onAdd('Add a little bit of body text', 16, 'normal')}
+          className="w-full h-10 rounded-lg bg-[#2D2D2D] flex items-center px-4 hover:bg-[#3D3D3D] hover:border hover:border-[#555555]">
+          <span className="text-sm text-white">Add a little bit of body text</span>
+        </button>
+        <p className="text-xs font-semibold text-[#888888] uppercase tracking-wider mt-5 mb-2">Font combinations</p>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { name: 'Coffee Break', style: 'text-green-400 italic text-lg' },
+            { name: 'FIRE away', style: 'text-orange-400 font-bold text-lg' },
+            { name: 'PIXEL DREAMS', style: 'text-purple-400 font-bold text-lg' },
+            { name: 'Subscribe', style: 'text-blue-400 text-lg' },
+          ].map((f) => (
+            <button key={f.name}
+              className="h-[100px] rounded-lg bg-[#2D2D2D] flex items-center justify-center hover:bg-[#3D3D3D]">
+              <span className={f.style}>{f.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ---------- Elements Panel ---------- */
+const ElementsPanel: React.FC<{ onAdd: (t: 'rectangle' | 'circle') => void }> = ({ onAdd }) => {
+  const sections = [
+    { label: 'Lines & Shapes', items: [1,2,3,4,5,6] },
+    { label: 'Graphics', items: [1,2,3,4,5,6] },
+    { label: 'Stickers', items: [1,2,3,4,5] },
+    { label: 'Charts', items: [1,2,3] },
+    { label: 'Frames', items: [1,2,3,4] },
+    { label: 'Grids', items: [1,2] },
+  ];
+  return (
+    <div className="flex h-full min-h-0 flex-col bg-[#2D2D2D]">
+      <div className="px-4 py-3 border-b border-[#3D3D3D]">
+        <h2 className="text-base font-bold text-white">Elements</h2>
+      </div>
+      <div className="flex-1 min-h-0 overflow-y-auto p-4">
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#888888]" />
+          <input placeholder="Search elements"
+            className="w-full h-10 pl-9 pr-3 rounded-lg text-sm bg-[#3D3D3D] border border-[#555555] text-[#888888] placeholder:text-[#888888] outline-none" />
+        </div>
+        <p className="text-xs font-semibold text-[#888888] uppercase tracking-wider mb-2">Shapes</p>
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar mb-4">
+          {[SquareIcon, CircleIcon].map((Icon, i) => (
+            <button key={i} className="w-10 h-10 rounded-lg bg-[#3D3D3D] flex items-center justify-center hover:bg-[#555555] shrink-0"
+              onClick={() => onAdd(i === 0 ? 'rectangle' : 'circle')}>
+              <Icon className="h-5 w-5 text-white" />
+            </button>
+          ))}
+        </div>
+        {sections.map((s) => (
+          <div key={s.label} className="mb-4">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs font-semibold text-[#CCCCCC]">{s.label}</p>
+              <span className="text-xs text-[#6C63FF]">See all →</span>
+            </div>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar">
+              {s.items.map((_, i) => (
+                <div key={i} className="w-[72px] h-[72px] rounded-lg bg-[#2D2D2D] shrink-0 hover:bg-[#3D3D3D] hover:border hover:border-[#555555] flex items-center justify-center cursor-pointer">
+                  <div className="w-8 h-8 rounded bg-gradient-to-br from-[#555555] to-[#3D3D3D]" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const BrandKitPanel: React.FC = () => {
   const { data: kits } = useBrandKits();
@@ -769,13 +972,14 @@ const EditorInner: React.FC = () => {
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
   const [bottomTab, setBottomTab] = useState<string | null>(null);
+  const [timelineOpen, setTimelineOpen] = useState(false);
   const isMobile = useIsMobile();
 
   // Detect a pending template BEFORE the canvas mounts so we skip default seeds.
   const pendingRef = useRef(peekPendingEditorTemplate());
   const [hasPending] = useState(() => !!pendingRef.current);
   const { effectiveContext, brand } = useAIContext();
-  const { data: brandKits } = useBrandKitsAll();
+  const { data: brandKits } = useBrandKits();
 
   // On canvas ready + pending template → instantiate via TemplateEngine and load.
   useEffect(() => {
@@ -853,6 +1057,8 @@ const EditorInner: React.FC = () => {
   const renderLeftPanel = () => {
     switch (activeTab) {
       case 'templates': return <TemplatesPanel />;
+      case 'background': return <BackgroundPanel />;
+      case 'ai-studio': return <AIStudioPanel />;
       case 'text': return <TextPanel onAdd={addText} />;
       case 'elements': return <ElementsPanel onAdd={addShape} />;
       case 'brand': return <BrandKitPanel />;
@@ -914,14 +1120,23 @@ const EditorInner: React.FC = () => {
                   </div>
                 </div>
               )}
-              <div className="flex justify-center py-2" style={{ backgroundColor: '#1A1A1A', borderTop: '1px solid #2D2D2D' }}>
+              <div className="flex items-center justify-center gap-2 py-2" style={{ backgroundColor: '#1A1A1A', borderTop: '1px solid #2D2D2D' }}>
                 <button className="flex items-center gap-2 h-9 rounded-lg px-4 text-xs" style={{ backgroundColor: '#2D2D2D', border: '1px solid #444444', color: '#CCCCCC' }}>
                   <Plus className="h-3.5 w-3.5" /> Add page
+                </button>
+                <button onClick={() => setTimelineOpen(!timelineOpen)}
+                  className="flex items-center gap-1.5 h-9 rounded-lg px-3 text-xs" style={{ backgroundColor: '#2D2D2D', border: '1px solid #444444', color: timelineOpen ? '#6C63FF' : '#CCCCCC' }}>
+                  <span className={`transition-transform duration-200 ${timelineOpen ? 'rotate-180' : ''}`}>
+                    <ChevronUp className="h-3.5 w-3.5" />
+                  </span>
+                  Timeline
                 </button>
               </div>
             </div>
           </div>
-          <Timeline />
+          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${timelineOpen ? 'max-h-[200px]' : 'max-h-0'}`}>
+            <Timeline />
+          </div>
         </div>
 
         {/* Desktop right panel — contextual, shows only on selection */}
