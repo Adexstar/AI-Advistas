@@ -44,17 +44,8 @@ const AssetMarketplace = lazy(() => import("./pages/AssetMarketplace"));
 const DeveloperCenter = lazy(() => import("./pages/DeveloperCenter"));
 const SystemMonitor = lazy(() => import("./pages/SystemMonitor"));
 
-const RouteFallback = () => (
-  <div className="min-h-screen w-full bg-background">
-    <div className="page-container flex min-h-screen items-center justify-center py-16">
-      <div className="surface-panel w-full max-w-sm rounded-3xl px-6 py-8 text-center shadow-card">
-        <div className="mx-auto mb-4 h-10 w-10 animate-pulse rounded-full bg-primary/15" />
-        <p className="text-sm font-medium text-foreground">Loading workspace</p>
-        <p className="mt-2 text-sm text-muted-foreground">Preparing the next view.</p>
-      </div>
-    </div>
-  </div>
-);
+// No full-screen loader on route transitions — pages render their own skeletons.
+const RouteFallback = () => null;
 
 const AppContent = () => {
   // Global keyboard shortcuts - simplified for core actions
