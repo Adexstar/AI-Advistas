@@ -384,6 +384,19 @@ const DashboardShell = () => {
   const activePage = pageMeta.find((item) => item.match(location.pathname)) || pageMeta[0];
   const openSearch = () => setSearchOpen(true);
 
+  // Prefetch adjacent routes in the background so navigation is instant.
+  useEffect(() => {
+    const idle = (cb: () => void) =>
+      (window as any).requestIdleCallback ? (window as any).requestIdleCallback(cb) : setTimeout(cb, 400);
+    idle(() => {
+      import("@/pages/Campaigns").catch(() => {});
+      import("@/pages/TemplateLibrary").catch(() => {});
+      import("@/pages/Dashboard").catch(() => {});
+      import("@/pages/CreateAd").catch(() => {});
+    });
+  }, []);
+
+
   return (
     <div className="flex h-screen w-full flex-col overflow-hidden bg-background">
       <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
