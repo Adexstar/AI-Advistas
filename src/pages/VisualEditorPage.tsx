@@ -21,18 +21,16 @@ import {
   Undo2, Redo2, Play, Download, Send, Grid3x3, Maximize2, Minus, Plus,
   Wand2, MoveUp, MoveDown, AlignVerticalJustifyCenter, Lock, Unlock,
   AlignLeft, AlignCenter, AlignRight, AlignJustify, Bold, Italic, Underline,
-  Copy, Trash2, MoreHorizontal, Search, Filter, Video, Music, Square as SquareIcon,
+  Copy, Trash2, MoreHorizontal, Search, Filter, Video, Music, Monitor, Square as SquareIcon, Link,
   Circle as CircleIcon, MousePointer, Volume2, X, Menu, ChevronDown, PanelRight,
   Palette, Sun, Zap, Eye, Pause,
 } from 'lucide-react';
 import { AIActionsMenu } from '@/components/visual-editor/ai/AIActionsMenu';
 import { AIQuickActionsMenu } from '@/components/visual-editor/ai/AIQuickActionsMenu';
-import { AITimelineMenu } from '@/components/visual-editor/ai/AITimelineMenu';
 import { consumePendingEditorTemplate, peekPendingEditorTemplate } from '@/lib/templateEditorSession';
 import { TemplateEngine } from '@/services/templates/TemplateEngine';
 import { useBrandKits as useBrandKitsAll } from '@/hooks/useBrandKit';
 import { useAIContext } from '@/contexts/AIContext';
-import type { TemplateRecord } from '@/services/templates/types';
 
 /* ---------- Constants ---------- */
 const LEFT_TABS = [
@@ -66,16 +64,16 @@ const INSTA_STORY = [
 
 /* ---------- Left Icon Rail ---------- */
 const IconRail: React.FC<{ active: string; onChange: (id: string) => void }> = ({ active, onChange }) => (
-  <aside className="hidden md:flex h-full w-[88px] shrink-0 flex-col items-stretch bg-[hsl(245,45%,10%)] text-slate-200 border-r border-white/5">
-    <div className="flex items-center justify-center gap-2 px-3 py-4 border-b border-white/5">
-      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-glow shadow-lg">
-        <Sparkles className="h-4 w-4 text-white" />
+  <aside className="hidden md:flex h-full w-[56px] shrink-0 flex-col items-stretch bg-[hsl(245,45%,10%)] text-slate-200 border-r border-white/5">
+    <div className="flex items-center justify-center py-3 border-b border-white/5">
+      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-glow shadow-lg">
+        <Sparkles className="h-3.5 w-3.5 text-white" />
       </div>
     </div>
-    <div className="px-2 pt-3 text-[10px] font-semibold uppercase tracking-wider text-white/40 text-center">
-      AdVista<br /><span className="text-white/30 font-normal normal-case tracking-normal">Creative</span>
+    <div className="pt-1 pb-1 text-[8px] font-semibold uppercase tracking-wider text-white/40 text-center leading-tight">
+      AV<br /><span className="text-white/30 font-normal normal-case">Studio</span>
     </div>
-    <nav className="flex-1 py-3 space-y-1 px-2 overflow-y-auto">
+    <nav className="flex-1 py-2 space-y-0.5 px-1 overflow-y-auto">
       {LEFT_TABS.map((t) => {
         const Icon = t.icon;
         const isActive = active === t.id;
@@ -84,30 +82,29 @@ const IconRail: React.FC<{ active: string; onChange: (id: string) => void }> = (
             key={t.id}
             onClick={() => onChange(t.id)}
             className={[
-              'group flex w-full flex-col items-center gap-1 rounded-xl px-2 py-2.5 transition-all',
+              'group flex w-full flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 transition-all',
               isActive
                 ? 'bg-primary/90 text-white shadow-lg shadow-primary/30'
                 : 'text-white/60 hover:bg-white/5 hover:text-white',
             ].join(' ')}
           >
-            <Icon className="h-[18px] w-[18px]" />
-            <span className="text-[10px] font-medium leading-none">{t.label}</span>
+            <Icon className="h-[16px] w-[16px]" />
+            <span className="text-[9px] font-medium leading-none">{t.label}</span>
           </button>
         );
       })}
     </nav>
-    <div className="mx-2 mb-3 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/10 border border-white/10 p-3 text-center">
-      <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-accent/90 text-[hsl(236,31%,13%)]">
-        <Zap className="h-4 w-4" />
+    <div className="mx-1 mb-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/10 border border-white/10 p-1.5 text-center">
+      <div className="mx-auto mb-1 flex h-5 w-5 items-center justify-center rounded-lg bg-accent/90 text-[hsl(236,31%,13%)]">
+        <Zap className="h-3 w-3" />
       </div>
-      <p className="text-[11px] font-semibold text-white">Upgrade to Pro</p>
-      <p className="mt-1 text-[10px] text-white/60 leading-tight">Unlock all templates, assets and features.</p>
-      <Button size="sm" className="mt-2 h-7 w-full rounded-lg bg-primary hover:bg-primary/90 text-[11px]">Upgrade Now</Button>
+      <p className="text-[8px] font-semibold text-white leading-tight">Pro</p>
+      <Button size="sm" className="mt-1 h-5 w-full rounded-lg bg-primary hover:bg-primary/90 text-[8px] px-1">Upgrade</Button>
     </div>
-    <div className="flex items-center justify-around border-t border-white/5 py-2 text-white/50">
-      <button className="rounded-lg p-2 hover:bg-white/5 hover:text-white"><Settings className="h-4 w-4" /></button>
-      <button className="rounded-lg p-2 hover:bg-white/5 hover:text-white"><Moon className="h-4 w-4" /></button>
-      <button className="rounded-lg p-2 hover:bg-white/5 hover:text-white"><HelpCircle className="h-4 w-4" /></button>
+    <div className="flex items-center justify-around border-t border-white/5 py-1.5 text-white/50">
+      <button className="rounded-lg p-1 hover:bg-white/5 hover:text-white"><Settings className="h-3.5 w-3.5" /></button>
+      <button className="rounded-lg p-1 hover:bg-white/5 hover:text-white"><Moon className="h-3.5 w-3.5" /></button>
+      <button className="rounded-lg p-1 hover:bg-white/5 hover:text-white"><HelpCircle className="h-3.5 w-3.5" /></button>
     </div>
   </aside>
 );
@@ -125,7 +122,7 @@ const TopToolbar: React.FC<{
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-card/95 backdrop-blur px-2 sm:px-4">
+    <header className="flex h-[52px] shrink-0 items-center gap-2 border-b bg-card/95 backdrop-blur px-2 sm:px-4">
       <Button variant="ghost" size="icon" className="md:hidden h-9 w-9" onClick={onToggleLeft}>
         <Menu className="h-4 w-4" />
       </Button>
@@ -381,7 +378,7 @@ const LayersPanel: React.FC<{ canvas: FabricCanvas | null; version: number }> = 
 
 /* ---------- Canvas Sub-toolbar ---------- */
 const CanvasSubToolbar: React.FC = () => (
-  <div className="flex items-center gap-1 border-b bg-card/60 px-3 py-2 overflow-x-auto">
+  <div className="flex h-11 items-center gap-1 border-b bg-card/60 px-3 overflow-x-auto">
     <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs"><Play className="h-3.5 w-3.5" /> Animate</Button>
     <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs">Position</Button>
     <Separator orientation="vertical" className="h-5 mx-1" />
@@ -406,27 +403,10 @@ const CanvasSubToolbar: React.FC = () => (
   </div>
 );
 
-/* ---------- Ruler ---------- */
-const HRuler: React.FC = () => (
-  <div className="relative h-6 border-b bg-card/40 overflow-hidden">
-    <div className="absolute inset-0 flex text-[9px] text-muted-foreground">
-      {Array.from({ length: 14 }).map((_, i) => (
-        <div key={i} className="flex-1 border-r border-border/50 pl-1 pt-1">{i * 100}</div>
-      ))}
-    </div>
-  </div>
-);
-const VRuler: React.FC = () => (
-  <div className="relative w-6 border-r bg-card/40 overflow-hidden">
-    <div className="absolute inset-0 flex flex-col text-[9px] text-muted-foreground">
-      {Array.from({ length: 14 }).map((_, i) => (
-        <div key={i} className="flex-1 border-b border-border/50 pl-1 pt-0.5">{i * 100}</div>
-      ))}
-    </div>
-  </div>
-);
-
 /* ---------- Canvas Stage ---------- */
+const CANVAS_WIDTH = 360;
+const CANVAS_HEIGHT = 640;
+
 const CanvasStage: React.FC<{
   onCanvasReady: (c: FabricCanvas) => void;
   onSelection: (o: any) => void;
@@ -440,16 +420,31 @@ const CanvasStage: React.FC<{
     if (initialized.current || !ref.current) return;
     initialized.current = true;
     const c = new FabricCanvas(ref.current, {
-      width: 640,
-      height: 640,
-      backgroundColor: '#1a1145',
+      width: CANVAS_WIDTH,
+      height: CANVAS_HEIGHT,
+      backgroundColor: '#ffffff',
     });
+
+    c.on('object:added', (e: any) => {
+      if (e.target) {
+        e.target.set({
+          cornerSize: 10,
+          cornerColor: 'white',
+          cornerStrokeColor: '#6B21A8',
+          cornerStyle: 'rect',
+          borderColor: '#6B21A8',
+          borderScaleFactor: 1.5,
+          transparentCorners: false,
+          padding: 2,
+        });
+      }
+    });
+
     if (seedDefault) {
-      // Seed with mockup-like elements when no template is being loaded
-      c.add(new Textbox('SUMMER', { left: 40, top: 120, fontSize: 72, fontWeight: 'bold', fill: '#ffffff', fontFamily: 'Poppins', width: 400 }));
-      c.add(new Textbox('SALE', { left: 40, top: 200, fontSize: 96, fontWeight: 'bold', fill: '#FFC107', fontFamily: 'Poppins', width: 400 }));
-      c.add(new Rect({ left: 40, top: 340, width: 240, height: 52, fill: '#8b5cf6', rx: 26, ry: 26 }));
-      c.add(new Textbox('UP TO 50% OFF', { left: 60, top: 356, fontSize: 18, fontWeight: 'bold', fill: '#ffffff', width: 200 }));
+      c.add(new Textbox('SUMMER', { left: 20, top: 120, fontSize: 72, fontWeight: 'bold', fill: '#1a1145', fontFamily: 'Poppins', width: 320 }));
+      c.add(new Textbox('SALE', { left: 20, top: 200, fontSize: 96, fontWeight: 'bold', fill: '#FFC107', fontFamily: 'Poppins', width: 320 }));
+      c.add(new Rect({ left: 20, top: 340, width: 240, height: 52, fill: '#8b5cf6', rx: 26, ry: 26 }));
+      c.add(new Textbox('UP TO 50% OFF', { left: 40, top: 356, fontSize: 18, fontWeight: 'bold', fill: '#ffffff', width: 200 }));
     }
     c.on('selection:created', (e: any) => onSelection(e.selected?.[0]));
     c.on('selection:updated', (e: any) => onSelection(e.selected?.[0]));
@@ -458,12 +453,18 @@ const CanvasStage: React.FC<{
   }, [onCanvasReady, onSelection, seedDefault]);
 
   return (
-    <div className="flex-1 overflow-auto bg-[hsl(248,48%,97%)]">
-      <div className="min-h-full flex items-center justify-center p-6">
-        <div className="relative rounded-2xl bg-white shadow-[0_20px_60px_-15px_rgba(72,52,212,0.25)] p-2 border border-border/60"
-             style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'center' }}>
-          <canvas ref={ref} className="rounded-xl block" />
-        </div>
+    <div className="flex-1 flex items-center justify-center overflow-auto" style={{ backgroundColor: '#1A1A1A' }}>
+      <div
+        className="relative bg-white"
+        style={{
+          width: CANVAS_WIDTH,
+          height: CANVAS_HEIGHT,
+          boxShadow: '0 0 0 1px rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.4)',
+          transform: `scale(${zoom / 100})`,
+          transformOrigin: 'center center',
+        }}
+      >
+        <canvas ref={ref} className="block" />
       </div>
     </div>
   );
@@ -473,45 +474,50 @@ const CanvasStage: React.FC<{
 const Timeline: React.FC = () => {
   const [playing, setPlaying] = useState(false);
   const tracks = [
-    { label: 'Text', icon: Type, color: 'bg-purple-500', clips: [{ start: 0, w: 40, label: 'SUMMER SALE' }] },
-    { label: 'Image', icon: ImageIcon, color: 'bg-emerald-500', clips: [{ start: 5, w: 75, label: '' }] },
-    { label: 'Shape', icon: Shapes, color: 'bg-amber-500', clips: [{ start: 10, w: 30, label: 'Rectangle' }] },
-    { label: 'Video', icon: Video, color: 'bg-sky-500', clips: [{ start: 25, w: 60, label: '' }] },
-    { label: 'Audio', icon: Music, color: 'bg-teal-500', clips: [{ start: 0, w: 95, label: '' }] },
+    { label: 'Text', icon: Type, clips: [{ start: 0, duration: 40, label: 'SUMMER SALE' }] },
+    { label: 'Image', icon: ImageIcon, clips: [{ start: 5, duration: 70, label: '' }] },
+    { label: 'Shape', icon: Shapes, clips: [{ start: 10, duration: 30, label: 'Rectangle' }] },
+    { label: 'Video', icon: Video, clips: [{ start: 25, duration: 60, label: '' }] },
+    { label: 'Audio', icon: Music, clips: [{ start: 0, duration: 95, label: 'Background.mp3' }] },
   ];
   return (
-    <div className="border-t bg-card/95 backdrop-blur">
-      <div className="flex items-center gap-3 px-4 py-2 border-b">
-        <span className="text-xs font-semibold">Timeline <span className="text-muted-foreground font-normal">(Video Project)</span></span>
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setPlaying(!playing)}>
-          {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-        </Button>
-        <span className="text-xs text-muted-foreground font-mono">00:03:12 / 00:15:00</span>
-        <div className="flex-1" />
-        <Button size="icon" variant="ghost" className="h-7 w-7"><Grid3x3 className="h-3.5 w-3.5" /></Button>
-        <Slider defaultValue={[50]} max={100} className="w-24 hidden sm:flex" />
-        <Button size="icon" variant="ghost" className="h-7 w-7"><Maximize2 className="h-3.5 w-3.5" /></Button>
-      </div>
-      <div className="max-h-48 overflow-auto">
-        <div className="flex text-[10px] text-muted-foreground px-[110px] py-1 border-b bg-muted/30">
-          {['0s','2s','4s','6s','8s','10s','12s','14s'].map((t) => <span key={t} className="flex-1">{t}</span>)}
+    <div className="border-t" style={{ backgroundColor: '#1A1A1A', borderTopColor: '#2D2D2D' }}>
+      <div className="flex h-9 items-center gap-3 px-3 border-b" style={{ borderColor: '#2D2D2D' }}>
+        <div className="flex items-center gap-2">
+          <Button size="icon" variant="ghost" className="h-6 w-6 text-white" onClick={() => setPlaying(!playing)}>
+            {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+          </Button>
+          <span className="text-xs text-white font-mono">0:03</span>
         </div>
+        <div className="flex-1" />
+        <Slider defaultValue={[50]} max={100} className="w-24" />
+      </div>
+      <div className="flex h-7 text-[11px] px-[110px] border-b items-end pb-1" style={{ color: '#666666', borderColor: '#2D2D2D' }}>
+        {['0s','2s','4s','6s','8s','10s','12s','14s'].map((t) => (
+          <span key={t} className="flex-1">{t}</span>
+        ))}
+      </div>
+      <div className="max-h-[100px] overflow-auto">
         {tracks.map((tr) => {
           const Icon = tr.icon;
           return (
-            <div key={tr.label} className="flex items-stretch border-b last:border-b-0 h-11">
-              <div className="w-[110px] shrink-0 flex items-center gap-1.5 px-3 border-r bg-muted/20 text-xs">
-                <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+            <div key={tr.label} className="flex items-stretch border-b h-9" style={{ borderColor: '#222222' }}>
+              <div className="w-[110px] shrink-0 flex items-center gap-1.5 px-3 border-r text-xs" style={{ color: '#CCCCCC', borderColor: '#2D2D2D' }}>
+                <Icon className="h-3.5 w-3.5" style={{ color: '#888888' }} />
                 {tr.label}
               </div>
               <div className="relative flex-1">
                 {tr.clips.map((c, i) => (
                   <div
                     key={i}
-                    className={`absolute top-1.5 bottom-1.5 rounded-md ${tr.color} opacity-90 flex items-center px-2 text-[10px] font-medium text-white shadow-sm`}
-                    style={{ left: `${c.start}%`, width: `${c.w}%` }}
+                    className="absolute top-1 bottom-1 rounded-md flex items-center px-2 text-[10px] font-medium text-white shadow-sm"
+                    style={{
+                      left: `${c.start}%`,
+                      width: `${c.duration}%`,
+                      backgroundColor: '#1B7A6B',
+                    }}
                   >
-                    {c.label}
+                    {c.label && <span className="truncate">{c.label}</span>}
                   </div>
                 ))}
               </div>
@@ -519,8 +525,14 @@ const Timeline: React.FC = () => {
           );
         })}
         <div className="flex items-center gap-2 px-3 py-2">
-          <Button size="sm" variant="outline" className="h-7 gap-1 text-xs"><Plus className="h-3 w-3" /> Add Track</Button>
-          <AITimelineMenu />
+          <button className="flex items-center gap-1.5 border border-dashed rounded-md px-3 py-1.5 text-xs hover:text-white hover:border-white/30" style={{ borderColor: '#444444', color: '#888888' }}>
+            <Plus className="h-3 w-3" /> Add media/blank
+          </button>
+          <span className="text-xs" style={{ color: '#666666' }}>or drag and drop media</span>
+          <div className="flex-1" />
+          <button className="flex items-center gap-1.5 text-xs hover:text-white" style={{ color: '#888888' }}>
+            <Music className="h-3.5 w-3.5" /> Add audio
+          </button>
         </div>
       </div>
     </div>
@@ -724,6 +736,28 @@ const RightPanel: React.FC<{
   );
 };
 
+/* ---------- Bottom Bar ---------- */
+const BottomBar: React.FC<{ zoom: number; setZoom: (n: number) => void }> = ({ zoom, setZoom }) => (
+  <div className="flex h-11 shrink-0 items-center gap-3 border-t bg-card px-3">
+    <div className="flex items-center gap-2">
+      <Monitor className="h-4 w-4 text-muted-foreground" />
+    </div>
+    <div className="flex items-center gap-3">
+      <Slider value={[zoom]} onValueChange={([v]) => setZoom(v)} max={400} min={25} className="w-[120px]" />
+      <span className="min-w-[36px] text-center text-xs font-medium text-muted-foreground">{zoom}%</span>
+    </div>
+    <div className="flex-1" />
+    <div className="flex items-center gap-1">
+      <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-muted-foreground">
+        <Grid3x3 className="h-3.5 w-3.5" /> Pages
+      </Button>
+      <Button variant="ghost" size="icon" className="h-7 w-7"><Grid3x3 className="h-3.5 w-3.5 text-muted-foreground" /></Button>
+      <Button variant="ghost" size="icon" className="h-7 w-7"><Maximize2 className="h-3.5 w-3.5 text-muted-foreground" /></Button>
+      <Button variant="ghost" size="icon" className="h-7 w-7"><HelpCircle className="h-3.5 w-3.5 text-muted-foreground" /></Button>
+    </div>
+  </div>
+);
+
 /* ---------- Main Editor ---------- */
 const EditorInner: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('templates');
@@ -846,7 +880,7 @@ const EditorInner: React.FC = () => {
         <IconRail active={activeTab} onChange={setActiveTab} />
 
         {/* Desktop left panel */}
-        <div className="hidden md:flex w-[300px] shrink-0 border-r">
+        <div className="hidden md:flex w-[264px] shrink-0 border-r">
           {renderLeftPanel()}
         </div>
 
@@ -854,9 +888,7 @@ const EditorInner: React.FC = () => {
         <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
           <CanvasSubToolbar />
           <div className="flex flex-1 min-h-0 overflow-hidden">
-            <VRuler />
             <div className="relative flex flex-1 min-w-0 flex-col overflow-hidden">
-              <HRuler />
               <CanvasStage
                 zoom={zoom}
                 seedDefault={!hasPending}
@@ -864,23 +896,43 @@ const EditorInner: React.FC = () => {
                 onSelection={(o) => { setSelected(o); forceUpdate((n) => n + 1); }}
               />
               {selected && (
-                <div className="pointer-events-auto absolute bottom-14 right-4 z-20 animate-in fade-in slide-in-from-bottom-2">
-                  <AIActionsMenu selected={selected} canvas={canvas} align="end" />
+                <div className="absolute left-1/2 -translate-x-1/2 top-3 z-30 pointer-events-auto animate-in fade-in slide-in-from-top-2">
+                  <div className="flex items-center gap-1 px-3 py-1.5 rounded-full shadow-lg" style={{ backgroundColor: '#2D2D2D', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
+                    <div className="flex items-center gap-1.5 px-1">
+                      <div className="h-5 w-5 rounded-full bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center">
+                        <Sparkles className="h-2.5 w-2.5 text-white" />
+                      </div>
+                      <span className="text-xs font-semibold text-white">Ask AdVista</span>
+                    </div>
+                    <div className="w-px h-5 mx-1" style={{ backgroundColor: '#444444' }} />
+                    <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Edit3 className="h-3.5 w-3.5" /></button>
+                    <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Link className="h-3.5 w-3.5" /></button>
+                    <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Lock className="h-3.5 w-3.5" /></button>
+                    <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Copy className="h-3.5 w-3.5" /></button>
+                    <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Trash2 className="h-3.5 w-3.5" /></button>
+                    <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><MoreHorizontal className="h-3.5 w-3.5" /></button>
+                  </div>
                 </div>
               )}
-              <div className="flex justify-center border-t bg-card/40 py-2">
-                <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs"><Plus className="h-3.5 w-3.5" /> Add Page</Button>
+              <div className="flex justify-center py-2" style={{ backgroundColor: '#1A1A1A', borderTop: '1px solid #2D2D2D' }}>
+                <button className="flex items-center gap-2 h-9 rounded-lg px-4 text-xs" style={{ backgroundColor: '#2D2D2D', border: '1px solid #444444', color: '#CCCCCC' }}>
+                  <Plus className="h-3.5 w-3.5" /> Add page
+                </button>
               </div>
             </div>
           </div>
           <Timeline />
         </div>
 
-        {/* Desktop right panel */}
-        <div className="hidden lg:flex w-[300px] shrink-0">
-          <RightPanel selected={selected} canvas={canvas} />
-        </div>
+        {/* Desktop right panel — contextual, shows only on selection */}
+        {selected && (
+          <div className="hidden lg:flex w-[240px] shrink-0">
+            <RightPanel selected={selected} canvas={canvas} onClose={() => setRightOpen(false)} />
+          </div>
+        )}
       </div>
+
+      <BottomBar zoom={zoom} setZoom={setZoom} />
 
       {/* Mobile floating bottom tabs */}
       {isMobile && (
