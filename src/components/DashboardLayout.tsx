@@ -385,9 +385,10 @@ const DashboardShell = () => {
   const openSearch = () => setSearchOpen(true);
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-background">
+    <div className="flex h-screen w-full flex-col overflow-hidden bg-background">
       <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
-      <div className="flex w-full">
+      <div className="flex min-h-0 w-full flex-1 overflow-hidden">
+
         {/* Mobile drawer */}
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetContent
