@@ -154,6 +154,35 @@ const CreateAdEntry = () => {
           </motion.div>
         </div>
 
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-6 rounded-[28px] border-2 border-primary/30 bg-[linear-gradient(135deg,rgba(139,92,246,0.12),rgba(14,165,233,0.10))] p-5 shadow-card sm:mb-8"
+        >
+          <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/15">
+                <Sparkles className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <div className="mb-1 flex items-center gap-2">
+                  <h3 className="text-lg font-bold sm:text-xl">✨ Generate Template with AI</h3>
+                  <Badge className="rounded-full">New</Badge>
+                </div>
+                <p className="max-w-xl text-sm text-muted-foreground">
+                  AdVista designs a fully editable creative from your Brand, Category, Goal, and Platform — no browsing required.
+                </p>
+              </div>
+            </div>
+            <Button size="lg" onClick={() => setGenOpen(true)} className="w-full sm:w-auto">
+              <Sparkles className="mr-2 h-4 w-4" /> Generate Template
+            </Button>
+          </div>
+        </motion.div>
+
+        <GenerateTemplateDialog open={genOpen} onOpenChange={setGenOpen} />
+
         <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-3 lg:gap-8">
           {/* Option 1: AI Quick Draft */}
           <motion.div
