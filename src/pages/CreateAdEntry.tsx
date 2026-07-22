@@ -33,6 +33,7 @@ const createDefaultCampaignSettings = (): CampaignDraftSettings => ({
 const CreateAdEntry = () => {
   const navigate = useNavigate();
   const [method, setMethod] = useState<AdCreationMethod>(null);
+  const [genOpen, setGenOpen] = useState(false);
 
   const handleDataReady = (data: Partial<AdDraftResponse> & { templateId?: string; templateName?: string }) => {
     const createFlowState = {
