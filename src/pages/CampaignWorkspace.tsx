@@ -18,6 +18,7 @@ import { CampaignVersionsTab } from '@/components/campaigns/CampaignVersionsTab'
 import { CampaignFilesTab } from '@/components/campaigns/CampaignFilesTab';
 import { CampaignNotesTab } from '@/components/campaigns/CampaignNotesTab';
 import { CampaignAutomationRules } from '@/components/campaigns/CampaignAutomationRules';
+import { CampaignPublishingTab } from '@/components/campaigns/CampaignPublishingTab';
 import { CampaignHealthService } from '@/services/campaign/CampaignHealthService';
 import { CampaignVersionService } from '@/services/campaign/CampaignVersionService';
 import { CampaignEventService } from '@/services/campaign/CampaignEventService';
@@ -277,15 +278,12 @@ const CampaignWorkspace = () => {
 
           {/* PUBLISHING */}
           <TabsContent value="publishing" className="space-y-6 mt-0">
-            <section className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-20">
-              <Send className="h-10 w-10 text-muted-foreground" />
-              <h3 className="mt-4 text-base font-semibold">Publishing</h3>
-              <p className="mt-1 text-sm text-muted-foreground max-w-md text-center">
-                Configure platforms, schedules, and publish your campaign across channels.
+            <section>
+              <h3 className="text-lg font-bold mb-1">Publishing & Distribution</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Choose platforms and schedule. AdVista's Publishing Engine validates, dispatches, and tracks every job.
               </p>
-              <Button variant="outline" className="mt-4 gap-1.5 rounded-xl">
-                <Send className="h-4 w-4" /> Configure Publishing
-              </Button>
+              <CampaignPublishingTab campaign={campaign} />
             </section>
           </TabsContent>
 
