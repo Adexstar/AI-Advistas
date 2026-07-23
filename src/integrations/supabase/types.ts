@@ -853,6 +853,54 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_connections: {
+        Row: {
+          access_token: string | null
+          account_id: string | null
+          account_name: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          metadata: Json
+          platform: string
+          provider: string
+          refresh_token: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          account_id?: string | null
+          account_name?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          platform: string
+          provider: string
+          refresh_token?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          account_id?: string | null
+          account_name?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          platform?: string
+          provider?: string
+          refresh_token?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -882,6 +930,122 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      publishing_history: {
+        Row: {
+          action: string
+          campaign_id: string
+          created_at: string
+          details: Json
+          id: string
+          job_id: string | null
+          platform: string
+          result: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          campaign_id: string
+          created_at?: string
+          details?: Json
+          id?: string
+          job_id?: string | null
+          platform: string
+          result: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          campaign_id?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          job_id?: string | null
+          platform?: string
+          result?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publishing_history_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publishing_history_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "publishing_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      publishing_jobs: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          error_message: string | null
+          external_ids: Json
+          id: string
+          max_retries: number
+          mode: string
+          payload: Json
+          platform: string
+          provider: string
+          published_at: string | null
+          retry_count: number
+          scheduled_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          error_message?: string | null
+          external_ids?: Json
+          id?: string
+          max_retries?: number
+          mode?: string
+          payload?: Json
+          platform: string
+          provider: string
+          published_at?: string | null
+          retry_count?: number
+          scheduled_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          error_message?: string | null
+          external_ids?: Json
+          id?: string
+          max_retries?: number
+          mode?: string
+          payload?: Json
+          platform?: string
+          provider?: string
+          published_at?: string | null
+          retry_count?: number
+          scheduled_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publishing_jobs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {
