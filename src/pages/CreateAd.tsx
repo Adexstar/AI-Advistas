@@ -1,363 +1,259 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'sonner';
 import {
-  ArrowLeft, ArrowRight, Bookmark, Check, ChevronRight, CircleDollarSign,
-  Eye, Facebook, Image as ImageIcon, Instagram, Layers, Linkedin, Loader2,
-  MapPin, Palette, Rocket, Save, Send, Sparkles, Target, Upload, Users, Video, Wand2,
+  ArrowLeft, ArrowRight, Bell, Check, Eye,
+  Facebook, Instagram, Linkedin, Image as ImageIcon, Link, Loader2, MapPin,
+  Save, Send, Sparkles, Target, Upload, Users, Video, X,
+  Calendar as CalendarIcon, ShoppingCart, Menu,
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Separator } from '@/components/ui/separator';
-import { Slider } from '@/components/ui/slider';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useBrandKits } from '@/hooks/useBrandKit';
 
 /* ------------------------------------------------------------------ */
-/* Types & constants                                                   */
+/* Types & Constants                                                   */
 /* ------------------------------------------------------------------ */
+
+type BudgetType = 'daily' | 'total';
+type RunType = 'continuous' | 'end_date';
 
 type FormValues = {
-  // Step 1 — Offer
   name: string;
-  category: string;
   objective: string;
-  description: string;
-  websiteUrl: string;
-  cta: string;
-  // Step 2 — Creative
+  platforms: string[];
+  mediaUrl: string;
   primaryText: string;
   headline: string;
   descriptionCopy: string;
-  mediaUrl: string;
-  templateSource: string;
-  // Step 3 — Audience
+  cta: string;
+  websiteUrl: string;
   location: string;
   ageMin: number;
   ageMax: number;
   gender: string;
   interests: string;
-  behaviors: string;
-  languages: string;
-  placements: string[];
-  budgetGoal: string;
-  // Step 4 — Budget
-  dailyBudget: number;
-  lifetimeBudget: number;
-  startDate: string;
-  endDate: string;
-  bidding: string;
-  allocation: string;
+  budgetType: BudgetType;
+  budgetAmount: number;
+  startDate: Date;
+  runType: RunType;
+  endDate: Date | null;
+  termsAccepted: boolean;
 };
 
 const STEPS = [
-  { id: 1, label: 'Offer', icon: Target, hint: 'Campaign & Goal' },
-  { id: 2, label: 'Creative', icon: Palette, hint: 'Design Your Ad' },
-  { id: 3, label: 'Audience', icon: Users, hint: 'Target People' },
-  { id: 4, label: 'Budget', icon: CircleDollarSign, hint: 'Spend & Schedule' },
-  { id: 5, label: 'Review', icon: Rocket, hint: 'Finalize & Publish' },
+  { id: 1, label: 'Setup', subtitle: 'Campaign & Goal' },
+  { id: 2, label: 'Ad Creative', subtitle: 'Design Your Ad' },
+  { id: 3, label: 'Audience', subtitle: 'Target People' },
+  { id: 4, label: 'Budget', subtitle: 'Set Budget & Schedule' },
+  { id: 5, label: 'Review', subtitle: 'Finalize & Publish' },
 ] as const;
 
 const OBJECTIVES = [
-  { v: 'awareness', l: 'Awareness' },
-  { v: 'traffic', l: 'Traffic' },
-  { v: 'leads', l: 'Leads' },
-  { v: 'sales', l: 'Sales' },
-  { v: 'app_installs', l: 'App Installs' },
-  { v: 'conversions', l: 'Conversions' },
-];
+  { value: 'conversions', label: 'Conversions', icon: ShoppingCart },
+  { value: 'traffic', label: 'Traffic', icon: ArrowRight },
+  { value: 'leads', label: 'Lead Generation', icon: Users },
+  { value: 'awareness', label: 'Awareness', icon: Eye },
+  { value: 'engagement', label: 'Engagement', icon: Sparkles },
+  { value: 'app_installs', label: 'App Installs', icon: Download },
+] as const;
 
-const CTAS = ['Shop Now', 'Buy Now', 'Learn More', 'Sign Up', 'Contact', 'Download'];
+const CTAS = [
+  'Shop Now', 'Learn More', 'Sign Up', 'Get Quote', 'Book Now',
+  'Download', 'Contact Us', 'Watch More', 'Subscribe', 'Try Free',
+  'Get Started', 'See More', 'Apply Now', 'Register', 'Play Game',
+  'Listen Now', 'Donate', 'Join Us',
+];
 
 const PLATFORMS = [
-  { v: 'facebook', l: 'Facebook', icon: Facebook, color: 'bg-blue-500/10 text-blue-600' },
-  { v: 'instagram', l: 'Instagram', icon: Instagram, color: 'bg-pink-500/10 text-pink-600' },
-  { v: 'tiktok', l: 'TikTok', icon: Video, color: 'bg-slate-900/10 text-slate-900 dark:text-slate-100' },
-  { v: 'linkedin', l: 'LinkedIn', icon: Linkedin, color: 'bg-sky-500/10 text-sky-700' },
+  { value: 'facebook', label: 'Facebook', icon: Facebook },
+  { value: 'instagram', label: 'Instagram', icon: Instagram },
+  { value: 'linkedin', label: 'LinkedIn', icon: Linkedin },
+  { value: 'tiktok', label: 'TikTok', icon: Video },
+  { value: 'pinterest', label: 'Pinterest', icon: PinIcon },
+  { value: 'twitter', label: 'Twitter/X', icon: XIcon },
+  { value: 'youtube', label: 'YouTube', icon: VideoIcon },
+  { value: 'more', label: 'More', icon: Menu },
 ];
 
+function PinIcon({ className }: { className?: string }) { return <Target className={className} />; }
+function XIcon({ className }: { className?: string }) { return <X className={className} />; }
+function VideoIcon({ className }: { className?: string }) { return <Video className={className} />; }
+function Download({ className }: { className?: string }) { return <Send className={className} />; }
+
+const GENDERS = ['All', 'Men', 'Women'];
+
 /* ------------------------------------------------------------------ */
-/* Small building blocks                                               */
+/* Progress Bar                                                        */
 /* ------------------------------------------------------------------ */
 
-function SectionCard({ children, className }: { children: React.ReactNode; className?: string }) {
+function StepProgress({ step }: { step: number }) {
   return (
-    <Card className={cn('rounded-2xl border-border/60 shadow-sm', className)}>
-      <CardContent className="p-5 sm:p-6">{children}</CardContent>
-    </Card>
-  );
-}
-
-function Field({
-  label, hint, children, required,
-}: { label: string; hint?: string; children: React.ReactNode; required?: boolean }) {
-  return (
-    <div className="space-y-1.5">
-      <Label className="text-sm font-medium">
-        {label} {required && <span className="text-destructive">*</span>}
-      </Label>
-      {children}
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-    </div>
-  );
-}
-
-function AISuggestionBar({ actions, onAction }: { actions: string[]; onAction: (a: string) => void }) {
-  return (
-    <div className="rounded-xl border border-primary/20 bg-primary/[0.04] p-3">
-      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
-        <Sparkles className="h-3.5 w-3.5" /> AI Suggestions
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {actions.map((a) => (
-          <Button key={a} type="button" size="sm" variant="outline"
-            onClick={() => onAction(a)} className="rounded-full h-8 text-xs">
-            <Wand2 className="mr-1.5 h-3 w-3" /> {a}
-          </Button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Live Preview                                                        */
-/* ------------------------------------------------------------------ */
-
-function LivePreview({ v, brandName }: { v: FormValues; brandName: string }) {
-  const [tab, setTab] = useState('mobile');
-  return (
-    <div className="space-y-3">
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="grid w-full grid-cols-5 h-9">
-          <TabsTrigger value="mobile" className="text-xs">Mobile</TabsTrigger>
-          <TabsTrigger value="desktop" className="text-xs">Desktop</TabsTrigger>
-          <TabsTrigger value="feed" className="text-xs">Feed</TabsTrigger>
-          <TabsTrigger value="story" className="text-xs">Story</TabsTrigger>
-          <TabsTrigger value="carousel" className="text-xs">Carousel</TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      <div className={cn(
-        'mx-auto overflow-hidden rounded-2xl border border-border/70 bg-background shadow-sm',
-        tab === 'story' ? 'aspect-[9/16] max-w-[220px]' :
-          tab === 'desktop' ? 'w-full' : 'max-w-[300px]'
-      )}>
-        {/* header */}
-        <div className="flex items-center gap-2 border-b border-border/60 p-2.5">
-          <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary to-primary/50" />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-semibold">{brandName || 'Your Brand'}</p>
-            <p className="text-[10px] text-muted-foreground">Sponsored</p>
-          </div>
-        </div>
-        {/* body text */}
-        <div className="px-3 pt-2">
-          <p className="line-clamp-3 text-xs leading-snug">
-            {v.primaryText || 'Your primary ad text will appear here. Add compelling copy that hooks your audience.'}
-          </p>
-        </div>
-        {/* media */}
-        <div className={cn(
-          'mt-2 flex items-center justify-center overflow-hidden bg-muted/50',
-          tab === 'story' ? 'aspect-[9/16]' : 'aspect-square'
-        )}>
-          {v.mediaUrl ? (
-            <img src={v.mediaUrl} alt="preview" className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex flex-col items-center gap-1 text-muted-foreground">
-              <ImageIcon className="h-8 w-8 opacity-40" />
-              <p className="text-[10px]">Upload media</p>
-            </div>
-          )}
-        </div>
-        {/* footer */}
-        <div className="flex items-center justify-between gap-2 border-t border-border/60 p-2.5">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[11px] font-semibold">
-              {v.headline || 'Your headline goes here'}
-            </p>
-            {v.descriptionCopy && (
-              <p className="truncate text-[10px] text-muted-foreground">{v.descriptionCopy}</p>
-            )}
-          </div>
-          <Button size="sm" className="h-7 shrink-0 rounded-md px-2 text-[10px]">
-            {v.cta || 'Shop Now'}
-          </Button>
-        </div>
-      </div>
-
-      <p className="rounded-lg bg-muted/50 p-2 text-center text-[10px] text-muted-foreground">
-        Preview is an approximation and may differ from the actual ad on each platform.
-      </p>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Progress card                                                        */
-/* ------------------------------------------------------------------ */
-
-function ProgressCard({
-  step, setStep, completion, readiness,
-}: { step: number; setStep: (n: number) => void; completion: number; readiness: number }) {
-  return (
-    <SectionCard>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Setup Progress</p>
-          <div className="mt-1 flex items-baseline gap-3">
-            <span className="text-2xl font-bold">{completion}%</span>
-            <span className="text-xs text-muted-foreground">Complete</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 dark:border-emerald-800/50 dark:bg-emerald-950/50">
-          <div className="h-2 w-2 rounded-full bg-emerald-500" />
-          <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-            {readiness}% Ready
-          </span>
-        </div>
-      </div>
-
-      <Progress value={completion} className="h-1.5" />
-
-      <div className="mt-5 grid grid-cols-5 gap-1 sm:gap-2">
-        {STEPS.map((s, i) => {
-          const active = step === s.id;
-          const done = step > s.id;
-          const Icon = s.icon;
-          return (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => setStep(s.id)}
-              className={cn(
-                'group relative flex flex-col items-center gap-1.5 rounded-xl p-2 text-center transition',
-                active && 'bg-primary/10',
-                !active && 'hover:bg-muted/60'
-              )}
-            >
+    <div className="flex items-center w-full max-w-4xl mx-auto mb-8 px-4 overflow-x-auto">
+      {STEPS.map((s, i) => {
+        const idx = i + 1;
+        const active = step === idx;
+        const completed = step > idx;
+        return (
+          <div key={s.id} className="flex items-center flex-1 last:flex-none min-w-0">
+            <div className="flex flex-col items-center">
               <div className={cn(
-                'flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold transition',
-                done ? 'bg-emerald-500 text-white' :
-                  active ? 'bg-primary text-primary-foreground shadow-md shadow-primary/30' :
-                    'bg-muted text-muted-foreground'
+                'flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full text-[10px] sm:text-xs font-bold transition-all shrink-0',
+                active && 'bg-[#6C63FF] text-white shadow-sm',
+                completed && 'bg-[#6C63FF] text-white',
+                !active && !completed && 'bg-white border-2 border-[#E5E5E5] text-[#9CA3AF]',
               )}>
-                {done ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+                {completed ? <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> : idx}
               </div>
               <span className={cn(
-                'text-[10px] font-medium leading-tight sm:text-xs',
-                active ? 'text-foreground' : 'text-muted-foreground'
-              )}>
-                {s.label}
-              </span>
-              {i < STEPS.length - 1 && (
-                <div className="absolute right-[-4px] top-[22px] hidden sm:block">
-                  <ChevronRight className="h-3 w-3 text-muted-foreground/40" />
-                </div>
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </SectionCard>
+                'mt-1 text-[10px] sm:text-xs font-semibold',
+                active && 'text-[#6C63FF]',
+                completed && 'text-[#6C63FF]',
+                !active && !completed && 'text-[#9CA3AF]',
+              )}>{s.label}</span>
+              <span className="hidden sm:block text-[10px] text-[#9CA3AF] leading-tight">{s.subtitle}</span>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div className={cn(
+                'flex-1 h-px mx-1.5 sm:mx-3 mt-[-18px] sm:mt-[-20px]',
+                completed ? 'bg-[#6C63FF]' : 'bg-[#E5E5E5]',
+              )} />
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* Main page                                                           */
+/* Field Helpers                                                       */
+/* ------------------------------------------------------------------ */
+
+function Field({ label, hint, children, required }: { label: string; hint?: string; children: React.ReactNode; required?: boolean }) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-semibold text-[#374151]">
+        {label} {required && <span className="text-red-500">*</span>}
+      </Label>
+      {children}
+      {hint && <p className="text-[11px] text-[#9CA3AF]">{hint}</p>}
+    </div>
+  );
+}
+
+function StepSection({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-6">
+      <h3 className="text-base font-bold text-[#111827]">{title}</h3>
+      {subtitle && <p className="text-xs text-[#9CA3AF] mt-0.5 mb-4">{subtitle}</p>}
+      {children}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Main Page                                                           */
 /* ------------------------------------------------------------------ */
 
 export default function CreateAd() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: brandKits = [] } = useBrandKits();
-  const brandName = brandKits[0]?.name ?? 'Your Brand';
-
   const [step, setStep] = useState(1);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
-  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewTab, setPreviewTab] = useState<'mobile' | 'desktop'>('mobile');
+  const [previewPlatform, setPreviewPlatform] = useState('facebook_feed');
 
-  const { register, watch, control, handleSubmit, setValue, formState: { errors } } = useForm<FormValues>({
+  const { register, watch, control, handleSubmit, setValue } = useForm<FormValues>({
     defaultValues: {
-      name: '', category: '', objective: 'conversions', description: '', websiteUrl: '', cta: 'Shop Now',
-      primaryText: '', headline: '', descriptionCopy: '', mediaUrl: '', templateSource: 'advista',
-      location: 'United States', ageMin: 18, ageMax: 45, gender: 'all',
-      interests: '', behaviors: '', languages: 'English', placements: ['facebook', 'instagram'],
-      budgetGoal: 'balanced',
-      dailyBudget: 25, lifetimeBudget: 500,
-      startDate: new Date().toISOString().slice(0, 10),
-      endDate: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
-      bidding: 'lowest_cost', allocation: 'auto',
+      name: '', objective: 'conversions', platforms: ['facebook', 'instagram'],
+      mediaUrl: '', primaryText: '', headline: '', descriptionCopy: '', cta: 'Shop Now', websiteUrl: '',
+      location: '', ageMin: 18, ageMax: 55, gender: 'All', interests: '',
+      budgetType: 'daily', budgetAmount: 50,
+      startDate: new Date(), runType: 'continuous', endDate: null,
+      termsAccepted: false,
     },
   });
 
   const values = watch();
+  const brandName = 'Your Brand';
 
-  /* ---------- Completion & Readiness scoring ---------- */
-  const { completion, readiness, checks } = useMemo(() => {
-    const c1 = !!values.name && !!values.objective;
-    const c2 = !!values.primaryText && !!values.headline;
-    const c3 = values.placements.length > 0 && !!values.location;
-    const c4 = values.dailyBudget > 0 || values.lifetimeBudget > 0;
-    const done = [c1, c2, c3, c4].filter(Boolean).length;
-    const completion = Math.round((done / 4) * 100);
+  /* ---------- Reach estimation ---------- */
+  const reachEstimate = useMemo(() => {
+    const amt = values.budgetAmount || 0;
+    if (values.budgetType === 'daily') {
+      const low = amt * 840;
+      const high = amt * 1680;
+      return { label: 'Estimated Daily Reach', low, high };
+    }
+    const low = amt * 840;
+    const high = amt * 1680;
+    return { label: 'Estimated Campaign Reach', low, high };
+  }, [values.budgetAmount, values.budgetType]);
 
-    const checks = [
-      { ok: !!brandKits.length, label: 'Brand Applied' },
-      { ok: !!values.cta, label: 'CTA Set' },
-      { ok: (values.headline?.length || 0) > 6, label: 'Strong Headline' },
-      { ok: values.placements.length > 0, label: 'Audience Placements' },
-      { ok: !!values.mediaUrl, label: 'Creative Media' },
-    ];
-    const readiness = Math.round((checks.filter((c) => c.ok).length / checks.length) * 100);
+  const reachPercent = useMemo(() => {
+    const high = reachEstimate.high || 1;
+    return Math.min((reachEstimate.low / high) * 100, 100);
+  }, [reachEstimate]);
 
-    return { completion, readiness, checks };
-  }, [values, brandKits.length]);
+  const runDays = useMemo(() => {
+    if (values.runType === 'continuous' || !values.endDate) return null;
+    return Math.round((values.endDate.getTime() - values.startDate.getTime()) / 86400000);
+  }, [values.runType, values.endDate, values.startDate]);
 
   /* ---------- Save draft ---------- */
   const saveDraft = useCallback(async (silent = false): Promise<string | null> => {
     if (!user) return null;
     setSaving(true);
     try {
-      const platform = values.placements.join(',');
       const payload = {
         user_id: user.id,
         name: values.name || 'Untitled Campaign',
         objective: values.objective,
-        platform,
-        budget: Number(values.dailyBudget) || 0,
-        start_date: values.startDate || null,
-        end_date: values.endDate || null,
+        platform: values.platforms.join(','),
+        platforms: values.platforms,
+        budget: Number(values.budgetAmount) || 0,
+        spend: 0, reach: 0, clicks: 0, impressions: 0, conversions: 0, revenue: 0, ctr: 0, roas: 0,
+        start_date: format(values.startDate, 'yyyy-MM-dd'),
+        end_date: values.endDate ? format(values.endDate, 'yyyy-MM-dd') : null,
+        /* ad creative fields */
+        headline: values.headline,
+        primary_text: values.primaryText,
+        description: values.descriptionCopy,
+        cta: values.cta,
+        media_url: values.mediaUrl,
+        website_url: values.websiteUrl,
+        /* audience fields */
+        target_audience: {
+          location: values.location,
+          age_min: values.ageMin,
+          age_max: values.ageMax,
+          gender: values.gender,
+          interests: values.interests,
+        },
         status: 'draft' as const,
       };
 
       let id = draftId;
       if (id) {
-        const { error } = await supabase.from('campaigns').update(payload).eq('id', id);
+        const { error } = await supabase.from('campaigns').update(payload as any).eq('id', id);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase.from('campaigns').insert(payload).select().single();
+        const { data, error } = await supabase.from('campaigns').insert(payload as any).select().single();
         if (error) throw error;
-        id = data.id;
+        id = (data as any).id;
         setDraftId(id);
       }
       setLastSavedAt(new Date());
@@ -371,536 +267,647 @@ export default function CreateAd() {
     }
   }, [user, values, draftId]);
 
-  /* ---------- Autosave (debounced) ---------- */
+  /* ---------- Autosave ---------- */
   const autosaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!user || !values.name) return;
     if (autosaveRef.current) clearTimeout(autosaveRef.current);
     autosaveRef.current = setTimeout(() => { void saveDraft(true); }, 4000);
     return () => { if (autosaveRef.current) clearTimeout(autosaveRef.current); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values.name, values.objective, values.dailyBudget, values.placements.join(','), values.startDate, values.endDate]);
+  }, [values.name, values.objective, values.budgetAmount, values.platforms.join(','), values.startDate, values.endDate]);
 
   const publish = handleSubmit(async () => {
     if (!values.name) { toast.error('Campaign name is required'); setStep(1); return; }
-    if (!values.placements.length) { toast.error('Select at least one placement'); setStep(3); return; }
+    if (!values.termsAccepted) { toast.error('Please accept the terms'); return; }
     setPublishing(true);
-    const id = await saveDraft(true);
-    if (id) {
-      await supabase.from('campaigns').update({ status: 'active' }).eq('id', id);
-      toast.success('Campaign published!');
-      navigate('/campaigns');
+    try {
+      const id = await saveDraft(true);
+      if (id) {
+        const { error } = await supabase.from('campaigns').update({ status: 'active' } as any).eq('id', id);
+        if (error) throw error;
+        toast.success('Campaign published successfully!');
+        navigate(`/campaigns/${id}`);
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to publish campaign');
+    } finally {
+      setPublishing(false);
     }
-    setPublishing(false);
   });
-
-  const goToTemplate = () => navigate('/template-library');
-  const goToEditor = () => navigate('/visual-editor');
-  const goToMedia = () => navigate('/media-library');
-
-  /* ---------- AI stub (interfaces ready for wiring) ---------- */
-  const applyAI = (action: string) => {
-    toast.message(`${action}`, { description: 'AI hook ready — will populate suggestions once connected.' });
-  };
-
-  /* ---------- Placement toggle ---------- */
-  const togglePlacement = (v: string) => {
-    const set = new Set(values.placements);
-    set.has(v) ? set.delete(v) : set.add(v);
-    setValue('placements', Array.from(set), { shouldDirty: true });
-  };
 
   /* ---------- Media upload ---------- */
   const fileRef = useRef<HTMLInputElement>(null);
   const handleFile = async (f: File) => {
     if (!user) return;
     const path = `${user.id}/creatives/${Date.now()}-${f.name}`;
-    const { error } = await supabase.storage.from('media-library').upload(path, f);
-    if (error) { toast.error(error.message); return; }
-    const { data } = supabase.storage.from('media-library').getPublicUrl(path);
-    setValue('mediaUrl', data.publicUrl);
+    const { error: uploadError } = await supabase.storage.from('media-library').upload(path, f);
+    if (uploadError) { toast.error(uploadError.message); return; }
+    const { data: urlData } = supabase.storage.from('media-library').getPublicUrl(path);
+    setValue('mediaUrl', urlData.publicUrl);
     toast.success('Media uploaded');
   };
 
-  /* ---------- Steps content ---------- */
-  const StepOffer = (
-    <div className="space-y-5">
-      <SectionCard>
-        <div className="mb-4">
-          <h3 className="text-base font-semibold">Campaign & Goal</h3>
-          <p className="text-xs text-muted-foreground">Choose the campaign objective and define your ad.</p>
+  const togglePlatform = (v: string) => {
+    const set = new Set(values.platforms);
+    set.has(v) ? set.delete(v) : set.add(v);
+    setValue('platforms', Array.from(set), { shouldDirty: true });
+  };
+
+  const nextStep = () => {
+    if (step === 1 && !values.name.trim()) {
+      toast.error('Campaign name is required'); return;
+    }
+    if (step === 3 && !values.location.trim()) {
+      toast.error('Please enter a target location'); return;
+    }
+    if (step === 4 && (!values.budgetAmount || values.budgetAmount <= 0)) {
+      toast.error('Please set a budget amount'); return;
+    }
+    if (step < 5) setStep(step + 1);
+  };
+  const prevStep = () => {
+    if (step > 1) setStep(step - 1);
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* STEP 1 — Setup                                                     */
+  /* ------------------------------------------------------------------ */
+  const StepSetup = (
+    <div className="flex flex-col lg:flex-row gap-8">
+      <div className="w-full max-w-none lg:max-w-[480px] space-y-6">
+        <StepSection title="Campaign & Goal" subtitle="Choose the campaign objective and define your ad.">
+          <div className="space-y-4">
+            <Field label="Campaign Name" required>
+              <Input placeholder="Summer Sale Campaign" {...register('name', { required: true })}
+                className="h-11 border-[1.5px] border-[#E5E5E5] rounded-[10px] text-sm px-3.5 focus:border-[#6C63FF]" />
+            </Field>
+            <Field label="Objective">
+              <Controller control={control} name="objective" render={({ field }) => (
+                <select value={field.value} onChange={(e) => field.onChange(e.target.value)}
+                  className="h-11 w-full border-[1.5px] border-[#E5E5E5] rounded-[10px] text-sm px-3.5 bg-white focus:border-[#6C63FF] focus:outline-none appearance-none">
+                  {OBJECTIVES.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              )} />
+            </Field>
+            <Field label="Platform">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {PLATFORMS.slice(0, 8).map((p) => {
+                  const selected = values.platforms.includes(p.value);
+                  const Icon = p.icon;
+                  return (
+                    <button key={p.value} type="button" onClick={() => togglePlatform(p.value)}
+                      className={cn(
+                        'relative flex flex-col items-center justify-center h-[72px] rounded-[10px] border-[1.5px] transition text-xs font-medium text-[#374151]',
+                        selected ? 'border-[#6C63FF] bg-[#F5F3FF]' : 'border-[#E5E5E5] bg-white',
+                      )}>
+                      {selected && (
+                        <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-[#6C63FF] flex items-center justify-center">
+                          <Check className="h-2.5 w-2.5 text-white" />
+                        </div>
+                      )}
+                      <Icon className="h-5 w-5 mb-1" />
+                      <span className="text-[10px]">{p.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </Field>
+          </div>
+        </StepSection>
+
+        <div className="flex justify-end">
+          <button onClick={nextStep} className="bg-[#6C63FF] text-white rounded-[10px] h-11 px-6 text-sm font-semibold flex items-center gap-2 hover:bg-[#5A52E0] transition">
+            Next: Ad Creative <ArrowRight className="h-4 w-4" />
+          </button>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Campaign Name" required>
-            <Input placeholder="Summer Sale Campaign" {...register('name', { required: true })} />
+      </div>
+
+      {/* Right Preview Panel */}
+      <div className="hidden lg:block flex-1 max-w-[420px]">
+        <div className="sticky top-24 space-y-4">
+          <div>
+            <h3 className="text-sm font-bold text-[#111827]">Ad Preview</h3>
+            <p className="text-xs text-[#9CA3AF]">See how your ad will look across platforms.</p>
+          </div>
+          <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
+            <button onClick={() => setPreviewTab('mobile')}
+              className={cn('px-3 py-1.5 text-xs font-medium rounded-md transition', previewTab === 'mobile' ? 'bg-[#6C63FF] text-white' : 'text-[#9CA3AF]')}>Mobile</button>
+            <button onClick={() => setPreviewTab('desktop')}
+              className={cn('px-3 py-1.5 text-xs font-medium rounded-md transition', previewTab === 'desktop' ? 'bg-[#6C63FF] text-white' : 'text-[#9CA3AF]')}>Desktop</button>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 text-xs">
+            {['Facebook Feed', 'Instagram Feed', 'Instagram Story', 'Facebook Story', 'TikTok', 'LinkedIn'].map((p) => (
+              <button key={p} onClick={() => setPreviewPlatform(p.toLowerCase().replace(/\s+/g, '_'))}
+                className={cn('pb-1 whitespace-nowrap', previewPlatform === p.toLowerCase().replace(/\s+/g, '_') ? 'text-[#6C63FF] border-b-2 border-[#6C63FF] font-medium' : 'text-[#9CA3AF]')}>{p}</button>
+            ))}
+          </div>
+          <div className="bg-white border border-[#E5E5E5] rounded-xl overflow-hidden">
+            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[#E5E5E580]">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#6C63FF] to-[#A78BFA]" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold truncate">{brandName}</p>
+                <p className="text-[10px] text-[#9CA3AF]">Sponsored</p>
+              </div>
+              <span className="text-[#9CA3AF] font-bold">⋯</span>
+            </div>
+            <div className="aspect-square bg-muted/30 flex items-center justify-center">
+              {values.mediaUrl ? (
+                <img src={values.mediaUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <ImageIcon className="h-10 w-10 text-muted-foreground/30" />
+              )}
+            </div>
+            <div className="p-3 space-y-1">
+              <p className="text-[10px] text-[#9CA3AF]">yourwebsite.com</p>
+              <p className="text-sm font-semibold leading-tight">{values.headline || 'Natural Skincare for You'}</p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-[#9CA3AF] line-clamp-1">{values.descriptionCopy || 'Hydrating. Clean. Effective.'}</p>
+                <span className="text-[11px] font-semibold text-white bg-[#6C63FF] px-3 py-1 rounded">{values.cta || 'Shop Now'}</span>
+              </div>
+              <p className="text-xs text-[#9CA3AF]">{values.primaryText || 'Your ad text will appear here.'}</p>
+              <div className="flex items-center gap-2 text-[10px] text-[#9CA3AF] pt-1 border-t border-[#E5E5E580]">
+                <span>Like</span> <span>Comment</span> <span>Share</span>
+              </div>
+            </div>
+          </div>
+          <p className="text-[10px] text-[#9CA3AF] italic max-w-[320px]">Preview is an approximation and may differ from the actual ad on each platform.</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ------------------------------------------------------------------ */
+  /* STEP 2 — Ad Creative                                                */
+  /* ------------------------------------------------------------------ */
+  const StepCreative = (
+    <div className="max-w-[480px] space-y-6">
+      <StepSection title="Ad Creative" subtitle="Design the content for your ad.">
+        <div className="space-y-4">
+          <Field label="Media">
+            <div className="border-2 border-dashed border-[#E5E5E5] rounded-xl p-8 text-center hover:border-[#6C63FF]/40 transition cursor-pointer" onClick={() => fileRef.current?.click()}>
+              {values.mediaUrl ? (
+                <img src={values.mediaUrl} alt="" className="max-h-40 mx-auto rounded-lg" />
+              ) : (
+                <>
+                  <Upload className="h-8 w-8 mx-auto text-[#9CA3AF]" />
+                  <p className="text-xs font-medium text-[#6C63FF] mt-2">Upload Media</p>
+                  <p className="text-[11px] text-[#9CA3AF]">or drag and drop</p>
+                </>
+              )}
+            </div>
+            <div className="flex gap-2 mt-2">
+              <button type="button" onClick={() => fileRef.current?.click()} className="text-xs text-[#6C63FF] font-medium hover:underline">Media from Library</button>
+              <span className="text-[#E5E5E5]">|</span>
+              <button type="button" className="text-xs text-[#6C63FF] font-medium hover:underline">AI Generate Image</button>
+            </div>
+            <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
           </Field>
-          <Field label="Business Category">
-            <Input placeholder="e.g. Skincare, SaaS, Fitness" {...register('category')} />
+          <Field label="Primary Text" hint={`${values.primaryText.length}/125`}>
+            <Textarea rows={2} maxLength={125} placeholder="Write your ad copy..."
+              {...register('primaryText')}
+              className="border-[1.5px] border-[#E5E5E5] rounded-[10px] text-sm resize-none focus:border-[#6C63FF]" />
           </Field>
-          <Field label="Objective">
-            <Controller control={control} name="objective" render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {OBJECTIVES.map((o) => <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            )} />
+          <div className="rounded-lg border border-[#6C63FF]/20 bg-[#6C63FF]/[0.04] p-3">
+            <p className="text-[10px] font-semibold text-[#6C63FF] flex items-center gap-1"><Sparkles className="h-3 w-3" /> AI Suggestions</p>
+            <div className="flex flex-wrap gap-1.5 mt-1.5">
+              {['Generate Copy', 'Improve Headline', 'Use Brand Voice'].map((a) => (
+                <button key={a} type="button" onClick={() => toast.message(a, { description: 'AI hook ready — will populate once connected.' })}
+                  className="text-[10px] px-2.5 py-1 rounded-full border border-[#E5E5E5] hover:border-[#6C63FF]/40 transition">{a}</button>
+              ))}
+            </div>
+          </div>
+          <Field label="Headline" hint={`${values.headline.length}/40`}>
+            <Input maxLength={40} placeholder="Headline" {...register('headline')}
+              className="h-11 border-[1.5px] border-[#E5E5E5] rounded-[10px] text-sm px-3.5 focus:border-[#6C63FF]" />
+          </Field>
+          <Field label="Description (Optional)" hint={`${values.descriptionCopy.length}/30`}>
+            <Input maxLength={30} placeholder="Description" {...register('descriptionCopy')}
+              className="h-11 border-[1.5px] border-[#E5E5E5] rounded-[10px] text-sm px-3.5 focus:border-[#6C63FF]" />
           </Field>
           <Field label="Call to Action">
             <Controller control={control} name="cta" render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {CTAS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <select value={field.value} onChange={(e) => field.onChange(e.target.value)}
+                className="h-11 w-full border-[1.5px] border-[#E5E5E5] rounded-[10px] text-sm px-3.5 bg-white focus:border-[#6C63FF] focus:outline-none appearance-none">
+                {CTAS.map((c) => (<option key={c} value={c}>{c}</option>))}
+              </select>
             )} />
           </Field>
-          <Field label="Website URL">
-            <Input placeholder="https://yourdomain.com" {...register('websiteUrl')} />
-          </Field>
-        </div>
-        <div className="mt-4">
-          <Field label="Offer Description" hint="Describe what you're promoting in 1–2 sentences.">
-            <Textarea rows={3} placeholder="Natural skincare designed for radiant, glowing skin…" {...register('description')} />
-          </Field>
-        </div>
-      </SectionCard>
-
-      <SectionCard>
-        <AISuggestionBar
-          actions={['Generate Offer', 'Improve Offer', 'Rewrite CTA', 'Apply Brand']}
-          onAction={applyAI}
-        />
-      </SectionCard>
-    </div>
-  );
-
-  const StepCreative = (
-    <div className="space-y-5">
-      <SectionCard>
-        <div className="mb-4">
-          <h3 className="text-base font-semibold">Ad Creative</h3>
-          <p className="text-xs text-muted-foreground">Design the content for your ad.</p>
-        </div>
-
-        <Field label="Media">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-xl border border-border/60 bg-muted/40">
-              {values.mediaUrl ? (
-                <img src={values.mediaUrl} alt="creative" className="h-full w-full object-cover" />
-              ) : (
-                <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
-              )}
+          <Field label="Website URL" hint="Visible in some ad placements">
+            <div className="relative">
+              <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
+              <Input placeholder="https://yourwebsite.com" {...register('websiteUrl')}
+                className="h-11 pl-9 border-[1.5px] border-[#E5E5E5] rounded-[10px] text-sm focus:border-[#6C63FF]" />
             </div>
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="flex aspect-video flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-border/70 bg-background text-muted-foreground transition hover:border-primary/40 hover:bg-primary/5"
-            >
-              <Upload className="h-5 w-5" />
-              <span className="text-xs font-medium">Upload</span>
-              <span className="text-[10px]">Image or Video</span>
-              <span className="text-[10px] opacity-70">Recommended: 1080×1080</span>
-            </button>
-            <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden"
-              onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
-          </div>
-        </Field>
-
-        <div className="mt-4 grid gap-4">
-          <Field label="Primary Text" hint={`${values.primaryText.length}/125`}>
-            <Textarea rows={2} maxLength={125}
-              placeholder="Glow naturally. Pure ingredients for healthy, radiant skin ✨"
-              {...register('primaryText')} />
           </Field>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Headline" hint={`${values.headline.length}/40`}>
-              <Input maxLength={40} placeholder="Natural Skincare for You" {...register('headline')} />
-            </Field>
-            <Field label="Description" hint={`${values.descriptionCopy.length}/30 · Optional`}>
-              <Input maxLength={30} placeholder="Hydrating. Clean. Effective." {...register('descriptionCopy')} />
-            </Field>
-          </div>
         </div>
-
-        <Separator className="my-5" />
-
-        <div>
-          <p className="mb-2 text-sm font-medium">Template Source</p>
-          <Controller control={control} name="templateSource" render={({ field }) => (
-            <RadioGroup value={field.value} onValueChange={field.onChange}
-              className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {['AdVista', 'Canva', 'Freepik', 'Upload'].map((s) => (
-                <label key={s} className={cn(
-                  'flex cursor-pointer items-center gap-2 rounded-xl border border-border/60 px-3 py-2 text-sm transition',
-                  field.value === s.toLowerCase() && 'border-primary bg-primary/5'
-                )}>
-                  <RadioGroupItem value={s.toLowerCase()} />
-                  {s}
-                </label>
-              ))}
-            </RadioGroup>
-          )} />
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={goToTemplate}>
-              <Layers className="mr-1.5 h-3.5 w-3.5" /> Browse Templates
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={goToEditor}>
-              <Palette className="mr-1.5 h-3.5 w-3.5" /> Open Visual Editor
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={goToMedia}>
-              <ImageIcon className="mr-1.5 h-3.5 w-3.5" /> Use Existing
-            </Button>
-          </div>
-        </div>
-      </SectionCard>
-
-      <SectionCard>
-        <AISuggestionBar
-          actions={['Generate Copy', 'Improve Headline', 'Generate Variants', 'Visual Direction', 'Use Brand Voice']}
-          onAction={applyAI}
-        />
-      </SectionCard>
+      </StepSection>
+      <div className="flex justify-end">
+        <button onClick={nextStep} className="bg-[#6C63FF] text-white rounded-[10px] h-11 px-6 text-sm font-semibold flex items-center gap-2 hover:bg-[#5A52E0] transition">
+          Next: Audience <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   );
+
+  /* ------------------------------------------------------------------ */
+  /* STEP 3 — Audience                                                   */
+  /* ------------------------------------------------------------------ */
+  const [interestInput, setInterestInput] = useState('');
+  const [interests, setInterests] = useState<string[]>(['Skincare', 'Beauty', 'Wellness']);
 
   const StepAudience = (
-    <div className="space-y-5">
-      <SectionCard>
-        <div className="mb-4">
-          <h3 className="text-base font-semibold">Target Audience</h3>
-          <p className="text-xs text-muted-foreground">Define who should see your ad.</p>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Location">
-            <div className="relative">
-              <MapPin className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input className="pl-9" placeholder="United States" {...register('location')} />
+    <div className="max-w-[480px] space-y-6">
+      <StepSection title="Audience" subtitle="Target the right people for your ad.">
+        <div className="space-y-5">
+          <Field label="Locations">
+            <Controller control={control} name="location" render={({ field }) => (
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
+                <Input placeholder="United States" {...field}
+                  className="h-11 pl-9 border-[1.5px] border-[#E5E5E5] rounded-[10px] text-sm focus:border-[#6C63FF]" />
+              </div>
+            )} />
+          </Field>
+          <Field label="Age Range">
+            <div className="flex items-center gap-3">
+              <Controller control={control} name="ageMin" render={({ field }) => (
+                <input type="range" min={13} max={65} step={1} value={field.value} onChange={(e) => field.onChange(Number(e.target.value))} className="w-full accent-[#6C63FF]" />
+              )} />
+              <span className="text-xs font-medium text-[#374151] shrink-0 w-16 text-right">{values.ageMin}–{values.ageMax}</span>
+              <Controller control={control} name="ageMax" render={({ field }) => (
+                <input type="range" min={13} max={65} step={1} value={field.value} onChange={(e) => field.onChange(Number(e.target.value))} className="w-full accent-[#6C63FF]" />
+              )} />
             </div>
           </Field>
-          <Field label="Languages">
-            <Input placeholder="English" {...register('languages')} />
+          <Field label="Gender">
+            <Controller control={control} name="gender" render={({ field }) => (
+              <div className="flex gap-1.5">
+                {GENDERS.map((g) => (
+                  <button key={g} type="button" onClick={() => field.onChange(g)}
+                    className={cn('px-4 py-2 text-xs font-medium rounded-lg border border-[#E5E5E5] transition',
+                      field.value === g ? 'bg-[#6C63FF] text-white border-[#6C63FF]' : 'bg-white text-[#374151] hover:border-[#6C63FF]/40')}>{g}</button>
+                ))}
+              </div>
+            )} />
           </Field>
-        </div>
-
-        <div className="mt-4">
-          <Field label={`Age Range: ${values.ageMin} – ${values.ageMax}`}>
-            <div className="grid grid-cols-2 gap-3">
-              <Slider min={13} max={65} step={1}
-                value={[values.ageMin]} onValueChange={(v) => setValue('ageMin', v[0])} />
-              <Slider min={13} max={65} step={1}
-                value={[values.ageMax]} onValueChange={(v) => setValue('ageMax', v[0])} />
-            </div>
-          </Field>
-        </div>
-
-        <div className="mt-4">
-          <p className="mb-2 text-sm font-medium">Gender</p>
-          <Controller control={control} name="gender" render={({ field }) => (
-            <div className="grid grid-cols-3 gap-2">
-              {['all', 'men', 'women'].map((g) => (
-                <button key={g} type="button" onClick={() => field.onChange(g)}
-                  className={cn(
-                    'rounded-xl border border-border/60 px-3 py-2 text-sm capitalize transition',
-                    field.value === g && 'border-primary bg-primary/5 font-semibold text-primary'
-                  )}>{g}</button>
+          <Field label="Interests">
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {interests.map((int) => (
+                <span key={int} className="inline-flex items-center gap-1 px-2 py-1 text-[11px] bg-[#F5F3FF] text-[#6C63FF] rounded-md">
+                  {int}
+                  <button type="button" onClick={() => setInterests(interests.filter((i) => i !== int))}><X className="h-3 w-3" /></button>
+                </span>
               ))}
+            </div>
+            <div className="flex gap-2">
+              <Input value={interestInput} onChange={(e) => setInterestInput(e.target.value)}
+                placeholder="Add interest..." className="h-10 text-sm border-[1.5px] border-[#E5E5E5] rounded-[10px] focus:border-[#6C63FF]" />
+              <button type="button" onClick={() => { if (interestInput.trim()) { setInterests([...interests, interestInput.trim()]); setInterestInput(''); } }}
+                className="px-3 py-2 text-xs font-medium text-[#6C63FF] border border-[#6C63FF] rounded-lg hover:bg-[#F5F3FF]">+ Add</button>
+            </div>
+          </Field>
+        </div>
+      </StepSection>
+      <div className="flex justify-between">
+        <button onClick={prevStep} className="h-11 px-4 text-sm font-medium text-[#374151] border border-[#E5E5E5] rounded-[10px] hover:bg-muted/50 transition flex items-center gap-1">
+          <ArrowLeft className="h-4 w-4" /> Back
+        </button>
+        <button onClick={nextStep} className="bg-[#6C63FF] text-white rounded-[10px] h-11 px-6 text-sm font-semibold flex items-center gap-2 hover:bg-[#5A52E0] transition">
+          Next: Budget <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+
+  /* ------------------------------------------------------------------ */
+  /* STEP 4 — Budget & Schedule                                          */
+  /* ------------------------------------------------------------------ */
+  const [startOpen, setStartOpen] = useState(false);
+  const [endOpen, setEndOpen] = useState(false);
+
+  const StepBudget = (
+    <div className="max-w-[480px] space-y-6">
+      <StepSection title="Budget & Schedule" subtitle="Set your spending limits and campaign timing.">
+        {/* Budget Type Selector */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+          <Controller control={control} name="budgetType" render={({ field }) => (
+            <>
+              <button type="button" onClick={() => field.onChange('daily')}
+                className={cn('rounded-xl border-[1.5px] p-5 text-left transition',
+                  field.value === 'daily' ? 'border-[#6C63FF] bg-[#F5F3FF]' : 'border-[#E5E5E5] bg-white')}>
+                <div className={cn('w-4 h-4 rounded-full border-2 flex items-center justify-center mb-2',
+                  field.value === 'daily' ? 'border-[#6C63FF]' : 'border-[#E5E5E5]')}>
+                  {field.value === 'daily' && <div className="w-2 h-2 rounded-full bg-[#6C63FF]" />}
+                </div>
+                <p className="text-sm font-bold text-[#111827]">Daily Budget</p>
+                <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed">Best for always-on campaigns and boost-style delivery.</p>
+              </button>
+              <button type="button" onClick={() => field.onChange('total')}
+                className={cn('rounded-xl border-[1.5px] p-5 text-left transition',
+                  field.value === 'total' ? 'border-[#6C63FF] bg-[#F5F3FF]' : 'border-[#E5E5E5] bg-white')}>
+                <div className={cn('w-4 h-4 rounded-full border-2 flex items-center justify-center mb-2',
+                  field.value === 'total' ? 'border-[#6C63FF]' : 'border-[#E5E5E5]')}>
+                  {field.value === 'total' && <div className="w-2 h-2 rounded-full bg-[#6C63FF]" />}
+                </div>
+                <p className="text-sm font-bold text-[#111827]">Total Budget</p>
+                <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed">Best when you know the full campaign spend upfront.</p>
+              </button>
+            </>
+          )} />
+        </div>
+
+        {/* Budget Input */}
+        <div className="mb-5">
+          <Label className="text-xs font-semibold text-[#374151] mb-1.5 block">
+            {values.budgetType === 'daily' ? 'Daily Budget' : 'Total Budget'}
+          </Label>
+          <Controller control={control} name="budgetAmount" render={({ field }) => (
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#374151]">$</span>
+              <input type="number" min={1} value={field.value || ''} onChange={(e) => field.onChange(Number(e.target.value))}
+                placeholder="0.00"
+                className="w-full h-12 pl-7 pr-3.5 text-lg font-semibold border-[1.5px] border-[#E5E5E5] rounded-[10px] focus:border-[#6C63FF] focus:outline-none" />
             </div>
           )} />
         </div>
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <Field label="Interests" hint="Comma-separated">
-            <Input placeholder="Skincare, Beauty, Wellness" {...register('interests')} />
-          </Field>
-          <Field label="Behaviors" hint="Comma-separated">
-            <Input placeholder="Online Shoppers, Frequent Travelers" {...register('behaviors')} />
-          </Field>
+        {/* Estimated Reach Card */}
+        <div className="bg-[#F8F8FC] border border-[#E8E8F0] rounded-xl p-4 mb-5">
+          <p className="text-xs font-semibold text-[#374151]">{reachEstimate.label}</p>
+          <p className="text-2xl font-extrabold text-[#111827] mt-1">
+            {reachEstimate.low.toLocaleString()} – {reachEstimate.high.toLocaleString()}
+          </p>
+          <div className="h-1.5 bg-[#E8E8F0] rounded mt-3 overflow-hidden">
+            <div className="h-full rounded bg-gradient-to-r from-[#6C63FF] to-[#A78BFA]" style={{ width: `${reachPercent}%` }} />
+          </div>
+          <p className="text-[10px] text-[#9CA3AF] mt-2 leading-relaxed">
+            A simple estimate based on budget and selected platforms. Final delivery will adjust after launch.
+          </p>
         </div>
 
-        <div className="mt-5">
-          <p className="mb-2 text-sm font-medium">Placements</p>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {PLATFORMS.map((p) => {
-              const on = values.placements.includes(p.v);
-              const Icon = p.icon;
-              return (
-                <button key={p.v} type="button" onClick={() => togglePlacement(p.v)}
-                  className={cn(
-                    'flex items-center gap-2 rounded-xl border border-border/60 px-3 py-2.5 text-sm transition',
-                    on && 'border-primary bg-primary/5 shadow-sm'
-                  )}>
-                  <div className={cn('flex h-7 w-7 items-center justify-center rounded-lg', p.color)}>
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <span className="font-medium">{p.l}</span>
-                  {on && <Check className="ml-auto h-3.5 w-3.5 text-primary" />}
+        {/* Schedule Section */}
+        <div>
+          <h4 className="text-base font-bold text-[#111827] mb-4">Schedule</h4>
+
+          <Label className="text-xs font-semibold text-[#374151] mb-1.5 block">Start Date</Label>
+          <Controller control={control} name="startDate" render={({ field }) => (
+            <Popover open={startOpen} onOpenChange={setStartOpen}>
+              <PopoverTrigger asChild>
+                <button className="w-full h-12 flex items-center gap-2.5 px-3.5 border-[1.5px] border-[#E5E5E5] rounded-[10px] bg-white text-left">
+                  <CalendarIcon className="h-4 w-4 text-[#9CA3AF]" />
+                  <span className="text-sm text-[#111827] flex-1">{format(field.value, 'dd/MM/yyyy')}</span>
+                  <span className="text-xs text-[#6C63FF]">Change</span>
                 </button>
-              );
-            })}
-          </div>
-        </div>
-      </SectionCard>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={field.value} onSelect={(d) => { if (d) { field.onChange(d); setStartOpen(false); } }} initialFocus />
+              </PopoverContent>
+            </Popover>
+          )} />
 
-      <SectionCard>
-        <div className="mb-2 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold">AI Suggested Audience</p>
-            <p className="text-xs text-muted-foreground">
-              Source: {values.category || 'Category'} · Brand Memory
-            </p>
-          </div>
-          <Badge variant="outline" className="rounded-full">Beta</Badge>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {['Apply', 'Compare', 'Ignore'].map((a) => (
-            <Button key={a} type="button" size="sm" variant={a === 'Apply' ? 'default' : 'outline'}
-              onClick={() => applyAI(`Audience: ${a}`)}>{a}</Button>
-          ))}
-        </div>
-      </SectionCard>
-    </div>
-  );
-
-  const StepBudget = (
-    <div className="space-y-5">
-      <SectionCard>
-        <div className="mb-4">
-          <h3 className="text-base font-semibold">Budget & Schedule</h3>
-          <p className="text-xs text-muted-foreground">Decide how much to spend and when.</p>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Daily Budget ($)">
-            <Input type="number" min={1} {...register('dailyBudget', { valueAsNumber: true })} />
-          </Field>
-          <Field label="Lifetime Budget ($)">
-            <Input type="number" min={0} {...register('lifetimeBudget', { valueAsNumber: true })} />
-          </Field>
-          <Field label="Start Date">
-            <Input type="date" {...register('startDate')} />
-          </Field>
-          <Field label="End Date">
-            <Input type="date" {...register('endDate')} />
-          </Field>
-          <Field label="Bidding">
-            <Controller control={control} name="bidding" render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="lowest_cost">Lowest Cost</SelectItem>
-                  <SelectItem value="cost_cap">Cost Cap</SelectItem>
-                  <SelectItem value="bid_cap">Bid Cap</SelectItem>
-                </SelectContent>
-              </Select>
-            )} />
-          </Field>
-          <Field label="Allocation">
-            <Controller control={control} name="allocation" render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="auto">Automatic</SelectItem>
-                  <SelectItem value="manual">Manual</SelectItem>
-                </SelectContent>
-              </Select>
-            )} />
-          </Field>
-        </div>
-
-        <Separator className="my-5" />
-
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { l: 'Expected Reach', v: `${Math.round(values.dailyBudget * 320).toLocaleString()}` },
-            { l: 'Est. Clicks', v: `${Math.round(values.dailyBudget * 12).toLocaleString()}` },
-            { l: 'Est. Spend / wk', v: `$${(values.dailyBudget * 7).toFixed(0)}` },
-          ].map((k) => (
-            <div key={k.l} className="rounded-xl border border-border/60 bg-muted/30 p-3 text-center">
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{k.l}</p>
-              <p className="mt-1 text-lg font-bold">{k.v}</p>
+          {/* Run Length */}
+          <div className="mt-5">
+            <Label className="text-xs font-semibold text-[#374151] mb-2 block">Run Length</Label>
+            <div className="space-y-2">
+              <Controller control={control} name="runType" render={({ field }) => (
+                <>
+                  <button type="button" onClick={() => field.onChange('continuous')}
+                    className={cn('w-full rounded-xl border-[1.5px] p-4 text-left transition',
+                      field.value === 'continuous' ? 'border-[#6C63FF] bg-[#F5F3FF]' : 'border-[#E5E5E5] bg-white')}>
+                    <div className="flex items-center gap-2">
+                      <div className={cn('w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0',
+                        field.value === 'continuous' ? 'border-[#6C63FF]' : 'border-[#E5E5E5]')}>
+                        {field.value === 'continuous' && <div className="w-2 h-2 rounded-full bg-[#6C63FF]" />}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-[#111827]">Run Continuously</p>
+                        <p className="text-xs text-[#9CA3AF]">Keep the campaign live until you pause it from Campaigns.</p>
+                      </div>
+                    </div>
+                  </button>
+                  <button type="button" onClick={() => field.onChange('end_date')}
+                    className={cn('w-full rounded-xl border-[1.5px] p-4 text-left transition',
+                      field.value === 'end_date' ? 'border-[#6C63FF] bg-[#F5F3FF]' : 'border-[#E5E5E5] bg-white')}>
+                    <div className="flex items-center gap-2">
+                      <div className={cn('w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0',
+                        field.value === 'end_date' ? 'border-[#6C63FF]' : 'border-[#E5E5E5]')}>
+                        {field.value === 'end_date' && <div className="w-2 h-2 rounded-full bg-[#6C63FF]" />}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-[#111827]">Choose an End Date</p>
+                        <p className="text-xs text-[#9CA3AF]">Set a clear campaign window when you know the promotion should stop.</p>
+                      </div>
+                    </div>
+                  </button>
+                  <AnimatePresence>
+                    {field.value === 'end_date' && (
+                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                        <Label className="text-xs font-semibold text-[#374151] mb-1.5 block mt-3">End Date</Label>
+                        <Controller control={control} name="endDate" render={({ field: endField }) => (
+                          <Popover open={endOpen} onOpenChange={setEndOpen}>
+                            <PopoverTrigger asChild>
+                              <button className="w-full h-12 flex items-center gap-2.5 px-3.5 border-[1.5px] border-[#E5E5E5] rounded-[10px] bg-white text-left">
+                                <CalendarIcon className="h-4 w-4 text-[#9CA3AF]" />
+                                <span className="text-sm text-[#111827] flex-1">{endField.value ? format(endField.value, 'dd/MM/yyyy') : 'Select date'}</span>
+                                <span className="text-xs text-[#6C63FF]">Change</span>
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar mode="single" selected={endField.value ?? undefined}
+                                onSelect={(d) => { if (d) { endField.onChange(d); setEndOpen(false); } }}
+                                disabled={(date) => date <= values.startDate}
+                                initialFocus />
+                            </PopoverContent>
+                          </Popover>
+                        )} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </>
+              )} />
             </div>
-          ))}
+          </div>
         </div>
-      </SectionCard>
 
-      <SectionCard>
-        <AISuggestionBar
-          actions={['Optimize Budget', 'Recommend Allocation', 'Improve ROAS']}
-          onAction={applyAI}
-        />
-        <p className="mt-2 text-xs text-muted-foreground">AI confidence: 82% based on historical performance.</p>
-      </SectionCard>
+        {/* Campaign Summary Card */}
+        <div className="bg-[#F8F8FC] border border-[#E8E8F0] rounded-xl p-4 mt-5">
+          <p className="text-xs font-bold text-[#111827] mb-3">Campaign Summary</p>
+          <div className="space-y-2">
+            <SummaryRow label={`${values.budgetType === 'daily' ? 'Daily' : 'Total'} Budget`} value={`$${values.budgetAmount.toFixed(2)}`} />
+            <SummaryRow label={reachEstimate.label} value={`${reachEstimate.low.toLocaleString()} – ${reachEstimate.high.toLocaleString()} people`} />
+            <SummaryRow label="Start Date" value={format(values.startDate, 'MMMM d, yyyy')} />
+            <SummaryRow label="Run Length" value={values.runType === 'continuous' ? 'Continuous' : runDays ? `${runDays} days` : '—'} />
+            {values.runType === 'end_date' && runDays && (
+              <SummaryRow label="Estimated Total Spend" value={`$${(values.budgetAmount * runDays).toFixed(2)}`} />
+            )}
+          </div>
+        </div>
+      </StepSection>
+
+      <div className="flex justify-between">
+        <button onClick={prevStep} className="h-11 px-4 text-sm font-medium text-[#374151] border border-[#E5E5E5] rounded-[10px] hover:bg-muted/50 transition flex items-center gap-1">
+          <ArrowLeft className="h-4 w-4" /> Back
+        </button>
+        <button onClick={nextStep} className="bg-[#6C63FF] text-white rounded-[10px] h-11 px-6 text-sm font-semibold flex items-center gap-2 hover:bg-[#5A52E0] transition">
+          Next: Review <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   );
 
+  /* ------------------------------------------------------------------ */
+  /* STEP 5 — Review & Publish                                           */
+  /* ------------------------------------------------------------------ */
   const StepReview = (
-    <div className="space-y-5">
-      <SectionCard>
-        <div className="mb-4">
-          <h3 className="text-base font-semibold">Review & Publish</h3>
-          <p className="text-xs text-muted-foreground">Review your ad before publishing.</p>
-        </div>
+    <div className="max-w-[580px] space-y-6">
+      <StepSection title="Review & Publish" subtitle="Review your ad before publishing.">
         <div className="grid gap-4 sm:grid-cols-2">
-          {[
-            { t: 'Campaign', rows: [['Name', values.name || '—'], ['Objective', values.objective], ['CTA', values.cta]] },
-            { t: 'Creative', rows: [['Headline', values.headline || '—'], ['Primary', values.primaryText.slice(0, 40) || '—']] },
-            { t: 'Audience', rows: [['Location', values.location], ['Age', `${values.ageMin}–${values.ageMax}`], ['Placements', values.placements.join(', ') || '—']] },
-            { t: 'Budget', rows: [['Daily', `$${values.dailyBudget}`], ['Start', values.startDate], ['End', values.endDate]] },
-          ].map((s) => (
-            <div key={s.t} className="rounded-xl border border-border/60 p-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{s.t}</p>
-              <dl className="space-y-1 text-sm">
-                {s.rows.map(([k, v]) => (
-                  <div key={k} className="flex justify-between gap-3">
-                    <dt className="text-muted-foreground">{k}</dt>
-                    <dd className="min-w-0 truncate text-right font-medium">{v}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          ))}
+          <ReviewCard title="Campaign" rows={[
+            ['Name', values.name || '—'],
+            ['Objective', values.objective],
+            ['Platforms', values.platforms.join(', ')],
+          ]} />
+          <ReviewCard title="Creative" rows={[
+            ['Headline', values.headline || '—'],
+            ['CTA', values.cta],
+            ['Media', values.mediaUrl ? 'Uploaded' : 'None'],
+          ]} />
+          <ReviewCard title="Audience" rows={[
+            ['Location', values.location || '—'],
+            ['Age', `${values.ageMin}–${values.ageMax}`],
+            ['Gender', values.gender],
+          ]} />
+          <ReviewCard title="Budget & Schedule" rows={[
+            [values.budgetType === 'daily' ? 'Daily' : 'Total', `$${values.budgetAmount.toFixed(2)}`],
+            ['Start', format(values.startDate, 'MMM d, yyyy')],
+            ['End', values.endDate ? format(values.endDate, 'MMM d, yyyy') : 'Continuous'],
+          ]} />
         </div>
-      </SectionCard>
 
-      <SectionCard>
-        <p className="mb-3 text-sm font-semibold">Readiness Checks</p>
-        <ul className="space-y-2">
-          {checks.map((c) => (
-            <li key={c.label} className="flex items-center gap-2 text-sm">
-              <span className={cn(
-                'flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold',
-                c.ok ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-              )}>{c.ok ? '✓' : '!'}</span>
-              <span className={c.ok ? '' : 'text-muted-foreground'}>{c.label}</span>
-            </li>
-          ))}
-        </ul>
-      </SectionCard>
-
-      <SectionCard className="border-primary/30 bg-primary/[0.03]">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold">Recommended Improvements</p>
-            <p className="text-xs text-muted-foreground">
-              Add a stronger CTA and upload branded media to increase estimated CTR by ~14%.
-            </p>
+        <div className="bg-white border border-[#E5E5E5] rounded-xl p-4 flex items-center gap-3">
+          <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted/30 shrink-0">
+            {values.mediaUrl ? <img src={values.mediaUrl} alt="" className="w-full h-full object-cover" /> : <ImageIcon className="h-6 w-6 m-5 text-muted-foreground/40" />}
           </div>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => applyAI('Dismiss')}>Dismiss</Button>
-            <Button size="sm" onClick={() => applyAI('Apply Recommendations')}>Apply</Button>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold truncate">{values.headline || 'No headline'}</p>
+            <p className="text-xs text-[#9CA3AF] truncate">{values.primaryText || 'No primary text'}</p>
+            <p className="text-[10px] text-[#6C63FF] mt-0.5">{values.cta}</p>
           </div>
         </div>
-      </SectionCard>
+
+        <div className="flex items-start gap-2">
+          <Controller control={control} name="termsAccepted" render={({ field }) => (
+            <input type="checkbox" checked={field.value} onChange={(e) => field.onChange(e.target.checked)}
+              className="mt-0.5 accent-[#6C63FF]" />
+          )} />
+          <p className="text-xs text-[#9CA3AF]">I confirm that I have the rights to use all media and content in this ad, and I agree to the platform advertising policies.</p>
+        </div>
+
+        <button onClick={publish} disabled={publishing || !values.termsAccepted}
+          className="w-full h-12 bg-[#6C63FF] text-white rounded-[10px] text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#5A52E0] transition disabled:opacity-50">
+          {publishing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          Publish Ad
+        </button>
+      </StepSection>
+
+      <div className="flex justify-between">
+        <button onClick={prevStep} className="h-11 px-4 text-sm font-medium text-[#374151] border border-[#E5E5E5] rounded-[10px] hover:bg-muted/50 transition flex items-center gap-1">
+          <ArrowLeft className="h-4 w-4" /> Back
+        </button>
+      </div>
     </div>
   );
 
-  const stepContent = [null, StepOffer, StepCreative, StepAudience, StepBudget, StepReview][step];
+  const stepContent = [null, StepSetup, StepCreative, StepAudience, StepBudget, StepReview][step];
 
-  /* ------------------ layout ------------------ */
+  /* ------------------------------------------------------------------ */
+  /* Layout                                                              */
+  /* ------------------------------------------------------------------ */
   return (
-    <div className="min-h-screen bg-muted/20">
-      {/* Sticky header */}
-      <div className="sticky top-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur-md">
-        <div className="page-container flex flex-wrap items-center justify-between gap-3 py-3 sm:py-4">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0"
-                onClick={() => navigate(-1)} aria-label="Back">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <div className="min-w-0">
-                <h1 className="truncate text-lg font-bold sm:text-xl">Create Ad</h1>
-                <p className="hidden text-xs text-muted-foreground sm:block">
-                  Build, preview, and launch campaigns.
-                </p>
-              </div>
+    <div className="min-h-screen bg-[#FAFAFA]">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-40 border-b border-[#E5E5E5] bg-white/90 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(-1)} aria-label="Back">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-lg font-extrabold text-[#111827]" style={{ fontSize: '28px', fontWeight: 800 }}>Create Ad</h1>
+              <p className="text-xs text-[#9CA3AF] -mt-0.5">Build high-performing ads in minutes.</p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="hidden text-xs text-muted-foreground sm:inline">
-              {saving ? (
-                <span className="inline-flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Saving…</span>
-              ) : lastSavedAt ? (
-                <span className="inline-flex items-center gap-1"><Bookmark className="h-3 w-3" /> Saved {lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-              ) : 'Autosave on'}
-            </span>
-            <Button size="sm" variant="outline" onClick={() => saveDraft()} disabled={saving}>
-              <Save className="mr-1.5 h-3.5 w-3.5" /> Save Draft
-            </Button>
-            <Sheet open={previewOpen} onOpenChange={setPreviewOpen}>
-              <SheetTrigger asChild>
-                <Button size="sm" variant="outline" className="lg:hidden">
-                  <Eye className="mr-1.5 h-3.5 w-3.5" /> Preview
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-[min(24rem,calc(100vw-1rem))] overflow-y-auto">
-                <p className="mb-3 text-sm font-semibold">Live Preview</p>
-                <LivePreview v={values} brandName={brandName} />
-              </SheetContent>
-            </Sheet>
-            <Button size="sm" onClick={publish} disabled={publishing}>
-              {publishing ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-1.5 h-3.5 w-3.5" />}
+          <div className="flex items-center gap-3">
+            <button onClick={() => saveDraft()} disabled={saving}
+              className="h-[38px] px-4 text-xs font-medium text-[#374151] border border-[#E5E5E5] rounded-lg hover:bg-muted/50 transition flex items-center gap-1.5">
+              <Save className="h-3.5 w-3.5" /> Save Draft
+            </button>
+            <button className="h-[38px] px-4 text-xs font-medium text-[#374151] border border-[#E5E5E5] rounded-lg hover:bg-muted/50 transition flex items-center gap-1.5">
+              <Eye className="h-3.5 w-3.5" /> Preview
+            </button>
+            <button onClick={publish} disabled={publishing}
+              className="h-[38px] px-5 text-xs font-bold text-white bg-[#6C63FF] rounded-lg hover:bg-[#5A52E0] transition flex items-center gap-1.5">
+              {publishing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
               Publish Ad
-            </Button>
+            </button>
+            <div className="relative">
+              <Bell className="h-5 w-5 text-[#9CA3AF]" />
+              <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* Step Progress */}
+      <div className="bg-white border-b border-[#E5E5E5]">
+        <StepProgress step={step} />
       </div>
 
       {/* Body */}
-      <div className="page-container py-5 sm:py-6">
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="min-w-0 space-y-5">
-            <ProgressCard step={step} setStep={setStep}
-              completion={completion} readiness={readiness} />
-
-            <motion.div
-              key={step}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              {stepContent}
-            </motion.div>
-
-            {/* Bottom nav */}
-            <div className="sticky bottom-0 z-20 -mx-4 border-t border-border/60 bg-background/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-2xl sm:border sm:shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <Button variant="outline" size="sm"
-                  onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1}>
-                  <ArrowLeft className="mr-1.5 h-3.5 w-3.5" /> Back
-                </Button>
-                <p className="hidden text-xs text-muted-foreground sm:block">
-                  Step {step} of {STEPS.length}
-                </p>
-                {step < STEPS.length ? (
-                  <Button size="sm" onClick={() => setStep(step + 1)}>
-                    Next: {STEPS[step].label} <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                  </Button>
-                ) : (
-                  <Button size="sm" onClick={publish} disabled={publishing}>
-                    <Rocket className="mr-1.5 h-3.5 w-3.5" /> Publish
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Sticky preview rail (desktop only) */}
-          <aside className="hidden lg:block">
-            <div className="sticky top-24 space-y-3">
-              <SectionCard>
-                <div className="mb-2 flex items-center justify-between">
-                  <p className="text-sm font-semibold">Ad Preview</p>
-                  <Badge variant="outline" className="text-[10px]">Live</Badge>
-                </div>
-                <LivePreview v={values} brandName={brandName} />
-              </SectionCard>
-            </div>
-          </aside>
-        </div>
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={step}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+          >
+            {stepContent}
+          </motion.div>
+        </AnimatePresence>
       </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Small helpers                                                       */
+/* ------------------------------------------------------------------ */
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between text-xs">
+      <span className="text-[#9CA3AF]">{label}</span>
+      <span className="font-semibold text-[#111827]">{value}</span>
+    </div>
+  );
+}
+
+function ReviewCard({ title, rows }: { title: string; rows: [string, string][] }) {
+  return (
+    <div className="rounded-xl border border-[#E5E5E5] p-4">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-[#9CA3AF] mb-2">{title}</p>
+      <dl className="space-y-1">
+        {rows.map(([k, v]) => (
+          <div key={k} className="flex justify-between gap-2 text-xs">
+            <dt className="text-[#9CA3AF]">{k}</dt>
+            <dd className="font-medium text-[#111827] text-right truncate min-w-0 max-w-[140px]">{v}</dd>
+          </div>
+        ))}
+      </dl>
     </div>
   );
 }

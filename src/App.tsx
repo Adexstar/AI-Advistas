@@ -21,7 +21,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const DashboardLayout = lazy(() => import("./components/DashboardLayout"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Campaigns = lazy(() => import("./pages/Campaigns"));
-const CreateAdEntry = lazy(() => import("./pages/CreateAdEntry"));
+const CampaignWorkspace = lazy(() => import("./pages/CampaignWorkspace"));
 const CreateAd = lazy(() => import("./pages/CreateAd"));
 const Billing = lazy(() => import("./pages/Billing"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -31,6 +31,7 @@ const TemplateCustomizer = lazy(() => import("./pages/TemplateCustomizer"));
 const TemplateLibrary = lazy(() => import("./pages/TemplateLibrary"));
 const AdVistaOriginals = lazy(() => import("./pages/AdVistaOriginals"));
 const OriginalTemplateDetail = lazy(() => import("./pages/OriginalTemplateDetail"));
+const TemplateGenerate = lazy(() => import("./pages/TemplateGenerate"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const MediaLibrary = lazy(() => import("./pages/MediaLibrary"));
 const BrandKit = lazy(() => import("./pages/BrandKit"));
@@ -66,7 +67,7 @@ const AppContent = () => {
         ctrlKey: true,
         shiftKey: true,
         action: () => {
-          window.location.href = '/create';
+          window.location.href = '/create-ad';
         },
         description: 'Create new ad',
         category: 'Navigation'
@@ -108,14 +109,15 @@ const AppContent = () => {
               </ProtectedRoute>
             }>
               <Route index element={<Campaigns />} />
+              <Route path=":id" element={<CampaignWorkspace />} />
             </Route>
-            <Route path="/create" element={
+            <Route path="/create" element={<Navigate to="/create-ad" replace />} />
+            <Route path="/create-ad" element={
               <ProtectedRoute>
                 <DashboardLayout />
               </ProtectedRoute>
             }>
               <Route index element={<CreateAd />} />
-              <Route path="start" element={<CreateAdEntry />} />
             </Route>
             <Route path="/ad-editor" element={
               <ProtectedRoute>
@@ -124,7 +126,7 @@ const AppContent = () => {
             }>
               <Route index element={<AdEditor />} />
             </Route>
-            <Route path="/create-old" element={<Navigate to="/create" replace />} />
+            <Route path="/create-old" element={<Navigate to="/create-ad" replace />} />
             <Route path="/billing" element={
               <ProtectedRoute>
                 <DashboardLayout />
@@ -146,6 +148,7 @@ const AppContent = () => {
             }>
               <Route index element={<TemplateLibrary />} />
               <Route path="originals" element={<AdVistaOriginals />} />
+              <Route path="generate" element={<TemplateGenerate />} />
             </Route>
             <Route path="/originals" element={
               <ProtectedRoute>
@@ -206,8 +209,8 @@ const AppContent = () => {
             <Route path="/templates" element={<Navigate to="/template-library" replace />} />
             <Route path="/ads" element={<Navigate to="/campaigns" replace />} />
             <Route path="/audience" element={<Navigate to="/campaigns" replace />} />
-            <Route path="/ai-editor" element={<Navigate to="/create" replace />} />
-            <Route path="/simulator" element={<Navigate to="/create" replace />} />
+            <Route path="/ai-editor" element={<Navigate to="/create-ad" replace />} />
+            <Route path="/simulator" element={<Navigate to="/create-ad" replace />} />
             <Route path="/visual-editor" element={<ProtectedRoute><VisualEditorPage /></ProtectedRoute>} />
 
             <Route path="/template-customizer" element={

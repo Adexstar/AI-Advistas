@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Activity, Archive, Copy, Edit, Eye, Filter, MoreVertical, Pause,
-  Play, Plus, Search, ShoppingCart, Target, Trash2, TrendingUp,
+  Activity, Archive, Copy, Edit3, Eye, Filter, MoreVertical, Pause,
+  Play, Plus, Search, ShoppingCart, Target, Trash2, TrendingUp, Sparkles,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -50,6 +51,7 @@ function KpiCard({ icon: Icon, label, value, iconBg }: { icon: any; label: strin
 }
 
 const Campaigns = () => {
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<'all' | 'active' | 'draft' | 'paused' | 'completed'>('all');
   const [showArchived, setShowArchived] = useState(false);
@@ -78,10 +80,9 @@ const Campaigns = () => {
     });
   }, [campaigns, search, tab]);
 
-  const openCreate = () => { setEditing(null); setFormOpen(true); };
+  const openCreate = () => navigate('/create-ad');
   const openEdit = (c: CampaignRow) => { setEditing(c); setFormOpen(true); };
 
-  // While editing an existing campaign, override the global AI context with its metadata.
   useContextOverride(
     formOpen && editing
       ? {
@@ -95,7 +96,6 @@ const Campaigns = () => {
         }
       : null
   );
-
 
   const togglePauseResume = (c: CampaignRow) => {
     const next = c.status === 'active' ? 'paused' : 'active';
@@ -113,24 +113,21 @@ const Campaigns = () => {
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-[1600px]">
-      {/* Header */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Campaigns</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage all advertising campaigns from one place.</p>
+          <p className="text-sm text-muted-foreground mt-1">Manage the full lifecycle of your marketing campaigns.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
           <div className="relative flex-1 sm:flex-initial sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search campaigns..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
+            <Input placeholder="Search campaigns..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
           <Button variant="outline" size="icon" className="hidden sm:inline-flex" aria-label="Filter">
             <Filter className="w-4 h-4" />
+          </Button>
+          <Button onClick={openCreate} variant="secondary" className="gap-2">
+            <Sparkles className="w-4 h-4" /> Create Ad
           </Button>
           <Button onClick={openCreate} className="gap-2">
             <Plus className="w-4 h-4" /> Create Campaign
@@ -138,7 +135,6 @@ const Campaigns = () => {
         </div>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KpiCard icon={TrendingUp} label="Total Campaigns" value={counts.total} iconBg="bg-violet-100 text-violet-600" />
         <KpiCard icon={ShoppingCart} label="Active" value={counts.active} iconBg="bg-emerald-100 text-emerald-600" />
@@ -146,7 +142,6 @@ const Campaigns = () => {
         <KpiCard icon={Target} label="Completed" value={counts.completed} iconBg="bg-blue-100 text-blue-600" />
       </div>
 
-      {/* Filter row */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full sm:w-auto">
           <TabsList className="flex-wrap h-auto">
@@ -163,7 +158,6 @@ const Campaigns = () => {
         </div>
       </div>
 
-      {/* Content */}
       {isError ? (
         <Card className="rounded-2xl">
           <CardContent className="p-10 text-center space-y-3">
@@ -174,9 +168,7 @@ const Campaigns = () => {
       ) : isLoading ? (
         <Card className="rounded-2xl">
           <CardContent className="p-4 space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-14 w-full" />
-            ))}
+            {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
           </CardContent>
         </Card>
       ) : filtered.length === 0 ? (
@@ -189,14 +181,18 @@ const Campaigns = () => {
               <h3 className="text-lg font-semibold">No campaigns yet</h3>
               <p className="text-sm text-muted-foreground">Get started by creating your first campaign.</p>
             </div>
-            <Button onClick={openCreate} className="gap-2">
-              <Plus className="w-4 h-4" /> Create First Campaign
-            </Button>
+            <div className="flex gap-3 justify-center">
+              <Button onClick={openCreate} variant="secondary" className="gap-2">
+                <Sparkles className="w-4 h-4" /> Create Ad
+              </Button>
+              <Button onClick={openCreate} className="gap-2">
+                <Plus className="w-4 h-4" /> Create Campaign
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (
         <>
-          {/* Desktop Table */}
           <Card className="rounded-2xl hidden md:block overflow-hidden">
             <div className="overflow-x-auto">
               <Table>
@@ -221,26 +217,25 @@ const Campaigns = () => {
                       initial={{ opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.02 }}
-                      className="border-b last:border-b-0 hover:bg-muted/40"
+                      className="border-b last:border-b-0 hover:bg-muted/40 cursor-pointer"
+                      onClick={() => navigate(`/campaigns/${c.id}`)}
                     >
                       <TableCell>
                         <div className="font-medium">{c.name}</div>
                         <div className="text-xs text-muted-foreground capitalize">{c.objective}</div>
                       </TableCell>
                       <TableCell><StatusBadge status={c.status} /></TableCell>
-                      <TableCell className="text-sm">{c.platform || '—'}</TableCell>
+                      <TableCell className="text-sm">{c.platform || '\u2014'}</TableCell>
                       <TableCell className="text-right tabular-nums">${Number(c.budget).toLocaleString()}</TableCell>
                       <TableCell className="text-right tabular-nums">{c.reach.toLocaleString()}</TableCell>
                       <TableCell className="text-right tabular-nums">{Number(c.ctr).toFixed(2)}%</TableCell>
                       <TableCell className="text-right tabular-nums">{c.conversions.toLocaleString()}</TableCell>
                       <TableCell className="text-right tabular-nums">{Number(c.roas).toFixed(2)}x</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(c.created_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-sm text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <CampaignActions
                           c={c}
-                          onView={() => openEdit(c)}
+                          onView={() => navigate(`/campaigns/${c.id}`)}
                           onEdit={() => openEdit(c)}
                           onDuplicate={() => duplicateMut.mutate(c)}
                           onTogglePause={() => togglePauseResume(c)}
@@ -256,41 +251,33 @@ const Campaigns = () => {
             </div>
           </Card>
 
-          {/* Mobile Cards */}
           <div className="md:hidden space-y-3">
             {filtered.map((c) => (
-              <Card key={c.id} className="rounded-2xl">
+              <Card key={c.id} className="rounded-2xl cursor-pointer" onClick={() => navigate(`/campaigns/${c.id}`)}>
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <h4 className="font-semibold truncate">{c.name}</h4>
-                      <p className="text-xs text-muted-foreground capitalize">{c.objective} • {c.platform || '—'}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{c.objective} {'\u2022'} {c.platform || '\u2014'}</p>
                     </div>
-                    <CampaignActions
-                      c={c}
-                      onView={() => openEdit(c)}
-                      onEdit={() => openEdit(c)}
-                      onDuplicate={() => duplicateMut.mutate(c)}
-                      onTogglePause={() => togglePauseResume(c)}
-                      onArchive={() => archive(c)}
-                      onUnarchive={() => unarchive(c)}
-                      onDelete={() => handleDelete(c)}
-                    />
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <CampaignActions
+                        c={c}
+                        onView={() => navigate(`/campaigns/${c.id}`)}
+                        onEdit={() => openEdit(c)}
+                        onDuplicate={() => duplicateMut.mutate(c)}
+                        onTogglePause={() => togglePauseResume(c)}
+                        onArchive={() => archive(c)}
+                        onUnarchive={() => unarchive(c)}
+                        onDelete={() => handleDelete(c)}
+                      />
+                    </div>
                   </div>
                   <StatusBadge status={c.status} />
                   <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t">
-                    <div>
-                      <p className="text-[10px] uppercase text-muted-foreground">Budget</p>
-                      <p className="text-sm font-semibold">${Number(c.budget).toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] uppercase text-muted-foreground">Reach</p>
-                      <p className="text-sm font-semibold">{c.reach.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] uppercase text-muted-foreground">ROAS</p>
-                      <p className="text-sm font-semibold">{Number(c.roas).toFixed(2)}x</p>
-                    </div>
+                    <div><p className="text-[10px] uppercase text-muted-foreground">Budget</p><p className="text-sm font-semibold">${Number(c.budget).toLocaleString()}</p></div>
+                    <div><p className="text-[10px] uppercase text-muted-foreground">Reach</p><p className="text-sm font-semibold">{c.reach.toLocaleString()}</p></div>
+                    <div><p className="text-[10px] uppercase text-muted-foreground">ROAS</p><p className="text-sm font-semibold">{Number(c.roas).toFixed(2)}x</p></div>
                   </div>
                 </CardContent>
               </Card>
@@ -325,7 +312,7 @@ function CampaignActions({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
         <DropdownMenuItem onClick={onView}><Eye className="w-4 h-4 mr-2" /> View</DropdownMenuItem>
-        <DropdownMenuItem onClick={onEdit}><Edit className="w-4 h-4 mr-2" /> Edit</DropdownMenuItem>
+        <DropdownMenuItem onClick={onEdit}><Edit3 className="w-4 h-4 mr-2" /> Edit</DropdownMenuItem>
         <DropdownMenuItem onClick={onDuplicate}><Copy className="w-4 h-4 mr-2" /> Duplicate</DropdownMenuItem>
         {c.status === 'active' ? (
           <DropdownMenuItem onClick={onTogglePause}><Pause className="w-4 h-4 mr-2" /> Pause</DropdownMenuItem>

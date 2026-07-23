@@ -18,3 +18,28 @@ export { PublishingEngine } from "./publishing/PublishingEngine";
 export { BrandService } from "./brand/BrandService";
 export * from "./publishing/types";
 export * from "./media/types";
+
+// Campaign Intelligence Engine — Layer 4
+export {
+  CampaignService,
+  CampaignEventService,
+  CampaignVersionService,
+  CampaignAnalyticsService,
+  CampaignRecommendationService,
+  CampaignMemoryService,
+  CampaignHealthService,
+  CampaignAutomationService,
+  CampaignAssetService,
+} from "./campaign";
+export type {
+  CampaignSnapshot,
+  CampaignAsset,
+  CampaignVersion,
+  CampaignEvent,
+  CampaignMetric,
+  CampaignRecommendation,
+  CampaignMemoryEntry,
+  CampaignHealth,
+  AutomationRuleConfig,
+  SmartCampaignBuilderState,
+} from "./campaign";

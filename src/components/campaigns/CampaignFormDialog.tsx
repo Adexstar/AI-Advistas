@@ -4,18 +4,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CAMPAIGN_OBJECTIVES, CAMPAIGN_PLATFORMS, CampaignRow, useCreateCampaign, useUpdateCampaign } from '@/hooks/useCampaigns';
+import { CAMPAIGN_OBJECTIVES, CAMPAIGN_PLATFORMS, CampaignRow, useUpdateCampaign } from '@/hooks/useCampaigns';
 
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  campaign?: CampaignRow | null;
+  campaign: CampaignRow | null;
 }
 
 export function CampaignFormDialog({ open, onOpenChange, campaign }: Props) {
-  const create = useCreateCampaign();
   const update = useUpdateCampaign();
-  const isEdit = !!campaign;
 
   const [form, setForm] = useState({
     name: '',
@@ -38,36 +36,33 @@ export function CampaignFormDialog({ open, onOpenChange, campaign }: Props) {
         start_date: campaign.start_date ? campaign.start_date.slice(0, 10) : '',
         end_date: campaign.end_date ? campaign.end_date.slice(0, 10) : '',
       });
-    } else {
-      setForm({ name: '', objective: 'awareness', platform: 'Facebook', budget: 0, status: 'draft', start_date: '', end_date: '' });
     }
   }, [campaign, open]);
 
   const handleSubmit = async () => {
-    const payload = {
-      name: form.name,
-      objective: form.objective,
-      platform: form.platform,
-      budget: Number(form.budget),
-      status: form.status,
-      start_date: form.start_date || null,
-      end_date: form.end_date || null,
-    };
-    if (isEdit && campaign) {
-      await update.mutateAsync({ id: campaign.id, updates: payload });
-    } else {
-      await create.mutateAsync(payload);
-    }
+    if (!campaign) return;
+    await update.mutateAsync({
+      id: campaign.id,
+      updates: {
+        name: form.name,
+        objective: form.objective,
+        platform: form.platform,
+        budget: Number(form.budget),
+        status: form.status,
+        start_date: form.start_date || null,
+        end_date: form.end_date || null,
+      },
+    });
     onOpenChange(false);
   };
 
-  const busy = create.isPending || update.isPending;
+  const busy = update.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit Campaign' : 'Create Campaign'}</DialogTitle>
+          <DialogTitle>Edit Campaign</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>
@@ -130,7 +125,7 @@ export function CampaignFormDialog({ open, onOpenChange, campaign }: Props) {
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={busy || !form.name.trim()}>
-            {busy ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Campaign'}
+            {busy ? 'Saving...' : 'Save Changes'}
           </Button>
         </DialogFooter>
       </DialogContent>

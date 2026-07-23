@@ -358,7 +358,7 @@ const TemplateLibrary = () => {
               <p className="mt-2 text-sm text-muted-foreground">
                 High-performing, customizable templates designed to get you more results.
               </p>
-              <Button onClick={() => navigate('/create')} className="mt-4 gap-2 rounded-xl">
+              <Button onClick={() => navigate('/template-library/generate')} className="mt-4 gap-2 rounded-xl">
                 Create with AI <Sparkles className="h-4 w-4" />
               </Button>
             </div>
@@ -647,6 +647,7 @@ const TemplateLibrary = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 };

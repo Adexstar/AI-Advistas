@@ -179,7 +179,7 @@ const QuickDraftPrompt = ({ onDraftGenerated, onSkip }: QuickDraftPromptProps) =
               size="lg"
               className="w-full sm:w-auto"
             >
-              Start from Scratch
+              Create from Scratch
               <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
