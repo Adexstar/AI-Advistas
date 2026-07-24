@@ -289,16 +289,7 @@ const CampaignWorkspace = () => {
 
           {/* ANALYTICS */}
           <TabsContent value="analytics" className="space-y-6 mt-0">
-            <section className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-20">
-              <ChartLine className="h-10 w-10 text-muted-foreground" />
-              <h3 className="mt-4 text-base font-semibold">Analytics</h3>
-              <p className="mt-1 text-sm text-muted-foreground max-w-md text-center">
-                Detailed performance analytics, trends, and cross-platform comparisons.
-              </p>
-              <Button variant="outline" className="mt-4 gap-1.5 rounded-xl">
-                <ChartLine className="h-4 w-4" /> View Full Analytics
-              </Button>
-            </section>
+            <CampaignAnalyticsTab campaignId={campaign.id} campaign={campaign as any} />
           </TabsContent>
 
           {/* AI ASSISTANT */}
