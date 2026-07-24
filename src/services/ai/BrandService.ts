@@ -10,6 +10,7 @@ export interface BrandIdentity {
   tone?: string;
   logo_url?: string;
   writing_style?: string;
+  voice?: string;
   locked?: boolean;
 }
 
