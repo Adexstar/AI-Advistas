@@ -5,7 +5,7 @@ import { CampaignEventService } from './CampaignEventService';
 
 export const CampaignAssetService = {
   async list(campaignId: string, assetType?: string) {
-    let q = supabase
+    let q = db
       .from('campaign_assets')
       .select('*')
       .eq('campaign_id', campaignId)
@@ -21,7 +21,7 @@ export const CampaignAssetService = {
     userId: string,
     input: Omit<CampaignAsset, 'id' | 'campaign_id' | 'user_id' | 'added_at'>,
   ) {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('campaign_assets')
       .insert({
         campaign_id: campaignId,
@@ -36,7 +36,7 @@ export const CampaignAssetService = {
   },
 
   async remove(id: string, campaignId: string, userId: string) {
-    const { error } = await supabase
+    const { error } = await db
       .from('campaign_assets')
       .delete()
       .eq('id', id);

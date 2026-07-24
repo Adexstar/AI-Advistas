@@ -6,7 +6,7 @@ export const CampaignAnalyticsService = {
   async getMetrics(campaignId: string, days = 30) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('campaign_metrics')
       .select('*')
       .eq('campaign_id', campaignId)
@@ -17,7 +17,7 @@ export const CampaignAnalyticsService = {
   },
 
   async recordMetric(campaignId: string, userId: string, metric: Omit<CampaignMetric, 'id' | 'campaign_id' | 'user_id' | 'recorded_at'>) {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('campaign_metrics')
       .insert({
         campaign_id: campaignId,
@@ -31,7 +31,7 @@ export const CampaignAnalyticsService = {
   },
 
   async getAggregates(campaignId: string) {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('campaign_metrics')
       .select('*')
       .eq('campaign_id', campaignId)
@@ -44,7 +44,7 @@ export const CampaignAnalyticsService = {
   },
 
   async getPerformanceSummary(campaignId: string) {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('campaign_metrics')
       .select('impressions, clicks, conversions, spend, revenue, ctr, roas')
       .eq('campaign_id', campaignId)
@@ -67,7 +67,7 @@ export const CampaignAnalyticsService = {
   async getTrend(campaignId: string, metric: 'ctr' | 'roas' | 'cpc' | 'cpa' | 'spend', days = 14) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('campaign_metrics')
       .select(`recorded_at, ${metric}`)
       .eq('campaign_id', campaignId)
