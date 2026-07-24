@@ -262,6 +262,71 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_recommendations: {
+        Row: {
+          accepted_at: string | null
+          campaign_id: string | null
+          category: string
+          confidence: number
+          created_at: string
+          description: string
+          id: string
+          outcome: Json | null
+          priority: string
+          reasoning: string | null
+          rejected_at: string | null
+          status: string
+          suggested_action: Json | null
+          supporting_data: Json | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          campaign_id?: string | null
+          category: string
+          confidence?: number
+          created_at?: string
+          description: string
+          id?: string
+          outcome?: Json | null
+          priority?: string
+          reasoning?: string | null
+          rejected_at?: string | null
+          status?: string
+          suggested_action?: Json | null
+          supporting_data?: Json | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          campaign_id?: string | null
+          category?: string
+          confidence?: number
+          created_at?: string
+          description?: string
+          id?: string
+          outcome?: Json | null
+          priority?: string
+          reasoning?: string | null
+          rejected_at?: string | null
+          status?: string
+          suggested_action?: Json | null
+          supporting_data?: Json | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_recommendations_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_suggestions: {
         Row: {
           created_at: string
@@ -327,6 +392,62 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      audience_metrics: {
+        Row: {
+          campaign_id: string
+          clicks: number
+          conversions: number
+          ctr: number
+          id: string
+          impressions: number
+          metadata: Json | null
+          recorded_at: string
+          revenue: number
+          segment_type: string
+          segment_value: string
+          spend: number
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          clicks?: number
+          conversions?: number
+          ctr?: number
+          id?: string
+          impressions?: number
+          metadata?: Json | null
+          recorded_at?: string
+          revenue?: number
+          segment_type: string
+          segment_value: string
+          spend?: number
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          clicks?: number
+          conversions?: number
+          ctr?: number
+          id?: string
+          impressions?: number
+          metadata?: Json | null
+          recorded_at?: string
+          revenue?: number
+          segment_type?: string
+          segment_value?: string
+          spend?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audience_metrics_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       automation_rules: {
         Row: {
@@ -442,6 +563,80 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_metrics: {
+        Row: {
+          campaign_id: string
+          clicks: number
+          conversion_rate: number
+          conversions: number
+          cpa: number
+          cpc: number
+          cpm: number
+          created_at: string
+          ctr: number
+          id: string
+          impressions: number
+          platform: string | null
+          raw_data: Json | null
+          reach: number
+          recorded_at: string
+          revenue: number
+          roas: number
+          spend: number
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          clicks?: number
+          conversion_rate?: number
+          conversions?: number
+          cpa?: number
+          cpc?: number
+          cpm?: number
+          created_at?: string
+          ctr?: number
+          id?: string
+          impressions?: number
+          platform?: string | null
+          raw_data?: Json | null
+          reach?: number
+          recorded_at?: string
+          revenue?: number
+          roas?: number
+          spend?: number
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          clicks?: number
+          conversion_rate?: number
+          conversions?: number
+          cpa?: number
+          cpc?: number
+          cpm?: number
+          created_at?: string
+          ctr?: number
+          id?: string
+          impressions?: number
+          platform?: string | null
+          raw_data?: Json | null
+          reach?: number
+          recorded_at?: string
+          revenue?: number
+          roas?: number
+          spend?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_metrics_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           archived: boolean
@@ -552,6 +747,65 @@ export type Database = {
           winning_hooks?: Json | null
         }
         Relationships: []
+      }
+      creative_metrics: {
+        Row: {
+          campaign_id: string
+          clicks: number
+          conversions: number
+          creative_id: string | null
+          creative_name: string | null
+          creative_type: string | null
+          ctr: number
+          id: string
+          impressions: number
+          metadata: Json | null
+          recorded_at: string
+          score: number
+          thumbnail_url: string | null
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          clicks?: number
+          conversions?: number
+          creative_id?: string | null
+          creative_name?: string | null
+          creative_type?: string | null
+          ctr?: number
+          id?: string
+          impressions?: number
+          metadata?: Json | null
+          recorded_at?: string
+          score?: number
+          thumbnail_url?: string | null
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          clicks?: number
+          conversions?: number
+          creative_id?: string | null
+          creative_name?: string | null
+          creative_type?: string | null
+          ctr?: number
+          id?: string
+          impressions?: number
+          metadata?: Json | null
+          recorded_at?: string
+          score?: number
+          thumbnail_url?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creative_metrics_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       decisions: {
         Row: {
