@@ -1,10 +1,11 @@
 import { supabase } from '@/integrations/supabase/client';
+const db = supabase as any;
 import type { CampaignMemoryEntry } from './types';
 import { CampaignEventService } from './CampaignEventService';
 
 export const CampaignMemoryService = {
   async list(campaignId: string) {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('campaign_memory_entries')
       .select('*')
       .eq('campaign_id', campaignId)
@@ -18,7 +19,7 @@ export const CampaignMemoryService = {
     userId: string,
     input: Omit<CampaignMemoryEntry, 'id' | 'campaign_id' | 'user_id' | 'created_at'>,
   ) {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('campaign_memory_entries')
       .insert({
         campaign_id: campaignId,
@@ -96,7 +97,7 @@ export const CampaignMemoryService = {
   },
 
   async getCrossCampaignMemory(userId: string, category?: string) {
-    let q = supabase
+    let q = db
       .from('campaign_memory_entries')
       .select('*')
       .eq('user_id', userId)
@@ -110,7 +111,7 @@ export const CampaignMemoryService = {
 
   async compareCampaigns(campaignIds: string[]) {
     if (campaignIds.length === 0) return [];
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('campaign_memory_entries')
       .select('*')
       .in('campaign_id', campaignIds)

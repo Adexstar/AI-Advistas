@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
-import type { Database } from '@/integrations/supabase/types';
+const db = supabase as any;
+import type { Database } from '@/integrations/db/types';
 import { CampaignEventService } from './CampaignEventService';
 import { CampaignVersionService } from './CampaignVersionService';
 
@@ -14,7 +15,7 @@ async function cloneTableRecords(
   fkColumn: string,
   stripColumns: string[] = ['id', 'created_at', 'updated_at'],
 ) {
-  const { data: rows, error: fetchError } = await (supabase as any)
+  const { data: rows, error: fetchError } = await (db as any)
     .from(table)
     .select('*')
     .eq(fkColumn, sourceCampaignId);
@@ -28,13 +29,13 @@ async function cloneTableRecords(
     return copy;
   });
 
-  const { error: insertError } = await (supabase as any).from(table).insert(inserts);
+  const { error: insertError } = await (db as any).from(table).insert(inserts);
   if (insertError) throw insertError;
 }
 
 export const CampaignService = {
   async list(userId: string, opts?: { includeArchived?: boolean; status?: string }) {
-    let q = supabase
+    let q = db
       .from('campaigns')
       .select('*')
       .eq('user_id', userId)
@@ -47,7 +48,7 @@ export const CampaignService = {
   },
 
   async get(id: string) {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('campaigns')
       .select('*')
       .eq('id', id)
@@ -57,7 +58,7 @@ export const CampaignService = {
   },
 
   async create(userId: string, input: Omit<CampaignInsert, 'user_id'>) {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('campaigns')
       .insert({ ...input, user_id: userId } as any)
       .select()
@@ -72,7 +73,7 @@ export const CampaignService = {
   },
 
   async update(id: string, userId: string, updates: CampaignUpdate, changeDescription?: string) {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('campaigns')
       .update(updates)
       .eq('id', id)
@@ -91,7 +92,7 @@ export const CampaignService = {
 
   async duplicate(userId: string, campaign: CampaignRow) {
     const { id, created_at, updated_at, impressions, clicks, conversions, revenue, reach, spend, ctr, roas, health_score, confidence, ...rest } = campaign;
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('campaigns')
       .insert({ ...rest, name: `${campaign.name} (Copy)`, status: 'draft', user_id: userId } as any)
       .select()
@@ -114,7 +115,7 @@ export const CampaignService = {
   },
 
   async delete(id: string) {
-    const { error } = await supabase.from('campaigns').delete().eq('id', id);
+    const { error } = await db.from('campaigns').delete().eq('id', id);
     if (error) throw error;
   },
 
@@ -139,7 +140,7 @@ export const CampaignService = {
   },
 
   async search(userId: string, query: string) {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('campaigns')
       .select('*')
       .eq('user_id', userId)
