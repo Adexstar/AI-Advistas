@@ -1,9 +1,10 @@
 import { supabase } from '@/integrations/supabase/client';
+const db = supabase as any;
 import type { CampaignEvent, CampaignEventType } from './types';
 
 export const CampaignEventService = {
   async list(campaignId: string, limit = 50) {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('campaign_events')
       .select('*')
       .eq('campaign_id', campaignId)
@@ -22,7 +23,7 @@ export const CampaignEventService = {
     metadata?: Record<string, unknown>,
     actor = 'user',
   ) {
-    const { data, error } = await supabase.rpc('log_campaign_event', {
+    const { data, error } = await db.rpc('log_campaign_event', {
       p_campaign_id: campaignId,
       p_user_id: userId,
       p_event_type: eventType,
@@ -32,7 +33,7 @@ export const CampaignEventService = {
       p_actor: actor,
     });
     if (error) {
-      const { data: fallback, error: fallbackError } = await supabase
+      const { data: fallback, error: fallbackError } = await db
         .from('campaign_events')
         .insert({
           campaign_id: campaignId,

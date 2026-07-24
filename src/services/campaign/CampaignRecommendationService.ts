@@ -1,10 +1,11 @@
 import { supabase } from '@/integrations/supabase/client';
+const db = supabase as any;
 import type { CampaignRecommendation } from './types';
 import { CampaignEventService } from './CampaignEventService';
 
 export const CampaignRecommendationService = {
   async list(campaignId: string, status?: string) {
-    let q = supabase
+    let q = db
       .from('campaign_recommendations')
       .select('*')
       .eq('campaign_id', campaignId)
@@ -20,7 +21,7 @@ export const CampaignRecommendationService = {
     userId: string,
     input: Omit<CampaignRecommendation, 'id' | 'campaign_id' | 'user_id' | 'status' | 'dismissed_at' | 'applied_at' | 'created_at'>,
   ) {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('campaign_recommendations')
       .insert({
         campaign_id: campaignId,
@@ -35,7 +36,7 @@ export const CampaignRecommendationService = {
   },
 
   async accept(id: string, campaignId: string, userId: string) {
-    const { error } = await supabase
+    const { error } = await db
       .from('campaign_recommendations')
       .update({ status: 'accepted' })
       .eq('id', id);
@@ -43,7 +44,7 @@ export const CampaignRecommendationService = {
   },
 
   async dismiss(id: string) {
-    const { error } = await supabase
+    const { error } = await db
       .from('campaign_recommendations')
       .update({ status: 'dismissed', dismissed_at: new Date().toISOString() })
       .eq('id', id);
@@ -51,7 +52,7 @@ export const CampaignRecommendationService = {
   },
 
   async apply(id: string, campaignId: string, userId: string) {
-    const { error } = await supabase
+    const { error } = await db
       .from('campaign_recommendations')
       .update({ status: 'applied', applied_at: new Date().toISOString() })
       .eq('id', id);
@@ -61,7 +62,7 @@ export const CampaignRecommendationService = {
   },
 
   async get(id: string) {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('campaign_recommendations')
       .select('*')
       .eq('id', id)
@@ -71,7 +72,7 @@ export const CampaignRecommendationService = {
   },
 
   async getPendingCount(campaignId: string) {
-    const { count, error } = await supabase
+    const { count, error } = await db
       .from('campaign_recommendations')
       .select('*', { count: 'exact', head: true })
       .eq('campaign_id', campaignId)
