@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 const db = supabase as any;
-import type { Database } from '@/integrations/db/types';
+import type { Database } from '@/integrations/supabase/types';
 import { CampaignEventService } from './CampaignEventService';
 import { CampaignVersionService } from './CampaignVersionService';
 
