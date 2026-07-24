@@ -25,7 +25,7 @@ export const PlatformConnectionService = {
     const { data: userRes } = await supabase.auth.getUser();
     const userId = userRes.user?.id;
     if (!userId) throw new Error("Not authenticated");
-    const { data, error } = await supabase.from("platform_connections").insert({ ...input, user_id: userId, is_active: true }).select().single();
+    const { data, error } = await supabase.from("platform_connections").insert({ ...input, user_id: userId, is_active: true } as any).select().single();
     if (error) throw error;
     return data;
   },
