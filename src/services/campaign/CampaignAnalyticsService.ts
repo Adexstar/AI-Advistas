@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+const db = supabase as any;
 import type { CampaignMetric } from './types';
 
 export const CampaignAnalyticsService = {

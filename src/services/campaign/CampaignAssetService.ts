@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+const db = supabase as any;
 import type { CampaignAsset } from './types';
 import { CampaignEventService } from './CampaignEventService';
 
