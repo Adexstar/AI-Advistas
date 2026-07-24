@@ -22,7 +22,7 @@ export const PublishingHistoryService = {
       action: entry.action,
       result: entry.result,
       details: entry.details ?? {},
-    });
+    } as any);
   },
 
   async list(campaignId: string, limit = 50) {

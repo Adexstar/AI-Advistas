@@ -55,9 +55,9 @@ export const PublishingService = {
     const validation = await this.validate(request);
 
     // Fail fast if any target has a hard error
-    const blocked = Object.entries(validation).filter(([, v]) => !v.ok);
+    const blocked = Object.entries(validation).filter(([, v]) => !(v as ValidationResult).ok);
     if (blocked.length > 0) {
-      const msg = blocked.map(([p, v]) => `${p}: ${v.issues.filter(i => i.level === "error").map(i => i.message).join(", ")}`).join(" | ");
+      const msg = blocked.map(([p, v]) => `${p}: ${(v as ValidationResult).issues.filter(i => i.level === "error").map(i => i.message).join(", ")}`).join(" | ");
       throw new Error(`Validation failed — ${msg}`);
     }
 
@@ -82,7 +82,7 @@ export const PublishingService = {
 
     const { data: jobs, error } = await supabase
       .from("publishing_jobs")
-      .insert(rows)
+      .insert(rows as any)
       .select();
     if (error) throw error;
 

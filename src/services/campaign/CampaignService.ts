@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 const db = supabase as any;
-import type { Database } from '@/integrations/db/types';
+import type { Database } from '@/integrations/supabase/types';
 import { CampaignEventService } from './CampaignEventService';
 import { CampaignVersionService } from './CampaignVersionService';
 
@@ -91,7 +91,7 @@ export const CampaignService = {
   },
 
   async duplicate(userId: string, campaign: CampaignRow) {
-    const { id, created_at, updated_at, impressions, clicks, conversions, revenue, reach, spend, ctr, roas, health_score, confidence, ...rest } = campaign;
+    const { id, created_at, updated_at, impressions, clicks, conversions, revenue, reach, spend, ctr, roas, ...rest } = campaign as any;
     const { data, error } = await db
       .from('campaigns')
       .insert({ ...rest, name: `${campaign.name} (Copy)`, status: 'draft', user_id: userId } as any)

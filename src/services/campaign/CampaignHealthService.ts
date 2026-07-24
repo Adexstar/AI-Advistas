@@ -50,7 +50,7 @@ export const CampaignHealthService = {
     if (campaign.start_date) score += 10;
     if (campaign.end_date) score += 10;
     if (campaign.objective && campaign.objective !== 'awareness') score += 10;
-    if (campaign.platforms && campaign.platforms.length > 1) score += 10;
+    if ((campaign as any).platforms && (campaign as any).platforms.length > 1) score += 10;
     if (campaign.budget > 0) score += 10;
     return Math.min(100, score);
   },
