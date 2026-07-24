@@ -19,6 +19,7 @@ import { CampaignFilesTab } from '@/components/campaigns/CampaignFilesTab';
 import { CampaignNotesTab } from '@/components/campaigns/CampaignNotesTab';
 import { CampaignAutomationRules } from '@/components/campaigns/CampaignAutomationRules';
 import { CampaignPublishingTab } from '@/components/campaigns/CampaignPublishingTab';
+import { CampaignAnalyticsTab } from '@/components/campaigns/CampaignAnalyticsTab';
 import { CampaignHealthService } from '@/services/campaign/CampaignHealthService';
 import { CampaignVersionService } from '@/services/campaign/CampaignVersionService';
 import { CampaignEventService } from '@/services/campaign/CampaignEventService';
