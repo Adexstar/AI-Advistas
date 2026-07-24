@@ -5,7 +5,7 @@ import { CampaignEventService } from './CampaignEventService';
 
 export const CampaignAutomationService = {
   async listRules(userId: string) {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('automation_rules')
       .select('*')
       .eq('user_id', userId)
@@ -18,7 +18,7 @@ export const CampaignAutomationService = {
     userId: string,
     input: Pick<AutomationRuleConfig, 'name' | 'trigger' | 'condition' | 'action'> & { enabled?: boolean },
   ) {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('automation_rules')
       .insert({
         user_id: userId,
@@ -35,7 +35,7 @@ export const CampaignAutomationService = {
   },
 
   async toggleRule(id: string, enabled: boolean) {
-    const { error } = await supabase
+    const { error } = await db
       .from('automation_rules')
       .update({ enabled })
       .eq('id', id);
@@ -43,7 +43,7 @@ export const CampaignAutomationService = {
   },
 
   async deleteRule(id: string) {
-    const { error } = await supabase
+    const { error } = await db
       .from('automation_rules')
       .delete()
       .eq('id', id);
@@ -51,7 +51,7 @@ export const CampaignAutomationService = {
   },
 
   async getQueue(campaignId: string) {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('campaign_automation_queue')
       .select('*')
       .eq('campaign_id', campaignId)
@@ -68,7 +68,7 @@ export const CampaignAutomationService = {
     actionParams: Record<string, unknown>,
     reason?: string,
   ) {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('campaign_automation_queue')
       .insert({
         campaign_id: campaignId,
