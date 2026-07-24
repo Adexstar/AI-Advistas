@@ -82,7 +82,7 @@ export const PublishingService = {
 
     const { data: jobs, error } = await supabase
       .from("publishing_jobs")
-      .insert(rows)
+      .insert(rows as any)
       .select();
     if (error) throw error;
 
