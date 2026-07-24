@@ -111,7 +111,7 @@ const Index = () => {
 
   const handleSecondaryAction = () => {
     if (user && !loading) {
-      navigate("/create");
+      navigate("/create-ad");
       return;
     }
 

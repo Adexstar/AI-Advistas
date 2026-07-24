@@ -7,11 +7,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  User, 
-  Bell, 
-  Shield, 
-  Link, 
+import {
+  User,
+  Bell,
+  Shield,
+  Link,
   Save,
   Mail,
   Smartphone,
@@ -21,8 +21,10 @@ import {
   Palette as PaletteIcon,
   Briefcase,
   Wrench,
+  Brain,
 } from "lucide-react";
 import AIPreferences from "@/components/settings/AIPreferences";
+import AIBrainSettings from "@/components/settings/AIBrainSettings";
 const Settings = () => {
   const [profile, setProfile] = useState({
     firstName: "Alex",
@@ -74,6 +76,7 @@ const Settings = () => {
           <TabsTrigger value="security" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Security</TabsTrigger>
           <TabsTrigger value="appearance" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Appearance</TabsTrigger>
           <TabsTrigger value="integrations" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Connected</TabsTrigger>
+          <TabsTrigger value="ai-brain" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">AI Brain</TabsTrigger>
           <TabsTrigger value="advanced" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Advanced</TabsTrigger>
         </TabsList>
 
@@ -102,6 +105,13 @@ const Settings = () => {
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">Theme controls coming soon.</CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="ai-brain">
+          <div className="flex items-center gap-2 pb-2 text-sm text-muted-foreground">
+            <Brain className="h-4 w-4 text-primary" /> The invisible engine powering AI features across AdVista.
+          </div>
+          <AIBrainSettings />
         </TabsContent>
 
         <TabsContent value="advanced">

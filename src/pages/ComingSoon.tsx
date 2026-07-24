@@ -33,7 +33,7 @@ const ComingSoon = ({
             <NavLink to="/dashboard">Back to Dashboard</NavLink>
           </Button>
           <Button asChild>
-            <NavLink to="/create">Create an Ad</NavLink>
+            <NavLink to="/create-ad">Create an Ad</NavLink>
           </Button>
         </div>
       </div>

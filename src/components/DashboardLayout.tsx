@@ -40,7 +40,7 @@ import GlobalSearch from "@/components/GlobalSearch";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import AIContextBar from "@/components/dashboard/AIContextBar";
 import NotifyBadge from "@/components/ui/NotifyBadge";
-import { AIStatusProvider } from "@/contexts/AIStatusContext";
+
 
 type NavItem = {
   name: string;
@@ -59,7 +59,7 @@ const navGroups: NavGroup[] = [
     items: [
       { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { name: "Campaigns", href: "/campaigns", icon: Megaphone },
-      { name: "Create Ad", href: "/create", icon: Plus },
+      { name: "Create Ad", href: "/create-ad", icon: Plus },
       { name: "Templates", href: "/template-library", icon: LayoutTemplate },
       { name: "Visual Editor", href: "/visual-editor", icon: PenTool },
       { name: "Brand Kit", href: "/brand-kit", icon: Palette },
@@ -461,7 +461,7 @@ const DashboardShell = () => {
               <AIContextBar />
             </div>
             <Button size="icon" className="h-9 w-9 rounded-xl" asChild>
-              <NavLink to="/create" aria-label="Create Ad">
+              <NavLink to="/create-ad" aria-label="Create Ad">
                 <Plus className="h-4 w-4" />
               </NavLink>
             </Button>
@@ -505,10 +505,6 @@ const DashboardShell = () => {
   );
 };
 
-const DashboardLayout = () => (
-  <AIStatusProvider>
-    <DashboardShell />
-  </AIStatusProvider>
-);
+const DashboardLayout = () => <DashboardShell />;
 
 export default DashboardLayout;

@@ -12,6 +12,7 @@ import { AppProvider } from "./contexts/AppContext";
 import { VisualEditorProvider } from "./contexts/VisualEditorContext";
 import { AIStatusProvider } from "./contexts/AIStatusContext";
 import { AIContextProvider } from "./contexts/AIContext";
+import { AIBrainProvider } from "./contexts/AIBrainContext";
 
 const queryClient = new QueryClient();
 
@@ -244,9 +245,11 @@ const App = () => (
       <AIStatusProvider>
         <AIContextProvider>
           <AppProvider>
-            <TooltipProvider>
-              <AppContent />
-            </TooltipProvider>
+            <AIBrainProvider>
+              <TooltipProvider>
+                <AppContent />
+              </TooltipProvider>
+            </AIBrainProvider>
           </AppProvider>
         </AIContextProvider>
       </AIStatusProvider>

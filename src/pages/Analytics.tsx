@@ -4,7 +4,6 @@ import {
   AreaChart,
   CartesianGrid,
   Cell,
-  Legend,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -13,25 +12,20 @@ import {
   YAxis,
 } from "recharts";
 import {
-  Activity,
   ArrowUpRight,
   CalendarDays,
   Download,
   Filter,
-  ImageIcon as ImageLucide,
-  MousePointerClick,
-  ShoppingCart,
-  DollarSign,
   Eye,
   TrendingUp,
   Sparkles,
   Play,
-  FileText,
   Video,
   Image as ImgIcon,
-  FileType,
-  Upload,
   CheckCircle2,
+  MousePointerClick,
+  ShoppingCart,
+  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,84 +38,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-
-// ---------- Demo data ----------
-const kpis = [
-  { label: "Campaigns", value: "48", delta: "+12.5%", icon: ImgIcon, tone: "bg-violet-50 text-violet-600" },
-  { label: "Reach", value: "2.4M", delta: "+18.7%", icon: Eye, tone: "bg-sky-50 text-sky-600" },
-  { label: "Clicks", value: "187K", delta: "+15.3%", icon: MousePointerClick, tone: "bg-emerald-50 text-emerald-600" },
-  { label: "Conversions", value: "12,540", delta: "+21.6%", icon: ShoppingCart, tone: "bg-amber-50 text-amber-600" },
-  { label: "Revenue", value: "$48,290", delta: "+21.6%", icon: DollarSign, tone: "bg-teal-50 text-teal-600" },
-  { label: "ROAS", value: "4.21x", delta: "+20.4%", icon: TrendingUp, tone: "bg-rose-50 text-rose-600" },
-];
-
-const perfSeries = [
-  { day: "May 12", reach: 900000, clicks: 60000, conversions: 30000, revenue: 12000 },
-  { day: "May 13", reach: 1200000, clicks: 80000, conversions: 40000, revenue: 15000 },
-  { day: "May 14", reach: 800000, clicks: 55000, conversions: 25000, revenue: 11000 },
-  { day: "May 15", reach: 1600000, clicks: 110000, conversions: 55000, revenue: 22000 },
-  { day: "May 16", reach: 1300000, clicks: 95000, conversions: 42000, revenue: 18000 },
-  { day: "May 17", reach: 2000000, clicks: 130000, conversions: 68000, revenue: 30000 },
-  { day: "May 18", reach: 1700000, clicks: 120000, conversions: 60000, revenue: 26000 },
-];
-
-const topCampaigns = [
-  { name: "Summer Sale Campaign", status: "Active", reach: "125K", ctr: "6.4%", pct: 92, img: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=200&h=200&fit=crop" },
-  { name: "Black Friday Blast", status: "Active", reach: "98K", ctr: "5.2%", pct: 78, img: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=200&h=200&fit=crop" },
-  { name: "Fitness Launch", status: "Active", reach: "76K", ctr: "4.8%", pct: 68, img: "https://images.unsplash.com/photo-1594737625785-a6cbdabd333c?w=200&h=200&fit=crop" },
-  { name: "New Product Promo", status: "Paused", reach: "43K", ctr: "3.8%", pct: 42, img: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&h=200&fit=crop" },
-];
-
-const bestTemplates = [
-  { name: "Real Estate Ad #1", usage: "5.2K", ctr: "7.6%", pct: 88, img: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=200&h=200&fit=crop" },
-  { name: "E-commerce Sale #4", usage: "—", ctr: "6.2%", pct: 74, img: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=200&h=200&fit=crop" },
-  { name: "Agency Promo #2", usage: "—", ctr: "5.8%", pct: 62, img: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=200&h=200&fit=crop" },
-  { name: "Product Launch #7", usage: "—", ctr: "5.1%", pct: 55, img: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&h=200&fit=crop" },
-];
-
-const campaignRows = [
-  { name: "Summer Sale Campaign", status: "Active", reach: "125K", ctr: "6.4%", conv: "2,450", roas: "4.32x" },
-  { name: "Agency Promo", status: "Active", reach: "87K", ctr: "5.2%", conv: "1,680", roas: "3.21x" },
-  { name: "New Product Launch", status: "Paused", reach: "43K", ctr: "3.8%", conv: "870", roas: "2.11x" },
-  { name: "Fitness Challenge", status: "Completed", reach: "65K", ctr: "4.9%", conv: "1,250", roas: "3.78x" },
-  { name: "Black Friday Blast", status: "Completed", reach: "98K", ctr: "6.1%", conv: "1,940", roas: "4.10x" },
-];
-
-const exportsData = [
-  { name: "PNG", value: 1245, color: "#8b5cf6" },
-  { name: "JPG", value: 645, color: "#6366f1" },
-  { name: "MP4", value: 280, color: "#a78bfa" },
-  { name: "PDF", value: 170, color: "#f472b6" },
-];
-
-const mediaAssets = [
-  { name: "Product Image 1", usage: "Used in 56 ads", pct: 56, icon: ImgIcon },
-  { name: "Promo Video 2", usage: "Used in 32 ads", pct: 32, icon: Video },
-  { name: "Brand Logo", usage: "Used in 28 ads", pct: 28, icon: ImgIcon },
-  { name: "Background 3", usage: "Used in 21 ads", pct: 21, icon: ImgIcon },
-];
-
-const brandScores = [
-  { label: "Logo Usage", value: "High", pct: 92 },
-  { label: "Color Consistency", value: "Good", pct: 78 },
-  { label: "Font Usage", value: "Good", pct: 75 },
-  { label: "Brand Compliance", value: "Great", pct: 86 },
-];
-
-const activities = [
-  { text: 'Template "Real Estate Ad #1" was used in a campaign', time: "2 min ago" },
-  { text: 'Campaign "Summer Sale Campaign" was published', time: "15 min ago" },
-  { text: 'New media "Product Image 1" uploaded', time: "1 hour ago" },
-  { text: "Ad exported as PNG", time: "2 hours ago" },
-  { text: 'Brand Kit "AdVista Agency" updated', time: "3 hours ago" },
-];
-
-const integrations = [
-  { name: "Meta Ads", desc: "Reach • Spend • CTR", logo: "M", color: "bg-blue-100 text-blue-600" },
-  { name: "Google Ads", desc: "Clicks • CPC • Conversions", logo: "G", color: "bg-red-100 text-red-600" },
-  { name: "TikTok Ads", desc: "Views • Engagement • CTR", logo: "T", color: "bg-neutral-900 text-white" },
-];
+import { useAnalytics, type AnalyticsRange } from "@/hooks/useAnalytics";
 
 const statusTone = (s: string) =>
   s === "Active"
@@ -132,9 +51,14 @@ const statusTone = (s: string) =>
 
 // ---------- Page ----------
 const Analytics = () => {
-  const [range, setRange] = useState("daily");
+  const [range, setRange] = useState<AnalyticsRange>("daily");
+  const {
+    loading, kpis, performanceSeries, topCampaigns, campaignRows,
+    bestTemplates, mediaAssets, brandScores, brandScore, brandLabel,
+    activityItems, insights, exportStats, integrations,
+  } = useAnalytics(range);
 
-  const totalExports = useMemo(() => exportsData.reduce((a, b) => a + b.value, 0), []);
+  const totalExports = useMemo(() => exportStats.reduce((a, b) => a + b.value, 0), [exportStats]);
 
   return (
     <div className="space-y-6">
@@ -151,7 +75,7 @@ const Analytics = () => {
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" className="h-10 gap-2 rounded-xl border-border bg-card">
             <CalendarDays className="h-4 w-4" />
-            <span className="hidden sm:inline">May 12 – May 18, 2025</span>
+            <span className="hidden capitalize sm:inline">{range} view</span>
             <span className="sm:hidden">Range</span>
           </Button>
           <Button variant="outline" className="h-10 gap-2 rounded-xl border-border bg-card">
@@ -167,23 +91,30 @@ const Analytics = () => {
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-6">
-        {kpis.map((k) => (
-          <Card key={k.label} className="rounded-2xl border-border p-4 shadow-sm">
-            <div className="flex items-start gap-3">
-              <div className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-full", k.tone)}>
-                <k.icon className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-muted-foreground">{k.label}</p>
-                <p className="mt-0.5 truncate text-xl font-bold text-foreground">{k.value}</p>
-                <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-emerald-600">
-                  <ArrowUpRight className="h-3 w-3" />
-                  {k.delta} <span className="text-muted-foreground">vs last 7 days</span>
-                </p>
-              </div>
-            </div>
-          </Card>
-        ))}
+        {kpis.map((k) => {
+          const Icon = k.label === 'Campaigns' ? ImgIcon : k.label === 'Reach' ? Eye : k.label === 'Clicks' ? TrendingUp : k.label === 'Conversions' ? Sparkles : k.label === 'Revenue' ? ImgIcon : TrendingUp;
+          return (
+            <Card key={k.label} className="rounded-2xl border-border p-4 shadow-sm">
+              {loading ? (
+                <div className="space-y-2"><Skeleton className="h-10 w-10 rounded-full" /><Skeleton className="h-4 w-20" /><Skeleton className="h-6 w-16" /><Skeleton className="h-3 w-24" /></div>
+              ) : (
+                <div className="flex items-start gap-3">
+                  <div className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-full", k.tone)}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-muted-foreground">{k.label}</p>
+                    <p className="mt-0.5 truncate text-xl font-bold text-foreground">{k.value}</p>
+                    <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-emerald-600">
+                      <ArrowUpRight className="h-3 w-3" />
+                      {k.delta} <span className="text-muted-foreground">vs last period</span>
+                    </p>
+                  </div>
+                </div>
+              )}
+            </Card>
+          );
+        })}
       </div>
 
       {/* Performance + Top Campaigns + Exports */}
@@ -194,7 +125,7 @@ const Analytics = () => {
             <div>
               <h3 className="text-base font-semibold text-foreground">Performance Overview</h3>
             </div>
-            <Select value={range} onValueChange={setRange}>
+            <Select value={range} onValueChange={(v) => setRange(v as AnalyticsRange)}>
               <SelectTrigger className="h-9 w-28 rounded-lg border-border bg-card text-sm">
                 <SelectValue />
               </SelectTrigger>
@@ -220,7 +151,7 @@ const Analytics = () => {
           </div>
           <div className="h-[260px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={perfSeries} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+              <AreaChart data={performanceSeries} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
                 <defs>
                   <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.35} />
@@ -288,8 +219,8 @@ const Analytics = () => {
               <div className="relative h-[140px] w-[140px] shrink-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={exportsData} innerRadius={45} outerRadius={65} dataKey="value" stroke="none">
-                      {exportsData.map((e) => (
+                    <Pie data={exportStats} innerRadius={45} outerRadius={65} dataKey="value" stroke="none">
+                      {exportStats.map((e) => (
                         <Cell key={e.name} fill={e.color} />
                       ))}
                     </Pie>
@@ -303,7 +234,7 @@ const Analytics = () => {
                 </div>
               </div>
               <div className="flex-1 space-y-1.5 text-xs">
-                {exportsData.map((e) => (
+                {exportStats.map((e) => (
                   <div key={e.name} className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full" style={{ background: e.color }} />
                     <span className="text-foreground">{e.name}</span>
@@ -402,10 +333,12 @@ const Analytics = () => {
         <Card className="rounded-2xl border-border p-5 shadow-sm xl:col-span-3">
           <h3 className="mb-4 text-base font-semibold text-foreground">Media Asset Usage</h3>
           <div className="space-y-3">
-            {mediaAssets.map((a) => (
+            {mediaAssets.map((a) => {
+              const MediaIcon = a.icon === 'Video' ? Video : ImgIcon;
+              return (
               <div key={a.name} className="flex items-center gap-3">
                 <div className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
-                  <a.icon className="h-5 w-5" />
+                  <MediaIcon className="h-5 w-5" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-foreground">{a.name}</p>
@@ -416,7 +349,8 @@ const Analytics = () => {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
       </div>
@@ -429,27 +363,27 @@ const Analytics = () => {
             <div className="relative grid h-24 w-24 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5">
               <div className="grid h-20 w-20 place-items-center rounded-full bg-card">
                 <div className="text-center">
-                  <p className="text-xl font-bold text-foreground">82</p>
+                  <p className="text-xl font-bold text-foreground">{brandScore}</p>
                   <p className="text-[9px] text-muted-foreground">Brand Score</p>
                 </div>
               </div>
             </div>
-            <div className="min-w-0 flex-1 space-y-2 text-xs">
-              {brandScores.map((b) => (
-                <div key={b.label} className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                    <span className="truncate text-foreground">{b.label}</span>
+              <div className="min-w-0 flex-1 space-y-2 text-xs">
+                {brandScores.map((b) => (
+                  <div key={b.label} className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                      <span className="truncate text-foreground">{b.label}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">{b.value}</span>
+                      <span className="font-semibold text-foreground">{b.pct}%</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">{b.value}</span>
-                    <span className="font-semibold text-foreground">{b.pct}%</span>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-          <p className="mt-3 text-center text-xs font-medium text-emerald-600">Great</p>
+            <p className="mt-3 text-center text-xs font-medium text-emerald-600">{brandLabel}</p>
         </Card>
 
         <Card className="rounded-2xl border-border p-5 shadow-sm xl:col-span-5">
@@ -458,7 +392,7 @@ const Analytics = () => {
             <button className="text-xs font-medium text-primary hover:underline">View all</button>
           </div>
           <div className="space-y-3">
-            {activities.map((a, i) => (
+            {activityItems.map((a, i) => (
               <div key={i} className="flex items-start gap-3">
                 <div className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
                   <CheckCircle2 className="h-3.5 w-3.5" />
@@ -476,24 +410,23 @@ const Analytics = () => {
           <Card className="rounded-2xl border-border p-5 shadow-sm">
             <h3 className="mb-4 text-base font-semibold text-foreground">Insights</h3>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="rounded-xl bg-emerald-50 p-3">
-                <p className="text-xs font-semibold text-emerald-700">Growth</p>
-                <p className="mt-1 text-[11px] text-emerald-800/80">Reach increased by</p>
-                <p className="mt-1 text-lg font-bold text-emerald-700">18.7%</p>
-                <p className="text-[10px] text-emerald-700/70">compared to last week</p>
-              </div>
-              <div className="rounded-xl bg-teal-50 p-3">
-                <p className="text-xs font-semibold text-teal-700">Top Performer</p>
-                <p className="mt-1 text-[11px] text-teal-800/80">Summer Sale Campaign has the highest ROAS</p>
-                <p className="mt-1 text-lg font-bold text-teal-700">4.32x</p>
-              </div>
-              <div className="rounded-xl bg-rose-50 p-3">
-                <p className="text-xs font-semibold text-rose-700">Recommendation</p>
-                <p className="mt-1 text-[11px] text-rose-800/80">Try using more video assets in your ads</p>
-                <div className="mt-2 grid h-8 w-8 place-items-center rounded-full bg-white text-rose-500 shadow-sm">
-                  <Play className="h-3.5 w-3.5 fill-current" />
+              {insights.length > 0 ? insights.map((ins: any, i: number) => {
+                const colors = ins.type === 'Growth' ? { bg: 'bg-emerald-50', title: 'text-emerald-700', desc: 'text-emerald-800/80', value: 'text-emerald-700', sub: 'text-emerald-700/70' }
+                  : ins.type === 'Top Performer' ? { bg: 'bg-teal-50', title: 'text-teal-700', desc: 'text-teal-800/80', value: 'text-teal-700', sub: 'text-teal-700/70' }
+                  : { bg: 'bg-rose-50', title: 'text-rose-700', desc: 'text-rose-800/80', value: 'text-rose-700', sub: 'text-rose-700/70' };
+                return (
+                  <div key={i} className={`rounded-xl ${colors.bg} p-3`}>
+                    <p className={`text-xs font-semibold ${colors.title}`}>{ins.type}</p>
+                    <p className={`mt-1 text-[11px] ${colors.desc}`}>{ins.title}</p>
+                    <p className={`mt-1 text-xs font-bold ${colors.value}`}>{ins.description}</p>
+                  </div>
+                );
+              }) : (
+                <div className="col-span-3 rounded-xl bg-muted p-6 text-center text-sm text-muted-foreground">
+                  <Sparkles className="mx-auto mb-2 h-5 w-5 opacity-60" />
+                  Insights will appear once your campaigns have enough data.
                 </div>
-              </div>
+              )}
             </div>
           </Card>
         </div>

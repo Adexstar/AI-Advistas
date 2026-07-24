@@ -26,7 +26,7 @@ import {
 const primary = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Campaigns", href: "/campaigns", icon: Megaphone },
-  { name: "Create", href: "/create", icon: Plus, primary: true },
+  { name: "Create", href: "/create-ad", icon: Plus, primary: true },
   { name: "Templates", href: "/template-library", icon: LayoutTemplate },
 ];
 
@@ -36,7 +36,7 @@ const groups = [
     items: [
       { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { name: "Campaigns", href: "/campaigns", icon: Megaphone },
-      { name: "Create Ad", href: "/create", icon: Plus },
+      { name: "Create Ad", href: "/create-ad", icon: Plus },
       { name: "Templates", href: "/template-library", icon: LayoutTemplate },
       { name: "Visual Editor", href: "/visual-editor", icon: PenTool },
       { name: "Brand Kit", href: "/brand-kit", icon: Palette },

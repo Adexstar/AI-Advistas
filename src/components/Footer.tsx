@@ -10,14 +10,14 @@ const Footer = () => {
         { name: "Workflow", href: "#workflow" },
         { name: "Template Library", href: "/template-library" },
         { name: "Campaign Operations", href: "/campaigns" },
-        { name: "Create Flow", href: "/create" }
+        { name: "Create Flow", href: "/create-ad" }
       ]
     },
     {
       title: "Launch Tools", 
       links: [
         { name: "Saved Templates", href: "/template-library" },
-        { name: "Quick Draft", href: "/create" },
+        { name: "Quick Draft", href: "/create-ad" },
         { name: "Visual Customizer", href: "/template-library" },
         { name: "Billing", href: "/billing" },
         { name: "Settings", href: "/settings" },

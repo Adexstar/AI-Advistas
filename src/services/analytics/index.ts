@@ -8,3 +8,4 @@ export { BenchmarkService } from './BenchmarkService';
 export { ForecastService } from './ForecastService';
 export { RecommendationService } from './RecommendationService';
 export { CampaignMemoryService } from './CampaignMemoryService';
+export { InsightService } from './InsightService';
