@@ -1185,6 +1185,33 @@ export type Database = {
         }
         Relationships: []
       }
+      provider_search_cache: {
+        Row: {
+          cache_key: string
+          created_at: string
+          expires_at: string
+          id: string
+          provider: string
+          results: Json
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          provider: string
+          results?: Json
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          provider?: string
+          results?: Json
+        }
+        Relationships: []
+      }
       publishing_history: {
         Row: {
           action: string
