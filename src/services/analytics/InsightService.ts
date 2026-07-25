@@ -52,7 +52,7 @@ export const InsightService = {
     category?: string | null;
     previous?: UnifiedCampaignAnalytics;
     current: UnifiedCampaignAnalytics;
-  }): Omit<Insight, 'id' | 'created_at'> & { workspace_id: string }[] {
+  }): (Omit<Insight, 'id' | 'created_at'> & { workspace_id: string })[] {
     const { workspaceId, userId, campaignId, category, previous, current } = params;
     const insights: (Omit<Insight, 'id' | 'created_at'> & { workspace_id: string })[] = [];
 
