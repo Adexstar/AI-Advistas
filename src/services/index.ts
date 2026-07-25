@@ -1,4 +1,15 @@
 // AdVista service layer entrypoint. Import from "@/services".
+//
+// External providers (Freepik, Pexels, Pixabay, Unsplash, Leonardo, Ideogram,
+// Runway, Kling, Veo, Cloudinary, Ayrshare, Meta/Google/TikTok Ads, Brandfetch)
+// are infrastructure. Pages, hooks, the AI Brain, and the Visual Editor must
+// only talk to the four service entry points below:
+//   • TemplateService  — templates (generate/import/library)
+//   • MediaService     — search/upload/generate images & video
+//   • BrandService     — brand kit + Brandfetch onboarding
+//   • PublishingEngine — organic + paid publishing across all platforms
+// Adapters live under src/services/<domain>/providers and are swappable
+// without frontend changes.
 export { TemplateService } from "./templates/TemplateService";
 export { TemplateEngine } from "./templates/TemplateEngine";
 export { TemplateRecommendationService } from "./templates/TemplateRecommendationService";
