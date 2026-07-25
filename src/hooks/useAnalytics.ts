@@ -95,7 +95,7 @@ export function useAnalytics(range: AnalyticsRange = 'daily') {
     const sum = (rows: any[], field: string) => rows.reduce((a: number, r: any) => a + Number(r[field] || 0), 0);
     const cur = { campaigns: campaigns.length, reach: sum(currentPeriod, 'impressions'), clicks: sum(currentPeriod, 'clicks'), conversions: sum(currentPeriod, 'conversions'), revenue: sum(currentPeriod, 'revenue'), roas: sum(currentPeriod, 'spend') > 0 ? sum(currentPeriod, 'revenue') / sum(currentPeriod, 'spend') : 0 };
     const prev = { campaigns: previousPeriod.length, reach: sum(previousPeriod, 'impressions'), clicks: sum(previousPeriod, 'clicks'), conversions: sum(previousPeriod, 'conversions'), revenue: sum(previousPeriod, 'revenue'), roas: sum(previousPeriod, 'spend') > 0 ? sum(previousPeriod, 'revenue') / sum(previousPeriod, 'spend') : 0 };
-    const delta = (curVal: number, prevVal: number) => { if (!prevVal) return '+100%'; const d = ((curVal - prevVal) / prevVal) * 100; return `${d >= 0 ? '+' : ''}${Math.round(d)}%`; };
+    const delta = (curVal: number, prevVal: number) => { if (!prevVal) return null; const d = ((curVal - prevVal) / prevVal) * 100; if (Math.round(d) === 0) return null; return `${d >= 0 ? '+' : ''}${Math.round(d)}%`; };
     return [
       { label: 'Campaigns', value: String(cur.campaigns), delta: delta(cur.campaigns, prev.campaigns), tone: 'bg-violet-50 text-violet-600' },
       { label: 'Reach', value: cur.reach >= 1000 ? `${(cur.reach / 1000).toFixed(1)}K` : String(cur.reach), delta: delta(cur.reach, prev.reach), tone: 'bg-sky-50 text-sky-600' },

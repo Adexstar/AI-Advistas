@@ -115,12 +115,12 @@ function StepProgress({ step }: { step: number }) {
                 {completed ? <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> : idx}
               </div>
               <span className={cn(
-                'mt-1 text-[10px] sm:text-xs font-semibold',
+                'font-label mt-1',
                 active && 'text-[#6C63FF]',
                 completed && 'text-[#6C63FF]',
                 !active && !completed && 'text-[#9CA3AF]',
               )}>{s.label}</span>
-              <span className="hidden sm:block text-[10px] text-[#9CA3AF] leading-tight">{s.subtitle}</span>
+              <span className="hidden sm:block font-micro text-[#9CA3AF] leading-tight">{s.subtitle}</span>
             </div>
             {i < STEPS.length - 1 && (
               <div className={cn(
@@ -142,11 +142,11 @@ function StepProgress({ step }: { step: number }) {
 function Field({ label, hint, children, required }: { label: string; hint?: string; children: React.ReactNode; required?: boolean }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs font-semibold text-[#374151]">
+      <Label className="font-label text-[#374151]">
         {label} {required && <span className="text-red-500">*</span>}
       </Label>
       {children}
-      {hint && <p className="text-[11px] text-[#9CA3AF]">{hint}</p>}
+      {hint && <p className="font-micro text-[#9CA3AF]">{hint}</p>}
     </div>
   );
 }
@@ -154,8 +154,8 @@ function Field({ label, hint, children, required }: { label: string; hint?: stri
 function StepSection({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
     <div className="mb-6">
-      <h3 className="text-base font-bold text-[#111827]">{title}</h3>
-      {subtitle && <p className="text-xs text-[#9CA3AF] mt-0.5 mb-4">{subtitle}</p>}
+      <h3 className="font-section-header text-[#111827]">{title}</h3>
+      {subtitle && <p className="font-label text-[#9CA3AF] mt-0.5 mb-4">{subtitle}</p>}
       {children}
     </div>
   );
@@ -388,8 +388,8 @@ export default function CreateAd() {
       <div className="hidden lg:block flex-1 max-w-[420px]">
         <div className="sticky top-24 space-y-4">
           <div>
-            <h3 className="text-sm font-bold text-[#111827]">Ad Preview</h3>
-            <p className="text-xs text-[#9CA3AF]">See how your ad will look across platforms.</p>
+            <h3 className="font-section-header text-[#111827]">Ad Preview</h3>
+            <p className="font-label text-[#9CA3AF]">See how your ad will look across platforms.</p>
           </div>
           <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
             <button onClick={() => setPreviewTab('mobile')}
@@ -403,33 +403,66 @@ export default function CreateAd() {
                 className={cn('pb-1 whitespace-nowrap', previewPlatform === p.toLowerCase().replace(/\s+/g, '_') ? 'text-[#6C63FF] border-b-2 border-[#6C63FF] font-medium' : 'text-[#9CA3AF]')}>{p}</button>
             ))}
           </div>
-          <div className="bg-white border border-[#E5E5E5] rounded-xl overflow-hidden">
-            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[#E5E5E580]">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#6C63FF] to-[#A78BFA]" />
+          <div className={cn(
+            'bg-white border border-[#E5E5E5] rounded-xl overflow-hidden text-[13px] leading-[1.4] transition-all',
+            previewTab === 'mobile' ? 'max-w-[340px] mx-auto' : 'w-full',
+          )}>
+            {/* Header: Page info + sponsored */}
+            <div className="flex items-center gap-2.5 px-3 py-2.5">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#6C63FF] to-[#A78BFA] shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold truncate">{brandName}</p>
-                <p className="text-[10px] text-[#9CA3AF]">Sponsored</p>
+                <p className="text-[13px] font-semibold truncate text-[#050505]">{brandName}</p>
+                <p className="text-[11px] text-[#65676B]">Sponsored · <span className="font-medium">Paid for by {brandName}</span></p>
               </div>
-              <span className="text-[#9CA3AF] font-bold">⋯</span>
+              <button className="text-[#65676B] hover:bg-[#F2F2F2] rounded-full p-1 -mr-1">
+                <span className="text-lg leading-none font-bold">⋯</span>
+              </button>
             </div>
-            <div className="aspect-square bg-muted/30 flex items-center justify-center">
+
+            {/* Primary Text — appears above image in Facebook feed */}
+            {values.primaryText && (
+              <div className="px-3 pb-2.5">
+                <p className="text-[13px] leading-[1.4] text-[#050505]">{values.primaryText}</p>
+              </div>
+            )}
+
+            {/* Media */}
+            <div className="bg-[#F0F2F5] flex items-center justify-center" style={{ aspectRatio: values.mediaUrl ? '1.91/1' : '16/9' }}>
               {values.mediaUrl ? (
                 <img src={values.mediaUrl} alt="" className="w-full h-full object-cover" />
               ) : (
-                <ImageIcon className="h-10 w-10 text-muted-foreground/30" />
+                <div className="flex flex-col items-center gap-1 text-[#B0B3B8]">
+                  <ImageIcon className="h-8 w-8" />
+                  <span className="text-[11px]">Ad preview</span>
+                </div>
               )}
             </div>
-            <div className="p-3 space-y-1">
-              <p className="text-[10px] text-[#9CA3AF]">yourwebsite.com</p>
-              <p className="text-sm font-semibold leading-tight">{values.headline || 'Natural Skincare for You'}</p>
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-[#9CA3AF] line-clamp-1">{values.descriptionCopy || 'Hydrating. Clean. Effective.'}</p>
-                <span className="text-[11px] font-semibold text-white bg-[#6C63FF] px-3 py-1 rounded">{values.cta || 'Shop Now'}</span>
+
+            {/* Link preview card */}
+            <div className="border-t border-[#DADDE1]">
+              <div className="px-3 pt-2 pb-1">
+                <p className="text-[11px] text-[#65676B] uppercase tracking-wide">{(() => { try { return values.websiteUrl ? new URL(values.websiteUrl).hostname : 'yourwebsite.com'; } catch { return 'yourwebsite.com'; } })()}</p>
+                <p className="text-[14px] font-semibold leading-tight text-[#050505] mt-0.5">{values.headline || 'Natural Skincare for You'}</p>
+                <p className="text-[12px] text-[#65676B] leading-snug mt-0.5">{values.descriptionCopy || 'Hydrating. Clean. Effective.'}</p>
               </div>
-              <p className="text-xs text-[#9CA3AF]">{values.primaryText || 'Your ad text will appear here.'}</p>
-              <div className="flex items-center gap-2 text-[10px] text-[#9CA3AF] pt-1 border-t border-[#E5E5E580]">
-                <span>Like</span> <span>Comment</span> <span>Share</span>
+              <div className="px-3 pb-2 pt-1">
+                <span className="inline-flex items-center justify-center h-9 px-5 text-[13px] font-semibold text-white bg-[#1B74E4] rounded-md hover:bg-[#1A6ED8] cursor-pointer">{values.cta || 'Shop Now'}</span>
               </div>
+            </div>
+
+            {/* Like / Comment / Share */}
+            <div className="flex items-center gap-0.5 px-3 py-2 border-t border-[#DADDE1]">
+              {[
+                { label: 'Like', icon: '👍' },
+                { label: 'Comment', icon: '💬' },
+                { label: 'Share', icon: '↗' },
+              ].map((a) => (
+                <button key={a.label}
+                  className="flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[12px] font-semibold text-[#65676B] hover:bg-[#F2F2F2] transition">
+                  <span className="text-sm">{a.icon}</span>
+                  {a.label}
+                </button>
+              ))}
             </div>
           </div>
           <p className="text-[10px] text-[#9CA3AF] italic max-w-[320px]">Preview is an approximation and may differ from the actual ad on each platform.</p>
@@ -620,7 +653,7 @@ export default function CreateAd() {
 
         {/* Budget Input */}
         <div className="mb-5">
-          <Label className="text-xs font-semibold text-[#374151] mb-1.5 block">
+          <Label className="font-label text-[#374151] mb-1.5 block">
             {values.budgetType === 'daily' ? 'Daily Budget' : 'Total Budget'}
           </Label>
           <Controller control={control} name="budgetAmount" render={({ field }) => (
@@ -651,7 +684,7 @@ export default function CreateAd() {
         <div>
           <h4 className="text-base font-bold text-[#111827] mb-4">Schedule</h4>
 
-          <Label className="text-xs font-semibold text-[#374151] mb-1.5 block">Start Date</Label>
+          <Label className="font-label text-[#374151] mb-1.5 block">Start Date</Label>
           <Controller control={control} name="startDate" render={({ field }) => (
             <Popover open={startOpen} onOpenChange={setStartOpen}>
               <PopoverTrigger asChild>
@@ -669,7 +702,7 @@ export default function CreateAd() {
 
           {/* Run Length */}
           <div className="mt-5">
-            <Label className="text-xs font-semibold text-[#374151] mb-2 block">Run Length</Label>
+            <Label className="font-label text-[#374151] mb-2 block">Run Length</Label>
             <div className="space-y-2">
               <Controller control={control} name="runType" render={({ field }) => (
                 <>
@@ -704,7 +737,7 @@ export default function CreateAd() {
                   <AnimatePresence>
                     {field.value === 'end_date' && (
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                        <Label className="text-xs font-semibold text-[#374151] mb-1.5 block mt-3">End Date</Label>
+                        <Label className="font-label text-[#374151] mb-1.5 block mt-3">End Date</Label>
                         <Controller control={control} name="endDate" render={({ field: endField }) => (
                           <Popover open={endOpen} onOpenChange={setEndOpen}>
                             <PopoverTrigger asChild>
@@ -835,7 +868,7 @@ export default function CreateAd() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <h1 className="text-lg font-extrabold text-[#111827]" style={{ fontSize: '28px', fontWeight: 800 }}>Create Ad</h1>
+              <h1 className="font-page-title text-[#111827]">Create Ad</h1>
               <p className="text-xs text-[#9CA3AF] -mt-0.5">Build high-performing ads in minutes.</p>
             </div>
           </div>
@@ -889,7 +922,7 @@ export default function CreateAd() {
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between text-xs">
+    <div className="flex justify-between font-label">
       <span className="text-[#9CA3AF]">{label}</span>
       <span className="font-semibold text-[#111827]">{value}</span>
     </div>
@@ -899,10 +932,10 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 function ReviewCard({ title, rows }: { title: string; rows: [string, string][] }) {
   return (
     <div className="rounded-xl border border-[#E5E5E5] p-4">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-[#9CA3AF] mb-2">{title}</p>
+      <p className="font-caption-upper text-[#9CA3AF] mb-2">{title}</p>
       <dl className="space-y-1">
         {rows.map(([k, v]) => (
-          <div key={k} className="flex justify-between gap-2 text-xs">
+          <div key={k} className="flex justify-between gap-2 font-label">
             <dt className="text-[#9CA3AF]">{k}</dt>
             <dd className="font-medium text-[#111827] text-right truncate min-w-0 max-w-[140px]">{v}</dd>
           </div>

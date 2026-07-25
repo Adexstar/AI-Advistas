@@ -645,12 +645,17 @@ export type Database = {
           conversions: number
           created_at: string
           ctr: number
+          cta: string | null
+          description: string | null
           end_date: string | null
+          headline: string | null
           id: string
           impressions: number
+          media_url: string | null
           name: string
           objective: string
           platform: string | null
+          primary_text: string | null
           reach: number
           revenue: number
           roas: number
@@ -659,6 +664,7 @@ export type Database = {
           status: string
           updated_at: string
           user_id: string
+          website_url: string | null
         }
         Insert: {
           archived?: boolean
@@ -667,12 +673,17 @@ export type Database = {
           conversions?: number
           created_at?: string
           ctr?: number
+          cta?: string | null
+          description?: string | null
           end_date?: string | null
+          headline?: string | null
           id?: string
           impressions?: number
+          media_url?: string | null
           name: string
           objective?: string
           platform?: string | null
+          primary_text?: string | null
           reach?: number
           revenue?: number
           roas?: number
@@ -681,6 +692,7 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id: string
+          website_url?: string | null
         }
         Update: {
           archived?: boolean
@@ -689,12 +701,17 @@ export type Database = {
           conversions?: number
           created_at?: string
           ctr?: number
+          cta?: string | null
+          description?: string | null
           end_date?: string | null
+          headline?: string | null
           id?: string
           impressions?: number
+          media_url?: string | null
           name?: string
           objective?: string
           platform?: string | null
+          primary_text?: string | null
           reach?: number
           revenue?: number
           roas?: number
@@ -703,6 +720,7 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+          website_url?: string | null
         }
         Relationships: []
       }

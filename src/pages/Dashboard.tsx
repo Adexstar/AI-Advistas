@@ -48,7 +48,7 @@ interface KPIProps {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string;
-  delta?: number;
+  delta?: number | null;
   positive?: boolean;
   spark: { x: number; v: number }[];
   color: string;
@@ -56,34 +56,42 @@ interface KPIProps {
 }
 
 const KpiCard = ({ icon: Icon, label, value, delta, positive = true, spark, color, loading }: KPIProps) => (
-  <Card className="min-w-[220px] shrink-0 snap-start rounded-2xl border-border/60 bg-card shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
-    <CardContent className="p-4">
-      <div className="flex items-center justify-between">
-        <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
-          <Icon className="h-4 w-4" />
+  <div className="card">
+    {loading ? (
+      <div className="space-y-2"><Skeleton className="h-10 w-10 rounded-full" /><Skeleton className="h-6 w-16" /><Skeleton className="h-4 w-20" /><Skeleton className="h-3 w-24" /></div>
+    ) : (
+      <>
+        {/* Icon + sparkline row */}
+        <div className="flex items-center justify-between">
+          <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
+            <Icon className="h-4 w-4" />
+          </div>
+          <div className="h-8 w-20">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={spark}>
+                <Line type="monotone" dataKey="v" stroke={color} strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-        {delta !== undefined && (
-          <span className={cn("text-[11px] font-semibold", positive ? "text-emerald-600" : "text-rose-600")}>
-            {positive ? "↑" : "↓"} {Math.abs(delta).toFixed(1)}%
-          </span>
+        {/* Value — large number */}
+        <p className="metric-value">{value || '0'}</p>
+        {/* Label */}
+        <p className="font-label text-muted-foreground">{label}</p>
+        {/* Delta */}
+        {delta !== null && delta !== undefined ? (
+          <div className="flex items-center gap-1">
+            <span className={cn("font-semibold", positive ? "text-emerald-600" : "text-rose-600")}>
+              {positive ? "▲" : "▼"} {Math.abs(delta).toFixed(1)}%
+            </span>
+            <span className="font-micro text-muted-foreground">vs last period</span>
+          </div>
+        ) : (
+          <span className="font-micro text-muted-foreground">No previous data</span>
         )}
-      </div>
-      <p className="mt-3 text-xs font-medium text-muted-foreground">{label}</p>
-      {loading ? (
-        <Skeleton className="mt-1 h-7 w-24" />
-      ) : (
-        <p className="mt-0.5 text-2xl font-bold tracking-tight text-foreground">{value}</p>
-      )}
-      <div className="mt-2 h-8">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={spark}>
-            <Line type="monotone" dataKey="v" stroke={color} strokeWidth={2} dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-      <p className="mt-1 text-[10px] text-muted-foreground">vs last 7 days</p>
-    </CardContent>
-  </Card>
+      </>
+    )}
+  </div>
 );
 
 const Dashboard = () => {
@@ -162,8 +170,8 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* 2. KPI cards — horizontal scroll on mobile, grid on desktop */}
-      <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-4">
+      {/* 2. KPI cards — metric-cards-grid handles all breakpoints */}
+      <div className="metric-cards-grid">
         <KpiCard icon={Megaphone} label="Total Campaigns" value={compact(totals.campaigns)} delta={12} positive spark={spark("clicks")} color="hsl(252 83% 61%)" loading={loading} />
         <KpiCard icon={DollarSign} label="Total Spend" value={money(totalSpend)} delta={8} positive={false} spark={spark("revenue")} color="hsl(320 78% 58%)" loading={loading} />
         <KpiCard icon={ShoppingCart} label="Conversions" value={compact(totals.conversions)} delta={16} positive spark={spark("conversions")} color="hsl(142 71% 45%)" loading={loading} />

@@ -21,7 +21,7 @@ import {
   Undo2, Redo2, Play, Download, Send, Grid3x3, Maximize2, Minus, Plus,
   Wand2, MoveUp, MoveDown, AlignVerticalJustifyCenter, Lock, Unlock,
   AlignLeft, AlignCenter, AlignRight, AlignJustify, Bold, Italic, Underline,
-  Copy, Trash2, MoreHorizontal, Search, Filter, Video, Music, Monitor, Square as SquareIcon, Link,
+  Copy, Trash2, MoreHorizontal, Search, Filter, Video, Music, Square as SquareIcon, Link,
   Circle as CircleIcon, MousePointer, Volume2, X, Menu, ChevronDown, PanelRight,
   Palette, Sun, Zap, Eye, EyeOff, Pause, ChevronRight, RefreshCw, GripVertical, Pipette, Box,
   ChevronUp,
@@ -615,9 +615,15 @@ const CanvasStage: React.FC<{
   onSelection: (o: any) => void;
   zoom: number;
   seedDefault: boolean;
-}> = ({ onCanvasReady, onSelection, zoom, seedDefault }) => {
+  onCanvasWrapperRef?: (el: HTMLDivElement | null) => void;
+}> = ({ onCanvasReady, onSelection, zoom, seedDefault, onCanvasWrapperRef }) => {
   const ref = useRef<HTMLCanvasElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const initialized = useRef(false);
+
+  useEffect(() => {
+    onCanvasWrapperRef?.(wrapperRef.current);
+  }, [onCanvasWrapperRef]);
 
   useEffect(() => {
     if (initialized.current || !ref.current) return;
@@ -658,6 +664,7 @@ const CanvasStage: React.FC<{
   return (
     <div className="flex-1 flex items-center justify-center overflow-auto" style={{ backgroundColor: '#1A1A1A' }}>
       <div
+        ref={wrapperRef}
         className="relative bg-white"
         style={{
           width: CANVAS_WIDTH,
@@ -939,28 +946,6 @@ const RightPanel: React.FC<{
   );
 };
 
-/* ---------- Bottom Bar ---------- */
-const BottomBar: React.FC<{ zoom: number; setZoom: (n: number) => void }> = ({ zoom, setZoom }) => (
-  <div className="flex h-11 shrink-0 items-center gap-3 border-t bg-card px-3">
-    <div className="flex items-center gap-2">
-      <Monitor className="h-4 w-4 text-muted-foreground" />
-    </div>
-    <div className="flex items-center gap-3">
-      <Slider value={[zoom]} onValueChange={([v]) => setZoom(v)} max={400} min={25} className="w-[120px]" />
-      <span className="min-w-[36px] text-center text-xs font-medium text-muted-foreground">{zoom}%</span>
-    </div>
-    <div className="flex-1" />
-    <div className="flex items-center gap-1">
-      <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-muted-foreground">
-        <Grid3x3 className="h-3.5 w-3.5" /> Pages
-      </Button>
-      <Button variant="ghost" size="icon" className="h-7 w-7"><Grid3x3 className="h-3.5 w-3.5 text-muted-foreground" /></Button>
-      <Button variant="ghost" size="icon" className="h-7 w-7"><Maximize2 className="h-3.5 w-3.5 text-muted-foreground" /></Button>
-      <Button variant="ghost" size="icon" className="h-7 w-7"><HelpCircle className="h-3.5 w-3.5 text-muted-foreground" /></Button>
-    </div>
-  </div>
-);
-
 /* ---------- Main Editor ---------- */
 const EditorInner: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('templates');
@@ -973,6 +958,8 @@ const EditorInner: React.FC = () => {
   const [rightOpen, setRightOpen] = useState(false);
   const [bottomTab, setBottomTab] = useState<string | null>(null);
   const [timelineOpen, setTimelineOpen] = useState(false);
+  const [toolbarPos, setToolbarPos] = useState<{ left: number; top: number } | null>(null);
+  const [canvasWrapperEl, setCanvasWrapperEl] = useState<HTMLDivElement | null>(null);
   const isMobile = useIsMobile();
 
   // Detect a pending template BEFORE the canvas mounts so we skip default seeds.
@@ -1054,6 +1041,30 @@ const EditorInner: React.FC = () => {
     toast({ title: 'Exported', description: 'Your design has been downloaded.' });
   };
 
+  // Compute floating toolbar position relative to selected object
+  useEffect(() => {
+    if (!selected || !canvasWrapperEl || !canvas) {
+      setToolbarPos(null);
+      return;
+    }
+    const scale = zoom / 100;
+    const wrapperRect = canvasWrapperEl.getBoundingClientRect();
+    const containerEl = canvasWrapperEl.closest('.editor-canvas-area');
+    if (!containerEl) return;
+    const containerRect = containerEl.getBoundingClientRect();
+
+    const objCenterX = (selected.left || 0) + ((selected.width || 0) * (selected.scaleX || 1)) / 2;
+    const objTop = selected.top || 0;
+
+    const screenX = wrapperRect.left + objCenterX * scale;
+    const screenY = wrapperRect.top + objTop * scale;
+
+    setToolbarPos({
+      left: screenX - containerRect.left,
+      top: Math.max(8, screenY - containerRect.top - 48),
+    });
+  }, [selected, canvasWrapperEl, canvas, zoom]);
+
   const renderLeftPanel = () => {
     switch (activeTab) {
       case 'templates': return <TemplatesPanel />;
@@ -1071,83 +1082,102 @@ const EditorInner: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden bg-background">
-      <TopToolbar
-        projectName={projectName}
-        setProjectName={setProjectName}
-        zoom={zoom}
-        setZoom={setZoom}
-        onExport={onExport}
-        onToggleLeft={() => setLeftOpen(true)}
-        onToggleRight={() => setRightOpen(true)}
-      />
+    <div className="visual-editor flex h-screen w-full flex-col overflow-hidden bg-background">
+      {/* Editor Top Bar — never scrolls */}
+      <div className="editor-top-bar flex-shrink-0">
+        <TopToolbar
+          projectName={projectName}
+          setProjectName={setProjectName}
+          zoom={zoom}
+          setZoom={setZoom}
+          onExport={onExport}
+          onToggleLeft={() => setLeftOpen(true)}
+          onToggleRight={() => setRightOpen(true)}
+        />
+      </div>
 
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        <IconRail active={activeTab} onChange={setActiveTab} />
+      {/* Editor Second Bar — contextual toolbar, never scrolls */}
+      <div className="editor-second-bar flex-shrink-0">
+        <CanvasSubToolbar />
+      </div>
 
-        {/* Desktop left panel */}
-        <div className="hidden md:flex w-[264px] shrink-0 border-r">
-          {renderLeftPanel()}
+      {/* Editor Main — only canvas area scrolls */}
+      <div className="editor-main flex flex-1 overflow-hidden min-h-0">
+        {/* Left: Icon Rail + Panel */}
+        <div className="editor-left-panel flex h-full overflow-hidden">
+          <IconRail active={activeTab} onChange={setActiveTab} />
+
+          {/* Desktop left panel content */}
+          <div className="editor-panel-content hidden md:block w-[264px] shrink-0 border-r overflow-y-auto">
+            {renderLeftPanel()}
+          </div>
         </div>
 
-        {/* Center */}
-        <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
-          <CanvasSubToolbar />
-          <div className="flex flex-1 min-h-0 overflow-hidden">
-            <div className="relative flex flex-1 min-w-0 flex-col overflow-hidden">
-              <CanvasStage
-                zoom={zoom}
-                seedDefault={!hasPending}
-                onCanvasReady={(c) => setCanvas(c)}
-                onSelection={(o) => { setSelected(o); forceUpdate((n) => n + 1); }}
-              />
-              {selected && (
-                <div className="absolute left-1/2 -translate-x-1/2 top-3 z-30 pointer-events-auto animate-in fade-in slide-in-from-top-2">
-                  <div className="flex items-center gap-1 px-3 py-1.5 rounded-full shadow-lg" style={{ backgroundColor: '#2D2D2D', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
-                    <div className="flex items-center gap-1.5 px-1">
-                      <div className="h-5 w-5 rounded-full bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center">
-                        <Sparkles className="h-2.5 w-2.5 text-white" />
-                      </div>
-                      <span className="text-xs font-semibold text-white">Ask AdVista</span>
-                    </div>
-                    <div className="w-px h-5 mx-1" style={{ backgroundColor: '#444444' }} />
-                    <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Edit3 className="h-3.5 w-3.5" /></button>
-                    <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Link className="h-3.5 w-3.5" /></button>
-                    <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Lock className="h-3.5 w-3.5" /></button>
-                    <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Copy className="h-3.5 w-3.5" /></button>
-                    <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Trash2 className="h-3.5 w-3.5" /></button>
-                    <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><MoreHorizontal className="h-3.5 w-3.5" /></button>
+        {/* Canvas Area — centers the ad canvas */}
+        <div className="editor-canvas-area relative flex flex-1 min-w-0 flex-col overflow-hidden">
+          <CanvasStage
+            zoom={zoom}
+            seedDefault={!hasPending}
+            onCanvasReady={(c) => setCanvas(c)}
+            onSelection={(o) => { setSelected(o); forceUpdate((n) => n + 1); }}
+            onCanvasWrapperRef={(el) => setCanvasWrapperEl(el)}
+          />
+
+          {/* Floating Toolbar — positioned relative to selected object */}
+          {selected && toolbarPos && (
+            <div
+              className="absolute z-30 pointer-events-auto animate-in fade-in"
+              style={{
+                left: toolbarPos.left,
+                top: toolbarPos.top,
+                transform: 'translateX(-50%)',
+              }}
+            >
+              <div className="flex items-center gap-1 px-3 py-1.5 rounded-full shadow-lg" style={{ backgroundColor: '#2D2D2D', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
+                <div className="flex items-center gap-1.5 px-1">
+                  <div className="h-5 w-5 rounded-full bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center">
+                    <Sparkles className="h-2.5 w-2.5 text-white" />
                   </div>
+                  <span className="text-xs font-semibold text-white">Ask AdVista</span>
                 </div>
-              )}
-              <div className="flex items-center justify-center gap-2 py-2" style={{ backgroundColor: '#1A1A1A', borderTop: '1px solid #2D2D2D' }}>
-                <button className="flex items-center gap-2 h-9 rounded-lg px-4 text-xs" style={{ backgroundColor: '#2D2D2D', border: '1px solid #444444', color: '#CCCCCC' }}>
-                  <Plus className="h-3.5 w-3.5" /> Add page
-                </button>
-                <button onClick={() => setTimelineOpen(!timelineOpen)}
-                  className="flex items-center gap-1.5 h-9 rounded-lg px-3 text-xs" style={{ backgroundColor: '#2D2D2D', border: '1px solid #444444', color: timelineOpen ? '#6C63FF' : '#CCCCCC' }}>
-                  <span className={`transition-transform duration-200 ${timelineOpen ? 'rotate-180' : ''}`}>
-                    <ChevronUp className="h-3.5 w-3.5" />
-                  </span>
-                  Timeline
-                </button>
+                <div className="w-px h-5 mx-1" style={{ backgroundColor: '#444444' }} />
+                <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Edit3 className="h-3.5 w-3.5" /></button>
+                <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Link className="h-3.5 w-3.5" /></button>
+                <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Lock className="h-3.5 w-3.5" /></button>
+                <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Copy className="h-3.5 w-3.5" /></button>
+                <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Trash2 className="h-3.5 w-3.5" /></button>
+                <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><MoreHorizontal className="h-3.5 w-3.5" /></button>
               </div>
             </div>
-          </div>
-          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${timelineOpen ? 'max-h-[200px]' : 'max-h-0'}`}>
-            <Timeline />
+          )}
+
+          {/* Bottom bar — Add page + Timeline toggle */}
+          <div className="flex items-center justify-center gap-2 py-2" style={{ backgroundColor: '#1A1A1A', borderTop: '1px solid #2D2D2D' }}>
+            <button className="flex items-center gap-2 h-9 rounded-lg px-4 text-xs" style={{ backgroundColor: '#2D2D2D', border: '1px solid #444444', color: '#CCCCCC' }}>
+              <Plus className="h-3.5 w-3.5" /> Add page
+            </button>
+            <button onClick={() => setTimelineOpen(!timelineOpen)}
+              className="flex items-center gap-1.5 h-9 rounded-lg px-3 text-xs" style={{ backgroundColor: '#2D2D2D', border: '1px solid #444444', color: timelineOpen ? '#6C63FF' : '#CCCCCC' }}>
+              <span className={`transition-transform duration-200 ${timelineOpen ? 'rotate-180' : ''}`}>
+                <ChevronUp className="h-3.5 w-3.5" />
+              </span>
+              Timeline
+            </button>
           </div>
         </div>
 
         {/* Desktop right panel — contextual, shows only on selection */}
         {selected && (
-          <div className="hidden lg:flex w-[240px] shrink-0">
+          <div className="editor-right-panel hidden lg:flex w-[240px] shrink-0 border-l overflow-y-auto">
             <RightPanel selected={selected} canvas={canvas} onClose={() => setRightOpen(false)} />
           </div>
         )}
       </div>
 
-      <BottomBar zoom={zoom} setZoom={setZoom} />
+      {/* Editor Timeline — fixed at bottom, toggleable */}
+      <div className={`editor-timeline flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out ${timelineOpen ? 'max-h-[200px]' : 'max-h-0'}`}>
+        <Timeline />
+      </div>
 
       {/* Mobile floating bottom tabs */}
       {isMobile && (

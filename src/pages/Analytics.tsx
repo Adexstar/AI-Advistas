@@ -42,13 +42,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useAnalytics, type AnalyticsRange } from "@/hooks/useAnalytics";
 
-const statusTone = (s: string) =>
-  s === "Active"
-    ? "bg-emerald-100 text-emerald-700"
-    : s === "Paused"
-    ? "bg-amber-100 text-amber-700"
-    : "bg-sky-100 text-sky-700";
-
 // ---------- Page ----------
 const Analytics = () => {
   const [range, setRange] = useState<AnalyticsRange>("daily");
@@ -90,29 +83,40 @@ const Analytics = () => {
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-6">
+      <div className="metric-cards-grid">
         {kpis.map((k) => {
           const Icon = k.label === 'Campaigns' ? ImgIcon : k.label === 'Reach' ? Eye : k.label === 'Clicks' ? TrendingUp : k.label === 'Conversions' ? Sparkles : k.label === 'Revenue' ? ImgIcon : TrendingUp;
+          const kValue = k.value || '0';
           return (
-            <Card key={k.label} className="rounded-2xl border-border p-4 shadow-sm">
+            <div key={k.label} className="card">
               {loading ? (
-                <div className="space-y-2"><Skeleton className="h-10 w-10 rounded-full" /><Skeleton className="h-4 w-20" /><Skeleton className="h-6 w-16" /><Skeleton className="h-3 w-24" /></div>
+                <div className="space-y-2"><Skeleton className="h-10 w-10 rounded-full" /><Skeleton className="h-6 w-16" /><Skeleton className="h-4 w-20" /><Skeleton className="h-3 w-24" /></div>
               ) : (
-                <div className="flex items-start gap-3">
-                  <div className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-full", k.tone)}>
-                    <Icon className="h-5 w-5" />
+                <>
+                  {/* Icon row */}
+                  <div className="flex items-center justify-between">
+                    <div className={cn("grid h-9 w-9 place-items-center rounded-full", k.tone)}>
+                      <Icon className="h-4 w-4" />
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium text-muted-foreground">{k.label}</p>
-                    <p className="mt-0.5 truncate text-xl font-bold text-foreground">{k.value}</p>
-                    <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-emerald-600">
-                      <ArrowUpRight className="h-3 w-3" />
-                      {k.delta} <span className="text-muted-foreground">vs last period</span>
-                    </p>
-                  </div>
-                </div>
+                  {/* Value — large number */}
+                  <p className="metric-value">{kValue}</p>
+                  {/* Label */}
+                  <p className="font-label text-muted-foreground">{k.label}</p>
+                  {/* Delta or no-previous-data */}
+                  {k.delta ? (
+                    <div className="flex items-center gap-1">
+                      <span className={cn("font-semibold", k.delta.startsWith('+') ? 'text-emerald-600' : 'text-rose-600')}>
+                        {k.delta.startsWith('+') ? '▲' : '▼'} {k.delta}
+                      </span>
+                      <span className="font-micro text-muted-foreground">vs last period</span>
+                    </div>
+                  ) : (
+                    <span className="font-micro text-muted-foreground">No previous data</span>
+                  )}
+                </>
               )}
-            </Card>
+            </div>
           );
         })}
       </div>
@@ -196,9 +200,7 @@ const Analytics = () => {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-foreground">{c.name}</p>
                   <div className="mt-0.5 flex items-center gap-2">
-                    <Badge className={cn("h-4 rounded-full px-1.5 text-[10px] font-medium", statusTone(c.status))}>
-                      {c.status}
-                    </Badge>
+                    <span className={`status-badge ${c.status.toLowerCase()}`}>{c.status}</span>
                   </div>
                   <div className="mt-1 flex items-center gap-3 text-[11px] text-muted-foreground">
                     <span>Reach <b className="text-foreground">{c.reach}</b></span>
@@ -301,28 +303,26 @@ const Analytics = () => {
             <button className="text-xs font-medium text-primary hover:underline">View all</button>
           </div>
           <div className="-mx-2 overflow-x-auto">
-            <table className="w-full min-w-[540px] text-sm">
+            <table className="data-table">
               <thead>
-                <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="px-2 pb-2 font-medium">Campaign</th>
-                  <th className="px-2 pb-2 font-medium">Status</th>
-                  <th className="px-2 pb-2 font-medium">Reach</th>
-                  <th className="px-2 pb-2 font-medium">CTR</th>
-                  <th className="px-2 pb-2 font-medium">Conversions</th>
-                  <th className="px-2 pb-2 font-medium">ROAS</th>
+                <tr>
+                  <th style={{width:'25%'}}>Campaign</th>
+                  <th style={{width:'10%'}}>Status</th>
+                  <th style={{width:'12%'}}>Reach</th>
+                  <th style={{width:'10%'}}>CTR</th>
+                  <th style={{width:'12%'}}>Conversions</th>
+                  <th style={{width:'10%'}}>ROAS</th>
                 </tr>
               </thead>
               <tbody>
                 {campaignRows.map((r) => (
-                  <tr key={r.name} className="border-t border-border/60">
-                    <td className="px-2 py-3 font-medium text-foreground">{r.name}</td>
-                    <td className="px-2 py-3">
-                      <Badge className={cn("rounded-full text-[10px]", statusTone(r.status))}>{r.status}</Badge>
-                    </td>
-                    <td className="px-2 py-3 text-foreground">{r.reach}</td>
-                    <td className="px-2 py-3 text-foreground">{r.ctr}</td>
-                    <td className="px-2 py-3 text-foreground">{r.conv}</td>
-                    <td className="px-2 py-3 font-semibold text-foreground">{r.roas}</td>
+                  <tr key={r.name}>
+                    <td data-label="Campaign" className="text-truncate font-medium text-foreground">{r.name}</td>
+                    <td data-label="Status"><span className={`status-badge ${r.status.toLowerCase()}`}>{r.status}</span></td>
+                    <td data-label="Reach" className="text-foreground">{r.reach}</td>
+                    <td data-label="CTR" className="text-foreground">{r.ctr}</td>
+                    <td data-label="Conversions" className="text-foreground">{r.conv}</td>
+                    <td data-label="ROAS" className="font-semibold text-foreground">{r.roas}</td>
                   </tr>
                 ))}
               </tbody>

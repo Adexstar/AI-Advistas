@@ -2,8 +2,8 @@ import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTemplates, useTrackTemplateUsage, type AdTemplate } from '@/hooks/useTemplates';
 import { useCampaigns } from '@/hooks/useCampaigns';
-import { setPendingEditorTemplate } from '@/lib/templateEditorSession';
-import type { TemplateRecord } from '@/services/templates/types';
+import { useOriginalsSearch, type OriginalTemplate } from '@/hooks/useOriginalsSearch';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +17,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,8 +66,10 @@ import {
   Cpu,
   ChevronRight,
   Download,
+  CheckCircle2,
+  Bookmark,
 } from 'lucide-react';
-import { downloadTemplate } from '@/services/templates/templateDownload';
+import { TemplateDetailPanel } from '@/components/templates/TemplateDetailPanel';
 
 
 const PLATFORM_TABS = [
@@ -107,25 +116,37 @@ const useLocalSet = (key: string) => {
   return [set, toggle] as const;
 };
 
+type AnyTemplate = (AdTemplate | OriginalTemplate) & { _source?: 'originals' | 'user' };
+
+const SOURCE_FILTERS = [
+  { id: 'all', label: 'All', icon: LayoutGrid },
+  { id: 'originals', label: 'Originals', icon: Sparkles },
+  { id: 'mine', label: 'My Templates', icon: Bookmark },
+  { id: 'favorites', label: 'Favorites', icon: Heart },
+];
+
 const TemplateCard = ({
   template,
   isFavorite,
   onFavorite,
-  onPreview,
+  onOpen,
   onAssign,
   onEdit,
   onDuplicate,
 }: {
-  template: AdTemplate;
+  template: AnyTemplate;
   isFavorite: boolean;
   onFavorite: () => void;
-  onPreview: () => void;
+  onOpen: () => void;
   onAssign: () => void;
   onEdit: () => void;
   onDuplicate: () => void;
 }) => {
-  const platform = template.platforms?.[0] || 'Facebook';
+  const isOriginal = template._source === 'originals';
+  const platform = (template as AdTemplate).platforms?.[0] || (template as OriginalTemplate).platform || 'Facebook';
   const thumb = (template as any).thumbnail_url || (template as any).preview_url;
+  const brandCompatible = isOriginal ? (template as OriginalTemplate).brand_compatible : true;
+  const emotion = (template as OriginalTemplate).metadata?.emotion as string | undefined;
   const PlatformIcon =
     platform === 'Instagram' || platform === 'Instagram Story'
       ? Instagram
@@ -136,74 +157,64 @@ const TemplateCard = ({
       : Facebook;
 
   return (
-    <Card className="group overflow-hidden rounded-2xl border border-border/60 bg-card transition-all hover:shadow-lg">
+    <Card onClick={onOpen} className="group cursor-pointer overflow-hidden rounded-2xl border border-border/60 bg-card transition-all hover:shadow-lg">
       <div className="relative aspect-[4/5] w-full overflow-hidden bg-muted">
         {thumb ? (
-          <img
-            src={thumb}
-            alt={template.name}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-            loading="lazy"
-          />
+          <img src={thumb} alt={template.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/15 to-primary/5">
             <LayoutGrid className="h-10 w-10 text-primary/40" />
           </div>
         )}
-        <div className="absolute left-3 top-3">
+        <div className="absolute left-3 top-3 flex flex-col gap-1.5">
           <Badge className="gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-medium text-foreground shadow-sm hover:bg-white">
-            <PlatformIcon className="h-3 w-3" />
-            {platform}
+            <PlatformIcon className="h-3 w-3" />{platform}
           </Badge>
+          {isOriginal && (
+            <Badge className="rounded-full bg-purple-500/90 text-white px-2 py-0.5 text-[10px] font-semibold shadow-sm border-0 flex items-center gap-0.5">
+              <Sparkles className="h-2.5 w-2.5" /> Original
+            </Badge>
+          )}
+          {brandCompatible && !isOriginal && (
+            <Badge className="rounded-full bg-emerald-500/90 text-white px-2 py-0.5 text-[10px] font-semibold shadow-sm border-0 flex items-center gap-0.5">
+              <CheckCircle2 className="h-2.5 w-2.5" /> Brand Ready
+            </Badge>
+          )}
         </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onFavorite();
-          }}
-          className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-white/95 shadow-sm transition hover:scale-110"
-        >
+        <button onClick={(e) => { e.stopPropagation(); onFavorite(); }} className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-white/95 shadow-sm transition hover:scale-110">
           <Heart className={`h-4 w-4 ${isFavorite ? 'fill-rose-500 text-rose-500' : 'text-foreground'}`} />
         </button>
+        {template.category && (
+          <Badge className="absolute bottom-3 left-3 rounded-full bg-black/60 text-white px-2.5 py-0.5 text-[10px] font-medium border-0 backdrop-blur-sm">
+            {template.category}
+          </Badge>
+        )}
       </div>
       <CardContent className="p-3">
         <div className="flex items-start justify-between gap-2">
-          <p className="truncate text-sm font-semibold text-foreground">{template.name}</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-clamp-1 text-sm font-semibold text-foreground">{template.name}</p>
+            {emotion && <p className="font-micro text-muted-foreground mt-0.5">{emotion}</p>}
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="rounded-md p-1 text-muted-foreground hover:bg-muted">
+              <button onClick={(e) => e.stopPropagation()} className="rounded-md p-1 text-muted-foreground hover:bg-muted">
                 <MoreHorizontal className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem onClick={onPreview}>
-                <Eye className="mr-2 h-4 w-4" /> Preview
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onEdit}>
-                <Pencil className="mr-2 h-4 w-4" /> Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onDuplicate}>
-                <Copy className="mr-2 h-4 w-4" /> Duplicate
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onAssign}>
-                <Send className="mr-2 h-4 w-4" /> Assign to Campaign
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">
-                <Trash2 className="mr-2 h-4 w-4" /> Archive
-              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onOpen(); }}><Eye className="mr-2 h-4 w-4" /> Preview</DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicate(); }}><Copy className="mr-2 h-4 w-4" /> Duplicate</DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAssign(); }}><Send className="mr-2 h-4 w-4" /> Assign to Campaign</DropdownMenuItem>
+              {!isOriginal && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}><Trash2 className="mr-2 h-4 w-4" /> Archive</DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-        <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1">
-            <Heart className="h-3 w-3" />
-            {((template.usage_count || 0) / 1000).toFixed(1)}K
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Eye className="h-3 w-3" />
-            {(((template.usage_count || 0) * 3.2) / 1000).toFixed(1)}K
-          </span>
         </div>
       </CardContent>
     </Card>
@@ -217,50 +228,65 @@ const TemplateLibrary = () => {
   const { data: campaigns = [] } = useCampaigns();
   const trackUsage = useTrackTemplateUsage();
 
+  // Fetch originals (all) — no brandCompatibleOnly filter so the RPC returns everything
+  const originalsFilters = useMemo(() => ({ query: '' }), []);
+  const { data: originals = [], isLoading: originalsLoading } = useOriginalsSearch(originalsFilters);
+  const loading = isLoading || originalsLoading;
+
   const [search, setSearch] = useState('');
   const [platform, setPlatform] = useState('all');
   const [category, setCategory] = useState<string | null>(null);
+  const [source, setSource] = useState('all');
   const [favorites, toggleFavorite] = useLocalSet(FAV_KEY);
   const [, setAssignments] = useLocalSet(ASSIGN_KEY);
-  const [previewTemplate, setPreviewTemplate] = useState<AdTemplate | null>(null);
-  const [assignTemplate, setAssignTemplate] = useState<AdTemplate | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<AnyTemplate | null>(null);
+  const [assignTemplate, setAssignTemplate] = useState<AnyTemplate | null>(null);
   const [selectedCampaign, setSelectedCampaign] = useState<string>('');
 
+  // Merge user templates and originals into unified list
+  const allTemplates = useMemo(() => {
+    const userTemplates: AnyTemplate[] = (templates ?? []).map((t) => ({ ...t, _source: 'user' as const }));
+    const originalTemplates: AnyTemplate[] = (originals ?? []).map((t) => ({ ...t, _source: 'originals' as const, platforms: t.platform ? [t.platform] : [] }));
+    return [...userTemplates, ...originalTemplates];
+  }, [templates, originals]);
+
   const filtered = useMemo(() => {
-    return templates.filter((t) => {
-      if (platform !== 'all' && !(t.platforms || []).includes(platform)) return false;
-      if (category && t.category !== category) return false;
-      if (search) {
-        const q = search.toLowerCase();
-        return (
-          t.name.toLowerCase().includes(q) ||
-          t.description?.toLowerCase().includes(q) ||
-          t.category?.toLowerCase().includes(q) ||
-          (t.tags || []).some((tag) => tag.toLowerCase().includes(q))
-        );
-      }
-      return true;
+    let list = allTemplates;
+    if (source === 'favorites') list = list.filter((t) => favorites.has(t.id));
+    else if (source === 'originals') list = list.filter((t) => t._source === 'originals');
+    else if (source === 'mine') list = list.filter((t) => t._source !== 'originals');
+    if (platform !== 'all') list = list.filter((t) => {
+      const ps = (t as AdTemplate).platforms || ((t as OriginalTemplate).platform ? [(t as OriginalTemplate).platform] : []);
+      return ps.includes(platform);
     });
-  }, [templates, platform, category, search]);
+    if (category) list = list.filter((t) => t.category === category);
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter((t) =>
+        t.name.toLowerCase().includes(q) ||
+        (t.description || '').toLowerCase().includes(q) ||
+        (t.category || '').toLowerCase().includes(q) ||
+        ((t as AdTemplate).tags || []).some((tag: string) => tag.toLowerCase().includes(q))
+      );
+    }
+    return list;
+  }, [allTemplates, source, platform, category, search, favorites]);
 
   const popular = useMemo(
-    () => [...filtered].sort((a, b) => (b.usage_count || 0) - (a.usage_count || 0)).slice(0, 6),
+    () => [...filtered].sort((a: any, b: any) => (b.popularity_score ?? b.usage_count ?? 0) - (a.popularity_score ?? a.usage_count ?? 0)).slice(0, 6),
     [filtered],
   );
   const recent = useMemo(
-    () =>
-      [...templates]
-        .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
-        .slice(0, 4),
-    [templates],
+    () => [...allTemplates].sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 4),
+    [allTemplates],
   );
 
-  const handleEdit = (t: AdTemplate) => {
+  const handleEdit = (t: AnyTemplate) => {
     trackUsage.mutate(t.id);
     navigate('/template-customizer', { state: { templateData: t } });
   };
 
-  const handleDuplicate = (t: AdTemplate) => {
+  const handleDuplicate = (t: AnyTemplate) => {
     toast({ title: 'Template duplicated', description: `"${t.name}" copy created.` });
   };
 
@@ -281,8 +307,8 @@ const TemplateLibrary = () => {
         {/* Header */}
         <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight lg:text-3xl">Templates</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <h1 className="font-page-title">Templates</h1>
+            <p className="font-body text-muted-foreground mt-1">
               Choose from professionally designed templates or create your own.
             </p>
           </div>
@@ -296,9 +322,26 @@ const TemplateLibrary = () => {
                 className="h-10 rounded-xl pl-9"
               />
             </div>
-            <Button onClick={() => navigate('/originals')} className="h-10 gap-2 rounded-xl">
-              <Sparkles className="h-4 w-4" /> AdVista Originals
-            </Button>
+            <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {SOURCE_FILTERS.map((f) => {
+                const Icon = f.icon;
+                const active = source === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => setSource(f.id)}
+                    className={`inline-flex shrink-0 items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition ${
+                      active
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border bg-card text-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {f.label}
+                  </button>
+                );
+              })}
+            </div>
             <Button variant="outline" className="h-10 rounded-xl gap-2">
               <SlidersHorizontal className="h-4 w-4" /> Filter
             </Button>
@@ -419,15 +462,15 @@ const TemplateLibrary = () => {
             <h3 className="text-lg font-semibold">Popular Templates</h3>
             <button className="text-sm font-medium text-primary hover:underline">View all</button>
           </div>
-          {isLoading ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+          {loading ? (
+            <div className="template-grid">
               {Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="aspect-[4/5] rounded-2xl" />
               ))}
             </div>
           ) : popular.length === 0 ? (
-            <Card className="rounded-2xl border-dashed">
-              <CardContent className="flex flex-col items-center gap-3 p-10 text-center">
+            <div className="card rounded-2xl border-dashed">
+              <div className="flex flex-col items-center gap-3 p-10 text-center">
                 <LayoutGrid className="h-10 w-10 text-muted-foreground" />
                 <p className="font-semibold">No templates yet</p>
                 <div className="flex gap-2">
@@ -438,17 +481,17 @@ const TemplateLibrary = () => {
                     <Plus className="h-4 w-4" /> Create Template
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+            <div className="template-grid">
               {popular.map((t) => (
                 <TemplateCard
                   key={t.id}
                   template={t}
                   isFavorite={favorites.has(t.id)}
                   onFavorite={() => toggleFavorite(t.id)}
-                  onPreview={() => setPreviewTemplate(t)}
+                  onOpen={() => setSelectedTemplate(t)}
                   onEdit={() => handleEdit(t)}
                   onDuplicate={() => handleDuplicate(t)}
                   onAssign={() => setAssignTemplate(t)}
@@ -463,7 +506,7 @@ const TemplateLibrary = () => {
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-lg font-semibold">Recently Used</h3>
           </div>
-          {isLoading ? (
+          {loading ? (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {Array.from({ length: 4 }).map((_, i) => (
                 <Skeleton key={i} className="h-20 rounded-2xl" />
@@ -486,11 +529,11 @@ const TemplateLibrary = () => {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">{t.name}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {t.platforms?.[0] || 'Multi-platform'}
+                      <p className="text-clamp-1 text-sm font-semibold">{t.name}</p>
+                      <p className="text-truncate font-label text-muted-foreground">
+                        {'platforms' in t ? (t as AdTemplate).platforms?.[0] : (t as OriginalTemplate).platform || 'Multi-platform'}
                       </p>
-                      <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      <p className="mt-0.5 font-micro text-muted-foreground">
                         Edited {Math.floor(Math.random() * 5) + 1}d ago
                       </p>
                     </div>
@@ -503,114 +546,24 @@ const TemplateLibrary = () => {
         </section>
       </div>
 
-      {/* Preview Modal */}
-      <Dialog open={!!previewTemplate} onOpenChange={(o) => !o && setPreviewTemplate(null)}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>{previewTemplate?.name}</DialogTitle>
-            <DialogDescription>{previewTemplate?.description}</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 sm:grid-cols-[1.4fr_1fr]">
-            <div className="aspect-[4/5] overflow-hidden rounded-2xl bg-muted">
-              {((previewTemplate as any)?.preview_url || (previewTemplate as any)?.thumbnail_url) ? (
-                <img
-                  src={(previewTemplate as any).preview_url || (previewTemplate as any).thumbnail_url}
-                  alt={previewTemplate?.name ?? ''}
-                  loading="lazy"
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="h-full w-full bg-gradient-to-br from-primary/20 to-primary/5" />
-              )}
-            </div>
-            <div className="space-y-3 text-sm">
-              <div>
-                <p className="text-muted-foreground">Category</p>
-                <p className="font-medium">{previewTemplate?.category || '—'}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Platforms</p>
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {previewTemplate?.platforms?.map((p) => (
-                    <Badge key={p} variant="secondary">
-                      {p}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Usage Count</p>
-                <p className="font-medium">{previewTemplate?.usage_count || 0} uses</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Created</p>
-                <p className="font-medium">
-                  {previewTemplate?.created_at
-                    ? new Date(previewTemplate.created_at).toLocaleDateString()
-                    : '—'}
-                </p>
-              </div>
-            </div>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setAssignTemplate(previewTemplate);
-                setPreviewTemplate(null);
-              }}
-            >
-              <Send className="mr-2 h-4 w-4" /> Assign to Campaign
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                if (!previewTemplate) return;
-                const t = previewTemplate as any;
-                downloadTemplate({
-                  id: t.id,
-                  name: t.name,
-                  description: t.description,
-                  category: t.category,
-                  platform: t.platforms?.[0],
-                  objective: t.goal,
-                  template_json: t.template_json ?? null,
-                  metadata: t.metadata ?? {},
-                  layout_dna: t.layout_dna ?? t.metadata ?? {},
-                  ai_tags: t.tags ?? [],
-                  industry_tags: t.industry ? [t.industry] : [],
-                  brand_compatible: t.brand_compatible ?? null,
-                });
-                toast({ title: 'Template exported', description: 'Downloaded as .advista.json' });
-              }}
-            >
-              <Download className="mr-2 h-4 w-4" /> Export JSON
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => {
-                if (previewTemplate) handleEdit(previewTemplate);
-                setPreviewTemplate(null);
-              }}
-            >
-              <Sparkles className="mr-2 h-4 w-4" /> Quick customize
-            </Button>
-
-            <Button
-              onClick={() => {
-                if (!previewTemplate) return;
-                setPendingEditorTemplate(previewTemplate as unknown as TemplateRecord, 'library');
-                toast({ title: 'Template loaded into editor', description: 'Placeholders will resolve on open.' });
-                setPreviewTemplate(null);
-                navigate('/visual-editor');
-              }}
-            >
-              <Pencil className="mr-2 h-4 w-4" /> Open in Visual Editor
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Detail Panel Sheet */}
+      <Sheet open={!!selectedTemplate} onOpenChange={(o) => !o && setSelectedTemplate(null)}>
+        <SheetContent side="right" className="w-full max-w-md border-l border-border p-0 shadow-2xl sm:max-w-lg">
+          <VisuallyHidden.Root>
+            <SheetTitle>Template Details</SheetTitle>
+            <SheetDescription>Preview and manage template</SheetDescription>
+          </VisuallyHidden.Root>
+          <TemplateDetailPanel
+            template={selectedTemplate}
+            isFavorite={selectedTemplate ? favorites.has(selectedTemplate.id) : false}
+            onFavorite={() => { if (selectedTemplate) { toggleFavorite(selectedTemplate.id); } }}
+            onClose={() => setSelectedTemplate(null)}
+            onEdit={(t) => { handleEdit(t); setSelectedTemplate(null); }}
+            onDuplicate={(t) => { handleDuplicate(t); setSelectedTemplate(null); }}
+            onAssign={(t) => { setAssignTemplate(t); setSelectedTemplate(null); }}
+          />
+        </SheetContent>
+      </Sheet>
 
       {/* Assign Modal */}
       <Dialog open={!!assignTemplate} onOpenChange={(o) => !o && setAssignTemplate(null)}>

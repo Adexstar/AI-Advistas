@@ -36,17 +36,18 @@ function StatusBadge({ status }: { status: string }) {
 
 function KpiCard({ icon: Icon, label, value, iconBg }: { icon: any; label: string; value: string | number; iconBg: string }) {
   return (
-    <Card className="rounded-2xl border-border/60 shadow-sm">
-      <CardContent className="p-5 flex items-center gap-4">
-        <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center shrink-0', iconBg)}>
-          <Icon className="w-5 h-5" />
+    <div className="card">
+      {/* Icon row */}
+      <div className="flex items-center justify-between">
+        <div className={cn('grid h-9 w-9 place-items-center rounded-xl', iconBg)}>
+          <Icon className="w-4 h-4" />
         </div>
-        <div className="min-w-0">
-          <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="text-2xl font-bold tracking-tight truncate">{value}</p>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+      {/* Value — large number */}
+      <p className="metric-value">{value ?? '0'}</p>
+      {/* Label */}
+      <p className="font-label text-muted-foreground">{label}</p>
+    </div>
   );
 }
 
@@ -135,7 +136,7 @@ const Campaigns = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="metric-cards-grid">
         <KpiCard icon={TrendingUp} label="Total Campaigns" value={counts.total} iconBg="bg-violet-100 text-violet-600" />
         <KpiCard icon={ShoppingCart} label="Active" value={counts.active} iconBg="bg-emerald-100 text-emerald-600" />
         <KpiCard icon={Pause} label="Paused" value={counts.paused} iconBg="bg-amber-100 text-amber-600" />

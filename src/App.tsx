@@ -30,8 +30,6 @@ const VisualEditorPage = lazy(() => import("./pages/VisualEditorPage"));
 const AdEditor = lazy(() => import("./pages/AdEditor"));
 const TemplateCustomizer = lazy(() => import("./pages/TemplateCustomizer"));
 const TemplateLibrary = lazy(() => import("./pages/TemplateLibrary"));
-const AdVistaOriginals = lazy(() => import("./pages/AdVistaOriginals"));
-const OriginalTemplateDetail = lazy(() => import("./pages/OriginalTemplateDetail"));
 const TemplateGenerate = lazy(() => import("./pages/TemplateGenerate"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const MediaLibrary = lazy(() => import("./pages/MediaLibrary"));
@@ -148,17 +146,9 @@ const AppContent = () => {
               </ProtectedRoute>
             }>
               <Route index element={<TemplateLibrary />} />
-              <Route path="originals" element={<AdVistaOriginals />} />
               <Route path="generate" element={<TemplateGenerate />} />
             </Route>
-            <Route path="/originals" element={
-              <ProtectedRoute>
-                <DashboardLayout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<AdVistaOriginals />} />
-              <Route path=":id" element={<OriginalTemplateDetail />} />
-            </Route>
+            <Route path="/originals" element={<Navigate to="/template-library" replace />} />
             <Route path="/media-library" element={
               <ProtectedRoute>
                 <DashboardLayout />
