@@ -45,7 +45,7 @@ export const useOriginalsSearch = (filters: OriginalsSearchFilters) => {
         p_brand_compat: filters.brandCompat || null,
         p_layout_style: filters.layoutStyle || null,
         p_emotion: filters.emotion || null,
-        p_brand_compatible: filters.brandCompatibleOnly ?? null,
+        p_brand_compatible: filters.brandCompatibleOnly === true ? true : null,
         p_limit: 120,
       });
       if (error) throw error;

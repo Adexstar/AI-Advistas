@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { VisualEditorProvider, useVisualEditor } from '@/contexts/VisualEditorContext';
 import { Canvas as FabricCanvas, Rect, Circle as FCircle, Textbox } from 'fabric';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate } from 'react-router-dom';
 import { useBrandKits, useBrandColors, useBrandFonts } from '@/hooks/useBrandKit';
+import { useAutoSave } from '@/hooks/useAutoSave';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { toast } from '@/hooks/use-toast';
 import {
   Layout, Image as ImageIcon, Type, Shapes, Sparkles, Upload, Layers as LayersIcon,
@@ -24,7 +26,7 @@ import {
   Copy, Trash2, MoreHorizontal, Search, Filter, Video, Music, Square as SquareIcon, Link,
   Circle as CircleIcon, MousePointer, Volume2, X, Menu, ChevronDown, PanelRight,
   Palette, Sun, Zap, Eye, EyeOff, Pause, ChevronRight, RefreshCw, GripVertical, Pipette, Box,
-  ChevronUp,
+  ChevronUp, Scissors,
 } from 'lucide-react';
 import { AIActionsMenu } from '@/components/visual-editor/ai/AIActionsMenu';
 import { AIQuickActionsMenu } from '@/components/visual-editor/ai/AIQuickActionsMenu';
@@ -116,16 +118,45 @@ const TopToolbar: React.FC<{
   zoom: number;
   setZoom: (n: number) => void;
   onExport: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
   onToggleLeft: () => void;
   onToggleRight: () => void;
-}> = ({ projectName, setProjectName, zoom, setZoom, onExport, onToggleLeft, onToggleRight }) => {
+  isMobile: boolean;
+}> = ({ projectName, setProjectName, zoom, setZoom, onExport, onUndo, onRedo, canUndo, canRedo, onToggleLeft, onToggleRight, isMobile }) => {
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
+
+  if (isMobile) {
+    return (
+      <header className="flex h-[52px] shrink-0 items-center gap-2 border-b bg-card/95 backdrop-blur px-2">
+        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={onToggleLeft}>
+          <Menu className="h-4 w-4" />
+        </Button>
+        {editing ? (
+          <Input autoFocus value={projectName} onChange={(e) => setProjectName(e.target.value)}
+            onBlur={() => setEditing(false)} onKeyDown={(e) => e.key === 'Enter' && setEditing(false)}
+            className="h-8 flex-1 text-sm font-semibold" />
+        ) : (
+          <button onClick={() => setEditing(true)}
+            className="group flex items-center gap-1 rounded-lg px-1.5 py-1 hover:bg-muted/70 flex-1 min-w-0">
+            <span className="truncate text-sm font-semibold text-foreground">{projectName}</span>
+            <Edit3 className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0" />
+          </button>
+        )}
+        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={onUndo} disabled={!canUndo}><Undo2 className={`h-4 w-4 ${canUndo ? '' : 'opacity-30'}`} /></Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={onRedo} disabled={!canRedo}><Redo2 className={`h-4 w-4 ${canRedo ? '' : 'opacity-30'}`} /></Button>
+        <Button size="icon" className="h-8 w-8 shrink-0 bg-primary hover:bg-primary/90" onClick={onExport}>
+          <Download className="h-4 w-4" />
+        </Button>
+      </header>
+    );
+  }
+
   return (
     <header className="flex h-[52px] shrink-0 items-center gap-2 border-b bg-card/95 backdrop-blur px-2 sm:px-4">
-      <Button variant="ghost" size="icon" className="md:hidden h-9 w-9" onClick={onToggleLeft}>
-        <Menu className="h-4 w-4" />
-      </Button>
       <Button variant="ghost" size="icon" className="hidden md:inline-flex h-9 w-9" onClick={() => navigate('/dashboard')}>
         <ChevronLeft className="h-4 w-4" />
       </Button>
@@ -156,8 +187,8 @@ const TopToolbar: React.FC<{
       </Badge>
 
       <div className="ml-1 hidden md:flex items-center gap-1">
-        <Button variant="ghost" size="icon" className="h-8 w-8"><Undo2 className="h-4 w-4" /></Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8"><Redo2 className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onUndo} disabled={!canUndo}><Undo2 className={`h-4 w-4 ${canUndo ? '' : 'opacity-30'}`} /></Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onRedo} disabled={!canRedo}><Redo2 className={`h-4 w-4 ${canRedo ? '' : 'opacity-30'}`} /></Button>
       </div>
 
       <div className="flex-1" />
@@ -204,10 +235,10 @@ const TopToolbar: React.FC<{
 
 /* ---------- Templates Panel ---------- */
 const TemplateThumb: React.FC<{ item: { id: number; title: string; bg: string; dark?: boolean }; ratio?: string }> = ({ item, ratio = 'aspect-square' }) => (
-  <button className={`group relative ${ratio} w-full overflow-hidden rounded-xl border border-border/60 shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md`}>
+  <button className={`group relative ${ratio} w-full overflow-hidden rounded-lg border border-border/60 shadow-sm transition-transform hover:scale-[1.02]`}>
     <div className={`absolute inset-0 bg-gradient-to-br ${item.bg}`} />
-    <div className="absolute inset-0 p-3 flex flex-col justify-end">
-      <span className={`text-[11px] font-bold leading-tight drop-shadow ${item.dark ? 'text-slate-900' : 'text-white'}`}>
+    <div className="absolute inset-0 p-2 flex flex-col justify-end">
+      <span className={`text-[9px] font-bold leading-tight drop-shadow ${item.dark ? 'text-slate-900' : 'text-white'}`}>
         {item.title}
       </span>
     </div>
@@ -218,60 +249,58 @@ const TemplatesPanel: React.FC = () => {
   const [cat, setCat] = useState('All');
   return (
     <div className="flex h-full min-h-0 flex-col bg-card">
-      <div className="p-4 pb-3 border-b">
-        <h2 className="text-base font-semibold text-foreground">Templates</h2>
+      <div className="px-3 py-2 border-b">
+        <h2 className="text-sm font-semibold text-foreground">Templates</h2>
       </div>
-      <div className="p-4 pb-2 space-y-3">
+      <div className="px-3 pt-2 pb-1 space-y-2">
         <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input placeholder="Search templates" className="pl-8 h-9 rounded-xl bg-muted/60 border-transparent text-xs" />
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+          <Input placeholder="Search" className="pl-7 h-8 rounded-lg bg-muted/60 border-transparent text-xs" />
         </div>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1">
           {TEMPLATE_CATEGORIES.map((c) => (
             <button
               key={c}
               onClick={() => setCat(c)}
               className={[
-                'rounded-full px-3 py-1 text-[11px] font-medium transition-colors',
-                cat === c ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70',
+                'rounded-full px-2.5 py-0.5 text-[10px] font-medium transition-colors',
+                cat === c ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted text-muted-foreground hover:bg-muted/80',
               ].join(' ')}
             >
               {c}
             </button>
           ))}
         </div>
-      </div>
-      <ScrollArea className="flex-1 min-h-0">
-        <div className="p-4 pt-2 space-y-5">
+        <ScrollArea className="flex-1 min-h-0 px-3 py-2 space-y-4">
           <section>
             <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-foreground">Recommended for you</h3>
-              <button className="text-[11px] text-primary hover:underline">See all</button>
+              <h3 className="text-[11px] font-semibold text-foreground">Recommended</h3>
+              <button className="text-[10px] text-primary hover:underline">See all</button>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-2 gap-1.5">
               {RECOMMENDED.map((t) => <TemplateThumb key={t.id} item={t} />)}
             </div>
           </section>
           <section>
             <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-foreground">Instagram Post</h3>
-              <button className="text-[11px] text-primary hover:underline">See all</button>
+              <h3 className="text-[11px] font-semibold text-foreground">Instagram Post</h3>
+              <button className="text-[10px] text-primary hover:underline">See all</button>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-2 gap-1.5">
               {INSTA_POST.map((t) => <TemplateThumb key={t.id} item={t} />)}
             </div>
           </section>
           <section>
             <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-foreground">Instagram Story</h3>
-              <button className="text-[11px] text-primary hover:underline">See all</button>
+              <h3 className="text-[11px] font-semibold text-foreground">Instagram Story</h3>
+              <button className="text-[10px] text-primary hover:underline">See all</button>
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 sm:grid-cols-3 gap-1.5">
               {INSTA_STORY.map((t) => <TemplateThumb key={t.id} item={t} ratio="aspect-[9/16]" />)}
             </div>
           </section>
-        </div>
-      </ScrollArea>
+        </ScrollArea>
+      </div>
     </div>
   );
 };
@@ -560,19 +589,68 @@ const BrandKitPanel: React.FC = () => {
 
 const LayersPanel: React.FC<{ canvas: FabricCanvas | null; version: number }> = ({ canvas, version }) => {
   const objs = canvas?.getObjects() || [];
+  const [locked, setLocked] = useState<Record<number, boolean>>({});
+  const [hidden, setHidden] = useState<Record<number, boolean>>({});
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+
+  const typeIcon = (type: string) => {
+    if (type === 'textbox' || type === 'i-text') return <Type className="h-3.5 w-3.5" />;
+    if (type === 'image' || type === 'video') return <ImageIcon className="h-3.5 w-3.5" />;
+    return <Shapes className="h-3.5 w-3.5" />;
+  };
+
+  const handleVisibility = (idx: number, o: any) => {
+    const next = !hidden[idx];
+    setHidden(prev => ({ ...prev, [idx]: next }));
+    if (canvas) { o.visible = !next; canvas.renderAll(); }
+  };
+
   return (
     <SimplePanel title="Layers">
       {objs.length === 0 ? (
         <p className="text-xs text-muted-foreground">Layers will appear here as you add elements.</p>
       ) : (
-        <div className="space-y-1.5">
-          {[...objs].reverse().map((o: any, i) => (
-            <div key={i} className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2">
-              <LayersIcon className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="flex-1 truncate text-xs">{o.type === 'textbox' ? o.text?.slice(0, 20) : o.type}</span>
-              <button onClick={() => { canvas?.remove(o); canvas?.renderAll(); }}><Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" /></button>
-            </div>
-          ))}
+        <div className="space-y-1">
+          {[...objs].reverse().map((o: any, i) => {
+            const realIdx = objs.length - 1 - i;
+            const isLocked = locked[realIdx];
+            const isHidden = hidden[realIdx];
+            return (
+              <div key={i}
+                className={`group flex items-center gap-2 rounded-lg border bg-background px-3 py-2 transition-all
+                  ${dragIdx === i ? 'opacity-50 scale-[1.02] shadow-md' : ''}
+                  ${isHidden ? 'opacity-40' : ''}
+                `}
+                draggable
+                onDragStart={() => setDragIdx(i)}
+                onDragOver={(e) => { e.preventDefault(); if (dragIdx !== null && dragIdx !== i) setDragIdx(i); }}
+                onDragEnd={() => {
+                  if (dragIdx === null || dragIdx === i) { setDragIdx(null); return; }
+                  const items = [...objs].reverse();
+                  const [moved] = items.splice(dragIdx, 1);
+                  items.splice(i, 0, moved);
+                  canvas?.clear(); items.reverse().forEach((item: any) => canvas?.add(item)); canvas?.renderAll();
+                  setDragIdx(null);
+                }}
+              >
+                <GripVertical className="h-3.5 w-3.5 text-muted-foreground cursor-grab active:cursor-grabbing shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <span className="shrink-0 text-muted-foreground">{typeIcon(o.type)}</span>
+                <span className="flex-1 truncate text-xs">{o.type === 'textbox' ? o.text?.slice(0, 24) || 'Text' : o.type}</span>
+                <button onClick={() => handleVisibility(realIdx, o)}
+                  className="h-6 w-6 flex items-center justify-center rounded hover:bg-muted shrink-0">
+                  {isHidden ? <EyeOff className="h-3.5 w-3.5 text-muted-foreground" /> : <Eye className="h-3.5 w-3.5 text-muted-foreground" />}
+                </button>
+                <button onClick={() => { setLocked(prev => ({ ...prev, [realIdx]: !isLocked })); }}
+                  className="h-6 w-6 flex items-center justify-center rounded hover:bg-muted shrink-0">
+                  {isLocked ? <Lock className="h-3.5 w-3.5 text-amber-500" /> : <Unlock className="h-3.5 w-3.5 text-muted-foreground" />}
+                </button>
+                <button onClick={() => { canvas?.remove(o); canvas?.renderAll(); }}
+                  className="h-6 w-6 flex items-center justify-center rounded hover:bg-destructive/10 shrink-0">
+                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
     </SimplePanel>
@@ -581,7 +659,7 @@ const LayersPanel: React.FC<{ canvas: FabricCanvas | null; version: number }> = 
 
 /* ---------- Canvas Sub-toolbar ---------- */
 const CanvasSubToolbar: React.FC = () => (
-  <div className="flex h-11 items-center gap-1 border-b bg-card/60 px-3 overflow-x-auto">
+  <div className="hidden md:flex h-11 items-center gap-1 border-b bg-card/60 px-3 overflow-x-auto">
     <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs"><Play className="h-3.5 w-3.5" /> Animate</Button>
     <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs">Position</Button>
     <Separator orientation="vertical" className="h-5 mx-1" />
@@ -610,20 +688,45 @@ const CanvasSubToolbar: React.FC = () => (
 const CANVAS_WIDTH = 360;
 const CANVAS_HEIGHT = 640;
 
-const CanvasStage: React.FC<{
+const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: number): number => {
+  const pad = isMobile ? 24 : 48;
+  const availW = containerWidth - pad;
+  const availH = containerHeight - pad;
+  const scaleX = availW / CANVAS_WIDTH;
+  const scaleY = availH / CANVAS_HEIGHT;
+  return Math.min(scaleX, scaleY, 1) * 100;
+};
+
+  const CanvasStage: React.FC<{
   onCanvasReady: (c: FabricCanvas) => void;
   onSelection: (o: any) => void;
   zoom: number;
+  onZoomChange: (z: number) => void;
   seedDefault: boolean;
   onCanvasWrapperRef?: (el: HTMLDivElement | null) => void;
-}> = ({ onCanvasReady, onSelection, zoom, seedDefault, onCanvasWrapperRef }) => {
+  isMobile: boolean;
+}> = ({ onCanvasReady, onSelection, zoom, onZoomChange, seedDefault, onCanvasWrapperRef, isMobile }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const initialized = useRef(false);
+  const [loading, setLoading] = useState(true);
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+  const canvasRef = useRef<FabricCanvas | null>(null);
 
   useEffect(() => {
     onCanvasWrapperRef?.(wrapperRef.current);
   }, [onCanvasWrapperRef]);
+
+  // Auto-fit canvas to viewport on mount
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const z = fitZoom(isMobile, rect.width, rect.height);
+    onZoomChange(Math.round(z));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (initialized.current || !ref.current) return;
@@ -650,22 +753,73 @@ const CanvasStage: React.FC<{
     });
 
     if (seedDefault) {
-      c.add(new Textbox('SUMMER', { left: 20, top: 120, fontSize: 72, fontWeight: 'bold', fill: '#1a1145', fontFamily: 'Poppins', width: 320 }));
-      c.add(new Textbox('SALE', { left: 20, top: 200, fontSize: 96, fontWeight: 'bold', fill: '#FFC107', fontFamily: 'Poppins', width: 320 }));
-      c.add(new Rect({ left: 20, top: 340, width: 240, height: 52, fill: '#8b5cf6', rx: 26, ry: 26 }));
-      c.add(new Textbox('UP TO 50% OFF', { left: 40, top: 356, fontSize: 18, fontWeight: 'bold', fill: '#ffffff', width: 200 }));
+      // Empty canvas — welcome overlay shown in renderCanvas instead
     }
     c.on('selection:created', (e: any) => onSelection(e.selected?.[0]));
     c.on('selection:updated', (e: any) => onSelection(e.selected?.[0]));
     c.on('selection:cleared', () => onSelection(null));
     onCanvasReady(c);
+    setTimeout(() => setLoading(false), 150);
   }, [onCanvasReady, onSelection, seedDefault]);
 
+  // -- Gesture handlers --
+  const pinchDist = useRef(0);
+  const lastTap = useRef(0);
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -5 : 5;
+    onZoomChange(Math.max(25, Math.min(400, zoom + delta)));
+  }, [zoom, onZoomChange]);
+
+  const handleDoubleTap = useCallback((e: React.TouchEvent) => {
+    const now = Date.now();
+    if (now - lastTap.current < 300) {
+      const c = canvasRef.current;
+      if (!c) return;
+      const obj = c.findTarget(e as any);
+      if (obj && (obj.type === 'textbox' || obj.type === 'i-text' || obj.type === 'text')) {
+        c.setActiveObject(obj);
+        (obj as any).enterEditing();
+      }
+    }
+    lastTap.current = now;
+  }, []);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      pinchDist.current = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    }
+    handleDoubleTap(e);
+  }, [handleDoubleTap]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length !== 2) return;
+    e.preventDefault();
+    const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    const delta = dist - pinchDist.current;
+    pinchDist.current = dist;
+    onZoomChange(Math.max(25, Math.min(400, zoomRef.current + delta * 0.5)));
+  }, [onZoomChange]);
+
   return (
-    <div className="flex-1 flex items-center justify-center overflow-auto" style={{ backgroundColor: '#1A1A1A' }}>
+    <div ref={containerRef} className="flex-1 flex items-center justify-center overflow-hidden select-none"
+      style={{ backgroundColor: '#1A1A1A' }}
+      onWheel={handleWheel}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+    >
+      {/* Loading skeleton */}
+      {loading && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3" style={{ backgroundColor: '#1A1A1A' }}>
+          <div className="h-10 w-10 animate-pulse rounded-xl" style={{ backgroundColor: '#2D2D2D' }} />
+          <div className="h-3 w-32 animate-pulse rounded-full" style={{ backgroundColor: '#2D2D2D' }} />
+          <div className="h-2 w-24 animate-pulse rounded-full" style={{ backgroundColor: '#2D2D2D' }} />
+        </div>
+      )}
       <div
         ref={wrapperRef}
-        className="relative bg-white"
+        className="relative bg-white shrink-0"
         style={{
           width: CANVAS_WIDTH,
           height: CANVAS_HEIGHT,
@@ -744,6 +898,385 @@ const Timeline: React.FC = () => {
             <Music className="h-3.5 w-3.5" /> Add audio
           </button>
         </div>
+      </div>
+    </div>
+  );
+};
+
+/* ---------- Contextual Toolbar Configs ---------- */
+type ToolItem = { id: string; label: string; icon: React.FC<{ className?: string }> };
+
+const CREATE_TOOLS: ToolItem[] = [
+  { id: 'templates', label: 'Templates', icon: Layout },
+  { id: 'elements', label: 'Elements', icon: Shapes },
+  { id: 'text', label: 'Text', icon: Type },
+  { id: 'uploads', label: 'Uploads', icon: Upload },
+  { id: 'brand', label: 'Brand', icon: Sparkles },
+  { id: 'media', label: 'Media', icon: ImageIcon },
+  { id: 'ai-studio', label: 'AI Studio', icon: Wand2 },
+  { id: 'background', label: 'Bg', icon: Palette },
+  { id: 'layers', label: 'Layers', icon: LayersIcon },
+];
+
+const TEXT_TOOLS: ToolItem[] = [
+  { id: 'edit-text', label: 'Edit', icon: Edit3 },
+  { id: 'font', label: 'Font', icon: Type },
+  { id: 'text-style', label: 'Styles', icon: Bold },
+  { id: 'font-size', label: 'Size', icon: Plus },
+  { id: 'colour', label: 'Colour', icon: Palette },
+  { id: 'spacing', label: 'Spacing', icon: AlignLeft },
+  { id: 'effects', label: 'Effects', icon: Zap },
+  { id: 'animate', label: 'Animate', icon: Play },
+  { id: 'position', label: 'Position', icon: MoveUp },
+  { id: 'opacity', label: 'Opacity', icon: Eye },
+  { id: 'layers', label: 'Layers', icon: LayersIcon },
+  { id: 'more', label: 'More', icon: MoreHorizontal },
+];
+
+const IMAGE_TOOLS: ToolItem[] = [
+  { id: 'replace', label: 'Replace', icon: RefreshCw },
+  { id: 'crop', label: 'Crop', icon: Maximize2 },
+  { id: 'filters', label: 'Filters', icon: Palette },
+  { id: 'adjust', label: 'Adjust', icon: Sun },
+  { id: 'effects', label: 'Effects', icon: Zap },
+  { id: 'bg-remove', label: 'Bg Remove', icon: Wand2 },
+  { id: 'ai-enhance', label: 'AI Enhance', icon: Sparkles },
+  { id: 'opacity', label: 'Opacity', icon: Eye },
+  { id: 'animate', label: 'Animate', icon: Play },
+  { id: 'position', label: 'Position', icon: MoveUp },
+  { id: 'layers', label: 'Layers', icon: LayersIcon },
+  { id: 'more', label: 'More', icon: MoreHorizontal },
+];
+
+const SHAPE_TOOLS: ToolItem[] = [
+  { id: 'fill', label: 'Fill', icon: Palette },
+  { id: 'border', label: 'Border', icon: SquareIcon },
+  { id: 'radius', label: 'Radius', icon: Box },
+  { id: 'shadow', label: 'Shadow', icon: Moon },
+  { id: 'opacity', label: 'Opacity', icon: Eye },
+  { id: 'animate', label: 'Animate', icon: Play },
+  { id: 'position', label: 'Position', icon: MoveUp },
+  { id: 'layers', label: 'Layers', icon: LayersIcon },
+];
+
+const VIDEO_TOOLS: ToolItem[] = [
+  { id: 'trim', label: 'Trim', icon: Scissors },
+  { id: 'split', label: 'Split', icon: Scissors },
+  { id: 'speed', label: 'Speed', icon: Zap },
+  { id: 'volume', label: 'Volume', icon: Volume2 },
+  { id: 'captions', label: 'Captions', icon: Type },
+  { id: 'filters', label: 'Filters', icon: Palette },
+  { id: 'transitions', label: 'Trans', icon: ChevronRight },
+  { id: 'animate', label: 'Animate', icon: Play },
+  { id: 'position', label: 'Position', icon: MoveUp },
+  { id: 'layers', label: 'Layers', icon: LayersIcon },
+];
+
+const MULTI_TOOLS: ToolItem[] = [
+  { id: 'group', label: 'Group', icon: LayersIcon },
+  { id: 'align', label: 'Align', icon: AlignVerticalJustifyCenter },
+  { id: 'distribute', label: 'Distribute', icon: Grid3x3 },
+  { id: 'duplicate', label: 'Dup', icon: Copy },
+  { id: 'lock', label: 'Lock', icon: Lock },
+  { id: 'opacity', label: 'Opacity', icon: Eye },
+  { id: 'position', label: 'Position', icon: MoveUp },
+  { id: 'layers', label: 'Layers', icon: LayersIcon },
+];
+
+const getToolsForSelection = (selected: any): ToolItem[] => {
+  if (!selected) return CREATE_TOOLS;
+  const type = selected.type;
+  if (type === 'textbox' || type === 'text' || type === 'i-text') return TEXT_TOOLS;
+  if (type === 'image' || type === 'video') return IMAGE_TOOLS;
+  if (type === 'rect' || type === 'circle' || type === 'ellipse' || type === 'triangle' || type === 'polygon') return SHAPE_TOOLS;
+  return CREATE_TOOLS;
+};
+
+const AI_ACTIONS: Record<string, { id: string; label: string }[]> = {
+  text: [
+    { id: 'rewrite', label: 'Rewrite Text' },
+    { id: 'shorten', label: 'Shorten' },
+    { id: 'expand', label: 'Expand' },
+    { id: 'improve-cta', label: 'Improve CTA' },
+    { id: 'translate', label: 'Translate' },
+    { id: 'brand-tone', label: 'Brand Tone' },
+    { id: 'variants', label: 'Generate Variants' },
+  ],
+  image: [
+    { id: 'remove-bg', label: 'Remove Background' },
+    { id: 'replace', label: 'Replace Object' },
+    { id: 'extend', label: 'Extend Image' },
+    { id: 'upscale', label: 'Upscale' },
+    { id: 'relight', label: 'Relight' },
+    { id: 'recolor', label: 'Recolor' },
+    { id: 'generate-similar', label: 'Generate Similar' },
+  ],
+  video: [
+    { id: 'captions', label: 'Generate Captions' },
+    { id: 'remove-silence', label: 'Remove Silence' },
+    { id: 'highlights', label: 'Auto Highlights' },
+    { id: 'ai-voice', label: 'AI Voice' },
+    { id: 'b-roll', label: 'Generate B-roll' },
+    { id: 'improve-audio', label: 'Improve Audio' },
+  ],
+  default: [
+    { id: 'create', label: 'Generate Design' },
+    { id: 'replace-image', label: 'Replace Image' },
+    { id: 'write-copy', label: 'Write Copy' },
+    { id: 'remove-bg', label: 'Remove Background' },
+    { id: 'resize', label: 'Resize' },
+    { id: 'improve-layout', label: 'Improve Layout' },
+    { id: 'brand-this', label: 'Brand This' },
+    { id: 'animate', label: 'Animate' },
+  ],
+};
+
+const getAiActions = (selected: any) => {
+  if (!selected) return AI_ACTIONS.default;
+  const type = selected.type;
+  if (type === 'textbox' || type === 'text' || type === 'i-text') return AI_ACTIONS.text;
+  if (type === 'image') return AI_ACTIONS.image;
+  if (type === 'video') return AI_ACTIONS.video;
+  return AI_ACTIONS.default;
+};
+
+/* ---------- Contextual Toolbar (mobile) ---------- */
+const ContextualToolbar: React.FC<{
+  tools: ToolItem[];
+  active: string | null;
+  onToolTap: (id: string) => void;
+}> = ({ tools, active, onToolTap }) => (
+  <nav className="flex items-center gap-0.5 overflow-x-auto px-2 py-1.5 border-t bg-card/95 backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    {tools.map((t) => {
+      const Icon = t.icon;
+      const isActive = active === t.id;
+      return (
+        <button key={t.id} onClick={() => onToolTap(t.id)}
+          className={`flex shrink-0 flex-col items-center gap-0.5 rounded-xl px-2.5 py-1.5 transition-colors ${
+            isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted'
+          }`}>
+          <Icon className="h-5 w-5" />
+          <span className="text-[8px] font-medium whitespace-nowrap">{t.label}</span>
+        </button>
+      );
+    })}
+  </nav>
+);
+
+/* ---------- Contextual Tool Sheet Panels ---------- */
+const FontToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => {
+  const update = (prop: string, val: any) => { if (!selected || !canvas) return; selected.set(prop, val); canvas.renderAll(); };
+  const fonts = ['Poppins','Inter','Roboto','Montserrat','Lato','Playfair Display','Bebas Neue'];
+  return (
+    <div className="space-y-3">
+      <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" /><Input placeholder="Search fonts" className="pl-8 h-9 rounded-xl bg-muted/60 border-transparent text-xs" /></div>
+      <p className="text-xs font-semibold text-muted-foreground">Brand Fonts</p>
+      <div className="flex flex-wrap gap-2">{['Poppins','Inter'].map(f => <button key={f} onClick={() => update('fontFamily', f)} className={`rounded-lg border px-3 py-2 text-xs ${selected?.fontFamily === f ? 'border-primary bg-primary/10' : 'hover:bg-muted'}`}>{f}</button>)}</div>
+      <p className="text-xs font-semibold text-muted-foreground">All Fonts</p>
+      <div className="grid grid-cols-2 gap-2">
+        {fonts.map(f => <button key={f} onClick={() => update('fontFamily', f)} className={`rounded-lg border px-3 py-2 text-xs text-left ${selected?.fontFamily === f ? 'border-primary bg-primary/10' : 'hover:bg-muted'}`} style={{ fontFamily: f }}>{f}</button>)}
+      </div>
+    </div>
+  );
+};
+
+const ColorToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => {
+  const update = (prop: string, val: any) => { if (!selected || !canvas) return; selected.set(prop, val); canvas.renderAll(); };
+  const colors = ['#FF0000','#FF6B6B','#FF69B4','#800080','#008080','#0000FF','#FFA500','#FFD700','#00FF00','#008000','#000000','#555555','#888888','#BBBBBB','#DDDDDD','#FFFFFF'];
+  return (
+    <div className="space-y-3">
+      <p className="text-xs font-semibold text-muted-foreground">Brand Colours</p>
+      <div className="flex gap-2">{['#6C63FF','#FF6B6B','#00C9A7'].map(c => <button key={c} onClick={() => update('fill', c)} className="w-8 h-8 rounded-full border border-border" style={{ backgroundColor: c }} />)}</div>
+      <p className="text-xs font-semibold text-muted-foreground">Recent</p>
+      <div className="flex gap-2">{['#FFC107','#8b5cf6','#ffffff'].map(c => <button key={c} onClick={() => update('fill', c)} className="w-8 h-8 rounded-full border border-border" style={{ backgroundColor: c }} />)}</div>
+      <p className="text-xs font-semibold text-muted-foreground">Palette</p>
+      <div className="grid grid-cols-8 gap-1.5">{colors.map(c => <button key={c} onClick={() => update('fill', c)} className="aspect-square rounded-lg border border-border" style={{ backgroundColor: c }} />)}</div>
+      <div className="flex items-center gap-2 rounded-xl border px-3 py-2"><input type="color" value={selected?.fill || '#000000'} onChange={(e) => update('fill', e.target.value)} className="h-6 w-6 rounded cursor-pointer border" /><span className="text-xs font-mono uppercase">{selected?.fill || '#000000'}</span></div>
+    </div>
+  );
+};
+
+const AnimateToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = () => {
+  const animations = ['None','Fade','Rise','Typewriter','Pop','Bounce','Slide'];
+  return (
+    <div className="space-y-3">
+      <p className="text-xs font-semibold text-muted-foreground">Entrance</p>
+      <div className="grid grid-cols-4 gap-2">{animations.map(a => <button key={a} className={`rounded-xl border px-3 py-4 text-xs font-medium text-center ${a === 'None' ? 'border-primary bg-primary/10' : 'hover:bg-muted'}`}>{a}</button>)}</div>
+      <div className="grid grid-cols-2 gap-3">
+        <div><p className="mb-1 text-xs text-muted-foreground">Duration</p><div className="flex items-center gap-2"><Slider value={[50]} max={100} className="flex-1" /><span className="text-xs w-10 text-right">0.5s</span></div></div>
+        <div><p className="mb-1 text-xs text-muted-foreground">Delay</p><div className="flex items-center gap-2"><Slider value={[0]} max={100} className="flex-1" /><span className="text-xs w-10 text-right">0s</span></div></div>
+      </div>
+    </div>
+  );
+};
+
+const EffectsToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => {
+  const update = (prop: string, val: any) => { if (!selected || !canvas) return; selected.set(prop, val); canvas.renderAll(); };
+  return (
+    <div className="space-y-3">
+      <div className="space-y-2">
+        {[{ l: 'Shadow', key: 'shadow' }, { l: 'Outline', key: 'outline' }, { l: 'Glow', key: 'glow' }].map(e => (
+          <div key={e.key} className="flex items-center justify-between rounded-lg border px-3 py-2"><span className="text-xs font-medium">{e.l}</span><Switch defaultChecked={e.key === 'shadow'} /></div>
+        ))}
+      </div>
+      <div><p className="mb-2 text-xs text-muted-foreground">Opacity</p><div className="flex items-center gap-3"><Slider value={[Math.round((selected?.opacity ?? 1) * 100)]} onValueChange={([v]) => update('opacity', v / 100)} max={100} /><span className="text-xs w-10 text-right">{Math.round((selected?.opacity ?? 1) * 100)}%</span></div></div>
+    </div>
+  );
+};
+
+const PositionToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => {
+  const update = (prop: string, val: any) => { if (!selected || !canvas) return; selected.set(prop, val); canvas.renderAll(); };
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <div><p className="mb-1 text-xs text-muted-foreground">X</p><Input type="number" className="h-9" value={Math.round(selected?.left || 0)} onChange={(e) => update('left', parseInt(e.target.value))} /></div>
+      <div><p className="mb-1 text-xs text-muted-foreground">Y</p><Input type="number" className="h-9" value={Math.round(selected?.top || 0)} onChange={(e) => update('top', parseInt(e.target.value))} /></div>
+      <div><p className="mb-1 text-xs text-muted-foreground">Rotation</p><Input type="number" className="h-9" value={Math.round(selected?.angle || 0)} onChange={(e) => update('angle', parseInt(e.target.value))} /></div>
+      <div><p className="mb-1 text-xs text-muted-foreground">Scale</p><Input type="number" step={0.1} className="h-9" value={selected?.scaleX || 1} onChange={(e) => { update('scaleX', parseFloat(e.target.value)); update('scaleY', parseFloat(e.target.value)); }} /></div>
+    </div>
+  );
+};
+
+const SpacingToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => {
+  const update = (prop: string, val: any) => { if (!selected || !canvas) return; selected.set(prop, val); canvas.renderAll(); };
+  return (
+    <div className="space-y-3">
+      <div><p className="mb-1 text-xs text-muted-foreground">Line Height</p><Input type="number" step={0.1} className="h-9" value={selected?.lineHeight || 1.2} onChange={(e) => update('lineHeight', parseFloat(e.target.value))} /></div>
+      <div><p className="mb-1 text-xs text-muted-foreground">Letter Spacing</p><div className="flex items-center gap-2"><Slider value={[0]} max={100} className="flex-1" /><span className="text-xs w-10 text-right">0%</span></div></div>
+      <div><p className="mb-1 text-xs text-muted-foreground">Padding</p><Input type="number" className="h-9" defaultValue={0} /></div>
+    </div>
+  );
+};
+
+const FillToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = (props) => <ColorToolPanel {...props} />;
+
+const TextEditToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => {
+  const update = (prop: string, val: any) => { if (!selected || !canvas) return; selected.set(prop, val); canvas.renderAll(); };
+  return (
+    <div className="space-y-3">
+      <div><p className="mb-1 text-xs text-muted-foreground">Text</p><textarea className="w-full rounded-xl border bg-background px-3 py-2 text-sm resize-none h-20" value={selected?.text || ''} onChange={(e) => update('text', e.target.value)} /></div>
+      <div className="grid grid-cols-4 gap-1">
+        {[
+          { icon: Bold, key: 'fontWeight', toggle: { on: 'bold', off: 'normal' } },
+          { icon: Italic, key: 'fontStyle', toggle: { on: 'italic', off: 'normal' } },
+          { icon: Underline, key: 'underline', toggle: { on: true, off: false } },
+        ].map(({ icon: Icon, key, toggle }) => (
+          <button key={key} onClick={() => update(key, selected?.[key] === toggle.on ? toggle.off : toggle.on)}
+            className={`flex h-9 items-center justify-center rounded-lg border ${selected?.[key] === toggle.on ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}>
+            <Icon className="h-4 w-4" />
+          </button>
+        ))}
+        {[
+          { icon: AlignLeft, key: 'textAlign', val: 'left' },
+          { icon: AlignCenter, key: 'textAlign', val: 'center' },
+          { icon: AlignRight, key: 'textAlign', val: 'right' },
+        ].map(({ icon: Icon, key, val }) => (
+          <button key={val} onClick={() => update(key, val)}
+            className={`flex h-9 items-center justify-center rounded-lg border ${selected?.textAlign === val ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}>
+            <Icon className="h-4 w-4" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const TextStyleToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => {
+  const update = (prop: string, val: any) => { if (!selected || !canvas) return; selected.set(prop, val); canvas.renderAll(); };
+  return (
+    <div className="space-y-2">
+      {[
+        { label: 'Heading', size: 36, weight: 'bold' },
+        { label: 'Subheading', size: 24, weight: '600' },
+        { label: 'Body', size: 16, weight: 'normal' },
+        { label: 'Small', size: 12, weight: 'normal' },
+      ].map(s => (
+        <button key={s.label} onClick={() => { update('fontSize', s.size); update('fontWeight', s.weight); }}
+          className="w-full rounded-lg border px-4 py-3 text-left hover:bg-muted transition">
+          <span className="text-xs font-semibold">{s.label}</span>
+          <span className="text-[10px] text-muted-foreground ml-2">{s.size}px · {s.weight}</span>
+        </button>
+      ))}
+    </div>
+  );
+};
+
+const OpacityToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => {
+  const update = (prop: string, val: any) => { if (!selected || !canvas) return; selected.set(prop, val); canvas.renderAll(); };
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-3"><Slider value={[Math.round((selected?.opacity ?? 1) * 100)]} onValueChange={([v]) => update('opacity', v / 100)} max={100} className="flex-1" /><span className="text-lg font-semibold min-w-[48px] text-right">{Math.round((selected?.opacity ?? 1) * 100)}%</span></div>
+      <div className="grid grid-cols-4 gap-2">
+        {[0,25,50,75,100].map(v => <button key={v} onClick={() => update('opacity', v/100)} className={`rounded-lg border py-2 text-xs text-center ${Math.round((selected?.opacity ?? 1) * 100) === v ? 'border-primary bg-primary/10' : 'hover:bg-muted'}`}>{v}%</button>)}
+      </div>
+    </div>
+  );
+};
+
+const renderToolSheet = (toolId: string, selected: any, canvas: FabricCanvas | null): React.ReactNode => {
+  const props = { selected, canvas };
+  switch (toolId) {
+    case 'font': return <FontToolPanel {...props} />;
+    case 'colour': case 'fill': return <ColorToolPanel {...props} />;
+    case 'animate': return <AnimateToolPanel {...props} />;
+    case 'effects': return <EffectsToolPanel {...props} />;
+    case 'position': return <PositionToolPanel {...props} />;
+    case 'spacing': return <SpacingToolPanel {...props} />;
+    case 'edit-text': return <TextEditToolPanel {...props} />;
+    case 'text-style': return <TextStyleToolPanel {...props} />;
+    case 'font-size': return <FontToolPanel {...props} />;
+    case 'opacity': return <OpacityToolPanel {...props} />;
+    case 'border': return <FillToolPanel {...props} />;
+    default: return <p className="text-xs text-muted-foreground">Select an option above.</p>;
+  }
+};
+
+/* ---------- Bottom Sheet (mobile, slide-up) ---------- */
+const MobileBottomSheet: React.FC<{
+  open: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+  label: string;
+}> = ({ open, onClose, children, label }) => {
+  const [visible, setVisible] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const startY = useRef(0);
+
+  useEffect(() => {
+    if (open) { setVisible(true); return; }
+    const timer = setTimeout(() => setVisible(false), 300);
+    return () => clearTimeout(timer);
+  }, [open]);
+
+  const handleTouchStart = (e: React.TouchEvent) => { startY.current = e.touches[0].clientY; };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (startY.current - e.changedTouches[0].clientY < -80) onClose();
+  };
+
+  if (!visible && !open) return null;
+
+  return (
+    <div
+      ref={panelRef}
+      className={`border-t bg-card shadow-2xl overflow-y-auto transition-all duration-300 ease-out ${
+        open ? 'translate-y-0 max-h-[45vh]' : 'translate-y-full max-h-0'
+      }`}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Drag handle */}
+      <div className="flex items-center justify-center py-2 sticky top-0 bg-card z-10">
+        <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+      </div>
+      {/* Header with close */}
+      <div className="flex items-center justify-between px-4 pb-2">
+        <span className="text-sm font-semibold text-foreground">{label}</span>
+        <button onClick={onClose} className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-muted">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+      {/* Content */}
+      <div className="px-4 pb-4">
+        {children}
       </div>
     </div>
   );
@@ -948,19 +1481,148 @@ const RightPanel: React.FC<{
 
 /* ---------- Main Editor ---------- */
 const EditorInner: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>('templates');
+  const [activeTool, setActiveTool] = useState<string | null>(null);
   const [projectName, setProjectName] = useState('Summer Sale Campaign');
   const [zoom, setZoom] = useState(100);
   const [canvas, setCanvas] = useState<FabricCanvas | null>(null);
+  const [canvasReady, setCanvasReady] = useState(false);
   const [selected, setSelected] = useState<any>(null);
   const [, forceUpdate] = useState(0);
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
-  const [bottomTab, setBottomTab] = useState<string | null>(null);
+  const [sheetExpanded, setSheetExpanded] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [toolbarPos, setToolbarPos] = useState<{ left: number; top: number } | null>(null);
   const [canvasWrapperEl, setCanvasWrapperEl] = useState<HTMLDivElement | null>(null);
   const isMobile = useIsMobile();
+  const isVideo = false; // TODO: detect from canvas content
+  const currentTools = getToolsForSelection(selected);
+  const aiActions = getAiActions(selected);
+  const selectionType = !selected ? null : (selected.type === 'textbox' || selected.type === 'text' || selected.type === 'i-text' ? 'text' : selected.type === 'image' ? 'image' : selected.type === 'video' ? 'video' : 'other');
+
+  // ---- Undo / Redo history ----
+  const [history, setHistory] = useState<string[]>([]);
+  const [historyIdx, setHistoryIdx] = useState(-1);
+  const historyRef = useRef(history);
+  const historyIdxRef = useRef(historyIdx);
+  historyRef.current = history;
+  historyIdxRef.current = historyIdx;
+
+  const saveSnapshot = useCallback((c: FabricCanvas) => {
+    const json = JSON.stringify(c.toJSON(['id']));
+    setHistory(prev => {
+      const trimmed = prev.slice(0, historyIdxRef.current + 1);
+      const next = [...trimmed, json];
+      if (next.length > 50) next.shift();
+      return next;
+    });
+    setHistoryIdx(prev => Math.min(prev + 1, 49));
+  }, []);
+
+  const onUndo = useCallback(() => {
+    const c = canvas;
+    if (!c || historyIdxRef.current <= 0) return;
+    const newIdx = historyIdxRef.current - 1;
+    setHistoryIdx(newIdx);
+    const json = JSON.parse(historyRef.current[newIdx]);
+    c.loadFromJSON(json, () => { c.renderAll(); });
+  }, [canvas]);
+
+  const onRedo = useCallback(() => {
+    const c = canvas;
+    if (!c || historyIdxRef.current >= historyRef.current.length - 1) return;
+    const newIdx = historyIdxRef.current + 1;
+    setHistoryIdx(newIdx);
+    const json = JSON.parse(historyRef.current[newIdx]);
+    c.loadFromJSON(json, () => { c.renderAll(); });
+  }, [canvas]);
+
+  const canUndo = historyIdx > 0;
+  const canRedo = historyIdx < history.length - 1;
+
+  // Wire canvas events for history
+  useEffect(() => {
+    if (!canvas) return;
+    const save = () => saveSnapshot(canvas);
+    canvas.on('object:added', save);
+    canvas.on('object:modified', save);
+    canvas.on('object:removed', save);
+    // Save initial state
+    setTimeout(() => saveSnapshot(canvas), 100);
+    return () => {
+      canvas.off('object:added', save);
+      canvas.off('object:modified', save);
+      canvas.off('object:removed', save);
+    };
+  }, [canvas, saveSnapshot]);
+
+  // ---- Auto-save canvas to localStorage ----
+  const autoSaveData = useMemo(() => {
+    if (!canvas) return null;
+    try { return { json: canvas.toJSON(['id']), name: projectName, zoom }; }
+    catch { return null; }
+  }, [canvas, historyIdx, projectName, zoom]);
+
+  const handleAutoSave = useCallback((data: any) => {
+    if (!data?.json) return;
+    localStorage.setItem(`editor_recovery_${projectName}`, JSON.stringify(data));
+  }, [projectName]);
+
+  const { restoreFromAutoSave, clearAutoSave } = useAutoSave(autoSaveData, handleAutoSave, {
+    delay: 3000,
+    enabled: !!canvas,
+    key: `editor-${projectName}`,
+  });
+
+  // ---- Keyboard shortcuts for canvas operations ----
+  const nudge = useCallback((dx: number, dy: number) => {
+    if (!selected || !canvas) return;
+    selected.set('left', (selected.left || 0) + dx);
+    selected.set('top', (selected.top || 0) + dy);
+    canvas.renderAll();
+    forceUpdate(n => n + 1);
+  }, [selected, canvas]);
+
+  const deleteSelected = useCallback(() => {
+    if (!selected || !canvas) return;
+    canvas.remove(selected);
+    canvas.discardActiveObject();
+    canvas.renderAll();
+    setSelected(null);
+    forceUpdate(n => n + 1);
+  }, [selected, canvas]);
+
+  const copySelected = useCallback(() => {
+    if (!selected) return;
+    (window as any).__editorClipboard = { type: selected.type, json: selected.toJSON(['id']) };
+  }, [selected]);
+
+  const pasteClipboard = useCallback(() => {
+    if (!canvas || !(window as any).__editorClipboard) return;
+    const data = (window as any).__editorClipboard;
+    canvas.loadFromJSON({ ...canvas.toJSON(['id']), objects: [...canvas.getObjects(), data.json] }, () => {
+      canvas.renderAll();
+      forceUpdate(n => n + 1);
+    });
+  }, [canvas]);
+
+  useKeyboardShortcuts({
+    enabled: !!canvas,
+    shortcuts: [
+      { key: 'Delete', action: deleteSelected, description: 'Delete selected object', category: 'Canvas' },
+      { key: 'Backspace', action: deleteSelected, description: 'Delete selected object', category: 'Canvas' },
+      { key: 'z', ctrlKey: true, metaKey: true, action: onUndo, description: 'Undo', category: 'Canvas' },
+      { key: 'z', ctrlKey: true, metaKey: true, shiftKey: true, action: onRedo, description: 'Redo', category: 'Canvas' },
+      { key: 'c', ctrlKey: true, metaKey: true, action: copySelected, description: 'Copy', category: 'Canvas' },
+      { key: 'v', ctrlKey: true, metaKey: true, action: pasteClipboard, description: 'Paste', category: 'Canvas' },
+      { key: 'ArrowUp', action: () => nudge(0, -1), description: 'Nudge up', category: 'Canvas' },
+      { key: 'ArrowDown', action: () => nudge(0, 1), description: 'Nudge down', category: 'Canvas' },
+      { key: 'ArrowLeft', action: () => nudge(-1, 0), description: 'Nudge left', category: 'Canvas' },
+      { key: 'ArrowRight', action: () => nudge(1, 0), description: 'Nudge right', category: 'Canvas' },
+    ],
+  });
 
   // Detect a pending template BEFORE the canvas mounts so we skip default seeds.
   const pendingRef = useRef(peekPendingEditorTemplate());
@@ -1075,15 +1737,99 @@ const EditorInner: React.FC = () => {
       case 'brand': return <BrandKitPanel />;
       case 'layers': return <LayersPanel canvas={canvas} version={0} />;
       case 'media': return <SimplePanel title="Media"><p className="text-xs text-muted-foreground">Import from your Media Library.</p></SimplePanel>;
-      case 'uploads': return <SimplePanel title="Uploads"><p className="text-xs text-muted-foreground">Drag & drop files to upload.</p></SimplePanel>;
+      case 'uploads': return <SimplePanel title="Uploads">
+        <div className="relative mb-4">
+          <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input placeholder="Search uploads" className="pl-8 h-9 rounded-xl bg-muted/60 border-transparent text-xs" />
+        </div>
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          {['Photos','Videos','Audio','Brand Assets'].map((cat) => (
+            <button key={cat} className="rounded-xl border bg-muted/30 px-3 py-4 text-xs font-medium text-center hover:bg-muted transition">
+              {cat}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">Drag & drop files to upload or browse your media library.</p>
+      </SimplePanel>;
       case 'projects': return <SimplePanel title="Projects"><p className="text-xs text-muted-foreground">Your recent projects.</p></SimplePanel>;
       default: return null;
     }
   };
 
+  const isEmpty = canvas ? canvas.getObjects().length === 0 : true;
+
+  const renderCanvas = () => (
+    <>
+      <CanvasStage
+        zoom={zoom}
+        onZoomChange={setZoom}
+        seedDefault={!hasPending}
+        onCanvasReady={(c) => { setCanvas(c); setCanvasReady(true); }}
+        onSelection={(o) => { setSelected(o); forceUpdate((n) => n + 1); }}
+        onCanvasWrapperRef={(el) => setCanvasWrapperEl(el)}
+        isMobile={isMobile}
+      />
+
+      {/* Onboarding overlay when canvas is empty */}
+      {isEmpty && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none" style={{ backgroundColor: 'rgba(26,26,26,0.85)' }}>
+          <div className="pointer-events-auto max-w-xs text-center px-6">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/20">
+              <Sparkles className="h-6 w-6 text-primary" />
+            </div>
+            <h3 className="text-base font-semibold text-white mb-1">Start creating</h3>
+            <p className="text-xs text-gray-400 mb-5">Tap a tool below to add text, images, shapes, or upload your own media.</p>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: 'Text', icon: Type, action: () => addText('New Text', 32, 'bold'), color: 'from-blue-500 to-blue-600' },
+                { label: 'Shape', icon: Shapes, action: () => addShape('rectangle'), color: 'from-purple-500 to-purple-600' },
+                { label: 'Upload', icon: Upload, action: () => { setActiveTab('uploads'); setSheetExpanded(true); }, color: 'from-emerald-500 to-emerald-600' },
+              ].map(({ label, icon: Icon, action, color }) => (
+                <button key={label} onClick={action}
+                  className="flex flex-col items-center gap-1.5 rounded-xl px-3 py-3 transition hover:scale-105"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}>
+                  <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${color} flex items-center justify-center`}>
+                    <Icon className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="text-[10px] font-medium text-gray-300">{label}</span>
+                </button>
+              ))}
+            </div>
+            <p className="mt-4 text-[10px] text-gray-500">Tip: Tap a template to start from a pre-made design</p>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Toolbar — simplified, contextual above object */}
+      {selected && toolbarPos && (
+        <div className="absolute z-30 pointer-events-auto animate-in fade-in"
+          style={{ left: toolbarPos.left, top: toolbarPos.top, transform: 'translateX(-50%)' }}>
+          <div className="flex items-center gap-0.5 px-2 py-1.5 rounded-full shadow-lg" style={{ backgroundColor: '#2D2D2D', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
+            <button className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-white/10 text-white">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <span className="text-xs font-semibold">AI</span>
+            </button>
+            <div className="w-px h-4 mx-0.5" style={{ backgroundColor: '#444444' }} />
+            <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Edit3 className="h-3.5 w-3.5" /></button>
+            <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Copy className="h-3.5 w-3.5" /></button>
+            <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Trash2 className="h-3.5 w-3.5" /></button>
+            <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><MoreHorizontal className="h-3.5 w-3.5" /></button>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom bar — Add page */}
+      <div className="flex items-center justify-center gap-2 py-2" style={{ backgroundColor: isMobile ? 'transparent' : '#1A1A1A', borderTop: isMobile ? 'none' : '1px solid #2D2D2D' }}>
+        <button className="flex items-center gap-2 h-9 rounded-lg px-4 text-xs" style={{ backgroundColor: '#2D2D2D', border: '1px solid #444444', color: '#CCCCCC' }}>
+          <Plus className="h-3.5 w-3.5" /> Add page
+        </button>
+      </div>
+    </>
+  );
+
   return (
     <div className="visual-editor flex h-screen w-full flex-col overflow-hidden bg-background">
-      {/* Editor Top Bar — never scrolls */}
+      {/* Editor Top Bar */}
       <div className="editor-top-bar flex-shrink-0">
         <TopToolbar
           projectName={projectName}
@@ -1091,128 +1837,99 @@ const EditorInner: React.FC = () => {
           zoom={zoom}
           setZoom={setZoom}
           onExport={onExport}
-          onToggleLeft={() => setLeftOpen(true)}
+          onUndo={onUndo}
+          onRedo={onRedo}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          onToggleLeft={() => isMobile ? navigate('/dashboard') : setLeftOpen(true)}
           onToggleRight={() => setRightOpen(true)}
+          isMobile={isMobile}
         />
       </div>
 
-      {/* Editor Second Bar — contextual toolbar, never scrolls */}
+      {/* Desktop only: Editor Second Bar */}
       <div className="editor-second-bar flex-shrink-0">
         <CanvasSubToolbar />
       </div>
 
-      {/* Editor Main — only canvas area scrolls */}
-      <div className="editor-main flex flex-1 overflow-hidden min-h-0">
-        {/* Left: Icon Rail + Panel */}
-        <div className="editor-left-panel flex h-full overflow-hidden">
-          <IconRail active={activeTab} onChange={setActiveTab} />
-
-          {/* Desktop left panel content */}
-          <div className="editor-panel-content hidden md:block w-[264px] shrink-0 border-r overflow-y-auto">
-            {renderLeftPanel()}
+      {/* Mobile layout: Top Bar → Canvas → Bottom Sheet → Contextual Toolbar */}
+      {isMobile ? (
+        <>
+          {/* Canvas — takes remaining space */}
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+            <div className="editor-canvas-area relative flex flex-1 min-w-0 flex-col overflow-hidden">
+              {renderCanvas()}
+            </div>
           </div>
-        </div>
 
-        {/* Canvas Area — centers the ad canvas */}
-        <div className="editor-canvas-area relative flex flex-1 min-w-0 flex-col overflow-hidden">
-          <CanvasStage
-            zoom={zoom}
-            seedDefault={!hasPending}
-            onCanvasReady={(c) => setCanvas(c)}
-            onSelection={(o) => { setSelected(o); forceUpdate((n) => n + 1); }}
-            onCanvasWrapperRef={(el) => setCanvasWrapperEl(el)}
-          />
+          {/* Slide-Up Panel — contextual tool sheet or creation panel */}
+          <MobileBottomSheet open={sheetExpanded} onClose={() => { setSheetExpanded(false); setActiveTool(null); }}
+            label={activeTool ? (currentTools.find(t => t.id === activeTool)?.label || activeTool) : 'Create'}>
+            {/* AI prompt bar — contextual based on selection */}
+            <div className="flex items-center gap-2 mb-3 overflow-x-auto [scrollbar-width:none]">
+              <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 shrink-0">
+                <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span className="text-xs text-muted-foreground whitespace-nowrap">Ask AI</span>
+              </div>
+              {aiActions.slice(0, 4).map(a => (
+                <button key={a.id} className="whitespace-nowrap rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted transition shrink-0">
+                  {a.label}
+                </button>
+              ))}
+            </div>
+            <div className="h-0.5 bg-border mb-3" />
+            {/* Tool sheet content or creation panels */}
+            {activeTool && selected ? renderToolSheet(activeTool, selected, canvas) : renderLeftPanel()}
+          </MobileBottomSheet>
 
-          {/* Floating Toolbar — positioned relative to selected object */}
-          {selected && toolbarPos && (
-            <div
-              className="absolute z-30 pointer-events-auto animate-in fade-in"
-              style={{
-                left: toolbarPos.left,
-                top: toolbarPos.top,
-                transform: 'translateX(-50%)',
-              }}
-            >
-              <div className="flex items-center gap-1 px-3 py-1.5 rounded-full shadow-lg" style={{ backgroundColor: '#2D2D2D', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
-                <div className="flex items-center gap-1.5 px-1">
-                  <div className="h-5 w-5 rounded-full bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center">
-                    <Sparkles className="h-2.5 w-2.5 text-white" />
-                  </div>
-                  <span className="text-xs font-semibold text-white">Ask AdVista</span>
-                </div>
-                <div className="w-px h-5 mx-1" style={{ backgroundColor: '#444444' }} />
-                <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Edit3 className="h-3.5 w-3.5" /></button>
-                <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Link className="h-3.5 w-3.5" /></button>
-                <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Lock className="h-3.5 w-3.5" /></button>
-                <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Copy className="h-3.5 w-3.5" /></button>
-                <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Trash2 className="h-3.5 w-3.5" /></button>
-                <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><MoreHorizontal className="h-3.5 w-3.5" /></button>
+          {/* Contextual Toolbar — auto-switches based on selection */}
+          <ContextualToolbar tools={currentTools} active={activeTool} onToolTap={(id) => { setActiveTool(id); setSheetExpanded(true); }} />
+        </>
+      ) : (
+        /* Desktop layout */
+        <>
+          {/* Editor Main */}
+          <div className="editor-main flex flex-1 overflow-hidden min-h-0">
+            {/* Left: Icon Rail + Panel */}
+            <div className="editor-left-panel flex h-full overflow-hidden">
+              <IconRail active={activeTab} onChange={setActiveTab} />
+              <div className="editor-panel-content hidden md:block w-[264px] shrink-0 border-r overflow-y-auto">
+                {renderLeftPanel()}
               </div>
             </div>
+
+            {/* Canvas Area */}
+            <div className="editor-canvas-area relative flex flex-1 min-w-0 flex-col overflow-hidden">
+              {renderCanvas()}
+            </div>
+
+            {/* Desktop right panel — contextual */}
+            {selected && (
+              <div className="editor-right-panel hidden lg:flex w-[240px] shrink-0 border-l overflow-y-auto">
+                <RightPanel selected={selected} canvas={canvas} onClose={() => setRightOpen(false)} />
+              </div>
+            )}
+          </div>
+
+          {/* Timeline — only for video */}
+          {isVideo && (
+            <div className={`editor-timeline flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out ${timelineOpen ? 'max-h-[200px]' : 'max-h-0'}`}>
+              <Timeline />
+            </div>
           )}
-
-          {/* Bottom bar — Add page + Timeline toggle */}
-          <div className="flex items-center justify-center gap-2 py-2" style={{ backgroundColor: '#1A1A1A', borderTop: '1px solid #2D2D2D' }}>
-            <button className="flex items-center gap-2 h-9 rounded-lg px-4 text-xs" style={{ backgroundColor: '#2D2D2D', border: '1px solid #444444', color: '#CCCCCC' }}>
-              <Plus className="h-3.5 w-3.5" /> Add page
-            </button>
-            <button onClick={() => setTimelineOpen(!timelineOpen)}
-              className="flex items-center gap-1.5 h-9 rounded-lg px-3 text-xs" style={{ backgroundColor: '#2D2D2D', border: '1px solid #444444', color: timelineOpen ? '#6C63FF' : '#CCCCCC' }}>
-              <span className={`transition-transform duration-200 ${timelineOpen ? 'rotate-180' : ''}`}>
-                <ChevronUp className="h-3.5 w-3.5" />
-              </span>
-              Timeline
-            </button>
-          </div>
-        </div>
-
-        {/* Desktop right panel — contextual, shows only on selection */}
-        {selected && (
-          <div className="editor-right-panel hidden lg:flex w-[240px] shrink-0 border-l overflow-y-auto">
-            <RightPanel selected={selected} canvas={canvas} onClose={() => setRightOpen(false)} />
-          </div>
-        )}
-      </div>
-
-      {/* Editor Timeline — fixed at bottom, toggleable */}
-      <div className={`editor-timeline flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out ${timelineOpen ? 'max-h-[200px]' : 'max-h-0'}`}>
-        <Timeline />
-      </div>
-
-      {/* Mobile floating bottom tabs */}
-      {isMobile && (
-        <div className="mobile-sticky-actions mx-2 mb-2 flex items-center justify-around rounded-2xl px-1 py-1.5 md:hidden">
-          {[
-            { id: 'assets', label: 'Assets', icon: Layout, onClick: () => setLeftOpen(true) },
-            { id: 'layers', label: 'Layers', icon: LayersIcon, onClick: () => { setActiveTab('layers'); setLeftOpen(true); } },
-            { id: 'ai', label: 'AI', icon: Sparkles, onClick: () => setRightOpen(true) },
-            { id: 'props', label: 'Props', icon: Palette, onClick: () => setRightOpen(true) },
-            { id: 'export', label: 'Export', icon: Download, onClick: onExport },
-          ].map((t) => {
-            const Icon = t.icon;
-            return (
-              <button key={t.id} onClick={t.onClick} className="flex flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 hover:bg-muted">
-                <Icon className="h-4 w-4" />
-                <span className="text-[10px] font-medium">{t.label}</span>
-              </button>
-            );
-          })}
-        </div>
+        </>
       )}
 
-      {/* Mobile left sheet */}
-      <Sheet open={leftOpen} onOpenChange={setLeftOpen}>
+      {/* Desktop left sheet (hidden on mobile — hamburger goes to dashboard) */}
+      <Sheet open={leftOpen && !isMobile} onOpenChange={setLeftOpen}>
         <SheetContent side="left" className="w-[min(20rem,calc(100vw-2rem))] p-0 flex flex-col">
           <div className="flex items-center gap-1 border-b bg-[hsl(245,45%,10%)] p-2 overflow-x-auto">
             {LEFT_TABS.map((t) => {
               const Icon = t.icon;
               const isActive = activeTab === t.id;
               return (
-                <button
-                  key={t.id}
-                  onClick={() => setActiveTab(t.id)}
-                  className={`flex shrink-0 flex-col items-center gap-0.5 rounded-lg px-2.5 py-2 text-white ${isActive ? 'bg-primary' : 'hover:bg-white/10'}`}
-                >
+                <button key={t.id} onClick={() => setActiveTab(t.id)}
+                  className={`flex shrink-0 flex-col items-center gap-0.5 rounded-lg px-2.5 py-2 text-white ${isActive ? 'bg-primary' : 'hover:bg-white/10'}`}>
                   <Icon className="h-4 w-4" />
                   <span className="text-[9px]">{t.label}</span>
                 </button>
@@ -1220,13 +1937,6 @@ const EditorInner: React.FC = () => {
             })}
           </div>
           <div className="flex-1 min-h-0 overflow-hidden">{renderLeftPanel()}</div>
-        </SheetContent>
-      </Sheet>
-
-      {/* Mobile right sheet */}
-      <Sheet open={rightOpen} onOpenChange={setRightOpen}>
-        <SheetContent side="right" className="w-[min(20rem,calc(100vw-2rem))] p-0">
-          <RightPanel selected={selected} canvas={canvas} onClose={() => setRightOpen(false)} />
         </SheetContent>
       </Sheet>
     </div>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTemplates, useTrackTemplateUsage, type AdTemplate } from '@/hooks/useTemplates';
 import { useCampaigns } from '@/hooks/useCampaigns';
 import { useOriginalsSearch, type OriginalTemplate } from '@/hooks/useOriginalsSearch';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -68,6 +69,7 @@ import {
   Download,
   CheckCircle2,
   Bookmark,
+  Play,
 } from 'lucide-react';
 import { TemplateDetailPanel } from '@/components/templates/TemplateDetailPanel';
 
@@ -221,9 +223,134 @@ const TemplateCard = ({
   );
 };
 
+const BANNER_GRADIENTS = [
+  'linear-gradient(135deg, #7C3AED, #A78BFA)',
+  'linear-gradient(135deg, #EC4899, #F472B6)',
+  'linear-gradient(135deg, #F59E0B, #FBBF24)',
+  'linear-gradient(135deg, #10B981, #34D399)',
+  'linear-gradient(135deg, #3B82F6, #60A5FA)',
+  'linear-gradient(135deg, #EF4444, #F87171)',
+];
+
+const BANNER_STATIC = [
+  { title: 'Summer Collection', subtitle: 'Bold designs for your brand' },
+  { title: 'Black Friday Deals', subtitle: 'Drive sales with urgency' },
+  { title: 'New Arrivals', subtitle: 'Fresh templates weekly' },
+  { title: 'Holiday Campaigns', subtitle: 'Festive designs ready to go' },
+  { title: 'Brand Launch Kit', subtitle: 'Everything you need to start' },
+  { title: 'Seasonal Promos', subtitle: 'Templates that convert' },
+];
+
+const MASONRY_SIZES = ['aspect-[1/1]', 'aspect-[3/2]', 'aspect-[1/1]', 'aspect-[2/3]', 'aspect-[1/1]', 'aspect-[3/2]'];
+
+const MobileTemplateCard = ({
+  template, sizeClass, index, onOpen, onEdit, onDuplicate, onAssign,
+}: {
+  template: AnyTemplate; sizeClass: string; index: number;
+  onOpen: () => void; onEdit: () => void; onDuplicate: () => void; onAssign: () => void;
+}) => {
+  const thumb = (template as any).thumbnail_url || (template as any).preview_url;
+  const isVideo = index % 3 === 0;
+
+  return (
+    <div className="template-masonry-card" onClick={onOpen}>
+      <div className={`w-full ${sizeClass} bg-[#F0F0F0]`}>
+        {thumb ? (
+          <img src={thumb} alt={template.name} loading="lazy" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/15 to-primary/5">
+            <LayoutGrid className="h-6 w-6 text-primary/30" />
+          </div>
+        )}
+      </div>
+      <button
+        className="more-btn"
+        onClick={(e) => { e.stopPropagation(); }}
+        aria-label="More options"
+      >
+        <MoreHorizontal className="h-3.5 w-3.5" />
+      </button>
+      {isVideo && (
+        <div className="play-indicator">
+          <Play className="h-2.5 w-2.5 fill-white ml-0.5" />
+        </div>
+      )}
+      <p className="template-masonry-label">{template.name}</p>
+      {template.category && <p className="template-masonry-category">{template.category}</p>}
+    </div>
+  );
+};
+
+const MobileTemplateView = ({
+  filtered, popular, onOpen, onEdit, onDuplicate, onAssign, navigate,
+}: {
+  filtered: AnyTemplate[]; popular: AnyTemplate[];
+  onOpen: (t: AnyTemplate) => void; onEdit: (t: AnyTemplate) => void;
+  onDuplicate: (t: AnyTemplate) => void; onAssign: (t: AnyTemplate) => void;
+  navigate: ReturnType<typeof useNavigate>;
+}) => {
+  const banners = useMemo(() => {
+    const items = popular.length >= 6 ? popular : filtered;
+    return items.slice(0, 6).map((t, i) => ({
+      ...t,
+      gradient: BANNER_GRADIENTS[i],
+      bannerTitle: BANNER_STATIC[i].title,
+      bannerSubtitle: BANNER_STATIC[i].subtitle,
+      thumb: (t as any).thumbnail_url || (t as any).preview_url,
+    }));
+  }, [popular, filtered]);
+
+  const displayTemplates = useMemo(() => {
+    const items = filtered.length > 0 ? filtered : popular;
+    return items.slice(0, 20);
+  }, [filtered, popular]);
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Banners */}
+      <div className="featured-banner-row pt-4">
+        {banners.map((b, i) => (
+          <div
+            key={b.id ?? i}
+            className="featured-banner"
+            style={{ background: b.gradient }}
+            onClick={() => onOpen(b)}
+          >
+            <div className="featured-banner-content">
+              <h4>{b.bannerTitle}</h4>
+              <p>{b.bannerSubtitle}</p>
+            </div>
+            {b.thumb && <img src={b.thumb} alt="" className="featured-banner-image" />}
+          </div>
+        ))}
+      </div>
+
+      {/* Section label */}
+      <h2 className="template-section-label">More templates for you</h2>
+
+      {/* Masonry grid */}
+      <div className="template-masonry">
+        {displayTemplates.map((t, i) => (
+          <MobileTemplateCard
+            key={t.id ?? i}
+            template={t}
+            index={i}
+            sizeClass={MASONRY_SIZES[i % MASONRY_SIZES.length]}
+            onOpen={() => onOpen(t)}
+            onEdit={() => onEdit(t)}
+            onDuplicate={() => onDuplicate(t)}
+            onAssign={() => onAssign(t)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const TemplateLibrary = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const { data: templates = [], isLoading } = useTemplates();
   const { data: campaigns = [] } = useCampaigns();
   const trackUsage = useTrackTemplateUsage();
@@ -301,8 +428,23 @@ const TemplateLibrary = () => {
     setSelectedCampaign('');
   };
 
+  const handleOpen = (t: AnyTemplate) => setSelectedTemplate(t);
+  const handleAssign = (t: AnyTemplate) => setAssignTemplate(t);
+
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      {isMobile ? (
+        <MobileTemplateView
+          filtered={filtered}
+          popular={popular}
+          navigate={navigate}
+          onOpen={handleOpen}
+          onEdit={handleEdit}
+          onDuplicate={handleDuplicate}
+          onAssign={handleAssign}
+        />
+      ) : (
+      <div className="min-h-screen bg-background">
       <div className="page-container py-4 sm:py-6 lg:py-8 space-y-6">
         {/* Header */}
         <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -545,6 +687,8 @@ const TemplateLibrary = () => {
           )}
         </section>
       </div>
+      </div>
+      )}
 
       {/* Detail Panel Sheet */}
       <Sheet open={!!selectedTemplate} onOpenChange={(o) => !o && setSelectedTemplate(null)}>
@@ -600,9 +744,8 @@ const TemplateLibrary = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-    </div>
-  );
-};
+      </>
+    );
+  }; // ← this is the TemplateLibrary function's closing brace
 
 export default TemplateLibrary;

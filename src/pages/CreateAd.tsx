@@ -248,12 +248,12 @@ export default function CreateAd() {
 
       let id = draftId;
       if (id) {
-        const { error } = await supabase.from('campaigns').update(payload as any).eq('id', id);
+        const { error } = await supabase.from('campaigns').update(payload).eq('id', id);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase.from('campaigns').insert(payload as any).select().single();
+        const { data, error } = await supabase.from('campaigns').insert(payload).select().single();
         if (error) throw error;
-        id = (data as any).id;
+        id = data.id;
         setDraftId(id);
       }
       setLastSavedAt(new Date());
@@ -283,7 +283,7 @@ export default function CreateAd() {
     try {
       const id = await saveDraft(true);
       if (id) {
-        const { error } = await supabase.from('campaigns').update({ status: 'active' } as any).eq('id', id);
+        const { error } = await supabase.from('campaigns').update({ status: 'active' }).eq('id', id);
         if (error) throw error;
         toast.success('Campaign published successfully!');
         navigate(`/campaigns/${id}`);
@@ -859,34 +859,34 @@ export default function CreateAd() {
   /* Layout                                                              */
   /* ------------------------------------------------------------------ */
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
+    <div className="min-h-screen bg-background">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-40 border-b border-[#E5E5E5] bg-white/90 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(-1)} aria-label="Back">
+      <div className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-4 h-14 sm:h-16">
+          <div className="flex items-center gap-3 min-w-0">
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => navigate(-1)} aria-label="Back">
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div>
-              <h1 className="font-page-title text-[#111827]">Create Ad</h1>
-              <p className="text-xs text-[#9CA3AF] -mt-0.5">Build high-performing ads in minutes.</p>
+            <div className="min-w-0">
+              <h1 className="font-page-title text-foreground truncate">Create Ad</h1>
+              <p className="font-micro text-muted-foreground hidden sm:block">Build high-performing ads in minutes.</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button onClick={() => saveDraft()} disabled={saving}
-              className="h-[38px] px-4 text-xs font-medium text-[#374151] border border-[#E5E5E5] rounded-lg hover:bg-muted/50 transition flex items-center gap-1.5">
-              <Save className="h-3.5 w-3.5" /> Save Draft
+              className="h-9 w-9 sm:w-auto sm:px-3 text-xs font-medium text-foreground border border-border rounded-lg hover:bg-muted/50 transition grid place-items-center sm:flex sm:items-center sm:gap-1.5">
+              <Save className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Save Draft</span>
             </button>
-            <button className="h-[38px] px-4 text-xs font-medium text-[#374151] border border-[#E5E5E5] rounded-lg hover:bg-muted/50 transition flex items-center gap-1.5">
-              <Eye className="h-3.5 w-3.5" /> Preview
+            <button className="h-9 w-9 sm:w-auto sm:px-3 text-xs font-medium text-foreground border border-border rounded-lg hover:bg-muted/50 transition grid place-items-center sm:flex sm:items-center sm:gap-1.5">
+              <Eye className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Preview</span>
             </button>
             <button onClick={publish} disabled={publishing}
-              className="h-[38px] px-5 text-xs font-bold text-white bg-[#6C63FF] rounded-lg hover:bg-[#5A52E0] transition flex items-center gap-1.5">
+              className="h-9 w-9 sm:w-auto sm:px-4 text-xs font-bold text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition grid place-items-center sm:flex sm:items-center sm:gap-1.5">
               {publishing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-              Publish Ad
+              <span className="hidden sm:inline">Publish</span>
             </button>
-            <div className="relative">
-              <Bell className="h-5 w-5 text-[#9CA3AF]" />
+            <div className="relative shrink-0 hidden sm:block">
+              <Bell className="h-5 w-5 text-muted-foreground" />
               <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
             </div>
           </div>
