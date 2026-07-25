@@ -1,14 +1,9 @@
-import type { MediaProvider } from "../types";
-
-// Typed provider stubs. They exist so the service layer can enumerate them
-// today; each is disabled until its API key/edge function is wired up.
-const makeStub = (id: string): MediaProvider => ({
-  id,
-  isConfigured: () => false,
-  search: async () => [],
-});
-
-export const ideogramProvider = makeStub("ideogram");
-export const pexelsProvider = makeStub("pexels");
-export const pixabayProvider = makeStub("pixabay");
-export const unsplashProvider = makeStub("unsplash");
+// Backwards-compatible re-exports. Real adapters now live in individual files.
+export { ideogramProvider } from "./ideogram";
+export { pexelsProvider } from "./pexels";
+export { pixabayProvider } from "./pixabay";
+export { unsplashProvider } from "./unsplash";
+export { leonardoProvider } from "./leonardo";
+export { runwayProvider } from "./runway";
+export { klingProvider } from "./kling";
+export { veoProvider } from "./veo";

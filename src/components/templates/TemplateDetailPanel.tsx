@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   X, Download, Sparkles, Wand2, Layers, Palette, Type,
   Image as ImageIcon, Info, Heart, ChevronDown, ChevronRight,
-  CheckCircle2, Pencil, Send, Eye,
+  CheckCircle2, Pencil, Send, Eye, Copy,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
