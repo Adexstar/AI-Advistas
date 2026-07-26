@@ -61,8 +61,8 @@ Deno.serve(async (req) => {
     });
   }
 
-  const url = new URL(req.url);
-  const action = url.searchParams.get("action") ?? "list";
+  const body = await req.json().catch(() => ({} as any));
+  const action = body.action ?? "list";
 
   if (action === "list") {
     const list = PROVIDERS.map((p) => ({
@@ -76,7 +76,6 @@ Deno.serve(async (req) => {
   }
 
   if (action === "test") {
-    const body = await req.json().catch(() => ({}));
     const id = String(body.id ?? "");
     const p = PROVIDERS.find((x) => x.id === id);
     if (!p) return new Response(JSON.stringify({ error: "unknown provider" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
