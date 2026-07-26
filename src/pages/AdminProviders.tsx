@@ -47,7 +47,7 @@ export default function AdminProviders() {
 
   const load = async () => {
     setLoading(true);
-    const { data, error } = await supabase.functions.invoke("provider-status?action=list", { method: "GET" as any });
+    const { data, error } = await supabase.functions.invoke("provider-status", { body: { action: "list" } });
     if (error) {
       toast.error(error.message);
     } else {
@@ -60,8 +60,8 @@ export default function AdminProviders() {
 
   const runTest = async (id: string) => {
     setTesting((t) => ({ ...t, [id]: true }));
-    const { data, error } = await supabase.functions.invoke("provider-status?action=test", {
-      body: { id },
+    const { data, error } = await supabase.functions.invoke("provider-status", {
+      body: { action: "test", id },
     });
     const result: TestResult = error ? { ok: false, error: error.message } : data;
     setResults((r) => ({ ...r, [id]: result }));
