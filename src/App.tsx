@@ -32,6 +32,7 @@ const TemplateCustomizer = lazy(() => import("./pages/TemplateCustomizer"));
 const TemplateLibrary = lazy(() => import("./pages/TemplateLibrary"));
 const TemplateGenerate = lazy(() => import("./pages/TemplateGenerate"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AdminProviders = lazy(() => import("./pages/AdminProviders"));
 const MediaLibrary = lazy(() => import("./pages/MediaLibrary"));
 const BrandKit = lazy(() => import("./pages/BrandKit"));
 const Analytics = lazy(() => import("./pages/Analytics"));
@@ -219,6 +220,7 @@ const AppContent = () => {
               </ProtectedRoute>
             }>
               <Route index element={<AdminDashboard />} />
+              <Route path="providers" element={<AdminProviders />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
