@@ -1511,7 +1511,7 @@ const EditorInner: React.FC = () => {
   historyIdxRef.current = historyIdx;
 
   const saveSnapshot = useCallback((c: FabricCanvas) => {
-    const json = JSON.stringify(c.toJSON(['id']));
+    const json = JSON.stringify((c as any).toJSON(['id']));
     setHistory(prev => {
       const trimmed = prev.slice(0, historyIdxRef.current + 1);
       const next = [...trimmed, json];
@@ -1561,7 +1561,7 @@ const EditorInner: React.FC = () => {
   // ---- Auto-save canvas to localStorage ----
   const autoSaveData = useMemo(() => {
     if (!canvas) return null;
-    try { return { json: canvas.toJSON(['id']), name: projectName, zoom }; }
+    try { return { json: (canvas as any).toJSON(['id']), name: projectName, zoom }; }
     catch { return null; }
   }, [canvas, historyIdx, projectName, zoom]);
 
@@ -1602,7 +1602,7 @@ const EditorInner: React.FC = () => {
   const pasteClipboard = useCallback(() => {
     if (!canvas || !(window as any).__editorClipboard) return;
     const data = (window as any).__editorClipboard;
-    canvas.loadFromJSON({ ...canvas.toJSON(['id']), objects: [...canvas.getObjects(), data.json] }, () => {
+    canvas.loadFromJSON({ ...(canvas as any).toJSON(['id']), objects: [...canvas.getObjects(), data.json] }, () => {
       canvas.renderAll();
       forceUpdate(n => n + 1);
     });
