@@ -640,141 +640,69 @@ export type Database = {
       campaigns: {
         Row: {
           archived: boolean
-          archived_at: string | null
-          audience_match_score: number | null
           budget: number
-          budget_efficiency_score: number | null
-          campaign_category: string | null
           clicks: number
-          completed_at: string | null
-          confidence: number | null
           conversions: number
           created_at: string
-          creative_quality_score: number | null
-          cta: string | null
           ctr: number
-          description: string | null
           end_date: string | null
-          goals: Json
-          headline: string | null
-          health_score: number | null
           id: string
           impressions: number
-          is_template: boolean | null
-          last_optimized_at: string | null
-          last_published_at: string | null
-          media_url: string | null
           name: string
-          notes: string | null
           objective: string
-          optimization_level: number | null
           platform: string | null
-          platforms: Json
-          primary_text: string | null
           reach: number
           revenue: number
           roas: number
           spend: number
           start_date: string | null
           status: string
-          tags: Json
-          target_audience: Json
-          template_source_campaign_id: string | null
           updated_at: string
           user_id: string
-          website_url: string | null
         }
         Insert: {
           archived?: boolean
-          archived_at?: string | null
-          audience_match_score?: number | null
           budget?: number
-          budget_efficiency_score?: number | null
-          campaign_category?: string | null
           clicks?: number
-          completed_at?: string | null
-          confidence?: number | null
           conversions?: number
           created_at?: string
-          creative_quality_score?: number | null
-          cta?: string | null
           ctr?: number
-          description?: string | null
           end_date?: string | null
-          goals?: Json
-          headline?: string | null
-          health_score?: number | null
           id?: string
           impressions?: number
-          is_template?: boolean | null
-          last_optimized_at?: string | null
-          last_published_at?: string | null
-          media_url?: string | null
           name: string
-          notes?: string | null
           objective?: string
-          optimization_level?: number | null
           platform?: string | null
-          platforms?: Json
-          primary_text?: string | null
           reach?: number
           revenue?: number
           roas?: number
           spend?: number
           start_date?: string | null
           status?: string
-          tags?: Json
-          target_audience?: Json
-          template_source_campaign_id?: string | null
           updated_at?: string
           user_id: string
-          website_url?: string | null
         }
         Update: {
           archived?: boolean
-          archived_at?: string | null
-          audience_match_score?: number | null
           budget?: number
-          budget_efficiency_score?: number | null
-          campaign_category?: string | null
           clicks?: number
-          completed_at?: string | null
-          confidence?: number | null
           conversions?: number
           created_at?: string
-          creative_quality_score?: number | null
-          cta?: string | null
           ctr?: number
-          description?: string | null
           end_date?: string | null
-          goals?: Json
-          headline?: string | null
-          health_score?: number | null
           id?: string
           impressions?: number
-          is_template?: boolean | null
-          last_optimized_at?: string | null
-          last_published_at?: string | null
-          media_url?: string | null
           name?: string
-          notes?: string | null
           objective?: string
-          optimization_level?: number | null
           platform?: string | null
-          platforms?: Json
-          primary_text?: string | null
           reach?: number
           revenue?: number
           roas?: number
           spend?: number
           start_date?: string | null
           status?: string
-          tags?: Json
-          target_audience?: Json
-          template_source_campaign_id?: string | null
           updated_at?: string
           user_id?: string
-          website_url?: string | null
         }
         Relationships: []
       }
