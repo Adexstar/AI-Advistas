@@ -289,11 +289,18 @@ const SidebarBody = ({
                 <NavItemRow key={item.name} item={item} collapsed={collapsed} onNavigate={close} />
               ))}
               {group.title === "Account" && isAdmin && (
-                <NavItemRow
-                  item={{ name: "Admin", href: "/admin", icon: Shield }}
-                  collapsed={collapsed}
-                  onNavigate={close}
-                />
+                <>
+                  <NavItemRow
+                    item={{ name: "Admin", href: "/admin", icon: Shield }}
+                    collapsed={collapsed}
+                    onNavigate={close}
+                  />
+                  <NavItemRow
+                    item={{ name: "Providers", href: "/admin/providers", icon: Plug }}
+                    collapsed={collapsed}
+                    onNavigate={close}
+                  />
+                </>
               )}
             </div>
           ))}
