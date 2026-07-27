@@ -39,21 +39,55 @@ const CATEGORY_LABEL: Record<string, string> = {
   ai: "AI Models",
 };
 
+const FALLBACK_CATALOG: Omit<Provider, "envStatus" | "configured">[] = [
+  { id: "pexels", label: "Pexels", category: "search", envVars: ["PEXELS_API_KEY"], testFn: "search-pexels", docsUrl: "https://www.pexels.com/api/" },
+  { id: "pixabay", label: "Pixabay", category: "search", envVars: ["PIXABAY_API_KEY"], testFn: "search-pixabay", docsUrl: "https://pixabay.com/api/docs/" },
+  { id: "unsplash", label: "Unsplash", category: "search", envVars: ["UNSPLASH_ACCESS_KEY"], testFn: "search-unsplash", docsUrl: "https://unsplash.com/developers" },
+  { id: "freepik", label: "Freepik / Magnific", category: "search", envVars: ["FREEPIK_API_KEY"], testFn: "search-freepik-templates", docsUrl: "https://freepik.com/api" },
+  { id: "brandfetch", label: "Brandfetch", category: "brand", envVars: ["BRANDFETCH_API_KEY"], docsUrl: "https://brandfetch.com/developers" },
+  { id: "leonardo", label: "Leonardo AI", category: "generate-image", envVars: ["LEONARDO_API_KEY"], docsUrl: "https://leonardo.ai/api" },
+  { id: "ideogram", label: "Ideogram", category: "generate-image", envVars: ["IDEOGRAM_API_KEY"], docsUrl: "https://ideogram.ai/api" },
+  { id: "runway", label: "Runway", category: "generate-video", envVars: ["RUNWARE_API_KEY"], docsUrl: "https://runwayml.com/api" },
+  { id: "kling", label: "Kling", category: "generate-video", envVars: ["KLING_API_KEY"], docsUrl: "https://klingai.com/" },
+  { id: "veo", label: "Veo", category: "generate-video", envVars: ["VEO_API_KEY", "GOOGLE_GEMINI_API_KEY"], docsUrl: "https://deepmind.google/technologies/veo/" },
+  { id: "cloudinary", label: "Cloudinary", category: "media", envVars: ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"], docsUrl: "https://cloudinary.com/documentation" },
+  { id: "ayrshare", label: "Ayrshare", category: "publishing", envVars: ["AYRSHARE_API_KEY"], docsUrl: "https://ayrshare.com/docs" },
+  { id: "openai", label: "OpenAI", category: "ai", envVars: ["OPENAI_API_KEY"], docsUrl: "https://platform.openai.com/" },
+  { id: "gemini", label: "Google Gemini", category: "ai", envVars: ["GOOGLE_GEMINI_API_KEY"], docsUrl: "https://ai.google.dev/" },
+  { id: "groq", label: "Groq", category: "ai", envVars: ["GROQ_API_KEY"], docsUrl: "https://groq.com/" },
+  { id: "lovable", label: "Lovable AI Gateway", category: "ai", envVars: ["LOVABLE_API_KEY"] },
+];
+
 export default function AdminProviders() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [testing, setTesting] = useState<Record<string, boolean>>({});
   const [results, setResults] = useState<Record<string, TestResult>>({});
 
   const load = async () => {
     setLoading(true);
-    const { data, error } = await supabase.functions.invoke("provider-status", { body: { action: "list" } });
-    if (error) {
-      toast.error(error.message);
-    } else {
+    setLoadError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("provider-status", { body: { action: "list" } });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       setProviders(data?.providers ?? []);
+    } catch (e: any) {
+      const msg = e?.message || "Failed to load providers";
+      setLoadError(msg);
+      toast.error(msg);
+      // Fallback so the page always renders something useful
+      setProviders(
+        FALLBACK_CATALOG.map((p) => ({
+          ...p,
+          envStatus: p.envVars.map((name) => ({ name, present: false })),
+          configured: false,
+        })),
+      );
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => { load(); }, []);
@@ -104,7 +138,17 @@ export default function AdminProviders() {
         </AlertDescription>
       </Alert>
 
-      {loading && <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>}
+      {loadError && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            Couldn't reach provider-status edge function: {loadError}. Showing catalog with unknown key status — click Refresh to retry.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {loading && providers.length === 0 && (
+        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
+      )}
 
       {Object.entries(grouped).map(([cat, list]) => (
         <div key={cat} className="space-y-3">
