@@ -212,6 +212,13 @@ const AppContent = () => {
                 </VisualEditorProvider>
               </ProtectedRoute>
             } />
+            <Route path="/admin/providers" element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<AdminProviders />} />
+            </Route>
             <Route path="/admin" element={
               <ProtectedRoute>
                 <AdminRoute>
@@ -220,7 +227,6 @@ const AppContent = () => {
               </ProtectedRoute>
             }>
               <Route index element={<AdminDashboard />} />
-              <Route path="providers" element={<AdminProviders />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
