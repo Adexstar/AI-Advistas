@@ -433,17 +433,6 @@ const TemplateLibrary = () => {
 
   return (
     <>
-      {isMobile ? (
-        <MobileTemplateView
-          filtered={filtered}
-          popular={popular}
-          navigate={navigate}
-          onOpen={handleOpen}
-          onEdit={handleEdit}
-          onDuplicate={handleDuplicate}
-          onAssign={handleAssign}
-        />
-      ) : (
       <div className="min-h-screen bg-background">
       <div className="page-container py-4 sm:py-6 lg:py-8 space-y-6">
         {/* Header */}
@@ -688,7 +677,6 @@ const TemplateLibrary = () => {
         </section>
       </div>
       </div>
-      )}
 
       {/* Detail Panel Sheet */}
       <Sheet open={!!selectedTemplate} onOpenChange={(o) => !o && setSelectedTemplate(null)}>
