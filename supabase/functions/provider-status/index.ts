@@ -1,27 +1,95 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
+type PlaygroundField = {
+  key: string;
+  label: string;
+  type: "text" | "textarea" | "select";
+  default?: string;
+  placeholder?: string;
+  options?: string[];
+};
+
 type Provider = {
   id: string;
   label: string;
   category: "search" | "generate-image" | "generate-video" | "media" | "brand" | "publishing" | "ai";
   envVars: string[];
-  testFn?: string; // edge function to invoke as smoke test
+  testFn?: string;
   testBody?: Record<string, unknown>;
+  playgroundFn?: string;
+  playgroundKind?: "image" | "video" | "search" | "json";
+  playgroundFields?: PlaygroundField[];
   docsUrl?: string;
 };
 
 const PROVIDERS: Provider[] = [
-  { id: "pexels", label: "Pexels", category: "search", envVars: ["PEXELS_API_KEY"], testFn: "search-pexels", testBody: { intent: "sunset" }, docsUrl: "https://www.pexels.com/api/" },
-  { id: "pixabay", label: "Pixabay", category: "search", envVars: ["PIXABAY_API_KEY"], testFn: "search-pixabay", testBody: { intent: "sunset" }, docsUrl: "https://pixabay.com/api/docs/" },
-  { id: "unsplash", label: "Unsplash", category: "search", envVars: ["UNSPLASH_ACCESS_KEY"], testFn: "search-unsplash", testBody: { intent: "sunset" }, docsUrl: "https://unsplash.com/developers" },
-  { id: "freepik", label: "Freepik / Magnific", category: "search", envVars: ["FREEPIK_API_KEY"], testFn: "search-freepik-templates", testBody: { query: "banner" }, docsUrl: "https://freepik.com/api" },
+  {
+    id: "pexels", label: "Pexels", category: "search", envVars: ["PEXELS_API_KEY"],
+    testFn: "search-pexels", testBody: { intent: "sunset" },
+    playgroundFn: "search-pexels", playgroundKind: "search",
+    playgroundFields: [{ key: "intent", label: "Query", type: "text", default: "sunset over mountains" }],
+    docsUrl: "https://www.pexels.com/api/",
+  },
+  {
+    id: "pixabay", label: "Pixabay", category: "search", envVars: ["PIXABAY_API_KEY"],
+    testFn: "search-pixabay", testBody: { intent: "sunset" },
+    playgroundFn: "search-pixabay", playgroundKind: "search",
+    playgroundFields: [{ key: "intent", label: "Query", type: "text", default: "coffee shop" }],
+    docsUrl: "https://pixabay.com/api/docs/",
+  },
+  {
+    id: "unsplash", label: "Unsplash", category: "search", envVars: ["UNSPLASH_ACCESS_KEY"],
+    testFn: "search-unsplash", testBody: { intent: "sunset" },
+    playgroundFn: "search-unsplash", playgroundKind: "search",
+    playgroundFields: [{ key: "intent", label: "Query", type: "text", default: "minimal workspace" }],
+    docsUrl: "https://unsplash.com/developers",
+  },
+  {
+    id: "freepik", label: "Freepik / Magnific", category: "search", envVars: ["FREEPIK_API_KEY"],
+    testFn: "search-freepik-templates", testBody: { query: "banner" },
+    playgroundFn: "search-freepik-templates", playgroundKind: "search",
+    playgroundFields: [{ key: "query", label: "Query", type: "text", default: "instagram banner" }],
+    docsUrl: "https://freepik.com/api",
+  },
   { id: "brandfetch", label: "Brandfetch", category: "brand", envVars: ["BRANDFETCH_API_KEY"], docsUrl: "https://brandfetch.com/developers" },
-  { id: "leonardo", label: "Leonardo AI", category: "generate-image", envVars: ["LEONARDO_API_KEY"], docsUrl: "https://leonardo.ai/api" },
-  { id: "ideogram", label: "Ideogram", category: "generate-image", envVars: ["IDEOGRAM_API_KEY"], docsUrl: "https://ideogram.ai/api" },
-  { id: "runway", label: "Runway", category: "generate-video", envVars: ["RUNWARE_API_KEY"], docsUrl: "https://runwayml.com/api" },
-  { id: "kling", label: "Kling", category: "generate-video", envVars: ["KLING_API_KEY"], docsUrl: "https://klingai.com/" },
-  { id: "veo", label: "Veo", category: "generate-video", envVars: ["VEO_API_KEY", "GOOGLE_GEMINI_API_KEY"], docsUrl: "https://deepmind.google/technologies/veo/" },
+  {
+    id: "leonardo", label: "Leonardo AI", category: "generate-image", envVars: ["LEONARDO_API_KEY"],
+    playgroundFn: "generate-leonardo", playgroundKind: "image",
+    playgroundFields: [
+      { key: "prompt", label: "Prompt", type: "textarea", default: "cinematic product shot of a sneaker on marble, studio light" },
+      { key: "width", label: "Width", type: "text", default: "1024" },
+      { key: "height", label: "Height", type: "text", default: "1024" },
+    ],
+    docsUrl: "https://leonardo.ai/api",
+  },
+  {
+    id: "ideogram", label: "Ideogram", category: "generate-image", envVars: ["IDEOGRAM_API_KEY"],
+    playgroundFn: "generate-ideogram", playgroundKind: "image",
+    playgroundFields: [
+      { key: "prompt", label: "Prompt", type: "textarea", default: "bold poster that says SALE 50% OFF, neon typography" },
+      { key: "aspect_ratio", label: "Aspect", type: "select", default: "ASPECT_1_1", options: ["ASPECT_1_1", "ASPECT_16_9", "ASPECT_9_16", "ASPECT_4_5"] },
+    ],
+    docsUrl: "https://ideogram.ai/api",
+  },
+  {
+    id: "runway", label: "Runway", category: "generate-video", envVars: ["RUNWAY_API_KEY"],
+    playgroundFn: "generate-runway", playgroundKind: "video",
+    playgroundFields: [{ key: "prompt", label: "Prompt", type: "textarea", default: "slow dolly-in on a coffee cup, cinematic" }],
+    docsUrl: "https://runwayml.com/api",
+  },
+  {
+    id: "kling", label: "Kling", category: "generate-video", envVars: ["KLING_API_KEY"],
+    playgroundFn: "generate-kling", playgroundKind: "video",
+    playgroundFields: [{ key: "prompt", label: "Prompt", type: "textarea", default: "a cat walking on a beach at sunset" }],
+    docsUrl: "https://klingai.com/",
+  },
+  {
+    id: "veo", label: "Veo", category: "generate-video", envVars: ["VEO_API_KEY"],
+    playgroundFn: "generate-veo", playgroundKind: "video",
+    playgroundFields: [{ key: "prompt", label: "Prompt", type: "textarea", default: "aerial shot of a city at night" }],
+    docsUrl: "https://deepmind.google/technologies/veo/",
+  },
   { id: "cloudinary", label: "Cloudinary", category: "media", envVars: ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"], docsUrl: "https://cloudinary.com/documentation" },
   { id: "ayrshare", label: "Ayrshare", category: "publishing", envVars: ["AYRSHARE_API_KEY"], docsUrl: "https://ayrshare.com/docs" },
   { id: "openai", label: "OpenAI", category: "ai", envVars: ["OPENAI_API_KEY"], docsUrl: "https://platform.openai.com/" },
@@ -42,13 +110,27 @@ async function assertAdmin(req: Request): Promise<{ ok: boolean; error?: string 
   if (!userRes?.user) return { ok: false, error: "unauthenticated" };
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   const { data } = await admin
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userRes.user.id)
-    .eq("role", "admin")
-    .maybeSingle();
+    .from("user_roles").select("role")
+    .eq("user_id", userRes.user.id).eq("role", "admin").maybeSingle();
   if (!data) return { ok: false, error: "not admin" };
   return { ok: true };
+}
+
+async function invokeFn(fn: string, body: unknown, auth: string) {
+  const started = Date.now();
+  const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/${fn}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: auth,
+      apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+    },
+    body: JSON.stringify(body ?? {}),
+  });
+  const text = await res.text();
+  let json: any = null;
+  try { json = JSON.parse(text); } catch { json = { raw: text }; }
+  return { status: res.status, ok: res.ok, durationMs: Date.now() - started, json };
 }
 
 Deno.serve(async (req) => {
@@ -63,6 +145,8 @@ Deno.serve(async (req) => {
 
   const body = await req.json().catch(() => ({} as any));
   const action = body.action ?? "list";
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
   if (action === "list") {
     const list = PROVIDERS.map((p) => ({
@@ -70,49 +154,41 @@ Deno.serve(async (req) => {
       envStatus: p.envVars.map((v) => ({ name: v, present: !!Deno.env.get(v) })),
       configured: p.envVars.every((v) => !!Deno.env.get(v)),
     }));
-    return new Response(JSON.stringify({ providers: list }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ providers: list }), { headers: jsonHeaders });
   }
 
-  if (action === "test") {
+  if (action === "test" || action === "playground") {
     const id = String(body.id ?? "");
     const p = PROVIDERS.find((x) => x.id === id);
-    if (!p) return new Response(JSON.stringify({ error: "unknown provider" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    const envOk = p.envVars.every((v) => !!Deno.env.get(v));
-    if (!envOk) {
-      return new Response(JSON.stringify({ ok: false, error: "Missing env vars", missing: p.envVars.filter((v) => !Deno.env.get(v)) }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!p) return new Response(JSON.stringify({ error: "unknown provider" }), { status: 404, headers: jsonHeaders });
+
+    const missing = p.envVars.filter((v) => !Deno.env.get(v));
+    if (missing.length) {
+      return new Response(JSON.stringify({ ok: false, error: "Missing env vars", missing }), { headers: jsonHeaders });
     }
-    if (!p.testFn) {
-      return new Response(JSON.stringify({ ok: true, note: "Configured. No automated test wired for this provider." }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+
+    const fn = action === "playground" ? (p.playgroundFn ?? p.testFn) : (p.testFn ?? p.playgroundFn);
+    if (!fn) {
+      return new Response(JSON.stringify({ ok: true, note: "Configured. No adapter wired." }), { headers: jsonHeaders });
     }
+
+    const payload = action === "playground" ? (body.input ?? {}) : (p.testBody ?? {});
     try {
-      const started = Date.now();
-      const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/${p.testFn}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: req.headers.get("Authorization") ?? "",
-          apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-        },
-        body: JSON.stringify(p.testBody ?? {}),
-      });
-      const json = await res.json().catch(() => ({}));
-      const durationMs = Date.now() - started;
-      const count = Array.isArray(json?.results) ? json.results.length : undefined;
-      return new Response(JSON.stringify({ ok: res.ok, status: res.status, durationMs, count, sample: json?.results?.[0], error: json?.error }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      const r = await invokeFn(fn, payload, authHeader);
+      const results = Array.isArray(r.json?.results) ? r.json.results : undefined;
+      return new Response(JSON.stringify({
+        ok: r.ok,
+        status: r.status,
+        durationMs: r.durationMs,
+        count: results?.length,
+        results,
+        data: r.json,
+        error: r.ok ? undefined : (r.json?.error ?? `HTTP ${r.status}`),
+      }), { headers: jsonHeaders });
     } catch (e) {
-      return new Response(JSON.stringify({ ok: false, error: (e as Error).message }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(JSON.stringify({ ok: false, error: (e as Error).message }), { headers: jsonHeaders });
     }
   }
 
-  return new Response(JSON.stringify({ error: "unknown action" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  return new Response(JSON.stringify({ error: "unknown action" }), { status: 400, headers: jsonHeaders });
 });

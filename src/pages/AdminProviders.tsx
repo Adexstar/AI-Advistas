@@ -1,13 +1,24 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle2, XCircle, Loader2, ExternalLink, RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CheckCircle2, XCircle, Loader2, ExternalLink, RefreshCw, Play, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 type EnvStatus = { name: string; present: boolean };
+type PlaygroundField = {
+  key: string; label: string; type: "text" | "textarea" | "select";
+  default?: string; placeholder?: string; options?: string[];
+};
 type Provider = {
   id: string;
   label: string;
@@ -17,6 +28,9 @@ type Provider = {
   configured: boolean;
   docsUrl?: string;
   testFn?: string;
+  playgroundFn?: string;
+  playgroundKind?: "image" | "video" | "search" | "json";
+  playgroundFields?: PlaygroundField[];
 };
 
 type TestResult = {
@@ -27,6 +41,8 @@ type TestResult = {
   error?: string;
   missing?: string[];
   note?: string;
+  results?: any[];
+  data?: any;
 };
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -39,31 +55,13 @@ const CATEGORY_LABEL: Record<string, string> = {
   ai: "AI Models",
 };
 
-const FALLBACK_CATALOG: Omit<Provider, "envStatus" | "configured">[] = [
-  { id: "pexels", label: "Pexels", category: "search", envVars: ["PEXELS_API_KEY"], testFn: "search-pexels", docsUrl: "https://www.pexels.com/api/" },
-  { id: "pixabay", label: "Pixabay", category: "search", envVars: ["PIXABAY_API_KEY"], testFn: "search-pixabay", docsUrl: "https://pixabay.com/api/docs/" },
-  { id: "unsplash", label: "Unsplash", category: "search", envVars: ["UNSPLASH_ACCESS_KEY"], testFn: "search-unsplash", docsUrl: "https://unsplash.com/developers" },
-  { id: "freepik", label: "Freepik / Magnific", category: "search", envVars: ["FREEPIK_API_KEY"], testFn: "search-freepik-templates", docsUrl: "https://freepik.com/api" },
-  { id: "brandfetch", label: "Brandfetch", category: "brand", envVars: ["BRANDFETCH_API_KEY"], docsUrl: "https://brandfetch.com/developers" },
-  { id: "leonardo", label: "Leonardo AI", category: "generate-image", envVars: ["LEONARDO_API_KEY"], docsUrl: "https://leonardo.ai/api" },
-  { id: "ideogram", label: "Ideogram", category: "generate-image", envVars: ["IDEOGRAM_API_KEY"], docsUrl: "https://ideogram.ai/api" },
-  { id: "runway", label: "Runway", category: "generate-video", envVars: ["RUNWARE_API_KEY"], docsUrl: "https://runwayml.com/api" },
-  { id: "kling", label: "Kling", category: "generate-video", envVars: ["KLING_API_KEY"], docsUrl: "https://klingai.com/" },
-  { id: "veo", label: "Veo", category: "generate-video", envVars: ["VEO_API_KEY", "GOOGLE_GEMINI_API_KEY"], docsUrl: "https://deepmind.google/technologies/veo/" },
-  { id: "cloudinary", label: "Cloudinary", category: "media", envVars: ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"], docsUrl: "https://cloudinary.com/documentation" },
-  { id: "ayrshare", label: "Ayrshare", category: "publishing", envVars: ["AYRSHARE_API_KEY"], docsUrl: "https://ayrshare.com/docs" },
-  { id: "openai", label: "OpenAI", category: "ai", envVars: ["OPENAI_API_KEY"], docsUrl: "https://platform.openai.com/" },
-  { id: "gemini", label: "Google Gemini", category: "ai", envVars: ["GOOGLE_GEMINI_API_KEY"], docsUrl: "https://ai.google.dev/" },
-  { id: "groq", label: "Groq", category: "ai", envVars: ["GROQ_API_KEY"], docsUrl: "https://groq.com/" },
-  { id: "lovable", label: "Lovable AI Gateway", category: "ai", envVars: ["LOVABLE_API_KEY"] },
-];
-
 export default function AdminProviders() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [testing, setTesting] = useState<Record<string, boolean>>({});
   const [results, setResults] = useState<Record<string, TestResult>>({});
+  const [playgroundFor, setPlaygroundFor] = useState<Provider | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -77,14 +75,6 @@ export default function AdminProviders() {
       const msg = e?.message || "Failed to load providers";
       setLoadError(msg);
       toast.error(msg);
-      // Fallback so the page always renders something useful
-      setProviders(
-        FALLBACK_CATALOG.map((p) => ({
-          ...p,
-          envStatus: p.envVars.map((name) => ({ name, present: false })),
-          configured: false,
-        })),
-      );
     } finally {
       setLoading(false);
     }
@@ -115,7 +105,7 @@ export default function AdminProviders() {
         <div>
           <h1 className="text-3xl font-bold">External Providers</h1>
           <p className="text-muted-foreground mt-2">
-            Configure and test API keys for every adapter behind AdVista's service layer.
+            Configure, smoke-test, and interactively try every adapter behind AdVista.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
@@ -125,24 +115,21 @@ export default function AdminProviders() {
 
       <Alert>
         <AlertDescription>
-          API keys are stored as Supabase Edge Function secrets. To add or rotate a key, open the{" "}
+          API keys are stored as Supabase Edge Function secrets.{" "}
           <a
             href="https://supabase.com/dashboard/project/mvfmasacpbjnyfakdwfp/settings/functions"
-            target="_blank"
-            rel="noreferrer"
-            className="underline"
+            target="_blank" rel="noreferrer" className="underline"
           >
-            Edge Function Secrets page
-          </a>{" "}
-          and then click Refresh here.
+            Manage keys here
+          </a>
+          . <span className="font-medium">Test</span> runs a fixed smoke call.{" "}
+          <span className="font-medium">Try it</span> opens a playground where you can send custom input and see the real response.
         </AlertDescription>
       </Alert>
 
       {loadError && (
         <Alert variant="destructive">
-          <AlertDescription>
-            Couldn't reach provider-status edge function: {loadError}. Showing catalog with unknown key status — click Refresh to retry.
-          </AlertDescription>
+          <AlertDescription>Couldn't reach provider-status: {loadError}</AlertDescription>
         </Alert>
       )}
 
@@ -186,15 +173,23 @@ export default function AdminProviders() {
                         </div>
                       ))}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <Button
-                        size="sm"
-                        onClick={() => runTest(p.id)}
-                        disabled={testing[p.id] || !p.configured}
+                        size="sm" onClick={() => runTest(p.id)}
+                        disabled={testing[p.id] || !p.configured || !p.testFn}
                       >
                         {testing[p.id] ? <Loader2 className="h-3 w-3 mr-2 animate-spin" /> : null}
                         Test
                       </Button>
+                      {p.playgroundFn && (
+                        <Button
+                          size="sm" variant="secondary"
+                          onClick={() => setPlaygroundFor(p)}
+                          disabled={!p.configured}
+                        >
+                          <Sparkles className="h-3 w-3 mr-1" /> Try it
+                        </Button>
+                      )}
                       {p.docsUrl && (
                         <Button size="sm" variant="ghost" asChild>
                           <a href={p.docsUrl} target="_blank" rel="noreferrer">
@@ -202,8 +197,8 @@ export default function AdminProviders() {
                           </a>
                         </Button>
                       )}
-                      {!p.testFn && p.configured && (
-                        <span className="text-xs text-muted-foreground">No automated test</span>
+                      {!p.testFn && !p.playgroundFn && p.configured && (
+                        <span className="text-xs text-muted-foreground">No adapter wired</span>
                       )}
                     </div>
                     {r && (
@@ -230,6 +225,166 @@ export default function AdminProviders() {
           </div>
         </div>
       ))}
+
+      <PlaygroundDialog
+        provider={playgroundFor}
+        onClose={() => setPlaygroundFor(null)}
+      />
     </div>
   );
+}
+
+function PlaygroundDialog({ provider, onClose }: { provider: Provider | null; onClose: () => void }) {
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<TestResult | null>(null);
+
+  const fields = provider?.playgroundFields ?? [];
+
+  useEffect(() => {
+    if (!provider) return;
+    const init: Record<string, string> = {};
+    fields.forEach((f) => { init[f.key] = f.default ?? ""; });
+    setValues(init);
+    setResult(null);
+  }, [provider?.id]);
+
+  const run = async () => {
+    if (!provider) return;
+    setBusy(true);
+    setResult(null);
+    const { data, error } = await supabase.functions.invoke("provider-status", {
+      body: { action: "playground", id: provider.id, input: values },
+    });
+    const r: TestResult = error ? { ok: false, error: error.message } : data;
+    setResult(r);
+    setBusy(false);
+    if (r.ok) toast.success(`${provider.label}: OK (${r.durationMs ?? 0}ms)`);
+    else toast.error(`${provider.label}: ${r.error ?? "failed"}`);
+  };
+
+  const previews = useMemo(() => extractPreviews(result, provider?.playgroundKind), [result, provider?.playgroundKind]);
+
+  return (
+    <Dialog open={!!provider} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        {provider && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4" /> {provider.label} playground
+              </DialogTitle>
+              <DialogDescription>
+                Sends real requests to <code className="font-mono text-xs">{provider.playgroundFn}</code>. Results below are live.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3">
+              {fields.map((f) => (
+                <div key={f.key} className="space-y-1">
+                  <Label className="text-xs">{f.label}</Label>
+                  {f.type === "textarea" ? (
+                    <Textarea
+                      rows={3} placeholder={f.placeholder}
+                      value={values[f.key] ?? ""}
+                      onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                    />
+                  ) : f.type === "select" ? (
+                    <Select value={values[f.key] ?? ""} onValueChange={(v) => setValues((s) => ({ ...s, [f.key]: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {f.options?.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      placeholder={f.placeholder}
+                      value={values[f.key] ?? ""}
+                      onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <DialogFooter>
+              <Button variant="ghost" onClick={onClose}>Close</Button>
+              <Button onClick={run} disabled={busy}>
+                {busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Play className="h-4 w-4 mr-2" />}
+                Run
+              </Button>
+            </DialogFooter>
+
+            {result && (
+              <div className="space-y-3 pt-2 border-t">
+                <div className={`text-xs rounded border p-2 ${result.ok ? "border-green-500/30 bg-green-500/5" : "border-destructive/30 bg-destructive/5"}`}>
+                  {result.ok
+                    ? <>OK · {result.status ?? 200} · {result.durationMs ?? 0}ms{typeof result.count === "number" ? ` · ${result.count} results` : ""}</>
+                    : <>Failed: {result.error ?? "unknown"}{result.missing?.length ? ` (missing: ${result.missing.join(", ")})` : ""}</>}
+                </div>
+
+                {previews.images.length > 0 && (
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-2">Images ({previews.images.length})</div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {previews.images.slice(0, 9).map((src, i) => (
+                        <a key={i} href={src} target="_blank" rel="noreferrer" className="block">
+                          <img src={src} alt="" className="w-full h-32 object-cover rounded border" loading="lazy" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {previews.videos.length > 0 && (
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-2">Videos ({previews.videos.length})</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {previews.videos.slice(0, 4).map((src, i) => (
+                        <video key={i} src={src} controls className="w-full rounded border" />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <details>
+                  <summary className="text-xs cursor-pointer text-muted-foreground">Raw response</summary>
+                  <pre className="text-[10px] mt-2 max-h-64 overflow-auto p-2 bg-muted rounded">
+                    {JSON.stringify(result.data ?? result, null, 2)}
+                  </pre>
+                </details>
+              </div>
+            )}
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function extractPreviews(r: TestResult | null, kind?: string) {
+  const images: string[] = [];
+  const videos: string[] = [];
+  if (!r) return { images, videos };
+  const data = r.data ?? {};
+  const list: any[] = Array.isArray(r.results) ? r.results : Array.isArray(data.results) ? data.results : [];
+
+  const pushMedia = (item: any) => {
+    if (!item || typeof item !== "object") return;
+    const url = item.url || item.thumbnailUrl || item.videoUrl || item.image_url;
+    const k = item.kind || (item.videoUrl ? "video" : "image");
+    if (!url) return;
+    if (k === "video" || /\.(mp4|webm|mov)(\?|$)/i.test(url)) videos.push(url);
+    else images.push(url);
+  };
+
+  list.forEach(pushMedia);
+
+  // Single-item responses (generators)
+  if (data.url) {
+    if ((data.kind ?? kind) === "video") videos.push(data.url);
+    else images.push(data.url);
+  }
+
+  return { images, videos };
 }
