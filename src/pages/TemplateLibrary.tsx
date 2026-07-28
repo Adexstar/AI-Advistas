@@ -677,7 +677,6 @@ const TemplateLibrary = () => {
         </section>
       </div>
       </div>
-      )}
 
       {/* Detail Panel Sheet */}
       <Sheet open={!!selectedTemplate} onOpenChange={(o) => !o && setSelectedTemplate(null)}>
