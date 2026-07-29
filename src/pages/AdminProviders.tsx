@@ -45,6 +45,8 @@ type TestResult = {
   data?: any;
 };
 
+type ProviderCatalogItem = Omit<Provider, "envStatus" | "configured">;
+
 const CATEGORY_LABEL: Record<string, string> = {
   search: "Media Search",
   "generate-image": "Image Generation",
@@ -54,6 +56,142 @@ const CATEGORY_LABEL: Record<string, string> = {
   publishing: "Publishing",
   ai: "AI Models",
 };
+
+const AI_PLAYGROUND_FIELDS: PlaygroundField[] = [
+  { key: "systemPrompt", label: "System prompt", type: "textarea", default: "You are a helpful assistant." },
+  { key: "userPrompt", label: "User prompt", type: "textarea", default: "Explain what you do in one sentence." },
+  { key: "temperature", label: "Temperature", type: "text", default: "0.7" },
+  { key: "maxTokens", label: "Max tokens", type: "text", default: "200" },
+];
+
+const PROVIDER_CATALOG: ProviderCatalogItem[] = [
+  {
+    id: "pexels", label: "Pexels", category: "search", envVars: ["PEXELS_API_KEY"],
+    testFn: "search-pexels", playgroundFn: "search-pexels", playgroundKind: "search",
+    playgroundFields: [{ key: "intent", label: "Query", type: "text", default: "sunset over mountains" }],
+    docsUrl: "https://www.pexels.com/api/",
+  },
+  {
+    id: "pixabay", label: "Pixabay", category: "search", envVars: ["PIXABAY_API_KEY"],
+    testFn: "search-pixabay", playgroundFn: "search-pixabay", playgroundKind: "search",
+    playgroundFields: [{ key: "intent", label: "Query", type: "text", default: "coffee shop" }],
+    docsUrl: "https://pixabay.com/api/docs/",
+  },
+  {
+    id: "unsplash", label: "Unsplash", category: "search", envVars: ["UNSPLASH_ACCESS_KEY"],
+    testFn: "search-unsplash", playgroundFn: "search-unsplash", playgroundKind: "search",
+    playgroundFields: [{ key: "intent", label: "Query", type: "text", default: "minimal workspace" }],
+    docsUrl: "https://unsplash.com/developers",
+  },
+  {
+    id: "freepik", label: "Freepik / Magnific", category: "search", envVars: ["FREEPIK_API_KEY"],
+    testFn: "search-freepik-templates", playgroundFn: "search-freepik-templates", playgroundKind: "search",
+    playgroundFields: [{ key: "query", label: "Query", type: "text", default: "instagram banner" }],
+    docsUrl: "https://freepik.com/api",
+  },
+  {
+    id: "brandfetch", label: "Brandfetch", category: "brand", envVars: ["BRANDFETCH_API_KEY"],
+    testFn: "brandfetch-import", playgroundFn: "brandfetch-import", playgroundKind: "json",
+    playgroundFields: [{ key: "url", label: "Domain URL", type: "text", default: "https://apple.com" }],
+    docsUrl: "https://brandfetch.com/developers",
+  },
+  {
+    id: "cloudinary", label: "Cloudinary", category: "media", envVars: ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"],
+    testFn: "test-cloudinary", docsUrl: "https://cloudinary.com/documentation",
+  },
+  {
+    id: "meta", label: "Meta (Facebook / Instagram)", category: "publishing",
+    envVars: ["META_ACCESS_TOKEN", "META_PAGE_ID", "META_AD_ACCOUNT_ID"],
+    testFn: "publish-campaign", docsUrl: "https://developers.facebook.com/docs/marketing-apis/",
+  },
+  {
+    id: "tiktok", label: "TikTok", category: "publishing",
+    envVars: ["TIKTOK_ACCESS_TOKEN", "TIKTOK_ADVERTISER_ID"],
+    testFn: "publish-campaign", docsUrl: "https://developers.tiktok.com/doc/tiktok-api-v2-overview/",
+  },
+  {
+    id: "google", label: "Google Ads / YouTube", category: "publishing",
+    envVars: ["GOOGLE_ADS_DEVELOPER_TOKEN", "GOOGLE_ADS_CUSTOMER_ID"],
+    testFn: "publish-campaign", docsUrl: "https://developers.google.com/google-ads/api/docs/start",
+  },
+  {
+    id: "leonardo", label: "Leonardo AI", category: "generate-image", envVars: ["LEONARDO_API_KEY"],
+    testFn: "generate-leonardo", playgroundFn: "generate-leonardo", playgroundKind: "image",
+    playgroundFields: [
+      { key: "prompt", label: "Prompt", type: "textarea", default: "cinematic product shot of a sneaker on marble, studio light" },
+      { key: "width", label: "Width", type: "text", default: "1024" },
+      { key: "height", label: "Height", type: "text", default: "1024" },
+    ],
+    docsUrl: "https://leonardo.ai/api",
+  },
+  {
+    id: "ideogram", label: "Ideogram", category: "generate-image", envVars: ["IDEOGRAM_API_KEY"],
+    testFn: "generate-ideogram", playgroundFn: "generate-ideogram", playgroundKind: "image",
+    playgroundFields: [
+      { key: "prompt", label: "Prompt", type: "textarea", default: "bold poster that says SALE 50% OFF, neon typography" },
+      { key: "aspect_ratio", label: "Aspect", type: "select", default: "ASPECT_1_1", options: ["ASPECT_1_1", "ASPECT_16_9", "ASPECT_9_16", "ASPECT_4_5"] },
+    ],
+    docsUrl: "https://ideogram.ai/api",
+  },
+  {
+    id: "runway", label: "Runway", category: "generate-video", envVars: ["RUNWAY_API_KEY"],
+    testFn: "generate-runway", playgroundFn: "generate-runway", playgroundKind: "video",
+    playgroundFields: [{ key: "prompt", label: "Prompt", type: "textarea", default: "slow dolly-in on a coffee cup, cinematic" }],
+    docsUrl: "https://runwayml.com/api",
+  },
+  {
+    id: "kling", label: "Kling", category: "generate-video", envVars: ["KLING_API_KEY"],
+    testFn: "generate-kling", playgroundFn: "generate-kling", playgroundKind: "video",
+    playgroundFields: [{ key: "prompt", label: "Prompt", type: "textarea", default: "a cat walking on a beach at sunset" }],
+    docsUrl: "https://klingai.com/",
+  },
+  {
+    id: "veo", label: "Veo", category: "generate-video", envVars: ["VEO_API_KEY"],
+    testFn: "generate-veo", playgroundFn: "generate-veo", playgroundKind: "video",
+    playgroundFields: [{ key: "prompt", label: "Prompt", type: "textarea", default: "aerial shot of a city at night" }],
+    docsUrl: "https://deepmind.google/technologies/veo/",
+  },
+  {
+    id: "openai", label: "OpenAI", category: "ai", envVars: ["OPENAI_API_KEY"],
+    testFn: "ai-gateway", playgroundFn: "ai-gateway", playgroundKind: "json",
+    playgroundFields: AI_PLAYGROUND_FIELDS, docsUrl: "https://platform.openai.com/",
+  },
+  {
+    id: "gemini", label: "Google Gemini", category: "ai", envVars: ["GOOGLE_GEMINI_API_KEY"],
+    testFn: "ai-gateway", playgroundFn: "ai-gateway", playgroundKind: "json",
+    playgroundFields: AI_PLAYGROUND_FIELDS, docsUrl: "https://ai.google.dev/",
+  },
+  {
+    id: "groq", label: "Groq", category: "ai", envVars: ["GROQ_API_KEY"],
+    testFn: "ai-gateway", playgroundFn: "ai-gateway", playgroundKind: "json",
+    playgroundFields: AI_PLAYGROUND_FIELDS, docsUrl: "https://groq.com/",
+  },
+  {
+    id: "claude", label: "Anthropic Claude", category: "ai", envVars: ["ANTHROPIC_API_KEY"],
+    testFn: "ai-gateway", playgroundFn: "ai-gateway", playgroundKind: "json",
+    playgroundFields: AI_PLAYGROUND_FIELDS, docsUrl: "https://anthropic.com/",
+  },
+  { id: "lovable", label: "Lovable AI Gateway", category: "ai", envVars: ["LOVABLE_API_KEY"], testFn: "ai-gateway" },
+];
+
+const FALLBACK_PROVIDERS: Provider[] = PROVIDER_CATALOG.map((provider) => ({
+  ...provider,
+  envStatus: provider.envVars.map((name) => ({ name, present: false })),
+  configured: false,
+}));
+
+async function readInvokeError(error: any): Promise<string> {
+  const context = error?.context;
+  if (context && typeof context.json === "function") {
+    try {
+      const body = await context.json();
+      return body?.error || error?.message || "Request failed";
+    } catch {
+      return error?.message || "Request failed";
+    }
+  }
+  return error?.message || "Request failed";
+}
 
 export default function AdminProviders() {
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -70,10 +208,14 @@ export default function AdminProviders() {
       const { data, error } = await supabase.functions.invoke("provider-status", { body: { action: "list" } });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      setProviders(data?.providers ?? []);
+      const nextProviders = Array.isArray(data?.providers) && data.providers.length > 0
+        ? data.providers
+        : FALLBACK_PROVIDERS;
+      setProviders(nextProviders);
     } catch (e: any) {
-      const msg = e?.message || "Failed to load providers";
+      const msg = await readInvokeError(e);
       setLoadError(msg);
+      setProviders(FALLBACK_PROVIDERS);
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -84,14 +226,21 @@ export default function AdminProviders() {
 
   const runTest = async (id: string) => {
     setTesting((t) => ({ ...t, [id]: true }));
-    const { data, error } = await supabase.functions.invoke("provider-status", {
-      body: { action: "test", id },
-    });
-    const result: TestResult = error ? { ok: false, error: error.message } : data;
-    setResults((r) => ({ ...r, [id]: result }));
-    setTesting((t) => ({ ...t, [id]: false }));
-    if (result.ok) toast.success(`${id}: OK${result.durationMs ? ` (${result.durationMs}ms)` : ""}`);
-    else toast.error(`${id}: ${result.error ?? "failed"}`);
+    try {
+      const { data, error } = await supabase.functions.invoke("provider-status", {
+        body: { action: "test", id },
+      });
+      const result: TestResult = error ? { ok: false, error: await readInvokeError(error) } : data;
+      setResults((r) => ({ ...r, [id]: result }));
+      if (result.ok) toast.success(`${id}: API key is working${result.durationMs ? ` (${result.durationMs}ms)` : ""}`);
+      else toast.error(`${id}: ${result.error ?? "failed"}`);
+    } catch (e: any) {
+      const result = { ok: false, error: e?.message || "Test failed" };
+      setResults((r) => ({ ...r, [id]: result }));
+      toast.error(`${id}: ${result.error}`);
+    } finally {
+      setTesting((t) => ({ ...t, [id]: false }));
+    }
   };
 
   const grouped = providers.reduce<Record<string, Provider[]>>((acc, p) => {
@@ -176,10 +325,10 @@ export default function AdminProviders() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <Button
                         size="sm" onClick={() => runTest(p.id)}
-                        disabled={testing[p.id] || !p.configured || !p.testFn}
+                        disabled={testing[p.id]}
                       >
                         {testing[p.id] ? <Loader2 className="h-3 w-3 mr-2 animate-spin" /> : null}
-                        Test
+                        Test API Key
                       </Button>
                       {p.playgroundFn && (
                         <Button
@@ -205,7 +354,7 @@ export default function AdminProviders() {
                       <div className={`text-xs rounded border p-2 ${r.ok ? "border-green-500/30 bg-green-500/5" : "border-destructive/30 bg-destructive/5"}`}>
                         {r.ok ? (
                           <>
-                            OK · {r.status ?? 200}
+                            Success: API key is working · {r.status ?? 200}
                             {typeof r.durationMs === "number" ? ` · ${r.durationMs}ms` : ""}
                             {typeof r.count === "number" ? ` · ${r.count} results` : ""}
                             {r.note ? ` · ${r.note}` : ""}
