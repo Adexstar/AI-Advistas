@@ -1,5 +1,6 @@
-// publish-campaign — server-side dispatcher for the Publishing Engine.
-// Routes a publish request to the right provider (Ayrshare / paid ad APIs).
+// publish-campaign — server-side dispatcher for AdVista's Publishing Engine.
+// Routes to Meta, TikTok, or Google APIs (organic + paid). Each provider
+// returns 501 with the list of missing secrets until real credentials are set.
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 interface PublishBody {
@@ -11,39 +12,35 @@ interface PublishBody {
   budget?: number;
 }
 
-const PAID_ENV: Record<string, string[]> = {
+const PROVIDER_ENV: Record<string, string[]> = {
+  "meta":       ["META_ACCESS_TOKEN", "META_PAGE_ID"],
   "meta-ads":   ["META_ACCESS_TOKEN", "META_AD_ACCOUNT_ID"],
+  "tiktok":     ["TIKTOK_ACCESS_TOKEN"],
   "tiktok-ads": ["TIKTOK_ACCESS_TOKEN", "TIKTOK_ADVERTISER_ID"],
+  "google":     ["GOOGLE_ACCESS_TOKEN"],
   "google-ads": ["GOOGLE_ADS_DEVELOPER_TOKEN", "GOOGLE_ADS_CUSTOMER_ID"],
 };
 
-async function publishSocial(body: PublishBody) {
-  const key = Deno.env.get("AYRSHARE_API_KEY");
-  if (!key) {
-    return { status: 501, body: { error: "Ayrshare not configured (AYRSHARE_API_KEY missing)." } };
-  }
-  const platform = body.platform.toLowerCase() === "x" ? "twitter" : body.platform.toLowerCase();
-  const payload: Record<string, unknown> = { post: body.text ?? "", platforms: [platform] };
-  if (body.mediaUrl) payload.mediaUrls = [body.mediaUrl];
-  if (body.scheduleAt) payload.scheduleDate = body.scheduleAt;
-  const res = await fetch("https://app.ayrshare.com/api/post", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  const data = await res.json().catch(() => ({}));
-  return { status: res.status, body: res.ok ? { id: data.id ?? data.postId, url: data.postUrl, raw: data } : { error: "Ayrshare error", details: data } };
+function resolveProvider(platform: string, mode: "social" | "paid"): string {
+  const p = platform.toLowerCase();
+  const family =
+    p === "facebook" || p === "instagram" ? "meta" :
+    p === "tiktok" ? "tiktok" :
+    p === "google" || p === "youtube" || p === "search" || p === "display" ? "google" :
+    p;
+  return mode === "paid" ? `${family}-ads` : family;
 }
 
-function paidStub(provider: string) {
-  const required = PAID_ENV[provider] ?? [];
+function stub(provider: string, extra: Record<string, unknown> = {}) {
+  const required = PROVIDER_ENV[provider] ?? [];
   const missing = required.filter((k) => !Deno.env.get(k));
   return {
     status: 501,
     body: {
-      error: `Paid ads adapter '${provider}' not yet configured.`,
+      error: `Provider '${provider}' is not yet configured.`,
       missingSecrets: missing,
-      hint: "Add these secrets and implement the provider call in publish-campaign.",
+      hint: `Add these secrets to enable ${provider}: ${missing.join(", ") || "n/a"}.`,
+      ...extra,
     },
   };
 }
@@ -58,16 +55,12 @@ Deno.serve(async (req) => {
       });
     }
     const mode = body.mode ?? "social";
-    let out;
-    if (mode === "paid") {
-      const provider =
-        ["facebook", "instagram"].includes(body.platform.toLowerCase()) ? "meta-ads" :
-        body.platform.toLowerCase() === "tiktok" ? "tiktok-ads" :
-        "google-ads";
-      out = paidStub(provider);
-    } else {
-      out = await publishSocial(body);
-    }
+    const provider = resolveProvider(body.platform, mode);
+
+    // All providers are currently stubbed until real credentials are wired.
+    // Real API calls (Meta Graph, TikTok Business, Google Ads) plug in here.
+    const out = stub(provider, { platform: body.platform, mode });
+
     return new Response(JSON.stringify(out.body), {
       status: out.status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

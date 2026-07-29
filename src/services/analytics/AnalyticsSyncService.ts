@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export type SyncPlatform = 'meta' | 'google' | 'tiktok' | 'linkedin' | 'ayrshare';
+export type SyncPlatform = 'meta' | 'google' | 'tiktok' | 'linkedin';
 
 /** Kicks off external → AdVista sync via edge function. Normalization happens server-side. */
 export const AnalyticsSyncService = {

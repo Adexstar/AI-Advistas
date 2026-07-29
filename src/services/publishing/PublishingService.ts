@@ -43,6 +43,14 @@ async function currentUserId() {
   return data.user.id;
 }
 
+function platformProvider(platform: string): string {
+  const p = platform.toLowerCase();
+  if (p === "facebook" || p === "instagram") return "meta";
+  if (p === "tiktok") return "tiktok";
+  if (p === "google" || p === "youtube" || p === "search" || p === "display") return "google";
+  return p;
+}
+
 export const PublishingService = {
   validator: PublishingValidator,
 
@@ -68,7 +76,7 @@ export const PublishingService = {
       campaign_id: request.campaignId,
       user_id: userId,
       platform: t.platform,
-      provider: t.mode === "paid" ? `${t.platform}-ads` : "ayrshare",
+      provider: t.mode === "paid" ? `${platformProvider(t.platform)}-ads` : platformProvider(t.platform),
       mode: t.mode ?? "social",
       status,
       scheduled_at: request.when === "schedule" ? request.scheduledAt ?? null : null,

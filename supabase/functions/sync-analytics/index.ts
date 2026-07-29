@@ -2,7 +2,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
-type Platform = 'meta' | 'google' | 'tiktok' | 'linkedin' | 'ayrshare';
+type Platform = 'meta' | 'google' | 'tiktok' | 'linkedin';
 
 interface NormalizedRow {
   platform: Platform;

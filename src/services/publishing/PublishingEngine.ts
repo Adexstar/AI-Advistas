@@ -1,11 +1,13 @@
 // PublishingEngine — single gateway for every publish action in AdVista.
 // Pages call PublishingEngine.publish(asset, targets); adapters do the rest.
-import { AyrshareAdapter } from "./adapters/AyrshareAdapter";
 import {
   GoogleAdsAdapter,
+  GoogleSocialAdapter,
   MetaAdsAdapter,
+  MetaSocialAdapter,
   TikTokAdsAdapter,
-} from "./adapters/PaidAdsAdapters";
+  TikTokSocialAdapter,
+} from "./adapters/PlatformAdapters";
 import type {
   MarketingAsset,
   MetricsSnapshot,
@@ -15,7 +17,11 @@ import type {
 } from "./types";
 
 const ADAPTERS: PublishAdapter[] = [
-  AyrshareAdapter,
+  // Organic
+  MetaSocialAdapter,
+  TikTokSocialAdapter,
+  GoogleSocialAdapter,
+  // Paid
   MetaAdsAdapter,
   TikTokAdsAdapter,
   GoogleAdsAdapter,
