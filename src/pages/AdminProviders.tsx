@@ -57,6 +57,13 @@ const CATEGORY_LABEL: Record<string, string> = {
   ai: "AI Models",
 };
 
+const AI_PLAYGROUND_FIELDS: PlaygroundField[] = [
+  { key: "systemPrompt", label: "System prompt", type: "textarea", default: "You are a helpful assistant." },
+  { key: "userPrompt", label: "User prompt", type: "textarea", default: "Explain what you do in one sentence." },
+  { key: "temperature", label: "Temperature", type: "text", default: "0.7" },
+  { key: "maxTokens", label: "Max tokens", type: "text", default: "200" },
+];
+
 const PROVIDER_CATALOG: ProviderCatalogItem[] = [
   {
     id: "pexels", label: "Pexels", category: "search", envVars: ["PEXELS_API_KEY"],
@@ -79,7 +86,7 @@ const PROVIDER_CATALOG: ProviderCatalogItem[] = [
   {
     id: "freepik", label: "Freepik / Magnific", category: "search", envVars: ["FREEPIK_API_KEY"],
     testFn: "search-freepik-templates", playgroundFn: "search-freepik-templates", playgroundKind: "search",
-    playgroundFields: [{ key: "query", label: "Query", type nie: "text", default: "instagram banner" }],
+    playgroundFields: [{ key: "query", label: "Query", type: "text", default: "instagram banner" }],
     docsUrl: "https://freepik.com/api",
   },
   {
@@ -219,14 +226,21 @@ export default function AdminProviders() {
 
   const runTest = async (id: string) => {
     setTesting((t) => ({ ...t, [id]: true }));
-    const { data, error } = await supabase.functions.invoke("provider-status", {
-      body: { action: "test", id },
-    });
-    const result: TestResult = error ? { ok: false, error: await readInvokeError(error) } : data;
-    setResults((r) => ({ ...r, [id]: result }));
-    setTesting((t) => ({ ...t, [id]: false }));
-    if (result.ok) toast.success(`${id}: OK${result.durationMs ? ` (${result.durationMs}ms)` : ""}`);
-    else toast.error(`${id}: ${result.error ?? "failed"}`);
+    try {
+      const { data, error } = await supabase.functions.invoke("provider-status", {
+        body: { action: "test", id },
+      });
+      const result: TestResult = error ? { ok: false, error: await readInvokeError(error) } : data;
+      setResults((r) => ({ ...r, [id]: result }));
+      if (result.ok) toast.success(`${id}: API key is working${result.durationMs ? ` (${result.durationMs}ms)` : ""}`);
+      else toast.error(`${id}: ${result.error ?? "failed"}`);
+    } catch (e: any) {
+      const result = { ok: false, error: e?.message || "Test failed" };
+      setResults((r) => ({ ...r, [id]: result }));
+      toast.error(`${id}: ${result.error}`);
+    } finally {
+      setTesting((t) => ({ ...t, [id]: false }));
+    }
   };
 
   const grouped = providers.reduce<Record<string, Provider[]>>((acc, p) => {
