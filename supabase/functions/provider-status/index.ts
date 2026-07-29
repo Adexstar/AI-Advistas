@@ -79,9 +79,22 @@ const PROVIDERS: Provider[] = [
     docsUrl: "https://cloudinary.com/documentation",
   },
   {
-    id: "ayrshare", label: "Ayrshare", category: "publishing", envVars: ["AYRSHARE_API_KEY"],
-    testFn: "test-ayrshare",
-    docsUrl: "https://ayrshare.com/docs",
+    id: "meta", label: "Meta (Facebook / Instagram)", category: "publishing",
+    envVars: ["META_ACCESS_TOKEN", "META_PAGE_ID", "META_AD_ACCOUNT_ID"],
+    testFn: "publish-campaign", testBody: { platform: "facebook", mode: "social", text: "AdVista test" },
+    docsUrl: "https://developers.facebook.com/docs/marketing-apis/",
+  },
+  {
+    id: "tiktok", label: "TikTok", category: "publishing",
+    envVars: ["TIKTOK_ACCESS_TOKEN", "TIKTOK_ADVERTISER_ID"],
+    testFn: "publish-campaign", testBody: { platform: "tiktok", mode: "social", text: "AdVista test" },
+    docsUrl: "https://developers.tiktok.com/doc/tiktok-api-v2-overview/",
+  },
+  {
+    id: "google", label: "Google Ads / YouTube", category: "publishing",
+    envVars: ["GOOGLE_ADS_DEVELOPER_TOKEN", "GOOGLE_ADS_CUSTOMER_ID"],
+    testFn: "publish-campaign", testBody: { platform: "google", mode: "paid", text: "AdVista test" },
+    docsUrl: "https://developers.google.com/google-ads/api/docs/start",
   },
   {
     id: "leonardo", label: "Leonardo AI", category: "generate-image", envVars: ["LEONARDO_API_KEY"],
