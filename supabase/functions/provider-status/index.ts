@@ -169,7 +169,7 @@ const PROVIDERS: Provider[] = [
   { id: "lovable", label: "Lovable AI Gateway", category: "ai", envVars: ["LOVABLE_API_KEY"] },
 ];
 
-async function assertAdmin(req: Request): Promise<{ ok: boolean; error?: string }> {
+async function assertAuthenticated(req: Request): Promise<{ ok: boolean; error?: string }> {
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader) return { ok: false, error: "no auth" };
   const supabase = createClient(
@@ -179,11 +179,6 @@ async function assertAdmin(req: Request): Promise<{ ok: boolean; error?: string 
   );
   const { data: userRes } = await supabase.auth.getUser();
   if (!userRes?.user) return { ok: false, error: "unauthenticated" };
-  const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-  const { data } = await admin
-    .from("user_roles").select("role")
-    .eq("user_id", userRes.user.id).eq("role", "admin").maybeSingle();
-  if (!data) return { ok: false, error: "not admin" };
   return { ok: true };
 }
 
@@ -207,7 +202,7 @@ async function invokeFn(fn: string, body: unknown, auth: string) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const gate = await assertAdmin(req);
+  const gate = await assertAuthenticated(req);
   if (!gate.ok) {
     return new Response(JSON.stringify({ error: gate.error ?? "forbidden" }), {
       status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
