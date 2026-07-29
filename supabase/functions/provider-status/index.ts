@@ -23,6 +23,20 @@ type Provider = {
   docsUrl?: string;
 };
 
+const AI_TEST_BODY = {
+  systemPrompt: "Reply with only the word OK",
+  userPrompt: "test",
+  specialist: "general",
+  maxTokens: 10,
+};
+
+const AI_PLAYGROUND_FIELDS: PlaygroundField[] = [
+  { key: "systemPrompt", label: "System prompt", type: "textarea", default: "You are a helpful assistant." },
+  { key: "userPrompt", label: "User prompt", type: "textarea", default: "Explain what you do in one sentence." },
+  { key: "temperature", label: "Temperature", type: "text", default: "0.7" },
+  { key: "maxTokens", label: "Max tokens", type: "text", default: "200" },
+];
+
 const PROVIDERS: Provider[] = [
   {
     id: "pexels", label: "Pexels", category: "search", envVars: ["PEXELS_API_KEY"],
@@ -52,9 +66,26 @@ const PROVIDERS: Provider[] = [
     playgroundFields: [{ key: "query", label: "Query", type: "text", default: "instagram banner" }],
     docsUrl: "https://freepik.com/api",
   },
-  { id: "brandfetch", label: "Brandfetch", category: "brand", envVars: ["BRANDFETCH_API_KEY"], docsUrl: "https://brandfetch.com/developers" },
+  {
+    id: "brandfetch", label: "Brandfetch", category: "brand", envVars: ["BRANDFETCH_API_KEY"],
+    testFn: "brandfetch-import", testBody: { url: "https://apple.com" },
+    playgroundFn: "brandfetch-import", playgroundKind: "json",
+    playgroundFields: [{ key: "url", label: "Domain URL", type: "text", default: "https://apple.com" }],
+    docsUrl: "https://brandfetch.com/developers",
+  },
+  {
+    id: "cloudinary", label: "Cloudinary", category: "media", envVars: ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"],
+    testFn: "test-cloudinary",
+    docsUrl: "https://cloudinary.com/documentation",
+  },
+  {
+    id: "ayrshare", label: "Ayrshare", category: "publishing", envVars: ["AYRSHARE_API_KEY"],
+    testFn: "test-ayrshare",
+    docsUrl: "https://ayrshare.com/docs",
+  },
   {
     id: "leonardo", label: "Leonardo AI", category: "generate-image", envVars: ["LEONARDO_API_KEY"],
+    testFn: "generate-leonardo", testBody: { prompt: "a simple test — solid blue background", width: 512, height: 512 },
     playgroundFn: "generate-leonardo", playgroundKind: "image",
     playgroundFields: [
       { key: "prompt", label: "Prompt", type: "textarea", default: "cinematic product shot of a sneaker on marble, studio light" },
@@ -65,6 +96,7 @@ const PROVIDERS: Provider[] = [
   },
   {
     id: "ideogram", label: "Ideogram", category: "generate-image", envVars: ["IDEOGRAM_API_KEY"],
+    testFn: "generate-ideogram", testBody: { prompt: "a simple test — solid green background", aspect_ratio: "ASPECT_1_1" },
     playgroundFn: "generate-ideogram", playgroundKind: "image",
     playgroundFields: [
       { key: "prompt", label: "Prompt", type: "textarea", default: "bold poster that says SALE 50% OFF, neon typography" },
@@ -74,27 +106,53 @@ const PROVIDERS: Provider[] = [
   },
   {
     id: "runway", label: "Runway", category: "generate-video", envVars: ["RUNWAY_API_KEY"],
+    testFn: "generate-runway", testBody: { prompt: "a simple test — slow zoom on a solid gray wall" },
     playgroundFn: "generate-runway", playgroundKind: "video",
     playgroundFields: [{ key: "prompt", label: "Prompt", type: "textarea", default: "slow dolly-in on a coffee cup, cinematic" }],
     docsUrl: "https://runwayml.com/api",
   },
   {
     id: "kling", label: "Kling", category: "generate-video", envVars: ["KLING_API_KEY"],
+    testFn: "generate-kling", testBody: { prompt: "a simple test — a static shot of a blue wall" },
     playgroundFn: "generate-kling", playgroundKind: "video",
     playgroundFields: [{ key: "prompt", label: "Prompt", type: "textarea", default: "a cat walking on a beach at sunset" }],
     docsUrl: "https://klingai.com/",
   },
   {
     id: "veo", label: "Veo", category: "generate-video", envVars: ["VEO_API_KEY"],
+    testFn: "generate-veo", testBody: { prompt: "a simple test — a static shot of a red wall" },
     playgroundFn: "generate-veo", playgroundKind: "video",
     playgroundFields: [{ key: "prompt", label: "Prompt", type: "textarea", default: "aerial shot of a city at night" }],
     docsUrl: "https://deepmind.google/technologies/veo/",
   },
-  { id: "cloudinary", label: "Cloudinary", category: "media", envVars: ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"], docsUrl: "https://cloudinary.com/documentation" },
-  { id: "ayrshare", label: "Ayrshare", category: "publishing", envVars: ["AYRSHARE_API_KEY"], docsUrl: "https://ayrshare.com/docs" },
-  { id: "openai", label: "OpenAI", category: "ai", envVars: ["OPENAI_API_KEY"], docsUrl: "https://platform.openai.com/" },
-  { id: "gemini", label: "Google Gemini", category: "ai", envVars: ["GOOGLE_GEMINI_API_KEY"], docsUrl: "https://ai.google.dev/" },
-  { id: "groq", label: "Groq", category: "ai", envVars: ["GROQ_API_KEY"], docsUrl: "https://groq.com/" },
+  {
+    id: "openai", label: "OpenAI", category: "ai", envVars: ["OPENAI_API_KEY"],
+    testFn: "ai-gateway", testBody: { ...AI_TEST_BODY, preferredProvider: "openai" },
+    playgroundFn: "ai-gateway", playgroundKind: "json",
+    playgroundFields: AI_PLAYGROUND_FIELDS,
+    docsUrl: "https://platform.openai.com/",
+  },
+  {
+    id: "gemini", label: "Google Gemini", category: "ai", envVars: ["GOOGLE_GEMINI_API_KEY"],
+    testFn: "ai-gateway", testBody: { ...AI_TEST_BODY, preferredProvider: "gemini" },
+    playgroundFn: "ai-gateway", playgroundKind: "json",
+    playgroundFields: AI_PLAYGROUND_FIELDS,
+    docsUrl: "https://ai.google.dev/",
+  },
+  {
+    id: "groq", label: "Groq", category: "ai", envVars: ["GROQ_API_KEY"],
+    testFn: "ai-gateway", testBody: { ...AI_TEST_BODY, preferredProvider: "groq" },
+    playgroundFn: "ai-gateway", playgroundKind: "json",
+    playgroundFields: AI_PLAYGROUND_FIELDS,
+    docsUrl: "https://groq.com/",
+  },
+  {
+    id: "claude", label: "Anthropic Claude", category: "ai", envVars: ["ANTHROPIC_API_KEY"],
+    testFn: "ai-gateway", testBody: { ...AI_TEST_BODY, preferredProvider: "claude" },
+    playgroundFn: "ai-gateway", playgroundKind: "json",
+    playgroundFields: AI_PLAYGROUND_FIELDS,
+    docsUrl: "https://anthropic.com/",
+  },
   { id: "lovable", label: "Lovable AI Gateway", category: "ai", envVars: ["LOVABLE_API_KEY"] },
 ];
 
