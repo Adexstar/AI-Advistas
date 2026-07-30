@@ -279,7 +279,7 @@ export default function Templates() {
                       <span className="text-[10px] text-muted-foreground">Confidence: {confidence}%</span>
                     </div>
                     <div className="mt-auto grid grid-cols-2 gap-1.5 pt-1">
-                      <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={() => navigate(`/originals/${t.id}`)}>
+                      <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={() => navigate(`/templates/${t.id}`)}>
                         <Eye className="h-3.5 w-3.5" /> Preview
                       </Button>
                       <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={() => useTemplate(t)}>
