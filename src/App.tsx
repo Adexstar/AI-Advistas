@@ -32,6 +32,7 @@ const TemplateCustomizer = lazy(() => import("./pages/TemplateCustomizer"));
 const TemplateLibrary = lazy(() => import("./pages/TemplateLibrary"));
 const TemplateGenerate = lazy(() => import("./pages/TemplateGenerate"));
 const Templates = lazy(() => import("./pages/Templates"));
+const OriginalTemplateDetail = lazy(() => import("./pages/OriginalTemplateDetail"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminProviders = lazy(() => import("./pages/AdminProviders"));
 const MediaLibrary = lazy(() => import("./pages/MediaLibrary"));
