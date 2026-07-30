@@ -31,6 +31,8 @@ const AdEditor = lazy(() => import("./pages/AdEditor"));
 const TemplateCustomizer = lazy(() => import("./pages/TemplateCustomizer"));
 const TemplateLibrary = lazy(() => import("./pages/TemplateLibrary"));
 const TemplateGenerate = lazy(() => import("./pages/TemplateGenerate"));
+const Templates = lazy(() => import("./pages/Templates"));
+const OriginalTemplateDetail = lazy(() => import("./pages/OriginalTemplateDetail"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminProviders = lazy(() => import("./pages/AdminProviders"));
 const MediaLibrary = lazy(() => import("./pages/MediaLibrary"));
@@ -149,7 +151,18 @@ const AppContent = () => {
               <Route index element={<TemplateLibrary />} />
               <Route path="generate" element={<TemplateGenerate />} />
             </Route>
-            <Route path="/originals" element={<Navigate to="/template-library" replace />} />
+            <Route path="/templates" element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<Templates />} />
+              <Route path="generate" element={<TemplateGenerate />} />
+              <Route path=":id" element={<OriginalTemplateDetail />} />
+
+            </Route>
+            <Route path="/originals" element={<Navigate to="/templates" replace />} />
+
             <Route path="/media-library" element={
               <ProtectedRoute>
                 <DashboardLayout />
@@ -198,7 +211,6 @@ const AppContent = () => {
             </Route>
 
             {/* Redirects from old routes to new consolidated structure */}
-            <Route path="/templates" element={<Navigate to="/template-library" replace />} />
             <Route path="/ads" element={<Navigate to="/campaigns" replace />} />
             <Route path="/audience" element={<Navigate to="/campaigns" replace />} />
             <Route path="/ai-editor" element={<Navigate to="/create-ad" replace />} />
