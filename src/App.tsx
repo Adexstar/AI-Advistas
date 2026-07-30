@@ -158,6 +158,8 @@ const AppContent = () => {
             }>
               <Route index element={<Templates />} />
               <Route path="generate" element={<TemplateGenerate />} />
+              <Route path=":id" element={<OriginalTemplateDetail />} />
+
             </Route>
             <Route path="/originals" element={<Navigate to="/templates" replace />} />
 
