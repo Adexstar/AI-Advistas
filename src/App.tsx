@@ -149,7 +149,16 @@ const AppContent = () => {
               <Route index element={<TemplateLibrary />} />
               <Route path="generate" element={<TemplateGenerate />} />
             </Route>
-            <Route path="/originals" element={<Navigate to="/template-library" replace />} />
+            <Route path="/templates" element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<Templates />} />
+              <Route path="generate" element={<TemplateGenerate />} />
+            </Route>
+            <Route path="/originals" element={<Navigate to="/templates" replace />} />
+
             <Route path="/media-library" element={
               <ProtectedRoute>
                 <DashboardLayout />
