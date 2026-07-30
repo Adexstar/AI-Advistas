@@ -31,6 +31,7 @@ const AdEditor = lazy(() => import("./pages/AdEditor"));
 const TemplateCustomizer = lazy(() => import("./pages/TemplateCustomizer"));
 const TemplateLibrary = lazy(() => import("./pages/TemplateLibrary"));
 const TemplateGenerate = lazy(() => import("./pages/TemplateGenerate"));
+const Templates = lazy(() => import("./pages/Templates"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminProviders = lazy(() => import("./pages/AdminProviders"));
 const MediaLibrary = lazy(() => import("./pages/MediaLibrary"));
@@ -207,7 +208,6 @@ const AppContent = () => {
             </Route>
 
             {/* Redirects from old routes to new consolidated structure */}
-            <Route path="/templates" element={<Navigate to="/template-library" replace />} />
             <Route path="/ads" element={<Navigate to="/campaigns" replace />} />
             <Route path="/audience" element={<Navigate to="/campaigns" replace />} />
             <Route path="/ai-editor" element={<Navigate to="/create-ad" replace />} />
