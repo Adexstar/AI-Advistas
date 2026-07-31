@@ -33,6 +33,15 @@ import { AIQuickActionsMenu } from '@/components/visual-editor/ai/AIQuickActions
 import { consumePendingEditorTemplate, peekPendingEditorTemplate } from '@/lib/templateEditorSession';
 import { TemplateEngine } from '@/services/templates/TemplateEngine';
 import { useAIContext } from '@/contexts/AIContext';
+import {
+  TemplatesPanel as StudioTemplatesPanel,
+  MediaPanel as StudioMediaPanel,
+  UploadsPanel as StudioUploadsPanel,
+  ElementsPanel as StudioElementsPanel,
+  BackgroundPanel as StudioBackgroundPanel,
+  AIStudioPanel as StudioAIPanel,
+  type StudioTemplate,
+} from '@/components/visual-editor/panels/StudioPanels';
 
 /* ---------- Constants ---------- */
 const LEFT_TABS = [
@@ -43,6 +52,7 @@ const LEFT_TABS = [
   { id: 'elements', label: 'Elements', icon: Shapes },
   { id: 'brand', label: 'Brand Kit', icon: Sparkles },
   { id: 'uploads', label: 'Uploads', icon: Upload },
+  { id: 'media', label: 'Media', icon: ImageIcon },
   { id: 'layers', label: 'Layers', icon: LayersIcon },
 ] as const;
 
@@ -1756,17 +1766,12 @@ const EditorInner: React.FC = () => {
   const { effectiveContext, brand } = useAIContext();
   const { data: brandKits } = useBrandKits();
 
-  // On canvas ready + pending template → instantiate via TemplateEngine and load.
-  useEffect(() => {
-    if (!canvas) return;
-    const pending = consumePendingEditorTemplate();
-    if (!pending?.template) return;
-    let cancelled = false;
-
-    (async () => {
+  const loadTemplateRecord = useCallback(
+    async (template: any) => {
+      if (!canvas || !template) return;
       try {
         const activeKit = brandKits?.find((k) => k.is_active) || brandKits?.[0];
-        const inst = await TemplateEngine.instantiate(pending.template, {
+        const inst = await TemplateEngine.instantiate(template, {
           brand: brand
             ? {
                 id: brand.id,
@@ -1777,17 +1782,17 @@ const EditorInner: React.FC = () => {
                 locked: false,
               }
             : null,
-          category: effectiveContext?.active_category ?? pending.template.category ?? null,
-          goal: (effectiveContext as any)?.active_goal ?? pending.template.objective ?? null,
-          platform: pending.template.platform ?? null,
-          productName: pending.template.name,
+          category: effectiveContext?.active_category ?? template.category ?? null,
+          goal: (effectiveContext as any)?.active_goal ?? template.objective ?? null,
+          platform: template.platform ?? null,
+          productName: template.name,
         });
-        if (cancelled) return;
         const json = inst.json;
         if (json?.background) canvas.backgroundColor = json.background as string;
         canvas.loadFromJSON(json as any, () => {
           canvas.renderAll();
-          setProjectName(pending.template.name);
+          setProjectName(template.name);
+          forceUpdate((n) => n + 1);
           toast({
             title: 'Template loaded',
             description: `${Object.keys(inst.resolvedVariables).length} placeholders resolved${inst.appliedBrand ? ' • Brand applied' : ''}.`,
@@ -1795,17 +1800,25 @@ const EditorInner: React.FC = () => {
         });
       } catch (err) {
         console.error('[VisualEditor] instantiate failed', err);
-        toast({
-          title: 'Could not load template',
-          description: 'Falling back to a blank canvas.',
-          variant: 'destructive',
-        });
+        toast({ title: 'Could not load template', description: 'Falling back to a blank canvas.', variant: 'destructive' });
       }
-    })();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [canvas, brandKits, brand, effectiveContext],
+  );
 
-    return () => { cancelled = true; };
+  // On canvas ready + pending template → instantiate via TemplateEngine and load.
+  useEffect(() => {
+    if (!canvas) return;
+    const pending = consumePendingEditorTemplate();
+    if (!pending?.template) return;
+    loadTemplateRecord(pending.template);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvas]);
+
+  const activeKit = brandKits?.find((k) => k.is_active) || brandKits?.[0];
+  const brandPalette = [activeKit?.primary_color, activeKit?.secondary_color, activeKit?.accent_color].filter(Boolean) as string[];
+
 
   const addText = (text: string, size: number, weight: string) => {
     if (!canvas) return;
@@ -1855,29 +1868,17 @@ const EditorInner: React.FC = () => {
 
   const renderLeftPanel = () => {
     switch (activeTab) {
-      case 'templates': return <TemplatesPanel />;
-      case 'background': return <BackgroundPanel />;
-      case 'ai-studio': return <AIStudioPanel />;
+      case 'templates': return <StudioTemplatesPanel onUse={(t: StudioTemplate) => loadTemplateRecord(t)} />;
+      case 'background': return <StudioBackgroundPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} brandColors={brandPalette} />;
+      case 'ai-studio': return <StudioAIPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} platform={(effectiveContext as any)?.active_platform ?? null} category={effectiveContext?.active_category ?? null} />;
       case 'text': return <TextPanel onAdd={addText} />;
-      case 'elements': return <ElementsPanel onAdd={addShape} />;
+      case 'elements': return <StudioElementsPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} brandColors={brandPalette} />;
       case 'brand': return <BrandKitPanel />;
       case 'layers': return <LayersPanel canvas={canvas} version={0} />;
-      case 'media': return <SimplePanel title="Media"><p className="text-xs text-muted-foreground">Import from your Media Library.</p></SimplePanel>;
-      case 'uploads': return <SimplePanel title="Uploads">
-        <div className="relative mb-4">
-          <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input placeholder="Search uploads" className="pl-8 h-9 rounded-xl bg-muted/60 border-transparent text-xs" />
-        </div>
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          {['Photos','Videos','Audio','Brand Assets'].map((cat) => (
-            <button key={cat} className="rounded-xl border bg-muted/30 px-3 py-4 text-xs font-medium text-center hover:bg-muted transition">
-              {cat}
-            </button>
-          ))}
-        </div>
-        <p className="text-xs text-muted-foreground">Drag & drop files to upload or browse your media library.</p>
-      </SimplePanel>;
+      case 'media': return <StudioMediaPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} />;
+      case 'uploads': return <StudioUploadsPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} />;
       case 'projects': return <SimplePanel title="Projects"><p className="text-xs text-muted-foreground">Your recent projects.</p></SimplePanel>;
+
       default: return null;
     }
   };
