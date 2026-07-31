@@ -1615,11 +1615,11 @@ const EditorInner: React.FC = () => {
   const [canvas, setCanvas] = useState<FabricCanvas | null>(null);
   const [canvasReady, setCanvasReady] = useState(false);
   const [selected, setSelected] = useState<any>(null);
-  const [, forceUpdate] = useState(0);
+  const [tick, forceUpdate] = useState(0);
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(false);
-  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [timelineOpen, setTimelineOpen] = useState(true);
   const [toolbarPos, setToolbarPos] = useState<{ left: number; top: number } | null>(null);
   const [canvasWrapperEl, setCanvasWrapperEl] = useState<HTMLDivElement | null>(null);
   const isMobile = useIsMobile();
@@ -2038,9 +2038,9 @@ const EditorInner: React.FC = () => {
           </div>
 
           {/* Timeline — only for video */}
-          {isVideo && (
-            <div className={`editor-timeline flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out ${timelineOpen ? 'max-h-[200px]' : 'max-h-0'}`}>
-              <Timeline />
+          {(isVideo || (canvas?.getObjects()?.length ?? 0) > 0) && (
+            <div className={`editor-timeline flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out ${timelineOpen ? 'max-h-[240px]' : 'max-h-0'}`}>
+              <Timeline canvas={canvas} selected={selected} onSelect={setSelected} version={tick} />
             </div>
           )}
         </>
