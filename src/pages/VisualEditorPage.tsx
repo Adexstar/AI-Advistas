@@ -835,55 +835,180 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
 };
 
 /* ---------- Timeline ---------- */
-const Timeline: React.FC = () => {
+const TL_LABEL_W = 110;
+
+const trackMetaFor = (obj: any) => {
+  const t = obj?.type;
+  if (t === 'textbox' || t === 'text' || t === 'i-text')
+    return { icon: Type, color: '#1B7A6B', label: (obj.text || 'Text').toString().slice(0, 24) || 'Text' };
+  if (t === 'image') return { icon: ImageIcon, color: '#2563A8', label: obj.name || 'Image' };
+  if (t === 'video') return { icon: Video, color: '#8B5CF6', label: obj.name || 'Video' };
+  if (t === 'audio') return { icon: Music, color: '#B45309', label: obj.name || 'Audio' };
+  if (t === 'group') return { icon: LayersIcon, color: '#4B5563', label: obj.name || 'Group' };
+  return { icon: Shapes, color: '#B45309', label: obj.name || (t ? t.charAt(0).toUpperCase() + t.slice(1) : 'Shape') };
+};
+
+const fmtTime = (s: number) => {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  const dec = Math.floor((s % 1) * 10);
+  return `${m}:${sec.toString().padStart(2, '0')}.${dec}`;
+};
+
+const Timeline: React.FC<{
+  canvas: FabricCanvas | null;
+  selected: any;
+  onSelect: (obj: any) => void;
+  version: number;
+}> = ({ canvas, selected, onSelect, version }) => {
   const [playing, setPlaying] = useState(false);
-  const tracks = [
-    { label: 'Text', icon: Type, clips: [{ start: 0, duration: 40, label: 'SUMMER SALE' }] },
-    { label: 'Image', icon: ImageIcon, clips: [{ start: 5, duration: 70, label: '' }] },
-    { label: 'Shape', icon: Shapes, clips: [{ start: 10, duration: 30, label: 'Rectangle' }] },
-    { label: 'Video', icon: Video, clips: [{ start: 25, duration: 60, label: '' }] },
-    { label: 'Audio', icon: Music, clips: [{ start: 0, duration: 95, label: 'Background.mp3' }] },
-  ];
+  const [time, setTime] = useState(0);
+  const [scale, setScale] = useState(50); // timeline zoom
+  const rafRef = useRef<number | null>(null);
+  const lastTsRef = useRef<number>(0);
+
+  const objects: any[] = canvas ? (canvas.getObjects() as any[]) : [];
+
+  const tracks = useMemo(() => {
+    return objects.map((obj, i) => {
+      const meta = trackMetaFor(obj);
+      const start = typeof obj.animStart === 'number' ? obj.animStart : 0;
+      const dur = typeof obj.animDuration === 'number' ? obj.animDuration : 5;
+      return { obj, id: obj.id || `obj-${i}`, ...meta, start, duration: dur };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvas, version]);
+
+  const total = Math.max(10, ...tracks.map((t) => t.start + t.duration));
+
+  useEffect(() => {
+    if (!playing) {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+      return;
+    }
+    lastTsRef.current = performance.now();
+    const loop = (ts: number) => {
+      const dt = (ts - lastTsRef.current) / 1000;
+      lastTsRef.current = ts;
+      setTime((prev) => {
+        const next = prev + dt;
+        if (next >= total) { setPlaying(false); return total; }
+        return next;
+      });
+      rafRef.current = requestAnimationFrame(loop);
+    };
+    rafRef.current = requestAnimationFrame(loop);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, [playing, total]);
+
+  const pxPerSec = 0.4 + (scale / 100) * 1.6; // multiplier over base width
+  const trackWidth = `${100 * pxPerSec}%`;
+
+  const ticks = useMemo(() => {
+    const step = total > 60 ? 10 : total > 30 ? 5 : total > 15 ? 2 : 1;
+    const out: number[] = [];
+    for (let s = 0; s <= total; s += step) out.push(s);
+    return out;
+  }, [total]);
+
+  const seekFromEvent = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    setTime(ratio * total);
+  };
+
+  const selectObj = (obj: any) => {
+    if (!canvas) return;
+    canvas.setActiveObject(obj);
+    canvas.requestRenderAll();
+    onSelect(obj);
+  };
+
   return (
     <div className="border-t" style={{ backgroundColor: '#1A1A1A', borderTopColor: '#2D2D2D' }}>
       <div className="flex h-9 items-center gap-3 px-3 border-b" style={{ borderColor: '#2D2D2D' }}>
         <div className="flex items-center gap-2">
-          <Button size="icon" variant="ghost" className="h-6 w-6 text-white" onClick={() => setPlaying(!playing)}>
+          <Button size="icon" variant="ghost" className="h-6 w-6 text-white" onClick={() => setPlaying((p) => !p)}>
             {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
           </Button>
-          <span className="text-xs text-white font-mono">0:03</span>
+          <span className="text-xs text-white font-mono">{fmtTime(time)}</span>
+          <span className="text-xs font-mono" style={{ color: '#666666' }}>/ {fmtTime(total)}</span>
         </div>
+        <span className="text-[11px]" style={{ color: '#666666' }}>
+          {tracks.length} {tracks.length === 1 ? 'layer' : 'layers'}
+        </span>
         <div className="flex-1" />
-        <Slider defaultValue={[50]} max={100} className="w-24" />
+        <span className="text-[10px]" style={{ color: '#666666' }}>Zoom</span>
+        <Slider value={[scale]} onValueChange={(v) => setScale(v[0])} max={100} className="w-24" />
       </div>
-      <div className="flex h-7 text-[11px] px-[110px] border-b items-end pb-1" style={{ color: '#666666', borderColor: '#2D2D2D' }}>
-        {['0s','2s','4s','6s','8s','10s','12s','14s'].map((t) => (
-          <span key={t} className="flex-1">{t}</span>
-        ))}
+
+      {/* Ruler */}
+      <div className="flex border-b" style={{ borderColor: '#2D2D2D' }}>
+        <div className="shrink-0 border-r" style={{ width: TL_LABEL_W, borderColor: '#2D2D2D' }} />
+        <div className="relative flex-1 overflow-hidden">
+          <div className="relative h-7 cursor-pointer" style={{ width: trackWidth }} onClick={seekFromEvent}>
+            {ticks.map((s) => (
+              <span
+                key={s}
+                className="absolute bottom-1 text-[10px] -translate-x-1/2"
+                style={{ left: `${(s / total) * 100}%`, color: '#666666' }}
+              >
+                {s}s
+              </span>
+            ))}
+            <div
+              className="absolute top-0 bottom-0 w-px"
+              style={{ left: `${(time / total) * 100}%`, backgroundColor: '#EF4444' }}
+            />
+          </div>
+        </div>
       </div>
+
+      {/* Tracks */}
       <div className="max-h-[100px] overflow-auto">
+        {tracks.length === 0 && (
+          <div className="px-3 py-4 text-xs" style={{ color: '#666666' }}>
+            No layers yet — add text, images or shapes to the canvas to see them here.
+          </div>
+        )}
         {tracks.map((tr) => {
           const Icon = tr.icon;
+          const isSel = selected === tr.obj;
           return (
-            <div key={tr.label} className="flex items-stretch border-b h-9" style={{ borderColor: '#222222' }}>
-              <div className="w-[110px] shrink-0 flex items-center gap-1.5 px-3 border-r text-xs" style={{ color: '#CCCCCC', borderColor: '#2D2D2D' }}>
-                <Icon className="h-3.5 w-3.5" style={{ color: '#888888' }} />
-                {tr.label}
-              </div>
-              <div className="relative flex-1">
-                {tr.clips.map((c, i) => (
-                  <div
-                    key={i}
-                    className="absolute top-1 bottom-1 rounded-md flex items-center px-2 text-[10px] font-medium text-white shadow-sm"
+            <div key={tr.id} className="flex items-stretch border-b h-9" style={{ borderColor: '#222222' }}>
+              <button
+                onClick={() => selectObj(tr.obj)}
+                className="shrink-0 flex items-center gap-1.5 px-3 border-r text-xs text-left truncate"
+                style={{
+                  width: TL_LABEL_W,
+                  color: isSel ? '#FFFFFF' : '#CCCCCC',
+                  borderColor: '#2D2D2D',
+                  backgroundColor: isSel ? '#242424' : 'transparent',
+                }}
+              >
+                <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: '#888888' }} />
+                <span className="truncate">{tr.label}</span>
+              </button>
+              <div className="relative flex-1 overflow-hidden">
+                <div className="relative h-full" style={{ width: trackWidth }}>
+                  <button
+                    onClick={() => selectObj(tr.obj)}
+                    className="absolute top-1 bottom-1 rounded-md flex items-center px-2 text-[10px] font-medium text-white shadow-sm overflow-hidden"
                     style={{
-                      left: `${c.start}%`,
-                      width: `${c.duration}%`,
-                      backgroundColor: '#1B7A6B',
+                      left: `${(tr.start / total) * 100}%`,
+                      width: `${(tr.duration / total) * 100}%`,
+                      backgroundColor: tr.color,
+                      outline: isSel ? '1px solid rgba(255,255,255,0.6)' : 'none',
                     }}
                   >
-                    {c.label && <span className="truncate">{c.label}</span>}
-                  </div>
-                ))}
+                    <span className="truncate">{tr.label}</span>
+                  </button>
+                  <div
+                    className="absolute top-0 bottom-0 w-px pointer-events-none"
+                    style={{ left: `${(time / total) * 100}%`, backgroundColor: 'rgba(239,68,68,0.7)' }}
+                  />
+                </div>
               </div>
             </div>
           );
@@ -900,6 +1025,7 @@ const Timeline: React.FC = () => {
         </div>
       </div>
     </div>
+
   );
 };
 
@@ -1489,11 +1615,11 @@ const EditorInner: React.FC = () => {
   const [canvas, setCanvas] = useState<FabricCanvas | null>(null);
   const [canvasReady, setCanvasReady] = useState(false);
   const [selected, setSelected] = useState<any>(null);
-  const [, forceUpdate] = useState(0);
+  const [tick, forceUpdate] = useState(0);
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(false);
-  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [timelineOpen, setTimelineOpen] = useState(true);
   const [toolbarPos, setToolbarPos] = useState<{ left: number; top: number } | null>(null);
   const [canvasWrapperEl, setCanvasWrapperEl] = useState<HTMLDivElement | null>(null);
   const isMobile = useIsMobile();
@@ -1545,7 +1671,7 @@ const EditorInner: React.FC = () => {
   // Wire canvas events for history
   useEffect(() => {
     if (!canvas) return;
-    const save = () => saveSnapshot(canvas);
+    const save = () => { saveSnapshot(canvas); forceUpdate(n => n + 1); };
     canvas.on('object:added', save);
     canvas.on('object:modified', save);
     canvas.on('object:removed', save);
@@ -1912,9 +2038,9 @@ const EditorInner: React.FC = () => {
           </div>
 
           {/* Timeline — only for video */}
-          {isVideo && (
-            <div className={`editor-timeline flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out ${timelineOpen ? 'max-h-[200px]' : 'max-h-0'}`}>
-              <Timeline />
+          {(isVideo || (canvas?.getObjects()?.length ?? 0) > 0) && (
+            <div className={`editor-timeline flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out ${timelineOpen ? 'max-h-[240px]' : 'max-h-0'}`}>
+              <Timeline canvas={canvas} selected={selected} onSelect={setSelected} version={tick} />
             </div>
           )}
         </>
