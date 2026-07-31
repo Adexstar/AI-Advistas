@@ -1671,7 +1671,7 @@ const EditorInner: React.FC = () => {
   // Wire canvas events for history
   useEffect(() => {
     if (!canvas) return;
-    const save = () => saveSnapshot(canvas);
+    const save = () => { saveSnapshot(canvas); forceUpdate(n => n + 1); };
     canvas.on('object:added', save);
     canvas.on('object:modified', save);
     canvas.on('object:removed', save);
