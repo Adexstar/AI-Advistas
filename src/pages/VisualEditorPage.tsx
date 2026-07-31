@@ -1765,17 +1765,12 @@ const EditorInner: React.FC = () => {
   const { effectiveContext, brand } = useAIContext();
   const { data: brandKits } = useBrandKits();
 
-  // On canvas ready + pending template → instantiate via TemplateEngine and load.
-  useEffect(() => {
-    if (!canvas) return;
-    const pending = consumePendingEditorTemplate();
-    if (!pending?.template) return;
-    let cancelled = false;
-
-    (async () => {
+  const loadTemplateRecord = useCallback(
+    async (template: any) => {
+      if (!canvas || !template) return;
       try {
         const activeKit = brandKits?.find((k) => k.is_active) || brandKits?.[0];
-        const inst = await TemplateEngine.instantiate(pending.template, {
+        const inst = await TemplateEngine.instantiate(template, {
           brand: brand
             ? {
                 id: brand.id,
@@ -1786,17 +1781,17 @@ const EditorInner: React.FC = () => {
                 locked: false,
               }
             : null,
-          category: effectiveContext?.active_category ?? pending.template.category ?? null,
-          goal: (effectiveContext as any)?.active_goal ?? pending.template.objective ?? null,
-          platform: pending.template.platform ?? null,
-          productName: pending.template.name,
+          category: effectiveContext?.active_category ?? template.category ?? null,
+          goal: (effectiveContext as any)?.active_goal ?? template.objective ?? null,
+          platform: template.platform ?? null,
+          productName: template.name,
         });
-        if (cancelled) return;
         const json = inst.json;
         if (json?.background) canvas.backgroundColor = json.background as string;
         canvas.loadFromJSON(json as any, () => {
           canvas.renderAll();
-          setProjectName(pending.template.name);
+          setProjectName(template.name);
+          forceUpdate((n) => n + 1);
           toast({
             title: 'Template loaded',
             description: `${Object.keys(inst.resolvedVariables).length} placeholders resolved${inst.appliedBrand ? ' • Brand applied' : ''}.`,
@@ -1804,17 +1799,25 @@ const EditorInner: React.FC = () => {
         });
       } catch (err) {
         console.error('[VisualEditor] instantiate failed', err);
-        toast({
-          title: 'Could not load template',
-          description: 'Falling back to a blank canvas.',
-          variant: 'destructive',
-        });
+        toast({ title: 'Could not load template', description: 'Falling back to a blank canvas.', variant: 'destructive' });
       }
-    })();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [canvas, brandKits, brand, effectiveContext],
+  );
 
-    return () => { cancelled = true; };
+  // On canvas ready + pending template → instantiate via TemplateEngine and load.
+  useEffect(() => {
+    if (!canvas) return;
+    const pending = consumePendingEditorTemplate();
+    if (!pending?.template) return;
+    loadTemplateRecord(pending.template);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvas]);
+
+  const activeKit = brandKits?.find((k) => k.is_active) || brandKits?.[0];
+  const brandPalette = [activeKit?.primary_color, activeKit?.secondary_color, activeKit?.accent_color].filter(Boolean) as string[];
+
 
   const addText = (text: string, size: number, weight: string) => {
     if (!canvas) return;
