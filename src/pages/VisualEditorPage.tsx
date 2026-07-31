@@ -1867,29 +1867,17 @@ const EditorInner: React.FC = () => {
 
   const renderLeftPanel = () => {
     switch (activeTab) {
-      case 'templates': return <TemplatesPanel />;
-      case 'background': return <BackgroundPanel />;
-      case 'ai-studio': return <AIStudioPanel />;
+      case 'templates': return <StudioTemplatesPanel onUse={(t: StudioTemplate) => loadTemplateRecord(t)} />;
+      case 'background': return <StudioBackgroundPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} brandColors={brandPalette} />;
+      case 'ai-studio': return <StudioAIPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} platform={(effectiveContext as any)?.active_platform ?? null} category={effectiveContext?.active_category ?? null} />;
       case 'text': return <TextPanel onAdd={addText} />;
-      case 'elements': return <ElementsPanel onAdd={addShape} />;
+      case 'elements': return <StudioElementsPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} brandColors={brandPalette} />;
       case 'brand': return <BrandKitPanel />;
       case 'layers': return <LayersPanel canvas={canvas} version={0} />;
-      case 'media': return <SimplePanel title="Media"><p className="text-xs text-muted-foreground">Import from your Media Library.</p></SimplePanel>;
-      case 'uploads': return <SimplePanel title="Uploads">
-        <div className="relative mb-4">
-          <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input placeholder="Search uploads" className="pl-8 h-9 rounded-xl bg-muted/60 border-transparent text-xs" />
-        </div>
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          {['Photos','Videos','Audio','Brand Assets'].map((cat) => (
-            <button key={cat} className="rounded-xl border bg-muted/30 px-3 py-4 text-xs font-medium text-center hover:bg-muted transition">
-              {cat}
-            </button>
-          ))}
-        </div>
-        <p className="text-xs text-muted-foreground">Drag & drop files to upload or browse your media library.</p>
-      </SimplePanel>;
+      case 'media': return <StudioMediaPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} />;
+      case 'uploads': return <StudioUploadsPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} />;
       case 'projects': return <SimplePanel title="Projects"><p className="text-xs text-muted-foreground">Your recent projects.</p></SimplePanel>;
+
       default: return null;
     }
   };
