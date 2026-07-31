@@ -33,6 +33,15 @@ import { AIQuickActionsMenu } from '@/components/visual-editor/ai/AIQuickActions
 import { consumePendingEditorTemplate, peekPendingEditorTemplate } from '@/lib/templateEditorSession';
 import { TemplateEngine } from '@/services/templates/TemplateEngine';
 import { useAIContext } from '@/contexts/AIContext';
+import {
+  TemplatesPanel as StudioTemplatesPanel,
+  MediaPanel as StudioMediaPanel,
+  UploadsPanel as StudioUploadsPanel,
+  ElementsPanel as StudioElementsPanel,
+  BackgroundPanel as StudioBackgroundPanel,
+  AIStudioPanel as StudioAIPanel,
+  type StudioTemplate,
+} from '@/components/visual-editor/panels/StudioPanels';
 
 /* ---------- Constants ---------- */
 const LEFT_TABS = [
