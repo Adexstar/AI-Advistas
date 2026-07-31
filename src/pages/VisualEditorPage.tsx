@@ -52,6 +52,7 @@ const LEFT_TABS = [
   { id: 'elements', label: 'Elements', icon: Shapes },
   { id: 'brand', label: 'Brand Kit', icon: Sparkles },
   { id: 'uploads', label: 'Uploads', icon: Upload },
+  { id: 'media', label: 'Media', icon: ImageIcon },
   { id: 'layers', label: 'Layers', icon: LayersIcon },
 ] as const;
 
