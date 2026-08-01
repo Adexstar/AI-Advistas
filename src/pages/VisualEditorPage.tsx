@@ -1991,7 +1991,7 @@ const EditorInner: React.FC = () => {
 
           {/* Slide-Up Panel — contextual tool sheet or creation panel */}
           <MobileBottomSheet open={sheetExpanded} onClose={() => { setSheetExpanded(false); setActiveTool(null); }}
-            label={activeTool ? (currentTools.find(t => t.id === activeTool)?.label || activeTool) : 'Create'}>
+            label={activeTool ? (currentTools.find(t => t.id === activeTool)?.label || activeTool) : (LEFT_TABS.find(t => t.id === activeTab)?.label || 'Create')}>
             {/* AI prompt bar — contextual based on selection */}
             <div className="flex items-center gap-2 mb-3 overflow-x-auto [scrollbar-width:none]">
               <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 shrink-0">
@@ -2010,7 +2010,20 @@ const EditorInner: React.FC = () => {
           </MobileBottomSheet>
 
           {/* Contextual Toolbar — auto-switches based on selection */}
-          <ContextualToolbar tools={currentTools} active={activeTool} onToolTap={(id) => { setActiveTool(id); setSheetExpanded(true); }} />
+          <ContextualToolbar
+            tools={currentTools}
+            active={selected ? activeTool : activeTab}
+            onToolTap={(id) => {
+              const isCreateTool = !selected || CREATE_TOOLS.some((t) => t.id === id);
+              if (isCreateTool) {
+                setActiveTab(id);
+                setActiveTool(null);
+              } else {
+                setActiveTool(id);
+              }
+              setSheetExpanded(true);
+            }}
+          />
         </>
       ) : (
         /* Desktop layout */
