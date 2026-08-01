@@ -2010,7 +2010,20 @@ const EditorInner: React.FC = () => {
           </MobileBottomSheet>
 
           {/* Contextual Toolbar — auto-switches based on selection */}
-          <ContextualToolbar tools={currentTools} active={activeTool} onToolTap={(id) => { setActiveTool(id); setSheetExpanded(true); }} />
+          <ContextualToolbar
+            tools={currentTools}
+            active={selected ? activeTool : activeTab}
+            onToolTap={(id) => {
+              const isCreateTool = !selected || CREATE_TOOLS.some((t) => t.id === id);
+              if (isCreateTool) {
+                setActiveTab(id);
+                setActiveTool(null);
+              } else {
+                setActiveTool(id);
+              }
+              setSheetExpanded(true);
+            }}
+          />
         </>
       ) : (
         /* Desktop layout */
