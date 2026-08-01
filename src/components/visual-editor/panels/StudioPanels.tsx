@@ -193,7 +193,7 @@ type MediaRow = {
   id: string; name: string; type: string; file_url: string | null; thumbnail_url: string | null; created_at: string;
 };
 
-const MediaGrid: React.FC<{ rows: MediaRow[]; canvas: FabricCanvas | null; onChanged?: () => void }> = ({ rows, canvas, onChanged }) => (
+const MediaGrid: React.FC<{ rows: MediaRow[]; canvas: FabricCanvas | null; onChanged?: () => void; selected?: any }> = ({ rows, canvas, onChanged, selected }) => (
   <div className="grid grid-cols-3 gap-2">
     {rows.map((m) => {
       const src = m.thumbnail_url || m.file_url;
@@ -201,7 +201,11 @@ const MediaGrid: React.FC<{ rows: MediaRow[]; canvas: FabricCanvas | null; onCha
       return (
         <button
           key={m.id}
-          onClick={() => m.file_url && m.type === 'image' ? addImageToCanvas(canvas, m.file_url, onChanged) : toast({ title: m.name, description: `${m.type} assets can be placed from the timeline.` })}
+          onClick={() => {
+            if (!m.file_url || m.type !== 'image') { toast({ title: m.name, description: `${m.type} assets can be placed from the timeline.` }); return; }
+            if (selected && selected.type === 'image') { replaceImageSource(canvas, selected, m.file_url, onChanged); return; }
+            addImageToCanvas(canvas, m.file_url, onChanged);
+          }}
           className="group relative aspect-square overflow-hidden rounded-lg border border-[#3D3D3D] bg-[#1A1A1A] hover:border-[#6C63FF]"
           title={m.name}
         >
@@ -239,7 +243,7 @@ const useMediaRows = (kinds?: string[]) => {
   });
 };
 
-export const MediaPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: () => void }> = ({ canvas, onChanged }) => {
+export const MediaPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: () => void; selected?: any }> = ({ canvas, onChanged, selected }) => {
   const [q, setQ] = useState('');
   const [kind, setKind] = useState<'all' | 'image' | 'video' | 'audio'>('all');
   const { data, isLoading, error } = useMediaRows();
@@ -251,6 +255,12 @@ export const MediaPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: () 
     <div className={PANEL}>
       <div className={HEAD}><h2 className={H2}>Media</h2></div>
       <div className="flex-1 min-h-0 overflow-y-auto p-4">
+        <SelectedBanner
+          selected={selected}
+          hint={selected?.type === 'image'
+            ? 'Click any image below to replace this layer’s artwork.'
+            : 'Selected layer is not an image — assets will be added as new layers.'}
+        />
         <SearchField value={q} onChange={setQ} placeholder="Search your media library" />
         <div className="flex gap-1.5 mb-4">
           {(['all', 'image', 'video', 'audio'] as const).map((k) => (
@@ -266,13 +276,13 @@ export const MediaPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: () 
         {isLoading && <div className="grid grid-cols-3 gap-2">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="aspect-square rounded-lg bg-[#3D3D3D]" />)}</div>}
         {error && <EmptyState>Couldn’t load your media library.</EmptyState>}
         {!isLoading && !error && rows.length === 0 && <EmptyState>No media yet. Upload files from the Uploads tab or the Media Library page.</EmptyState>}
-        <MediaGrid rows={rows} canvas={canvas} onChanged={onChanged} />
+        <MediaGrid rows={rows} canvas={canvas} onChanged={onChanged} selected={selected} />
       </div>
     </div>
   );
 };
 
-export const UploadsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: () => void }> = ({ canvas, onChanged }) => {
+export const UploadsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: () => void; selected?: any }> = ({ canvas, onChanged, selected }) => {
   const { user } = useAuth();
   const qc = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -295,7 +305,10 @@ export const UploadsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: (
           user_id: user.id, name: file.name, type, file_path: path, file_url: pub.publicUrl,
           file_size: file.size, mime_type: file.type, source: 'upload',
         } as any);
-        if (type === 'image') await addImageToCanvas(canvas, pub.publicUrl, onChanged);
+        if (type === 'image') {
+          if (selected && selected.type === 'image') await replaceImageSource(canvas, selected, pub.publicUrl, onChanged);
+          else await addImageToCanvas(canvas, pub.publicUrl, onChanged);
+        }
       }
       qc.invalidateQueries({ queryKey: ['editor-media'] });
       toast({ title: 'Upload complete', description: 'Your files are in the media library.' });
@@ -311,6 +324,12 @@ export const UploadsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: (
       <div className={HEAD}><h2 className={H2}>Uploads</h2></div>
       <div className="flex-1 min-h-0 overflow-y-auto p-4">
         <input ref={inputRef} type="file" multiple accept="image/*,video/*,audio/*" hidden onChange={(e) => upload(e.target.files)} />
+        <SelectedBanner
+          selected={selected}
+          hint={selected?.type === 'image'
+            ? 'Uploads and library items will replace this image layer.'
+            : 'Uploads will be added to the canvas as new layers.'}
+        />
         <button
           onClick={() => inputRef.current?.click()}
           disabled={busy || !user}
@@ -322,7 +341,7 @@ export const UploadsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: (
         <SearchField value={q} onChange={setQ} placeholder="Search uploads" />
         {isLoading && <div className="grid grid-cols-3 gap-2">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="aspect-square rounded-lg bg-[#3D3D3D]" />)}</div>}
         {!isLoading && rows.length === 0 && <EmptyState>Nothing uploaded yet. Add images, video or audio to use them on the canvas.</EmptyState>}
-        <MediaGrid rows={rows} canvas={canvas} onChanged={onChanged} />
+        <MediaGrid rows={rows} canvas={canvas} onChanged={onChanged} selected={selected} />
       </div>
     </div>
   );
@@ -340,11 +359,32 @@ const ELEMENT_ITEMS = [
   { id: 'frame', label: 'Frame' },
 ] as const;
 
-export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: () => void; brandColors?: string[] }> = ({
-  canvas, onChanged, brandColors = [],
+export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: () => void; brandColors?: string[]; selected?: any }> = ({
+  canvas, onChanged, brandColors = [], selected,
 }) => {
   const [q, setQ] = useState('');
   const [fill, setFill] = useState(brandColors[0] || '#6C63FF');
+
+  // Keep the swatch in sync with whatever layer is selected on the canvas.
+  useEffect(() => {
+    const f = selected?.fill ?? selected?.stroke;
+    if (typeof f === 'string' && /^#[0-9a-f]{3,8}$/i.test(f)) setFill(f);
+  }, [selected]);
+
+  const applyToSelected = (c: string) => {
+    if (!canvas || !selected) return;
+    if (selected.type === 'line') selected.set({ stroke: c });
+    else selected.set({ fill: c });
+    canvas.requestRenderAll();
+    onChanged?.();
+  };
+
+  const setOpacity = (v: number) => {
+    if (!canvas || !selected) return;
+    selected.set({ opacity: v });
+    canvas.requestRenderAll();
+    onChanged?.();
+  };
   const items = ELEMENT_ITEMS.filter((i) => i.label.toLowerCase().includes(q.trim().toLowerCase()));
 
   const add = (id: string) => {
@@ -381,8 +421,27 @@ export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: 
     <div className={PANEL}>
       <div className={HEAD}><h2 className={H2}>Elements</h2></div>
       <div className="flex-1 min-h-0 overflow-y-auto p-4">
+        <SelectedBanner selected={selected} hint="Colour and opacity below apply to this layer instantly." />
+        {selected && (
+          <div className="mb-4 space-y-2 rounded-lg border border-[#3D3D3D] bg-[#1A1A1A] p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#888888]">Selected layer</p>
+            <div className="flex flex-wrap gap-1.5">
+              {[...new Set([...(brandColors || []), '#6C63FF', '#FFFFFF', '#000000', '#EF4444', '#F59E0B', '#10B981'])].slice(0, 8).map((c) => (
+                <button key={`sel-${c}`} onClick={() => { setFill(c); applyToSelected(c); }}
+                  className="h-6 w-6 rounded-full border border-white/20" style={{ backgroundColor: c }} title={`Apply ${c}`} />
+              ))}
+            </div>
+            <label className="block text-[10px] text-[#888888]">
+              Opacity
+              <input type="range" min={0} max={1} step={0.05}
+                defaultValue={typeof selected.opacity === 'number' ? selected.opacity : 1}
+                onChange={(e) => setOpacity(Number(e.target.value))}
+                className="mt-1 w-full accent-[#6C63FF]" />
+            </label>
+          </div>
+        )}
         <SearchField value={q} onChange={setQ} placeholder="Search elements" />
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#888888]">Fill colour</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#888888]">Fill colour for new shapes</p>
         <div className="mb-4 flex flex-wrap gap-1.5">
           {swatches.map((c) => (
             <button key={c} onClick={() => setFill(c)}
@@ -415,9 +474,11 @@ export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: 
 };
 
 /* ============================ BACKGROUND ============================ */
-export const BackgroundPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: () => void; brandColors?: string[] }> = ({
-  canvas, onChanged, brandColors = [],
+export const BackgroundPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: () => void; brandColors?: string[]; selected?: any }> = ({
+  canvas, onChanged, brandColors = [], selected,
 }) => {
+  const [target, setTarget] = useState<'canvas' | 'layer'>('canvas');
+  useEffect(() => { if (!selected) setTarget('canvas'); }, [selected]);
   const [current, setCurrent] = useState<string>((canvas?.backgroundColor as string) || '#FFFFFF');
   const rows = [
     ['#000000', '#555555', '#888888', '#BBBBBB', '#DDDDDD', '#FFFFFF'],
@@ -428,6 +489,14 @@ export const BackgroundPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?
 
   const apply = (c: string) => {
     if (!canvas) return;
+    if (target === 'layer' && selected) {
+      if (selected.type === 'line') selected.set({ stroke: c });
+      else selected.set({ fill: c });
+      canvas.requestRenderAll();
+      setCurrent(c);
+      onChanged?.();
+      return;
+    }
     canvas.backgroundColor = c;
     canvas.requestRenderAll();
     setCurrent(c);
@@ -447,7 +516,20 @@ export const BackgroundPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?
     <div className={PANEL}>
       <div className={HEAD}><h2 className={H2}>Background</h2></div>
       <div className="flex-1 min-h-0 overflow-y-auto p-4">
-        <p className="mb-2 text-sm font-semibold text-white">Current background</p>
+        <SelectedBanner selected={selected} hint="Choose whether colours below fill the canvas or this layer." />
+        {selected && (
+          <div className="mb-4 grid grid-cols-2 gap-1.5">
+            {(['canvas', 'layer'] as const).map((t) => (
+              <button key={t} onClick={() => setTarget(t)}
+                className={`rounded-lg px-3 py-2 text-[11px] font-semibold capitalize ${target === t ? 'bg-[#6C63FF] text-white' : 'bg-[#3D3D3D] text-[#CCCCCC]'}`}>
+                {t === 'canvas' ? 'Canvas background' : 'Selected layer'}
+              </button>
+            ))}
+          </div>
+        )}
+        <p className="mb-2 text-sm font-semibold text-white">
+          {target === 'layer' ? 'Current layer colour' : 'Current background'}
+        </p>
         <div className="mb-4 flex items-center gap-2">
           <div className="h-9 w-9 rounded-lg border border-white/20" style={{ backgroundColor: current }} />
           <input
@@ -498,7 +580,8 @@ export const AIStudioPanel: React.FC<{
   onChanged?: () => void;
   platform?: string | null;
   category?: string | null;
-}> = ({ canvas, onChanged, platform, category }) => {
+  selected?: any;
+}> = ({ canvas, onChanged, platform, category, selected }) => {
   const [prompt, setPrompt] = useState('');
   const [busy, setBusy] = useState(false);
   const [results, setResults] = useState<string[]>([]);
@@ -526,6 +609,12 @@ export const AIStudioPanel: React.FC<{
     <div className={PANEL}>
       <div className={HEAD}><h2 className={H2}>AI Studio</h2></div>
       <div className="flex-1 min-h-0 overflow-y-auto p-4">
+        <SelectedBanner
+          selected={selected}
+          hint={selected?.type === 'image'
+            ? 'Generated images replace this image layer (reversible with undo).'
+            : 'Generated images are added as new layers — your selection stays untouched.'}
+        />
         <p className="mb-2 text-sm font-semibold text-white">Describe what you want to create</p>
         <textarea
           value={prompt}
@@ -543,7 +632,9 @@ export const AIStudioPanel: React.FC<{
         ) : (
           <div className="grid grid-cols-3 gap-2">
             {results.map((url) => (
-              <button key={url} onClick={() => addImageToCanvas(canvas, url, onChanged)}
+              <button key={url} onClick={() => (selected && selected.type === 'image'
+                ? replaceImageSource(canvas, selected, url, onChanged)
+                : addImageToCanvas(canvas, url, onChanged))}
                 className="aspect-square overflow-hidden rounded-lg border border-[#3D3D3D] hover:border-[#6C63FF]">
                 <img src={url} alt="AI result" className="h-full w-full object-cover" />
               </button>
