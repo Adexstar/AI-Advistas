@@ -1618,7 +1618,11 @@ const RightPanel: React.FC<{
 /* ---------- Main Editor ---------- */
 const EditorInner: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<string>('templates');
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'templates';
+    const saved = window.localStorage.getItem('advista.editor.activeTab');
+    return saved && LEFT_TABS.some((t) => t.id === saved) ? saved : 'templates';
+  });
   const [activeTool, setActiveTool] = useState<string | null>(null);
   const [projectName, setProjectName] = useState('Summer Sale Campaign');
   const [zoom, setZoom] = useState(100);
@@ -1866,17 +1870,27 @@ const EditorInner: React.FC = () => {
     });
   }, [selected, canvasWrapperEl, canvas, zoom]);
 
+  // Persist the open panel so a refresh restores the same tab.
+  useEffect(() => {
+    try { window.localStorage.setItem('advista.editor.activeTab', activeTab); } catch { /* ignore */ }
+  }, [activeTab]);
+
+  const selectTab = useCallback((id: string) => {
+    setActiveTab(id);
+    setActiveTool(null);
+  }, []);
+
   const renderLeftPanel = () => {
     switch (activeTab) {
       case 'templates': return <StudioTemplatesPanel onUse={(t: StudioTemplate) => loadTemplateRecord(t)} />;
-      case 'background': return <StudioBackgroundPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} brandColors={brandPalette} />;
-      case 'ai-studio': return <StudioAIPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} platform={(effectiveContext as any)?.active_platform ?? null} category={effectiveContext?.active_category ?? null} />;
+      case 'background': return <StudioBackgroundPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} brandColors={brandPalette} selected={selected} />;
+      case 'ai-studio': return <StudioAIPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} platform={(effectiveContext as any)?.active_platform ?? null} category={effectiveContext?.active_category ?? null} selected={selected} />;
       case 'text': return <TextPanel onAdd={addText} />;
-      case 'elements': return <StudioElementsPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} brandColors={brandPalette} />;
+      case 'elements': return <StudioElementsPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} brandColors={brandPalette} selected={selected} />;
       case 'brand': return <BrandKitPanel />;
-      case 'layers': return <LayersPanel canvas={canvas} version={0} />;
-      case 'media': return <StudioMediaPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} />;
-      case 'uploads': return <StudioUploadsPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} />;
+      case 'layers': return <LayersPanel canvas={canvas} version={tick} />;
+      case 'media': return <StudioMediaPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} selected={selected} />;
+      case 'uploads': return <StudioUploadsPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} selected={selected} />;
       case 'projects': return <SimplePanel title="Projects"><p className="text-xs text-muted-foreground">Your recent projects.</p></SimplePanel>;
 
       default: return null;
@@ -2032,9 +2046,11 @@ const EditorInner: React.FC = () => {
           <div className="editor-main flex flex-1 overflow-hidden min-h-0">
             {/* Left: Icon Rail + Panel */}
             <div className="editor-left-panel flex h-full overflow-hidden">
-              <IconRail active={activeTab} onChange={setActiveTab} />
-              <div className="editor-panel-content hidden md:block w-[264px] shrink-0 border-r overflow-y-auto">
-                {renderLeftPanel()}
+              <IconRail active={activeTab} onChange={selectTab} />
+              <div className="editor-panel-content hidden md:flex h-full w-[264px] shrink-0 flex-col overflow-hidden border-r">
+                <div key={activeTab} className="flex h-full min-h-0 flex-col">
+                  {renderLeftPanel()}
+                </div>
               </div>
             </div>
 
@@ -2068,7 +2084,7 @@ const EditorInner: React.FC = () => {
               const Icon = t.icon;
               const isActive = activeTab === t.id;
               return (
-                <button key={t.id} onClick={() => setActiveTab(t.id)}
+                <button key={t.id} onClick={() => selectTab(t.id)}
                   className={`flex shrink-0 flex-col items-center gap-0.5 rounded-lg px-2.5 py-2 text-white ${isActive ? 'bg-primary' : 'hover:bg-white/10'}`}>
                   <Icon className="h-4 w-4" />
                   <span className="text-[9px]">{t.label}</span>
@@ -2076,7 +2092,7 @@ const EditorInner: React.FC = () => {
               );
             })}
           </div>
-          <div className="flex-1 min-h-0 overflow-hidden">{renderLeftPanel()}</div>
+          <div key={activeTab} className="flex-1 min-h-0 overflow-hidden">{renderLeftPanel()}</div>
         </SheetContent>
       </Sheet>
     </div>
