@@ -31,6 +31,24 @@ const EmptyState: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <p className="rounded-lg border border-dashed border-[#555555] p-4 text-center text-xs text-[#888888]">{children}</p>
 );
 
+const layerLabel = (o: any): string => {
+  if (!o) return '';
+  if (o.type === 'textbox' || o.type === 'text' || o.type === 'i-text') return `Text · “${String(o.text ?? '').slice(0, 22)}”`;
+  if (o.type === 'image') return 'Image layer';
+  if (o.type === 'group' || o.type === 'activeselection') return 'Group / multi-selection';
+  return `${String(o.type ?? 'Shape').replace(/^\w/, (c: string) => c.toUpperCase())} layer`;
+};
+
+export const SelectedBanner: React.FC<{ selected: any; hint: string }> = ({ selected, hint }) => {
+  if (!selected) return null;
+  return (
+    <div className="mb-3 rounded-lg border border-[#6C63FF]/40 bg-[#6C63FF]/10 p-2.5">
+      <p className="text-[11px] font-semibold text-white">{layerLabel(selected)}</p>
+      <p className="mt-0.5 text-[10px] leading-relaxed text-[#BBBBBB]">{hint}</p>
+    </div>
+  );
+};
+
 async function addImageToCanvas(canvas: FabricCanvas | null, url: string, onChanged?: () => void) {
   if (!canvas) return;
   try {
@@ -44,6 +62,26 @@ async function addImageToCanvas(canvas: FabricCanvas | null, url: string, onChan
     onChanged?.();
   } catch {
     toast({ title: 'Could not load image', description: 'The asset could not be added to the canvas.', variant: 'destructive' });
+  }
+}
+
+async function replaceImageSource(canvas: FabricCanvas | null, target: any, url: string, onChanged?: () => void) {
+  if (!canvas || !target) return;
+  try {
+    const next = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
+    const w = target.getScaledWidth?.() ?? target.width ?? 200;
+    if (next.width) next.scale(w / next.width);
+    next.set({ left: target.left, top: target.top, angle: target.angle ?? 0 });
+    const idx = canvas.getObjects().indexOf(target);
+    canvas.remove(target);
+    canvas.add(next);
+    if (idx >= 0) (canvas as any).moveObjectTo?.(next, idx);
+    canvas.setActiveObject(next);
+    canvas.requestRenderAll();
+    onChanged?.();
+    toast({ title: 'Layer replaced', description: 'The selected image now uses the new asset.' });
+  } catch {
+    toast({ title: 'Could not replace layer', variant: 'destructive' });
   }
 }
 
