@@ -1791,24 +1791,73 @@ const EditorInner: React.FC = () => {
           platform: template.platform ?? null,
           productName: template.name,
         });
-        const json = inst.json;
+        const json = inst.json as any;
+
+        // Fabric v6: loadFromJSON is promise-based (the 2nd arg is a reviver, not a callback).
+        await canvas.loadFromJSON(json);
+
         if (json?.background) canvas.backgroundColor = json.background as string;
-        canvas.loadFromJSON(json as any, () => {
-          canvas.renderAll();
-          setProjectName(template.name);
-          forceUpdate((n) => n + 1);
-          toast({
-            title: 'Template loaded',
-            description: `${Object.keys(inst.resolvedVariables).length} placeholders resolved${inst.appliedBrand ? ' • Brand applied' : ''}.`,
+
+        // Fit the template artboard into the editor canvas so everything is visible.
+        const tw = Number(template.width) || json?.width || canvas.getWidth();
+        const th = Number(template.height) || json?.height || canvas.getHeight();
+        const fit = Math.min(canvas.getWidth() / tw, canvas.getHeight() / th);
+        const offsetX = (canvas.getWidth() - tw * fit) / 2;
+        const offsetY = (canvas.getHeight() - th * fit) / 2;
+
+        const srcObjects: any[] = Array.isArray(json?.objects) ? json.objects : [];
+
+        canvas.getObjects().forEach((obj: any, i) => {
+          const src = srcObjects[i] ?? {};
+          if (fit !== 1) {
+            obj.set({
+              left: (obj.left || 0) * fit + offsetX,
+              top: (obj.top || 0) * fit + offsetY,
+              scaleX: (obj.scaleX || 1) * fit,
+              scaleY: (obj.scaleY || 1) * fit,
+            });
+          }
+          // Everything stays fully editable — templates are a starting point, not a lock.
+          obj.set({
+            selectable: true,
+            evented: true,
+            hasControls: true,
+            hasBorders: true,
+            lockMovementX: false,
+            lockMovementY: false,
+            lockScalingX: false,
+            lockScalingY: false,
+            lockRotation: false,
+            hoverCursor: 'move',
           });
+          // Keep AdVista metadata on the live object so panels/AI can target layers.
+          obj.name = src.name ?? obj.name;
+          obj.variableKey = src.variableKey;
+          obj.brandReplaceable = src.brandReplaceable;
+          obj.aiReplaceable = src.aiReplaceable;
+          if (obj.type === 'textbox' || obj.type === 'i-text' || obj.type === 'text') {
+            obj.editable = true; // double-click to edit copy live
+          }
+          obj.setCoords();
         });
+
+        canvas.discardActiveObject();
+        canvas.requestRenderAll();
+        saveSnapshot(canvas);
+        setProjectName(template.name);
+        forceUpdate((n) => n + 1);
+        toast({
+          title: 'Template loaded',
+          description: `${canvas.getObjects().length} editable layers • ${Object.keys(inst.resolvedVariables).length} placeholders resolved${inst.appliedBrand ? ' • Brand applied' : ''}.`,
+        });
+
       } catch (err) {
         console.error('[VisualEditor] instantiate failed', err);
         toast({ title: 'Could not load template', description: 'Falling back to a blank canvas.', variant: 'destructive' });
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [canvas, brandKits, brand, effectiveContext],
+    [canvas, brandKits, brand, effectiveContext, saveSnapshot],
   );
 
   // On canvas ready + pending template → instantiate via TemplateEngine and load.
