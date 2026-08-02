@@ -18,6 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { signedMediaUrl } from '@/lib/mediaUrl';
 import { useAuth } from '@/hooks/useAuth';
 
 /* ------------------------------------------------------------------ */
@@ -302,8 +303,8 @@ export default function CreateAd() {
     const path = `${user.id}/creatives/${Date.now()}-${f.name}`;
     const { error: uploadError } = await supabase.storage.from('media-library').upload(path, f);
     if (uploadError) { toast.error(uploadError.message); return; }
-    const { data: urlData } = supabase.storage.from('media-library').getPublicUrl(path);
-    setValue('mediaUrl', urlData.publicUrl);
+    const signedUrl = await signedMediaUrl(path);
+    setValue('mediaUrl', signedUrl);
     toast.success('Media uploaded');
   };
 

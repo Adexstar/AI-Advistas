@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { signedMediaUrl } from '@/lib/mediaUrl';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
@@ -145,7 +146,7 @@ export const useUploadAssets = () => {
           contentType: file.type,
         });
         if (upErr) throw upErr;
-        const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
+        const url = await signedMediaUrl(path, BUCKET);
         const type = detectType(file.type || '');
         const { data, error } = await supabase
           .from('media_assets')
@@ -155,8 +156,8 @@ export const useUploadAssets = () => {
             type,
             mime_type: file.type,
             file_path: path,
-            file_url: pub.publicUrl,
-            thumbnail_url: type === 'image' ? pub.publicUrl : null,
+            file_url: url,
+            thumbnail_url: type === 'image' ? url : null,
             file_size: file.size,
             folder: folder || null,
             source: 'upload',
