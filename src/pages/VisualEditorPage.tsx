@@ -1857,7 +1857,7 @@ const EditorInner: React.FC = () => {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [canvas, brandKits, brand, effectiveContext],
+    [canvas, brandKits, brand, effectiveContext, saveSnapshot],
   );
 
   // On canvas ready + pending template → instantiate via TemplateEngine and load.
