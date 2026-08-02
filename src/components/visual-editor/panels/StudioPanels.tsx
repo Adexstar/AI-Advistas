@@ -299,15 +299,15 @@ export const UploadsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: (
         const path = `${user.id}/${Date.now()}-${file.name}`;
         const { error: upErr } = await supabase.storage.from('media-library').upload(path, file, { upsert: false });
         if (upErr) throw upErr;
-        const { data: pub } = supabase.storage.from('media-library').getPublicUrl(path);
+        const url = await signedMediaUrl(path);
         const type = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'document';
         await supabase.from('media_assets').insert({
-          user_id: user.id, name: file.name, type, file_path: path, file_url: pub.publicUrl,
+          user_id: user.id, name: file.name, type, file_path: path, file_url: url,
           file_size: file.size, mime_type: file.type, source: 'upload',
         } as any);
         if (type === 'image') {
-          if (selected && selected.type === 'image') await replaceImageSource(canvas, selected, pub.publicUrl, onChanged);
-          else await addImageToCanvas(canvas, pub.publicUrl, onChanged);
+          if (selected && selected.type === 'image') await replaceImageSource(canvas, selected, url, onChanged);
+          else await addImageToCanvas(canvas, url, onChanged);
         }
       }
       qc.invalidateQueries({ queryKey: ['editor-media'] });
