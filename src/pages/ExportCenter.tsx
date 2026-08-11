@@ -1,5 +1,5 @@
 import ComingSoonState from "@/components/ComingSoonState";
-import { Download } from "lucide-react";
+import { Download as SoonIcon } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -102,7 +102,7 @@ const ExportCenter = () => {
 };
 
 const ExportCenterComingSoon = () => (
-  <ComingSoonState icon={Download} title="Export Center" description="Download and schedule your ad creatives in any format for any platform." />
+  <ComingSoonState icon={SoonIcon} title="Export Center" description="Download and schedule your ad creatives in any format for any platform." />
 );
 
 export default ExportCenterComingSoon;

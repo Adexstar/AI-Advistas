@@ -1,5 +1,5 @@
 import ComingSoonState from "@/components/ComingSoonState";
-import { Users } from "lucide-react";
+import { Users as SoonIcon } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,7 +48,7 @@ const TeamWorkspace = () => (
 );
 
 const TeamWorkspaceComingSoon = () => (
-  <ComingSoonState icon={Users} title="Team Workspace" description="Invite team members, set permissions, and collaborate on campaigns." />
+  <ComingSoonState icon={SoonIcon} title="Team Workspace" description="Invite team members, set permissions, and collaborate on campaigns." />
 );
 
 export default TeamWorkspaceComingSoon;
