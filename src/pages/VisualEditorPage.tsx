@@ -195,7 +195,7 @@ const TopToolbar: React.FC<{
             <Edit3 className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100" />
           </button>
         )}
-        <span className="hidden lg:inline text-[11px] text-muted-foreground">Instagram Post · 1080×1080 px</span>
+        <span className="hidden lg:inline text-[11px] text-muted-foreground">{artboardLabel}</span>
       </div>
 
       <Badge variant="secondary" className="hidden sm:inline-flex gap-1 rounded-full bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
