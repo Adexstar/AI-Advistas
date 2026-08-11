@@ -14,6 +14,7 @@ import { runwayProvider } from "./providers/runway";
 import { klingProvider } from "./providers/kling";
 import { veoProvider } from "./providers/veo";
 import { withProviderCache } from "./cache";
+import { AIGateway } from "@/services/ai/AIGateway";
 import type { MediaAsset, MediaSearchContext, MediaProvider } from "./types";
 
 const searchProviders: MediaProvider[] = [
