@@ -219,17 +219,17 @@ const TopToolbar: React.FC<{
         </Button>
       </div>
 
-      <Button variant="ghost" size="icon" className="hidden lg:inline-flex h-9 w-9" title="Grid"><Grid3x3 className="h-4 w-4" /></Button>
-      <Button variant="ghost" size="icon" className="hidden lg:inline-flex h-9 w-9" title="Fit"><Maximize2 className="h-4 w-4" /></Button>
+      <Button variant={showGrid ? 'secondary' : 'ghost'} size="icon" className="hidden lg:inline-flex h-9 w-9" title="Grid" onClick={onToggleGrid}><Grid3x3 className="h-4 w-4" /></Button>
+      <Button variant="ghost" size="icon" className="hidden lg:inline-flex h-9 w-9" title="Fit to screen" onClick={onFit}><Maximize2 className="h-4 w-4" /></Button>
 
       <AIQuickActionsMenu />
-      <Button variant="outline" size="sm" className="h-9 gap-1.5 hidden sm:inline-flex">
+      <Button variant="outline" size="sm" className="h-9 gap-1.5 hidden sm:inline-flex" onClick={onPreview}>
         <Play className="h-3.5 w-3.5" /> Preview
       </Button>
       <Button size="sm" className="h-9 gap-1.5 bg-primary hover:bg-primary/90" onClick={onExport}>
         <Download className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Export</span>
       </Button>
-      <Button size="sm" variant="secondary" className="h-9 gap-1.5 hidden sm:inline-flex">
+      <Button size="sm" variant="secondary" className="h-9 gap-1.5 hidden sm:inline-flex" onClick={onPublish}>
         <Send className="h-3.5 w-3.5" /> Publish
       </Button>
 
