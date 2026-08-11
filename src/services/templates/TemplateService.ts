@@ -5,6 +5,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { BrandService, type BrandIdentity } from "@/services/ai/BrandService";
 import { CategoryService } from "@/services/ai/CategoryService";
+import { withProviderCache } from "@/services/media/cache";
 
 export interface TemplateGenContext {
   brand?: BrandIdentity | null;
