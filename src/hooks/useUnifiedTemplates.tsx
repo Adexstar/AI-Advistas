@@ -125,17 +125,17 @@ export const useImportFreepikTemplate = () => {
         throw new Error(processError.message || 'Failed to process PSD');
       }
 
-      // Then insert into ad_templates
+      // Then insert into the unified templates table
       const { error: insertError } = await supabase
-        .from('ad_templates')
+        .from('templates')
         .insert({
           name: freepikTemplate.name,
           description: freepikTemplate.description,
           template_source: 'freepik',
+          source: 'freepik',
           external_id: freepikTemplate.freepik_id,
           canvas_data: processData.processedData.canvas_data,
-          customizable_fields: processData.processedData.placeholders,
-          platforms: ['Facebook', 'Instagram', 'Google'],
+          placeholders: processData.processedData.placeholders,
           template_json: {},
         });
 
