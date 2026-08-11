@@ -1865,7 +1865,7 @@ const EditorInner: React.FC = () => {
         forceUpdate((n) => n + 1);
         toast({
           title: 'Template loaded',
-          description: `${canvas.getObjects().length} editable layers • ${Object.keys(inst.resolvedVariables).length} placeholders resolved${inst.appliedBrand ? ' • Brand applied' : ''}.`,
+          description: `${result.loaded} editable layers${result.skipped ? ` • ${result.skipped} skipped` : ''} • ${Object.keys(inst.resolvedVariables).length} placeholders resolved${inst.appliedBrand ? ' • Brand applied' : ''}.`,
         });
 
       } catch (err) {
@@ -1877,12 +1877,24 @@ const EditorInner: React.FC = () => {
     [canvas, brandKits, brand, effectiveContext, saveSnapshot],
   );
 
-  // On canvas ready + pending template → instantiate via TemplateEngine and load.
+  // On canvas ready → load a pending template (session handoff) or ?template=<id>.
   useEffect(() => {
     if (!canvas) return;
     const pending = consumePendingEditorTemplate();
-    if (!pending?.template) return;
-    loadTemplateRecord(pending.template);
+    if (pending?.template) {
+      loadTemplateRecord(pending.template);
+      return;
+    }
+    const templateId = new URLSearchParams(window.location.search).get('template');
+    if (!templateId) return;
+    (async () => {
+      const { data, error } = await supabase.from('templates').select('*').eq('id', templateId).maybeSingle();
+      if (error || !data) {
+        toast({ title: 'Template not found', description: 'Starting from a blank canvas instead.', variant: 'destructive' });
+        return;
+      }
+      loadTemplateRecord(data);
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvas]);
 
