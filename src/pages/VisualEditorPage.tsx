@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { VisualEditorProvider, useVisualEditor } from '@/contexts/VisualEditorContext';
-import { Canvas as FabricCanvas, Rect, Circle as FCircle, Textbox } from 'fabric';
+import { Canvas as FabricCanvas, Rect, Circle as FCircle, Textbox, Shadow, FabricImage } from 'fabric';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
