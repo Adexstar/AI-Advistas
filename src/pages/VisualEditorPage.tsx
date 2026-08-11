@@ -2025,6 +2025,9 @@ const EditorInner: React.FC = () => {
         onSelection={(o) => { setSelected(o); forceUpdate((n) => n + 1); }}
         onCanvasWrapperRef={(el) => setCanvasWrapperEl(el)}
         isMobile={isMobile}
+        artboard={artboard}
+        showGrid={showGrid}
+        fitToken={fitToken}
       />
 
       {/* Onboarding overlay when canvas is empty */}
