@@ -1,3 +1,5 @@
+import ComingSoonState from "@/components/ComingSoonState";
+import { Bell } from "lucide-react";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -72,4 +74,8 @@ const Notifications = () => {
   );
 };
 
-export default Notifications;
+const NotificationsComingSoon = () => (
+  <ComingSoonState icon={Bell} title="Notifications" description="Your central activity feed for campaigns, AI recommendations, and automation alerts." />
+);
+
+export default NotificationsComingSoon;

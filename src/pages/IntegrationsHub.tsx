@@ -1,3 +1,5 @@
+import ComingSoonState from "@/components/ComingSoonState";
+import { Plug } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -109,4 +111,8 @@ const IntegrationsHub = () => {
   );
 };
 
-export default IntegrationsHub;
+const IntegrationsHubComingSoon = () => (
+  <ComingSoonState icon={Plug} title="Integrations Hub" description="Connect Meta, TikTok, Google, Canva, Cloudinary and more in one place." />
+);
+
+export default IntegrationsHubComingSoon;

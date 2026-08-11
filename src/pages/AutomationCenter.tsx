@@ -1,3 +1,5 @@
+import ComingSoonState from "@/components/ComingSoonState";
+import { Zap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -65,4 +67,8 @@ const AutomationCenter = () => {
   );
 };
 
-export default AutomationCenter;
+const AutomationCenterComingSoon = () => (
+  <ComingSoonState icon={Zap} title="Automation Center" description="The command center for autonomous marketing — approval queues, AI history, and growth agent controls." />
+);
+
+export default AutomationCenterComingSoon;
