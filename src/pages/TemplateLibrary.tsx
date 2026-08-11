@@ -610,7 +610,7 @@ const TemplateLibrary = () => {
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold">{c.label}</p>
                     <p className="text-xs text-muted-foreground">
-                      {count > 0 ? `${count} ${count === 1 ? 'Template' : 'Templates'}` : 'Coming soon'}
+                      {`${count} ${count === 1 ? 'Template' : 'Templates'}`}
                     </p>
                   </div>
                 </button>
