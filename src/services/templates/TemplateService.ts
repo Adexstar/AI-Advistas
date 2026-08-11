@@ -64,11 +64,13 @@ export const TemplateService = {
   },
 
   async importFromFreepik(query: string, opts: { category?: string; platform?: string } = {}) {
-    const { data, error } = await supabase.functions.invoke("search-freepik-templates", {
-      body: { query, ...opts },
+    return withProviderCache("template-search:freepik", { query, ...opts }, async () => {
+      const { data, error } = await supabase.functions.invoke("search-freepik-templates", {
+        body: { query, ...opts },
+      });
+      if (error) throw error;
+      return data;
     });
-    if (error) throw error;
-    return data;
   },
 
   async fetchFreepikAsset(freepikId: string) {
