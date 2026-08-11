@@ -660,13 +660,11 @@ const CanvasSubToolbar: React.FC<{
 const CANVAS_WIDTH = 360;
 const CANVAS_HEIGHT = 640;
 
-const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: number): number => {
+const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: number, w: number, h: number): number => {
   const pad = isMobile ? 24 : 48;
   const availW = containerWidth - pad;
   const availH = containerHeight - pad;
-  const scaleX = availW / CANVAS_WIDTH;
-  const scaleY = availH / CANVAS_HEIGHT;
-  return Math.min(scaleX, scaleY, 1) * 100;
+  return Math.min(availW / w, availH / h, 1) * 100;
 };
 
   const CanvasStage: React.FC<{
@@ -677,7 +675,10 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
   seedDefault: boolean;
   onCanvasWrapperRef?: (el: HTMLDivElement | null) => void;
   isMobile: boolean;
-}> = ({ onCanvasReady, onSelection, zoom, onZoomChange, seedDefault, onCanvasWrapperRef, isMobile }) => {
+  artboard: { width: number; height: number };
+  showGrid: boolean;
+  fitToken: number;
+}> = ({ onCanvasReady, onSelection, zoom, onZoomChange, seedDefault, onCanvasWrapperRef, isMobile, artboard, showGrid, fitToken }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
