@@ -34,6 +34,12 @@ const OriginalTemplateDetail = lazy(() => import("./pages/OriginalTemplateDetail
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminProviders = lazy(() => import("./pages/AdminProviders"));
 const AdminTemplates = lazy(() => import("./pages/AdminTemplates"));
+const AdminUsers = lazy(() => import("./pages/AdminUsers"));
+const AdminDecisions = lazy(() => import("./pages/AdminDecisions"));
+const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
+const AdminPlaybooks = lazy(() => import("./pages/AdminPlaybooks"));
+const AdminSettings = lazy(() => import("./pages/AdminSettings"));
+
 const MediaLibrary = lazy(() => import("./pages/MediaLibrary"));
 const BrandKit = lazy(() => import("./pages/BrandKit"));
 const Analytics = lazy(() => import("./pages/Analytics"));
@@ -216,22 +222,6 @@ const AppContent = () => {
             <Route path="/simulator" element={<Navigate to="/create-ad" replace />} />
             <Route path="/visual-editor" element={<ProtectedRoute><VisualEditorPage /></ProtectedRoute>} />
 
-            <Route path="/admin/templates" element={
-              <ProtectedRoute>
-                <AdminRoute>
-                  <DashboardLayout />
-                </AdminRoute>
-              </ProtectedRoute>
-            }>
-              <Route index element={<AdminTemplates />} />
-            </Route>
-            <Route path="/admin/providers" element={
-              <ProtectedRoute>
-                <DashboardLayout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<AdminProviders />} />
-            </Route>
             <Route path="/admin" element={
               <ProtectedRoute>
                 <AdminRoute>
@@ -240,7 +230,15 @@ const AppContent = () => {
               </ProtectedRoute>
             }>
               <Route index element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="templates" element={<AdminTemplates />} />
+              <Route path="decisions" element={<AdminDecisions />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
+              <Route path="providers" element={<AdminProviders />} />
+              <Route path="playbooks" element={<AdminPlaybooks />} />
+              <Route path="settings" element={<AdminSettings />} />
             </Route>
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
