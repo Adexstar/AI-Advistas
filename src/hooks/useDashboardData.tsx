@@ -200,7 +200,7 @@ export const useDashboardData = (range: Range = 'daily') => {
         () => queryClient.invalidateQueries({ queryKey: ['dash-brand-kits', userId] }))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs', filter: `user_id=eq.${userId}` },
         () => queryClient.invalidateQueries({ queryKey: ['dash-activity', userId] }))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ad_templates' },
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'templates' },
         () => queryClient.invalidateQueries({ queryKey: ['dash-templates'] }))
       .subscribe();
     return () => {
