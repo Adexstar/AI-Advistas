@@ -1911,6 +1911,13 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      template_category_counts: {
+        Args: { p_source?: string }
+        Returns: {
+          category: string
+          count: number
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
