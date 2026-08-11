@@ -42,6 +42,10 @@ import {
   AIStudioPanel as StudioAIPanel,
   type StudioTemplate,
 } from '@/components/visual-editor/panels/StudioPanels';
+import {
+  ARTBOARD_PRESETS, alignObject, deleteObject, duplicateObject, isLocked, moveLayer,
+  reorderLayer, setLocked, setVisible,
+} from '@/components/visual-editor/canvasActions';
 
 /* ---------- Constants ---------- */
 const LEFT_TABS = [
