@@ -1731,25 +1731,35 @@ const EditorInner: React.FC = () => {
 
   const deleteSelected = useCallback(() => {
     if (!selected || !canvas) return;
-    canvas.remove(selected);
-    canvas.discardActiveObject();
-    canvas.renderAll();
+    deleteObject(canvas, selected);
     setSelected(null);
     forceUpdate(n => n + 1);
   }, [selected, canvas]);
 
-  const copySelected = useCallback(() => {
+  const duplicateSelected = useCallback(async () => {
+    if (!selected || !canvas) return;
+    const clone = await duplicateObject(canvas, selected);
+    if (clone) setSelected(clone);
+    forceUpdate(n => n + 1);
+  }, [selected, canvas]);
+
+  const clipboardRef = useRef<any>(null);
+
+  const copySelected = useCallback(async () => {
     if (!selected) return;
-    (window as any).__editorClipboard = { type: selected.type, json: selected.toJSON(['id']) };
+    clipboardRef.current = await selected.clone();
+    toast({ title: 'Copied', description: 'Press Ctrl/Cmd + V to paste.' });
   }, [selected]);
 
-  const pasteClipboard = useCallback(() => {
-    if (!canvas || !(window as any).__editorClipboard) return;
-    const data = (window as any).__editorClipboard;
-    canvas.loadFromJSON({ ...(canvas as any).toJSON(['id']), objects: [...canvas.getObjects(), data.json] }, () => {
-      canvas.renderAll();
-      forceUpdate(n => n + 1);
-    });
+  const pasteClipboard = useCallback(async () => {
+    if (!canvas || !clipboardRef.current) return;
+    const clone: any = await clipboardRef.current.clone();
+    clone.set({ left: (clone.left || 0) + 20, top: (clone.top || 0) + 20 });
+    canvas.add(clone);
+    canvas.setActiveObject(clone);
+    canvas.requestRenderAll();
+    setSelected(clone);
+    forceUpdate(n => n + 1);
   }, [canvas]);
 
   useKeyboardShortcuts({
