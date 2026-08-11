@@ -161,10 +161,13 @@ const NavItemRow = ({
       to={item.href}
       onClick={onNavigate}
       end={item.href === "/dashboard"}
+      aria-disabled={item.soon || undefined}
+      tabIndex={item.soon ? -1 : undefined}
       className={({ isActive }) =>
         cn(
           "group flex h-10 items-center gap-2.5 rounded-lg px-3 text-sm font-medium transition-all",
           collapsed && "justify-center px-0",
+          item.soon && "pointer-events-none opacity-60",
           isActive
             ? "bg-primary text-primary-foreground shadow-sm"
             : "text-white/70 hover:bg-white/10 hover:text-white"
@@ -175,7 +178,13 @@ const NavItemRow = ({
       {!collapsed && (
         <>
           <span className="flex-1 text-truncate">{item.name}</span>
-          {item.notify ? <NotifyBadge count={item.notify} variant="unread" /> : null}
+          {item.soon ? (
+            <span className="rounded-[10px] bg-[rgba(108,99,255,0.15)] px-1.5 py-[2px] text-[9px] font-bold tracking-wide text-[#A78BFA]">
+              SOON
+            </span>
+          ) : item.notify ? (
+            <NotifyBadge count={item.notify} variant="unread" />
+          ) : null}
           {item.badge && (
             <Badge variant="secondary" className="h-5 rounded-full bg-white/10 px-2 text-[10px] font-semibold text-white/70 hover:bg-white/10">
               {item.badge}
