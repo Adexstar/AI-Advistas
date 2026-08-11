@@ -533,22 +533,20 @@ const BrandKitPanel: React.FC = () => {
   );
 };
 
-const LayersPanel: React.FC<{ canvas: FabricCanvas | null; version: number }> = ({ canvas, version }) => {
+const LayersPanel: React.FC<{
+  canvas: FabricCanvas | null;
+  version: number;
+  selected: any;
+  onSelect: (o: any) => void;
+  onChanged: () => void;
+}> = ({ canvas, version, selected, onSelect, onChanged }) => {
   const objs = canvas?.getObjects() || [];
-  const [locked, setLocked] = useState<Record<number, boolean>>({});
-  const [hidden, setHidden] = useState<Record<number, boolean>>({});
   const [dragIdx, setDragIdx] = useState<number | null>(null);
 
   const typeIcon = (type: string) => {
     if (type === 'textbox' || type === 'i-text') return <Type className="h-3.5 w-3.5" />;
     if (type === 'image' || type === 'video') return <ImageIcon className="h-3.5 w-3.5" />;
     return <Shapes className="h-3.5 w-3.5" />;
-  };
-
-  const handleVisibility = (idx: number, o: any) => {
-    const next = !hidden[idx];
-    setHidden(prev => ({ ...prev, [idx]: next }));
-    if (canvas) { o.visible = !next; canvas.renderAll(); }
   };
 
   return (
@@ -559,38 +557,47 @@ const LayersPanel: React.FC<{ canvas: FabricCanvas | null; version: number }> = 
         <div className="space-y-1">
           {[...objs].reverse().map((o: any, i) => {
             const realIdx = objs.length - 1 - i;
-            const isLocked = locked[realIdx];
-            const isHidden = hidden[realIdx];
+            const locked = isLocked(o);
+            const hidden = o.visible === false;
+            const isActive = selected === o;
             return (
-              <div key={i}
-                className={`group flex items-center gap-2 rounded-lg border bg-background px-3 py-2 transition-all
+              <div key={realIdx}
+                onClick={() => {
+                  if (!canvas) return;
+                  canvas.setActiveObject(o);
+                  canvas.requestRenderAll();
+                  onSelect(o);
+                }}
+                className={`group flex cursor-pointer items-center gap-2 rounded-lg border bg-background px-3 py-2 transition-all
                   ${dragIdx === i ? 'opacity-50 scale-[1.02] shadow-md' : ''}
-                  ${isHidden ? 'opacity-40' : ''}
+                  ${hidden ? 'opacity-40' : ''}
+                  ${isActive ? 'border-primary ring-1 ring-primary/40' : ''}
                 `}
                 draggable
                 onDragStart={() => setDragIdx(i)}
-                onDragOver={(e) => { e.preventDefault(); if (dragIdx !== null && dragIdx !== i) setDragIdx(i); }}
-                onDragEnd={() => {
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => {
                   if (dragIdx === null || dragIdx === i) { setDragIdx(null); return; }
-                  const items = [...objs].reverse();
-                  const [moved] = items.splice(dragIdx, 1);
-                  items.splice(i, 0, moved);
-                  canvas?.clear(); items.reverse().forEach((item: any) => canvas?.add(item)); canvas?.renderAll();
+                  const from = objs.length - 1 - dragIdx;
+                  const moved = objs[from];
+                  reorderLayer(canvas, moved, realIdx);
                   setDragIdx(null);
+                  onChanged();
                 }}
+                onDragEnd={() => setDragIdx(null)}
               >
                 <GripVertical className="h-3.5 w-3.5 text-muted-foreground cursor-grab active:cursor-grabbing shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                 <span className="shrink-0 text-muted-foreground">{typeIcon(o.type)}</span>
                 <span className="flex-1 truncate text-xs">{o.type === 'textbox' ? o.text?.slice(0, 24) || 'Text' : o.type}</span>
-                <button onClick={() => handleVisibility(realIdx, o)}
+                <button onClick={(e) => { e.stopPropagation(); setVisible(canvas, o, hidden); onChanged(); }}
                   className="h-6 w-6 flex items-center justify-center rounded hover:bg-muted shrink-0">
-                  {isHidden ? <EyeOff className="h-3.5 w-3.5 text-muted-foreground" /> : <Eye className="h-3.5 w-3.5 text-muted-foreground" />}
+                  {hidden ? <EyeOff className="h-3.5 w-3.5 text-muted-foreground" /> : <Eye className="h-3.5 w-3.5 text-muted-foreground" />}
                 </button>
-                <button onClick={() => { setLocked(prev => ({ ...prev, [realIdx]: !isLocked })); }}
+                <button onClick={(e) => { e.stopPropagation(); setLocked(canvas, o, !locked); onChanged(); }}
                   className="h-6 w-6 flex items-center justify-center rounded hover:bg-muted shrink-0">
-                  {isLocked ? <Lock className="h-3.5 w-3.5 text-amber-500" /> : <Unlock className="h-3.5 w-3.5 text-muted-foreground" />}
+                  {locked ? <Lock className="h-3.5 w-3.5 text-amber-500" /> : <Unlock className="h-3.5 w-3.5 text-muted-foreground" />}
                 </button>
-                <button onClick={() => { canvas?.remove(o); canvas?.renderAll(); }}
+                <button onClick={(e) => { e.stopPropagation(); deleteObject(canvas, o); onSelect(null); onChanged(); }}
                   className="h-6 w-6 flex items-center justify-center rounded hover:bg-destructive/10 shrink-0">
                   <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
                 </button>
@@ -604,31 +611,46 @@ const LayersPanel: React.FC<{ canvas: FabricCanvas | null; version: number }> = 
 };
 
 /* ---------- Canvas Sub-toolbar ---------- */
-const CanvasSubToolbar: React.FC = () => (
-  <div className="hidden md:flex h-11 items-center gap-1 border-b bg-card/60 px-3 overflow-x-auto">
-    <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs"><Play className="h-3.5 w-3.5" /> Animate</Button>
-    <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs">Position</Button>
-    <Separator orientation="vertical" className="h-5 mx-1" />
-    <Button variant="ghost" size="icon" className="h-8 w-8"><AlignVerticalJustifyCenter className="h-4 w-4" /></Button>
-    <Button variant="ghost" size="icon" className="h-8 w-8"><MoveUp className="h-4 w-4" /></Button>
-    <Button variant="ghost" size="icon" className="h-8 w-8"><MoveDown className="h-4 w-4" /></Button>
-    <Button variant="ghost" size="icon" className="h-8 w-8"><Lock className="h-4 w-4" /></Button>
-    <Button variant="ghost" size="icon" className="h-8 w-8"><Unlock className="h-4 w-4" /></Button>
-    <div className="flex-1" />
-    <Select defaultValue="desktop">
-      <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue /></SelectTrigger>
-      <SelectContent>
-        <SelectItem value="desktop">Desktop</SelectItem>
-        <SelectItem value="mobile">Mobile</SelectItem>
-        <SelectItem value="instagram">Instagram</SelectItem>
-        <SelectItem value="facebook">Facebook</SelectItem>
-        <SelectItem value="tiktok">TikTok</SelectItem>
-        <SelectItem value="linkedin">LinkedIn</SelectItem>
-        <SelectItem value="youtube">YouTube</SelectItem>
-      </SelectContent>
-    </Select>
-  </div>
-);
+const CanvasSubToolbar: React.FC<{
+  canvas: FabricCanvas | null;
+  selected: any;
+  onChanged: () => void;
+  preset: string;
+  onPresetChange: (v: string) => void;
+  onOpenAnimate: () => void;
+  onOpenPosition: () => void;
+}> = ({ canvas, selected, onChanged, preset, onPresetChange, onOpenAnimate, onOpenPosition }) => {
+  const act = (fn: () => void) => { if (!selected) { toast({ title: 'Select a layer first' }); return; } fn(); onChanged(); };
+  const locked = isLocked(selected);
+  return (
+    <div className="hidden md:flex h-11 items-center gap-1 border-b bg-card/60 px-3 overflow-x-auto">
+      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={onOpenAnimate}><Play className="h-3.5 w-3.5" /> Animate</Button>
+      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={onOpenPosition}>Position</Button>
+      <Separator orientation="vertical" className="h-5 mx-1" />
+      <Button variant="ghost" size="icon" className="h-8 w-8" title="Center on canvas"
+        onClick={() => act(() => { alignObject(canvas, selected, 'center-h'); alignObject(canvas, selected, 'center-v'); })}>
+        <AlignVerticalJustifyCenter className="h-4 w-4" />
+      </Button>
+      <Button variant="ghost" size="icon" className="h-8 w-8" title="Bring forward"
+        onClick={() => act(() => moveLayer(canvas, selected, 'up'))}><MoveUp className="h-4 w-4" /></Button>
+      <Button variant="ghost" size="icon" className="h-8 w-8" title="Send backward"
+        onClick={() => act(() => moveLayer(canvas, selected, 'down'))}><MoveDown className="h-4 w-4" /></Button>
+      <Button variant="ghost" size="icon" className={`h-8 w-8 ${locked ? 'text-amber-500' : ''}`} title="Lock layer"
+        onClick={() => act(() => setLocked(canvas, selected, true))}><Lock className="h-4 w-4" /></Button>
+      <Button variant="ghost" size="icon" className="h-8 w-8" title="Unlock layer"
+        onClick={() => act(() => setLocked(canvas, selected, false))}><Unlock className="h-4 w-4" /></Button>
+      <div className="flex-1" />
+      <Select value={preset} onValueChange={onPresetChange}>
+        <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {Object.entries(ARTBOARD_PRESETS).map(([k, v]) => (
+            <SelectItem key={k} value={k}>{v.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+};
 
 /* ---------- Canvas Stage ---------- */
 const CANVAS_WIDTH = 360;
