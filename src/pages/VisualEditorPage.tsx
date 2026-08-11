@@ -1944,6 +1944,58 @@ const EditorInner: React.FC = () => {
     setActiveTool(null);
   }, []);
 
+  // ---- Preview / Publish / Pages ----
+  const openPreview = useCallback(() => {
+    if (!canvas) return;
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
+    setPreviewUrl(canvas.toDataURL({ format: 'png', quality: 1, multiplier: 2 }));
+  }, [canvas]);
+
+  const onPublish = useCallback(() => {
+    if (!canvas) return;
+    try {
+      localStorage.setItem(
+        'advista.editor.publishDraft',
+        JSON.stringify({ name: projectName, json: (canvas as any).toJSON(['id']), preview: canvas.toDataURL({ format: 'png', multiplier: 1 }) }),
+      );
+    } catch { /* preview may exceed quota — publishing still proceeds */ }
+    toast({ title: 'Design ready to publish', description: 'Pick a campaign to attach this creative to.' });
+    navigate('/campaigns');
+  }, [canvas, projectName, navigate]);
+
+  const addPage = useCallback(() => {
+    if (!canvas) return;
+    const snapshot = (canvas as any).toJSON(['id']);
+    setPages((prev) => {
+      const next = [...prev];
+      next[pageIdx] = snapshot;
+      next.push(null);
+      setPageIdx(next.length - 1);
+      return next;
+    });
+    canvas.clear();
+    canvas.backgroundColor = '#ffffff';
+    canvas.requestRenderAll();
+    setSelected(null);
+    forceUpdate((n) => n + 1);
+  }, [canvas, pageIdx]);
+
+  const goToPage = useCallback(async (idx: number) => {
+    if (!canvas || idx === pageIdx) return;
+    const snapshot = (canvas as any).toJSON(['id']);
+    const next = [...pages];
+    next[pageIdx] = snapshot;
+    setPages(next);
+    const target = next[idx];
+    if (target) await canvas.loadFromJSON(target);
+    else { canvas.clear(); canvas.backgroundColor = '#ffffff'; }
+    canvas.requestRenderAll();
+    setPageIdx(idx);
+    setSelected(null);
+    forceUpdate((n) => n + 1);
+  }, [canvas, pages, pageIdx]);
+
   const renderLeftPanel = () => {
     switch (activeTab) {
       case 'templates': return <StudioTemplatesPanel onUse={(t: StudioTemplate) => loadTemplateRecord(t)} />;
