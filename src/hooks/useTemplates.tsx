@@ -2,7 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Template structure matching the ad_templates table
+ * Template card shape used across the library UI.
+ * Backed by the single `templates` table (AdVista Originals + imported sources).
  */
 export interface AdTemplate {
   id: string;
@@ -26,25 +27,61 @@ export interface AdTemplate {
   usage_count?: number;
   category?: string | null;
   tags?: string[];
-  // New organizational fields
   industry?: string | null;
   performance_score?: number | null;
   difficulty_level?: 'beginner' | 'intermediate' | 'advanced' | null;
   estimated_setup_time_minutes?: number | null;
+  preview_url?: string | null;
+  thumbnail_url?: string | null;
+  source?: string | null;
 }
 
+const POPULAR_THRESHOLD = 70;
+
+/** Map a `templates` row onto the AdTemplate shape the cards expect. */
+export const mapTemplateRow = (row: any): AdTemplate => {
+  const metadata = (row?.metadata ?? {}) as Record<string, any>;
+  const recommended: string[] = Array.isArray(metadata.recommended_platforms)
+    ? metadata.recommended_platforms
+    : [];
+  const platforms = Array.from(
+    new Set([row?.platform, ...recommended].filter(Boolean) as string[])
+  );
+
+  return {
+    id: row.id,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    name: row.name,
+    description: row.description ?? null,
+    goal: (row.objective ?? null) as AdTemplate['goal'],
+    platforms,
+    is_popular: (row.popularity_score ?? 0) >= POPULAR_THRESHOLD,
+    template_json: (row.template_json ?? {}) as AdTemplate['template_json'],
+    usage_count: row.popularity_score ?? 0,
+    category: row.category ?? null,
+    tags: (row.ai_tags ?? []) as string[],
+    industry: Array.isArray(row.industry_tags) ? row.industry_tags[0] ?? null : null,
+    performance_score: row.popularity_score ?? null,
+    difficulty_level: (metadata.difficulty_level ?? null) as AdTemplate['difficulty_level'],
+    estimated_setup_time_minutes: metadata.estimated_setup_time_minutes ?? null,
+    preview_url: row.preview_url ?? null,
+    thumbnail_url: row.thumbnail_url ?? null,
+    source: row.source ?? null,
+  };
+};
+
 /**
- * Fetch all available ad templates from Supabase
- * Sorted by popularity first, then by name
+ * Fetch all available templates, most popular first.
  */
 export const useTemplates = () => {
   return useQuery<AdTemplate[], Error>({
     queryKey: ['ad-templates'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('ad_templates')
+        .from('templates')
         .select('*')
-        .order('is_popular', { ascending: false })
+        .order('popularity_score', { ascending: false })
         .order('name', { ascending: true });
 
       if (error) {
@@ -52,7 +89,7 @@ export const useTemplates = () => {
         throw new Error(`Failed to load templates: ${error.message}`);
       }
 
-      return (data || []) as AdTemplate[];
+      return ((data ?? []) as any[]).map(mapTemplateRow);
     },
     staleTime: 1000 * 60 * 60,
     gcTime: 1000 * 60 * 60 * 2,
@@ -92,16 +129,16 @@ export const useTemplate = (templateId: string | undefined) => {
       if (!templateId) return null;
 
       const { data, error } = await supabase
-        .from('ad_templates')
+        .from('templates')
         .select('*')
         .eq('id', templateId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         throw new Error(`Failed to load template: ${error.message}`);
       }
 
-      return data as AdTemplate;
+      return data ? mapTemplateRow(data) : null;
     },
     enabled: !!templateId,
     staleTime: 1000 * 60 * 60,
