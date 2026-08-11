@@ -34,6 +34,12 @@ const OriginalTemplateDetail = lazy(() => import("./pages/OriginalTemplateDetail
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminProviders = lazy(() => import("./pages/AdminProviders"));
 const AdminTemplates = lazy(() => import("./pages/AdminTemplates"));
+const AdminUsers = lazy(() => import("./pages/AdminUsers"));
+const AdminDecisions = lazy(() => import("./pages/AdminDecisions"));
+const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
+const AdminPlaybooks = lazy(() => import("./pages/AdminPlaybooks"));
+const AdminSettings = lazy(() => import("./pages/AdminSettings"));
+
 const MediaLibrary = lazy(() => import("./pages/MediaLibrary"));
 const BrandKit = lazy(() => import("./pages/BrandKit"));
 const Analytics = lazy(() => import("./pages/Analytics"));
