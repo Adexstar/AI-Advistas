@@ -2131,12 +2131,26 @@ const EditorInner: React.FC = () => {
           onToggleLeft={() => isMobile ? navigate('/dashboard') : setLeftOpen(true)}
           onToggleRight={() => setRightOpen(true)}
           isMobile={isMobile}
+          showGrid={showGrid}
+          onToggleGrid={() => setShowGrid((g) => !g)}
+          onFit={() => setFitToken((t) => t + 1)}
+          onPreview={openPreview}
+          onPublish={onPublish}
+          artboardLabel={`${artboard.label} · ${artboard.width}×${artboard.height} px`}
         />
       </div>
 
       {/* Desktop only: Editor Second Bar */}
       <div className="editor-second-bar flex-shrink-0">
-        <CanvasSubToolbar />
+        <CanvasSubToolbar
+          canvas={canvas}
+          selected={selected}
+          onChanged={markChanged}
+          preset={preset}
+          onPresetChange={setPreset}
+          onOpenAnimate={() => { setActiveTab('ai-studio'); setActiveTool('animate'); }}
+          onOpenPosition={() => { setActiveTab('layers'); setActiveTool('position'); }}
+        />
       </div>
 
       {/* Mobile layout: Top Bar → Canvas → Bottom Sheet → Contextual Toolbar */}
