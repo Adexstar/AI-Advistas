@@ -1408,18 +1408,77 @@ const RightPanel: React.FC<{
   canvas: FabricCanvas | null;
   onClose?: () => void;
 }> = ({ selected, canvas, onClose }) => {
-  const isText = selected?.type === 'textbox' || selected?.type === 'text';
+  const [, bump] = useState(0);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const type = String(selected?.type ?? '').toLowerCase();
+  const isText = type === 'textbox' || type === 'text' || type === 'i-text';
+  const isImage = type === 'image';
+  const isShape = type === 'rect' || type === 'circle' || type === 'triangle' || type === 'ellipse';
 
   const update = (prop: string, val: any) => {
     if (!selected || !canvas) return;
     selected.set(prop, val);
-    canvas.renderAll();
+    selected.setCoords?.();
+    canvas.requestRenderAll();
+    bump((n) => n + 1);
   };
+
+  const updateMany = (props: Record<string, any>) => {
+    if (!selected || !canvas) return;
+    selected.set(props);
+    selected.setCoords?.();
+    canvas.requestRenderAll();
+    bump((n) => n + 1);
+  };
+
+  const setEffect = (kind: 'shadow' | 'outline' | 'glow', on: boolean) => {
+    if (!selected || !canvas) return;
+    if (kind === 'outline') {
+      updateMany(on ? { stroke: '#000000', strokeWidth: 2 } : { strokeWidth: 0 });
+      return;
+    }
+    if (!on) { update('shadow', null); return; }
+    update('shadow', new Shadow(
+      kind === 'glow'
+        ? { color: (selected.fill as string) || '#ffffff', blur: 24, offsetX: 0, offsetY: 0 }
+        : { color: 'rgba(0,0,0,0.35)', blur: 12, offsetX: 0, offsetY: 6 },
+    ));
+  };
+
+  const replaceImage = async (file: File) => {
+    if (!canvas || !selected) return;
+    const url = URL.createObjectURL(file);
+    try {
+      const img: any = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
+      const targetW = (selected.width || 0) * (selected.scaleX || 1);
+      const targetH = (selected.height || 0) * (selected.scaleY || 1);
+      img.set({
+        left: selected.left, top: selected.top, angle: selected.angle,
+        originX: selected.originX, originY: selected.originY,
+        scaleX: targetW ? targetW / (img.width || 1) : 1,
+        scaleY: targetH ? targetH / (img.height || 1) : 1,
+        name: selected.name,
+      });
+      const idx = canvas.getObjects().indexOf(selected);
+      canvas.remove(selected);
+      canvas.add(img);
+      if (idx >= 0) (canvas as any).moveObjectTo?.(img, idx);
+      canvas.setActiveObject(img);
+      canvas.requestRenderAll();
+    } catch {
+      toast({ title: 'Could not load image', description: 'Try a different file.', variant: 'destructive' });
+    }
+  };
+
+  const width = Math.round((selected?.width || 0) * (selected?.scaleX || 1));
+  const height = Math.round((selected?.height || 0) * (selected?.scaleY || 1));
+  const setWidth = (w: number) => update('scaleX', (w || 1) / (selected.width || 1));
+  const setHeight = (h: number) => update('scaleY', (h || 1) / (selected.height || 1));
 
   return (
     <aside className="flex h-full min-h-0 w-full flex-col bg-card border-l">
       <div className="flex items-center justify-between px-4 py-3 border-b">
-        <h2 className="text-base font-semibold">{isText ? 'Text' : selected ? 'Properties' : 'Design'}</h2>
+        <h2 className="text-base font-semibold">{isText ? 'Text' : isImage ? 'Image' : selected ? 'Properties' : 'Design'}</h2>
         {onClose && <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onClose}><X className="h-4 w-4" /></Button>}
       </div>
 
@@ -1443,6 +1502,15 @@ const RightPanel: React.FC<{
             <TabsContent value="design" className="p-4 space-y-5 mt-2">
               {isText && (
                 <>
+                  <div>
+                    <p className="mb-2 text-xs font-semibold text-muted-foreground">Content</p>
+                    <textarea
+                      className="w-full rounded-lg border bg-background p-2 text-xs"
+                      rows={3}
+                      value={selected.text ?? ''}
+                      onChange={(e) => update('text', e.target.value)}
+                    />
+                  </div>
                   <div>
                     <p className="mb-2 text-xs font-semibold text-muted-foreground">Font</p>
                     <Select value={selected.fontFamily || 'Poppins'} onValueChange={(v) => update('fontFamily', v)}>
@@ -1469,13 +1537,11 @@ const RightPanel: React.FC<{
                       <Input type="number" className="h-9" value={Math.round(selected.fontSize || 16)} onChange={(e) => update('fontSize', parseInt(e.target.value) || 16)} />
                     </div>
                   </div>
-                  <div className="grid grid-cols-6 gap-1">
-                    <button className="flex h-9 w-full items-center justify-center rounded-lg border hover:bg-muted"><span className="text-xs font-semibold">A</span></button>
-                    <button className="flex h-9 w-full items-center justify-center rounded-lg border bg-accent/20"><div className="h-4 w-4 rounded bg-amber-400" /></button>
+                  <div className="grid grid-cols-4 gap-1">
                     <button onClick={() => update('fontWeight', selected.fontWeight === 'bold' ? 'normal' : 'bold')} className={`flex h-9 w-full items-center justify-center rounded-lg border ${selected.fontWeight === 'bold' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}><Bold className="h-4 w-4" /></button>
                     <button onClick={() => update('fontStyle', selected.fontStyle === 'italic' ? 'normal' : 'italic')} className={`flex h-9 w-full items-center justify-center rounded-lg border ${selected.fontStyle === 'italic' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}><Italic className="h-4 w-4" /></button>
                     <button onClick={() => update('underline', !selected.underline)} className={`flex h-9 w-full items-center justify-center rounded-lg border ${selected.underline ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}><Underline className="h-4 w-4" /></button>
-                    <button className="flex h-9 w-full items-center justify-center rounded-lg border hover:bg-muted"><MoreHorizontal className="h-4 w-4" /></button>
+                    <button onClick={() => update('linethrough', !selected.linethrough)} className={`flex h-9 w-full items-center justify-center rounded-lg border ${selected.linethrough ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}><Scissors className="h-4 w-4" /></button>
                   </div>
                   <div className="grid grid-cols-4 gap-1">
                     {[
@@ -1498,40 +1564,80 @@ const RightPanel: React.FC<{
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <p className="mb-1 text-[10px] text-muted-foreground">Line Height</p>
-                        <Input type="number" step={0.1} className="h-9" value={selected.lineHeight || 1.2} onChange={(e) => update('lineHeight', parseFloat(e.target.value))} />
+                        <Input type="number" step={0.1} className="h-9" value={selected.lineHeight ?? 1.2} onChange={(e) => update('lineHeight', parseFloat(e.target.value) || 1)} />
                       </div>
                       <div>
                         <p className="mb-1 text-[10px] text-muted-foreground">Letter Spacing</p>
-                        <Input className="h-9" defaultValue="0%" />
+                        <Input type="number" step={10} className="h-9" value={Math.round(selected.charSpacing ?? 0)} onChange={(e) => update('charSpacing', parseInt(e.target.value) || 0)} />
                       </div>
                     </div>
                   </div>
                 </>
               )}
 
+              {isImage && (
+                <div>
+                  <p className="mb-2 text-xs font-semibold text-muted-foreground">Image</p>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) replaceImage(f); e.target.value = ''; }}
+                  />
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button variant="outline" size="sm" className="col-span-3 gap-1.5" onClick={() => fileRef.current?.click()}>
+                      <Upload className="h-3.5 w-3.5" /> Replace image
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => update('flipX', !selected.flipX)}>Flip X</Button>
+                    <Button variant="outline" size="sm" onClick={() => update('flipY', !selected.flipY)}>Flip Y</Button>
+                    <Button variant="outline" size="sm" onClick={() => updateMany({ angle: ((selected.angle || 0) + 90) % 360 })}>Rotate</Button>
+                  </div>
+                </div>
+              )}
+
+              {(isShape || isText) && (
+                <div>
+                  <p className="mb-2 text-xs font-semibold text-muted-foreground">Color</p>
+                  <div className="flex items-center gap-2 rounded-xl border px-3 py-2">
+                    <input type="color" value={typeof selected.fill === 'string' ? selected.fill : '#ffffff'} onChange={(e) => update('fill', e.target.value)} className="h-6 w-6 rounded cursor-pointer border" />
+                    <Input value={typeof selected.fill === 'string' ? selected.fill : ''} onChange={(e) => update('fill', e.target.value)} className="h-7 border-0 shadow-none px-2 text-xs font-mono uppercase" />
+                  </div>
+                </div>
+              )}
+
               <div>
-                <p className="mb-2 text-xs font-semibold text-muted-foreground">Color</p>
-                <div className="flex items-center gap-2 rounded-xl border px-3 py-2">
-                  <input type="color" value={selected.fill || '#FFC107'} onChange={(e) => update('fill', e.target.value)} className="h-6 w-6 rounded cursor-pointer border" />
-                  <Input value={selected.fill || '#FFC107'} onChange={(e) => update('fill', e.target.value)} className="h-7 border-0 shadow-none px-2 text-xs font-mono uppercase" />
-                  <span className="text-xs text-muted-foreground">100%</span>
-                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                <p className="mb-2 text-xs font-semibold text-muted-foreground">Border</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2 rounded-lg border px-2 py-1.5">
+                    <input type="color" value={typeof selected.stroke === 'string' ? selected.stroke : '#000000'} onChange={(e) => update('stroke', e.target.value)} className="h-5 w-5 rounded cursor-pointer border" />
+                    <span className="text-[10px] text-muted-foreground">Stroke</span>
+                  </div>
+                  <div>
+                    <Input type="number" min={0} className="h-9" value={Math.round(selected.strokeWidth ?? 0)} onChange={(e) => update('strokeWidth', parseInt(e.target.value) || 0)} />
+                  </div>
+                  {type === 'rect' && (
+                    <div className="col-span-2">
+                      <p className="mb-1 text-[10px] text-muted-foreground">Corner radius</p>
+                      <Slider value={[Math.round(selected.rx ?? 0)]} max={120} onValueChange={([v]) => updateMany({ rx: v, ry: v })} />
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div>
                 <p className="mb-2 text-xs font-semibold text-muted-foreground">Effects</p>
                 <div className="space-y-2">
-                  {[
-                    { l: 'Shadow', on: true },
-                    { l: 'Outline', on: false },
-                    { l: 'Glow', on: false },
-                  ].map((e) => (
+                  {([
+                    { l: 'Shadow', k: 'shadow' as const, on: !!selected.shadow && (selected.shadow.blur ?? 0) <= 16 },
+                    { l: 'Outline', k: 'outline' as const, on: (selected.strokeWidth ?? 0) > 0 },
+                    { l: 'Glow', k: 'glow' as const, on: !!selected.shadow && (selected.shadow.blur ?? 0) > 16 },
+                  ]).map((e) => (
                     <div key={e.l} className="flex items-center justify-between rounded-lg border px-3 py-2">
                       <div className="flex items-center gap-2 text-xs font-medium">
                         <Eye className="h-3.5 w-3.5 text-muted-foreground" /> {e.l}
                       </div>
-                      <Switch defaultChecked={e.on} />
+                      <Switch checked={e.on} onCheckedChange={(v) => setEffect(e.k, v)} />
                     </div>
                   ))}
                 </div>
@@ -1555,12 +1661,49 @@ const RightPanel: React.FC<{
               </div>
             </TabsContent>
 
-            <TabsContent value="position" className="p-4 mt-2 space-y-3">
+            <TabsContent value="position" className="p-4 mt-2 space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                <div><p className="mb-1 text-[10px] text-muted-foreground">X</p><Input type="number" className="h-9" value={Math.round(selected.left || 0)} onChange={(e) => update('left', parseInt(e.target.value))} /></div>
-                <div><p className="mb-1 text-[10px] text-muted-foreground">Y</p><Input type="number" className="h-9" value={Math.round(selected.top || 0)} onChange={(e) => update('top', parseInt(e.target.value))} /></div>
-                <div><p className="mb-1 text-[10px] text-muted-foreground">Rotation</p><Input type="number" className="h-9" value={Math.round(selected.angle || 0)} onChange={(e) => update('angle', parseInt(e.target.value))} /></div>
-                <div><p className="mb-1 text-[10px] text-muted-foreground">Scale</p><Input type="number" step={0.1} className="h-9" value={selected.scaleX || 1} onChange={(e) => { update('scaleX', parseFloat(e.target.value)); update('scaleY', parseFloat(e.target.value)); }} /></div>
+                <div><p className="mb-1 text-[10px] text-muted-foreground">X</p><Input type="number" className="h-9" value={Math.round(selected.left || 0)} onChange={(e) => update('left', parseInt(e.target.value) || 0)} /></div>
+                <div><p className="mb-1 text-[10px] text-muted-foreground">Y</p><Input type="number" className="h-9" value={Math.round(selected.top || 0)} onChange={(e) => update('top', parseInt(e.target.value) || 0)} /></div>
+                <div><p className="mb-1 text-[10px] text-muted-foreground">Width</p><Input type="number" className="h-9" value={width} onChange={(e) => setWidth(parseInt(e.target.value) || 1)} /></div>
+                <div><p className="mb-1 text-[10px] text-muted-foreground">Height</p><Input type="number" className="h-9" value={height} onChange={(e) => setHeight(parseInt(e.target.value) || 1)} /></div>
+                <div><p className="mb-1 text-[10px] text-muted-foreground">Rotation</p><Input type="number" className="h-9" value={Math.round(selected.angle || 0)} onChange={(e) => update('angle', parseInt(e.target.value) || 0)} /></div>
+                <div><p className="mb-1 text-[10px] text-muted-foreground">Scale</p><Input type="number" step={0.1} className="h-9" value={Number(selected.scaleX || 1).toFixed(2)} onChange={(e) => updateMany({ scaleX: parseFloat(e.target.value) || 1, scaleY: parseFloat(e.target.value) || 1 })} /></div>
+              </div>
+
+              <div>
+                <p className="mb-2 text-xs font-semibold text-muted-foreground">Align to artboard</p>
+                <div className="grid grid-cols-6 gap-1">
+                  {([
+                    { icon: AlignLeft, v: 'left' as const },
+                    { icon: AlignCenter, v: 'center-h' as const },
+                    { icon: AlignRight, v: 'right' as const },
+                    { icon: ChevronUp, v: 'top' as const },
+                    { icon: AlignVerticalJustifyCenter, v: 'center-v' as const },
+                    { icon: ChevronDown, v: 'bottom' as const },
+                  ]).map(({ icon: Icon, v }) => (
+                    <button key={v} onClick={() => { alignObject(canvas, selected, v); bump((n) => n + 1); }} className="flex h-9 items-center justify-center rounded-lg border hover:bg-muted">
+                      <Icon className="h-4 w-4" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-2 text-xs font-semibold text-muted-foreground">Layer</p>
+                <div className="grid grid-cols-4 gap-1">
+                  <button onClick={() => moveLayer(canvas, selected, 'front')} className="h-9 rounded-lg border text-[10px] hover:bg-muted">Front</button>
+                  <button onClick={() => moveLayer(canvas, selected, 'up')} className="h-9 rounded-lg border text-[10px] hover:bg-muted">Up</button>
+                  <button onClick={() => moveLayer(canvas, selected, 'down')} className="h-9 rounded-lg border text-[10px] hover:bg-muted">Down</button>
+                  <button onClick={() => moveLayer(canvas, selected, 'back')} className="h-9 rounded-lg border text-[10px] hover:bg-muted">Back</button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border px-3 py-2">
+                <div className="flex items-center gap-2 text-xs font-medium">
+                  {isLocked(selected) ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />} Lock position
+                </div>
+                <Switch checked={isLocked(selected)} onCheckedChange={(v) => { setLocked(canvas, selected, v); bump((n) => n + 1); }} />
               </div>
             </TabsContent>
           </ScrollArea>
