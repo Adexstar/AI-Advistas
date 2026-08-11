@@ -803,14 +803,24 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
         ref={wrapperRef}
         className="relative bg-white shrink-0"
         style={{
-          width: CANVAS_WIDTH,
-          height: CANVAS_HEIGHT,
+          width: artboard.width,
+          height: artboard.height,
           boxShadow: '0 0 0 1px rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.4)',
           transform: `scale(${zoom / 100})`,
           transformOrigin: 'center center',
         }}
       >
         <canvas ref={ref} className="block" />
+        {showGrid && (
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              backgroundImage:
+                'linear-gradient(to right, rgba(108,99,255,0.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(108,99,255,0.25) 1px, transparent 1px)',
+              backgroundSize: '20px 20px',
+            }}
+          />
+        )}
       </div>
     </div>
   );
