@@ -49,6 +49,7 @@ type NavItem = {
   badge?: string;
   disabled?: boolean;
   notify?: number;
+  soon?: boolean;
 };
 
 type NavGroup = { title: string; items: NavItem[] };
