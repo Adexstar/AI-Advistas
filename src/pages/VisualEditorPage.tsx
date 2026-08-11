@@ -2004,7 +2004,7 @@ const EditorInner: React.FC = () => {
       case 'text': return <TextPanel onAdd={addText} />;
       case 'elements': return <StudioElementsPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} brandColors={brandPalette} selected={selected} />;
       case 'brand': return <BrandKitPanel />;
-      case 'layers': return <LayersPanel canvas={canvas} version={tick} />;
+      case 'layers': return <LayersPanel canvas={canvas} version={tick} selected={selected} onSelect={setSelected} onChanged={markChanged} />;
       case 'media': return <StudioMediaPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} selected={selected} />;
       case 'uploads': return <StudioUploadsPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} selected={selected} />;
       case 'projects': return <SimplePanel title="Projects"><p className="text-xs text-muted-foreground">Your recent projects.</p></SimplePanel>;
