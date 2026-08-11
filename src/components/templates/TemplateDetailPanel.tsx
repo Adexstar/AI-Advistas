@@ -162,56 +162,6 @@ export function TemplateDetailPanel({ template, isFavorite, onFavorite, onClose,
 
         <Separator />
 
-        {/* Expandable sections */}
-        <div className="px-4">
-          {/* Variables */}
-          <ExpandableSection title="Variables" icon={Type} defaultOpen>
-            <div className="space-y-2">
-              {VARIABLE_DOCS.map((v) => (
-                <div key={v.key} className="flex items-center justify-between py-1">
-                  <span className="text-xs font-mono text-foreground">{v.label}</span>
-                  <Badge className={cn('rounded-full text-[9px] px-1.5 py-0', OWNER_STYLE[v.owner])}>{v.owner}</Badge>
-                </div>
-              ))}
-            </div>
-          </ExpandableSection>
-
-          {/* AI Metadata */}
-          <ExpandableSection title="AI Metadata" icon={Sparkles}>
-            <div className="space-y-2">
-              {emotion && <Row label="Emotion" value={emotion} />}
-              {(template as OriginalTemplate).objective && <Row label="Recommended Goal" value={(template as OriginalTemplate).objective!} />}
-              {platform && <Row label="Recommended Platform" value={platform} />}
-              {(template as OriginalTemplate).popularity_score != null && <Row label="Performance Score" value={`${(template as OriginalTemplate).popularity_score}/100`} />}
-              {template.description && <Row label="Description" value={template.description} />}
-            </div>
-          </ExpandableSection>
-
-          {/* Layer Information */}
-          <ExpandableSection title="Layer Information" icon={Layers}>
-            <div className="space-y-2">
-              <Row label="Editable Layers" value={layers ? `${layers} layers` : '—'} />
-              <Row label="Variables" value={variables ? `${variables} variables` : '—'} />
-              <Row label="Template Type" value={(template as any).template_json?.adType || 'image'} />
-            </div>
-          </ExpandableSection>
-
-          {/* Brand Compatibility */}
-          <ExpandableSection title="Brand Compatibility" icon={Palette}>
-            <div className="space-y-2">
-              <RowCheck label="Brand Lock Ready" checked={brandCompatible} />
-              <RowCheck label="Font Replacement" checked={brandCompatible} />
-              <RowCheck label="Color Mapping" checked={brandCompatible} />
-              <RowCheck label="Logo Replacement" checked={brandCompatible} />
-            </div>
-          </ExpandableSection>
-
-          {/* Version History */}
-          <ExpandableSection title="Version History" icon={Info}>
-            <p className="text-xs">v1 — Created {template.created_at ? new Date(template.created_at).toLocaleDateString() : '—'}</p>
-          </ExpandableSection>
-        </div>
-
         <div className="h-8" />
       </ScrollArea>
     </div>
