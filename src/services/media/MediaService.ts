@@ -35,6 +35,31 @@ const videoGenProviders = {
   veo: veoProvider,
 } as const;
 
+// AI intent expansion: "coffee" → cafe, espresso, barista, warm interior…
+// Cached for 24h so repeated searches never re-hit the model.
+async function expandIntent(ctx: MediaSearchContext): Promise<string[]> {
+  const base = ctx.intent.trim();
+  if (!base) return [base];
+  try {
+    return await withProviderCache("intent-expansion", { base, category: ctx.category, goal: ctx.goal }, async () => {
+      const res = await AIGateway.route({
+        specialist: "creative_strategist",
+        systemPrompt:
+          "You expand a marketing media search intent into 3-5 concrete stock-photo search phrases. Reply with a JSON array of strings only.",
+        userPrompt: `Intent: ${base}\nCategory: ${ctx.category ?? "any"}\nPlatform: ${ctx.platform ?? "any"}\nGoal: ${ctx.goal ?? "any"}`,
+        temperature: 0.4,
+        maxTokens: 150,
+      });
+      const match = res.content.match(/\[[\s\S]*\]/);
+      const parsed = match ? JSON.parse(match[0]) : [];
+      const terms = Array.isArray(parsed) ? parsed.filter((t) => typeof t === "string" && t.trim()) : [];
+      return [base, ...terms.slice(0, 4)];
+    });
+  } catch {
+    return [base];
+  }
+}
+
 function rankResults(results: MediaAsset[], ctx: MediaSearchContext): MediaAsset[] {
   const brand = (ctx.brandColors ?? []).map((c) => c.toLowerCase());
   const intent = ctx.intent.toLowerCase();
