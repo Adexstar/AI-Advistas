@@ -12,6 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { useTemplates, useTrackTemplateUsage } from '@/hooks/useTemplates';
 import { useCombinedTemplates } from '@/hooks/useUnifiedTemplates';
 import { generateDefaultCanvasData } from '@/utils/canvasHelpers';
+import { setPendingEditorTemplate } from '@/lib/templateEditorSession';
 import { toast } from 'sonner';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { TemplatePreviewDialog, type TemplatePreviewLike } from '@/components/templates/TemplatePreviewDialog';
@@ -256,11 +257,8 @@ const TemplateBrowser = ({
       return;
     }
 
-    navigate('/template-customizer', {
-      state: {
-        templateData,
-      },
-    });
+    setPendingEditorTemplate(templateData, 'library');
+    navigate('/visual-editor');
   };
 
   const handleTemplateClick = async (template: any) => {

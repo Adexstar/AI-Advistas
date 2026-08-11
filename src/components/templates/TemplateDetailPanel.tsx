@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   X, Download, Sparkles, Wand2, Layers, Palette, Type,
   Image as ImageIcon, Info, Heart, ChevronDown, ChevronRight,
-  CheckCircle2, Pencil, Send, Eye, Copy,
+  CheckCircle2, Send, Copy,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,6 @@ interface Props {
   isFavorite: boolean;
   onFavorite: () => void;
   onClose: () => void;
-  onEdit: (t: AnyTemplate) => void;
   onDuplicate: (t: AnyTemplate) => void;
   onAssign: (t: AnyTemplate) => void;
 }
@@ -63,7 +62,7 @@ function ExpandableSection({ title, icon: Icon, defaultOpen = false, children }:
   );
 }
 
-export function TemplateDetailPanel({ template, isFavorite, onFavorite, onClose, onEdit, onDuplicate, onAssign }: Props) {
+export function TemplateDetailPanel({ template, isFavorite, onFavorite, onClose, onDuplicate, onAssign }: Props) {
   const navigate = useNavigate();
   const [activeImage, setActiveImage] = useState<'preview' | 'thumbnail'>('preview');
 
@@ -137,9 +136,6 @@ export function TemplateDetailPanel({ template, isFavorite, onFavorite, onClose,
         <div className="flex flex-wrap gap-2 px-4 py-3">
           <Button size="sm" className="rounded-xl gap-1.5" onClick={handleOpenEditor}>
             <Wand2 className="h-3.5 w-3.5" /> Use Template
-          </Button>
-          <Button size="sm" variant="outline" className="rounded-xl gap-1.5" onClick={() => { onEdit(template); onClose(); }}>
-            <Sparkles className="h-3.5 w-3.5" /> Quick Customize
           </Button>
           <button onClick={(e) => { e.stopPropagation(); onFavorite(); }} className="grid h-9 w-9 place-items-center rounded-xl border border-border hover:bg-muted transition">
             <Heart className={`h-4 w-4 ${isFavorite ? 'fill-rose-500 text-rose-500' : 'text-muted-foreground'}`} />

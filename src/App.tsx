@@ -9,7 +9,6 @@ import { AuthProvider } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import { AppProvider } from "./contexts/AppContext";
-import { VisualEditorProvider } from "./contexts/VisualEditorContext";
 import { AIStatusProvider } from "./contexts/AIStatusContext";
 import { AIContextProvider } from "./contexts/AIContext";
 import { AIBrainProvider } from "./contexts/AIBrainContext";
@@ -28,7 +27,6 @@ const Billing = lazy(() => import("./pages/Billing"));
 const Settings = lazy(() => import("./pages/Settings"));
 const VisualEditorPage = lazy(() => import("./pages/VisualEditorPage"));
 const AdEditor = lazy(() => import("./pages/AdEditor"));
-const TemplateCustomizer = lazy(() => import("./pages/TemplateCustomizer"));
 const TemplateLibrary = lazy(() => import("./pages/TemplateLibrary"));
 const TemplateGenerate = lazy(() => import("./pages/TemplateGenerate"));
 const Templates = lazy(() => import("./pages/Templates"));
@@ -217,13 +215,6 @@ const AppContent = () => {
             <Route path="/simulator" element={<Navigate to="/create-ad" replace />} />
             <Route path="/visual-editor" element={<ProtectedRoute><VisualEditorPage /></ProtectedRoute>} />
 
-            <Route path="/template-customizer" element={
-              <ProtectedRoute>
-                <VisualEditorProvider>
-                  <TemplateCustomizer />
-                </VisualEditorProvider>
-              </ProtectedRoute>
-            } />
             <Route path="/admin/providers" element={
               <ProtectedRoute>
                 <DashboardLayout />

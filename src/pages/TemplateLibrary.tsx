@@ -1,5 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useTemplates, useTrackTemplateUsage, type AdTemplate } from '@/hooks/useTemplates';
 import { useCampaigns } from '@/hooks/useCampaigns';
 import { useOriginalsSearch, type OriginalTemplate } from '@/hooks/useOriginalsSearch';
@@ -58,13 +60,11 @@ import {
   Instagram,
   Youtube,
   LayoutGrid,
-  ShoppingBag,
-  Sparkle,
   Shirt,
   UtensilsCrossed,
   Home,
-  Dumbbell,
-  Cpu,
+  Laptop,
+  Flame,
   ChevronRight,
   Download,
   CheckCircle2,
@@ -72,6 +72,7 @@ import {
   Play,
 } from 'lucide-react';
 import { TemplateDetailPanel } from '@/components/templates/TemplateDetailPanel';
+import { setPendingEditorTemplate } from '@/lib/templateEditorSession';
 
 
 const PLATFORM_TABS = [
@@ -85,14 +86,27 @@ const PLATFORM_TABS = [
 ];
 
 const CATEGORIES = [
-  { id: 'E-commerce', label: 'E-commerce', icon: ShoppingBag, color: 'text-sky-600 bg-sky-50' },
-  { id: 'Beauty & Skincare', label: 'Beauty & Skincare', icon: Sparkle, color: 'text-pink-600 bg-pink-50' },
-  { id: 'Fashion', label: 'Fashion', icon: Shirt, color: 'text-purple-600 bg-purple-50' },
-  { id: 'Food & Drink', label: 'Food & Drink', icon: UtensilsCrossed, color: 'text-orange-600 bg-orange-50' },
-  { id: 'Real Estate', label: 'Real Estate', icon: Home, color: 'text-emerald-600 bg-emerald-50' },
-  { id: 'Fitness', label: 'Fitness', icon: Dumbbell, color: 'text-rose-600 bg-rose-50' },
-  { id: 'Technology', label: 'Technology', icon: Cpu, color: 'text-indigo-600 bg-indigo-50' },
+  { id: 'beauty', label: 'Beauty', icon: Sparkles, color: 'bg-[#FCE7F3] text-pink-500' },
+  { id: 'fashion', label: 'Fashion', icon: Shirt, color: 'bg-[#1F2937] text-white' },
+  { id: 'real_estate', label: 'Real Estate', icon: Home, color: 'bg-[#DBEAFE] text-blue-600' },
+  { id: 'food', label: 'Food', icon: UtensilsCrossed, color: 'bg-[#FEF3C7] text-orange-500' },
+  { id: 'saas', label: 'SaaS', icon: Laptop, color: 'bg-[#EDE9FE] text-purple-600' },
+  { id: 'fitness', label: 'Fitness', icon: Flame, color: 'bg-[#FEE2E2] text-red-500' },
 ];
+
+const CATEGORY_GRADIENTS: Record<string, string> = {
+  beauty: 'linear-gradient(135deg, #FAD4E0, #F5A8B8)',
+  fashion: 'linear-gradient(135deg, #1A1A24, #4A4A6A)',
+  real_estate: 'linear-gradient(135deg, #1B3A4B, #2D6A8A)',
+  food: 'linear-gradient(135deg, #3D2B1F, #8B5E3C)',
+  saas: 'linear-gradient(135deg, #1E3A5F, #2D5F9A)',
+  fitness: 'linear-gradient(135deg, #1A1A24, #8B1A1A)',
+};
+
+const DEFAULT_CATEGORY_GRADIENT = 'linear-gradient(135deg, #6C63FF, #A78BFA)';
+
+const categoryGradient = (category?: string | null) =>
+  CATEGORY_GRADIENTS[String(category ?? '').toLowerCase()] ?? DEFAULT_CATEGORY_GRADIENT;
 
 const FAV_KEY = 'advista_template_favorites';
 const ASSIGN_KEY = 'advista_template_assignments';
@@ -146,7 +160,8 @@ const TemplateCard = ({
 }) => {
   const isOriginal = template._source === 'originals';
   const platform = (template as AdTemplate).platforms?.[0] || (template as OriginalTemplate).platform || 'Facebook';
-  const thumb = (template as any).thumbnail_url || (template as any).preview_url;
+  const preview = (template as any).preview_url || (template as any).thumbnail_url;
+  const [imgError, setImgError] = useState(false);
   const brandCompatible = isOriginal ? (template as OriginalTemplate).brand_compatible : true;
   const emotion = (template as OriginalTemplate).metadata?.emotion as string | undefined;
   const PlatformIcon =
@@ -161,11 +176,11 @@ const TemplateCard = ({
   return (
     <Card onClick={onOpen} className="group cursor-pointer overflow-hidden rounded-2xl border border-border/60 bg-card transition-all hover:shadow-lg">
       <div className="relative aspect-[4/5] w-full overflow-hidden bg-muted">
-        {thumb ? (
-          <img src={thumb} alt={template.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
+        {preview && !imgError ? (
+          <img src={preview} alt={template.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" onError={() => setImgError(true)} />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/15 to-primary/5">
-            <LayoutGrid className="h-10 w-10 text-primary/40" />
+          <div className="flex h-full w-full items-center justify-center" style={{ background: categoryGradient(template.category) }}>
+            <LayoutGrid className="h-10 w-10 text-white/70" />
           </div>
         )}
         <div className="absolute left-3 top-3 flex flex-col gap-1.5">
@@ -249,17 +264,18 @@ const MobileTemplateCard = ({
   template: AnyTemplate; sizeClass: string; index: number;
   onOpen: () => void; onEdit: () => void; onDuplicate: () => void; onAssign: () => void;
 }) => {
-  const thumb = (template as any).thumbnail_url || (template as any).preview_url;
+  const preview = (template as any).preview_url || (template as any).thumbnail_url;
+  const [imgError, setImgError] = useState(false);
   const isVideo = index % 3 === 0;
 
   return (
     <div className="template-masonry-card" onClick={onOpen}>
       <div className={`w-full ${sizeClass} bg-[#F0F0F0]`}>
-        {thumb ? (
-          <img src={thumb} alt={template.name} loading="lazy" />
+        {preview && !imgError ? (
+          <img src={preview} alt={template.name} loading="lazy" onError={() => setImgError(true)} />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/15 to-primary/5">
-            <LayoutGrid className="h-6 w-6 text-primary/30" />
+          <div className="w-full h-full flex items-center justify-center" style={{ background: categoryGradient(template.category) }}>
+            <LayoutGrid className="h-6 w-6 text-white/50" />
           </div>
         )}
       </div>
@@ -360,6 +376,19 @@ const TemplateLibrary = () => {
   const { data: originals = [], isLoading: originalsLoading } = useOriginalsSearch(originalsFilters);
   const loading = isLoading || originalsLoading;
 
+  const { data: categoryCounts = {} } = useQuery<Record<string, number>, Error>({
+    queryKey: ['template-category-counts'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('template_category_counts', { p_source: 'advista_original' });
+      if (error) throw error;
+      return (data ?? []).reduce<Record<string, number>>((acc, row) => {
+        acc[row.category] = Number(row.template_count ?? 0);
+        return acc;
+      }, {});
+    },
+    staleTime: 60_000,
+  });
+
   const [search, setSearch] = useState('');
   const [platform, setPlatform] = useState('all');
   const [category, setCategory] = useState<string | null>(null);
@@ -410,7 +439,8 @@ const TemplateLibrary = () => {
 
   const handleEdit = (t: AnyTemplate) => {
     trackUsage.mutate(t.id);
-    navigate('/template-customizer', { state: { templateData: t } });
+    setPendingEditorTemplate(t as any, 'library');
+    navigate('/visual-editor');
   };
 
   const handleDuplicate = (t: AnyTemplate) => {
@@ -564,7 +594,7 @@ const TemplateLibrary = () => {
           <div className="-mx-2 flex gap-3 overflow-x-auto px-2 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {CATEGORIES.map((c) => {
               const Icon = c.icon;
-              const count = templates.filter((t) => t.category === c.id).length;
+              const count = categoryCounts[c.id] ?? 0;
               const active = category === c.id;
               return (
                 <button
@@ -574,12 +604,14 @@ const TemplateLibrary = () => {
                     active ? 'border-primary bg-primary/5' : 'border-border bg-card hover:border-primary/50'
                   }`}
                 >
-                  <div className={`grid h-10 w-10 place-items-center rounded-xl ${c.color}`}>
+                  <div className={`grid h-10 w-10 place-items-center rounded-full ${c.color}`}>
                     <Icon className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold">{c.label}</p>
-                    <p className="text-xs text-muted-foreground">{count} Templates</p>
+                    <p className="text-xs text-muted-foreground">
+                      {count > 0 ? `${count} ${count === 1 ? 'Template' : 'Templates'}` : 'Coming soon'}
+                    </p>
                   </div>
                 </button>
               );
@@ -690,7 +722,6 @@ const TemplateLibrary = () => {
             isFavorite={selectedTemplate ? favorites.has(selectedTemplate.id) : false}
             onFavorite={() => { if (selectedTemplate) { toggleFavorite(selectedTemplate.id); } }}
             onClose={() => setSelectedTemplate(null)}
-            onEdit={(t) => { handleEdit(t); setSelectedTemplate(null); }}
             onDuplicate={(t) => { handleDuplicate(t); setSelectedTemplate(null); }}
             onAssign={(t) => { setAssignTemplate(t); setSelectedTemplate(null); }}
           />
