@@ -94,6 +94,18 @@ const navGroups: NavGroup[] = [
   },
 ];
 
+const adminNavItems: NavItem[] = [
+  { name: "Admin Dashboard", href: "/admin", icon: Shield },
+  { name: "Users", href: "/admin/users", icon: Users },
+  { name: "Templates", href: "/admin/templates", icon: LayoutTemplate },
+  { name: "AI Decisions Log", href: "/admin/decisions", icon: Brain },
+  { name: "System Analytics", href: "/admin/analytics", icon: BarChart3 },
+  { name: "API & Providers", href: "/admin/providers", icon: Plug },
+  { name: "Category Playbooks", href: "/admin/playbooks", icon: Target },
+  { name: "System Settings", href: "/admin/settings", icon: SlidersHorizontal },
+];
+
+
 const pageMeta: { match: (p: string) => boolean; title: string; description: string }[] = [
   { match: (p) => p.startsWith("/dashboard"), title: "Dashboard", description: "Overview of business performance." },
   { match: (p) => p.startsWith("/campaigns"), title: "Campaigns", description: "Track, pause, and edit running ads." },
