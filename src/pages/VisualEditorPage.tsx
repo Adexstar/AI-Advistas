@@ -692,23 +692,32 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
     onCanvasWrapperRef?.(wrapperRef.current);
   }, [onCanvasWrapperRef]);
 
-  // Auto-fit canvas to viewport on mount
+  // Auto-fit canvas to viewport on mount, on artboard change and on "Fit" requests
   useEffect(() => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const z = fitZoom(isMobile, rect.width, rect.height);
+    const z = fitZoom(isMobile, rect.width, rect.height, artboard.width, artboard.height);
     onZoomChange(Math.round(z));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [artboard.width, artboard.height, fitToken]);
+
+  // Keep the Fabric surface in sync with the selected artboard preset
+  useEffect(() => {
+    const c = canvasRef.current;
+    if (!c) return;
+    c.setDimensions({ width: artboard.width, height: artboard.height });
+    c.requestRenderAll();
+  }, [artboard.width, artboard.height]);
 
   useEffect(() => {
     if (initialized.current || !ref.current) return;
     initialized.current = true;
     const c = new FabricCanvas(ref.current, {
-      width: CANVAS_WIDTH,
-      height: CANVAS_HEIGHT,
+      width: artboard.width,
+      height: artboard.height,
       backgroundColor: '#ffffff',
     });
+    canvasRef.current = c;
 
     c.on('object:added', (e: any) => {
       if (e.target) {
