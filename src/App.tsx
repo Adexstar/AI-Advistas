@@ -33,6 +33,7 @@ const Templates = lazy(() => import("./pages/Templates"));
 const OriginalTemplateDetail = lazy(() => import("./pages/OriginalTemplateDetail"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminProviders = lazy(() => import("./pages/AdminProviders"));
+const AdminTemplates = lazy(() => import("./pages/AdminTemplates"));
 const MediaLibrary = lazy(() => import("./pages/MediaLibrary"));
 const BrandKit = lazy(() => import("./pages/BrandKit"));
 const Analytics = lazy(() => import("./pages/Analytics"));
@@ -215,6 +216,15 @@ const AppContent = () => {
             <Route path="/simulator" element={<Navigate to="/create-ad" replace />} />
             <Route path="/visual-editor" element={<ProtectedRoute><VisualEditorPage /></ProtectedRoute>} />
 
+            <Route path="/admin/templates" element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <DashboardLayout />
+                </AdminRoute>
+              </ProtectedRoute>
+            }>
+              <Route index element={<AdminTemplates />} />
+            </Route>
             <Route path="/admin/providers" element={
               <ProtectedRoute>
                 <DashboardLayout />

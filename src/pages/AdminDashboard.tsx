@@ -6,6 +6,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { BatchTemplateUploader } from '@/components/admin/BatchTemplateUploader';
 import { TemplateUploader } from '@/components/admin/TemplateUploader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -50,11 +52,16 @@ export default function AdminDashboard() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <p className="text-muted-foreground mt-2">
-          Manage templates and system settings
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <p className="text-muted-foreground mt-2">
+            Manage templates and system settings
+          </p>
+        </div>
+        <Button asChild>
+          <Link to="/admin/templates">Manage Templates</Link>
+        </Button>
       </div>
       
       <Card>
