@@ -29,8 +29,10 @@ export interface AnalyticsRow {
 export interface TemplateRow {
   id: string;
   name: string;
-  usage_count: number;
+  usage_count?: number;
+  popularity_score?: number | null;
   thumbnail_url: string | null;
+  preview_url?: string | null;
   created_at: string;
 }
 
