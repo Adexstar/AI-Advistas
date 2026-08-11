@@ -32,6 +32,7 @@ import { AIActionsMenu } from '@/components/visual-editor/ai/AIActionsMenu';
 import { AIQuickActionsMenu } from '@/components/visual-editor/ai/AIQuickActionsMenu';
 import { consumePendingEditorTemplate, peekPendingEditorTemplate } from '@/lib/templateEditorSession';
 import { TemplateEngine } from '@/services/templates/TemplateEngine';
+import { loadTemplateJSONIntoCanvas } from '@/services/templates/loadIntoCanvas';
 import { useAIContext } from '@/contexts/AIContext';
 import {
   TemplatesPanel as StudioTemplatesPanel,
