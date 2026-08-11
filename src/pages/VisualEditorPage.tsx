@@ -1771,6 +1771,7 @@ const EditorInner: React.FC = () => {
       { key: 'z', ctrlKey: true, metaKey: true, shiftKey: true, action: onRedo, description: 'Redo', category: 'Canvas' },
       { key: 'c', ctrlKey: true, metaKey: true, action: copySelected, description: 'Copy', category: 'Canvas' },
       { key: 'v', ctrlKey: true, metaKey: true, action: pasteClipboard, description: 'Paste', category: 'Canvas' },
+      { key: 'd', ctrlKey: true, metaKey: true, action: duplicateSelected, description: 'Duplicate', category: 'Canvas' },
       { key: 'ArrowUp', action: () => nudge(0, -1), description: 'Nudge up', category: 'Canvas' },
       { key: 'ArrowDown', action: () => nudge(0, 1), description: 'Nudge down', category: 'Canvas' },
       { key: 'ArrowLeft', action: () => nudge(-1, 0), description: 'Nudge left', category: 'Canvas' },
