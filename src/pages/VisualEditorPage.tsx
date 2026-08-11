@@ -2065,22 +2065,49 @@ const EditorInner: React.FC = () => {
         <div className="absolute z-30 pointer-events-auto animate-in fade-in"
           style={{ left: toolbarPos.left, top: toolbarPos.top, transform: 'translateX(-50%)' }}>
           <div className="flex items-center gap-0.5 px-2 py-1.5 rounded-full shadow-lg" style={{ backgroundColor: '#2D2D2D', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
-            <button className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-white/10 text-white">
+            <button title="AI suggestions for this layer"
+              onClick={() => { setActiveTab('ai-studio'); setSheetExpanded(true); }}
+              className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-white/10 text-white">
               <Sparkles className="h-3.5 w-3.5 text-primary" />
               <span className="text-xs font-semibold">AI</span>
             </button>
             <div className="w-px h-4 mx-0.5" style={{ backgroundColor: '#444444' }} />
-            <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Edit3 className="h-3.5 w-3.5" /></button>
-            <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Copy className="h-3.5 w-3.5" /></button>
-            <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Trash2 className="h-3.5 w-3.5" /></button>
-            <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><MoreHorizontal className="h-3.5 w-3.5" /></button>
+            <button title="Edit layer"
+              onClick={() => {
+                if (selectionType === 'text') { canvas?.setActiveObject(selected); (selected as any).enterEditing?.(); canvas?.requestRenderAll(); }
+                else if (selectionType === 'image') { setActiveTab('media'); setSheetExpanded(true); }
+                else { setActiveTab('elements'); setSheetExpanded(true); }
+              }}
+              className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Edit3 className="h-3.5 w-3.5" /></button>
+            <button title="Duplicate" onClick={duplicateSelected}
+              className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Copy className="h-3.5 w-3.5" /></button>
+            <button title="Delete" onClick={deleteSelected}
+              className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Trash2 className="h-3.5 w-3.5" /></button>
+            <button title={isLocked(selected) ? 'Unlock layer' : 'Lock layer'}
+              onClick={() => { setLocked(canvas, selected, !isLocked(selected)); markChanged(); }}
+              className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white">
+              {isLocked(selected) ? <Lock className="h-3.5 w-3.5 text-amber-400" /> : <Unlock className="h-3.5 w-3.5" />}
+            </button>
+            <button title="Bring forward" onClick={() => { moveLayer(canvas, selected, 'up'); markChanged(); }}
+              className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><MoveUp className="h-3.5 w-3.5" /></button>
           </div>
         </div>
       )}
 
-      {/* Bottom bar — Add page */}
+      {/* Bottom bar — pages */}
       <div className="flex items-center justify-center gap-2 py-2" style={{ backgroundColor: isMobile ? 'transparent' : '#1A1A1A', borderTop: isMobile ? 'none' : '1px solid #2D2D2D' }}>
-        <button className="flex items-center gap-2 h-9 rounded-lg px-4 text-xs" style={{ backgroundColor: '#2D2D2D', border: '1px solid #444444', color: '#CCCCCC' }}>
+        {pages.length > 1 && pages.map((_, i) => (
+          <button key={i} onClick={() => goToPage(i)}
+            className="h-9 min-w-9 rounded-lg px-3 text-xs"
+            style={{
+              backgroundColor: i === pageIdx ? '#6C63FF' : '#2D2D2D',
+              border: '1px solid #444444',
+              color: i === pageIdx ? '#FFFFFF' : '#CCCCCC',
+            }}>
+            {i + 1}
+          </button>
+        ))}
+        <button onClick={addPage} className="flex items-center gap-2 h-9 rounded-lg px-4 text-xs" style={{ backgroundColor: '#2D2D2D', border: '1px solid #444444', color: '#CCCCCC' }}>
           <Plus className="h-3.5 w-3.5" /> Add page
         </button>
       </div>
