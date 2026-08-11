@@ -640,9 +640,6 @@ const TemplateLibrary = () => {
                   <Button variant="outline" className="gap-2">
                     <Upload className="h-4 w-4" /> Import Template
                   </Button>
-                  <Button onClick={() => navigate('/create')} className="gap-2">
-                    <Plus className="h-4 w-4" /> Create Template
-                  </Button>
                 </div>
               </div>
             </div>
