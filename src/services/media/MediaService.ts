@@ -97,9 +97,23 @@ export const MediaService = {
     });
   },
 
-  // Smart search: identical to search() today; reserved for AI intent expansion.
+  // Smart search: AI expands the user's intent into related search terms,
+  // every term is searched across providers (cached), then results are
+  // de-duplicated and ranked. The UI never learns which provider replied.
   async smartSearch(ctx: MediaSearchContext): Promise<MediaAsset[]> {
-    return this.search(ctx);
+    const terms = await expandIntent(ctx);
+    const batches = await Promise.all(
+      terms.map((intent) => this.search({ ...ctx, intent }).catch(() => [] as MediaAsset[])),
+    );
+    const seen = new Set<string>();
+    const merged: MediaAsset[] = [];
+    for (const asset of batches.flat()) {
+      const key = asset.url || `${asset.provider}:${asset.id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push(asset);
+    }
+    return rankResults(merged, ctx);
   },
 
   listProviders() {
