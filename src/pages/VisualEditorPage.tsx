@@ -2255,6 +2255,19 @@ const EditorInner: React.FC = () => {
           <div key={activeTab} className="flex-1 min-h-0 overflow-hidden">{renderLeftPanel()}</div>
         </SheetContent>
       </Sheet>
+
+      {/* Preview — a read-only render of the current page */}
+      {previewUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6" onClick={() => setPreviewUrl(null)}>
+          <div className="flex max-h-full flex-col items-center gap-3" onClick={(e) => e.stopPropagation()}>
+            <img src={previewUrl} alt={`${projectName} preview`} className="max-h-[75vh] max-w-full rounded-lg shadow-2xl" />
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="secondary" onClick={onExport}><Download className="mr-1.5 h-3.5 w-3.5" /> Export PNG</Button>
+              <Button size="sm" variant="outline" onClick={() => setPreviewUrl(null)}><X className="mr-1.5 h-3.5 w-3.5" /> Close</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
