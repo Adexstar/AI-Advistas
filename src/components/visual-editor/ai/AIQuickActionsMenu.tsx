@@ -67,7 +67,7 @@ export const AIQuickActionsMenu: React.FC<{ compact?: boolean }> = ({ compact })
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           {Object.entries(groups).map(([g, items], gi) => (
-            <React.Fragment key={g}>
+            <div key={g}>
               {gi > 0 && <DropdownMenuSeparator />}
               <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
                 {g}
@@ -77,7 +77,7 @@ export const AIQuickActionsMenu: React.FC<{ compact?: boolean }> = ({ compact })
                   {a}
                 </DropdownMenuItem>
               ))}
-            </React.Fragment>
+            </div>
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
