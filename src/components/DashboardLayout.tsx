@@ -70,11 +70,11 @@ const navGroups: NavGroup[] = [
   {
     title: "Operations",
     items: [
-      { name: "Export Center", href: "/exports", icon: Download },
-      { name: "Integrations Hub", href: "/integrations", icon: Plug },
-      { name: "Notifications", href: "/notifications", icon: Bell, notify: 4 },
-      { name: "Automation Center", href: "/automation", icon: Zap },
-      { name: "Team Workspace", href: "/team", icon: Users },
+      { name: "Export Center", href: "/exports", icon: Download, soon: true },
+      { name: "Integrations Hub", href: "/integrations", icon: Plug, soon: true },
+      { name: "Notifications", href: "/notifications", icon: Bell, soon: true },
+      { name: "Automation Center", href: "/automation", icon: Zap, soon: true },
+      { name: "Team Workspace", href: "/team", icon: Users, soon: true },
     ],
   },
   {
