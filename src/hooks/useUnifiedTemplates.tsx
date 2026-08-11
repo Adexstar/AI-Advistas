@@ -171,17 +171,17 @@ export const useCombinedTemplates = (searchParams?: FreepikSearchParams) => {
   const processPSD = useProcessPSD();
   const queryClient = useQueryClient();
 
-  // Get all templates from database (ad_templates table)
+  // Get all templates from database (unified `templates` table)
   const { data: internalTemplates = [], isLoading: isLoadingInternal } = useQuery({
     queryKey: ['ad-templates', 'all'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('ad_templates')
+        .from('templates')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as UnifiedTemplate[];
+      return data as unknown as UnifiedTemplate[];
     }
   });
 
