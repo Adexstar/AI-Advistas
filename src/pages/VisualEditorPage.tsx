@@ -135,7 +135,13 @@ const TopToolbar: React.FC<{
   onToggleLeft: () => void;
   onToggleRight: () => void;
   isMobile: boolean;
-}> = ({ projectName, setProjectName, zoom, setZoom, onExport, onUndo, onRedo, canUndo, canRedo, onToggleLeft, onToggleRight, isMobile }) => {
+  showGrid: boolean;
+  onToggleGrid: () => void;
+  onFit: () => void;
+  onPreview: () => void;
+  onPublish: () => void;
+  artboardLabel: string;
+}> = ({ projectName, setProjectName, zoom, setZoom, onExport, onUndo, onRedo, canUndo, canRedo, onToggleLeft, onToggleRight, isMobile, showGrid, onToggleGrid, onFit, onPreview, onPublish, artboardLabel }) => {
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
 
