@@ -42,6 +42,10 @@ import {
   AIStudioPanel as StudioAIPanel,
   type StudioTemplate,
 } from '@/components/visual-editor/panels/StudioPanels';
+import {
+  ARTBOARD_PRESETS, alignObject, deleteObject, duplicateObject, isLocked, moveLayer,
+  reorderLayer, setLocked, setVisible,
+} from '@/components/visual-editor/canvasActions';
 
 /* ---------- Constants ---------- */
 const LEFT_TABS = [
@@ -135,7 +139,13 @@ const TopToolbar: React.FC<{
   onToggleLeft: () => void;
   onToggleRight: () => void;
   isMobile: boolean;
-}> = ({ projectName, setProjectName, zoom, setZoom, onExport, onUndo, onRedo, canUndo, canRedo, onToggleLeft, onToggleRight, isMobile }) => {
+  showGrid: boolean;
+  onToggleGrid: () => void;
+  onFit: () => void;
+  onPreview: () => void;
+  onPublish: () => void;
+  artboardLabel: string;
+}> = ({ projectName, setProjectName, zoom, setZoom, onExport, onUndo, onRedo, canUndo, canRedo, onToggleLeft, onToggleRight, isMobile, showGrid, onToggleGrid, onFit, onPreview, onPublish, artboardLabel }) => {
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
 
@@ -189,7 +199,7 @@ const TopToolbar: React.FC<{
             <Edit3 className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100" />
           </button>
         )}
-        <span className="hidden lg:inline text-[11px] text-muted-foreground">Instagram Post · 1080×1080 px</span>
+        <span className="hidden lg:inline text-[11px] text-muted-foreground">{artboardLabel}</span>
       </div>
 
       <Badge variant="secondary" className="hidden sm:inline-flex gap-1 rounded-full bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
@@ -213,17 +223,17 @@ const TopToolbar: React.FC<{
         </Button>
       </div>
 
-      <Button variant="ghost" size="icon" className="hidden lg:inline-flex h-9 w-9" title="Grid"><Grid3x3 className="h-4 w-4" /></Button>
-      <Button variant="ghost" size="icon" className="hidden lg:inline-flex h-9 w-9" title="Fit"><Maximize2 className="h-4 w-4" /></Button>
+      <Button variant={showGrid ? 'secondary' : 'ghost'} size="icon" className="hidden lg:inline-flex h-9 w-9" title="Grid" onClick={onToggleGrid}><Grid3x3 className="h-4 w-4" /></Button>
+      <Button variant="ghost" size="icon" className="hidden lg:inline-flex h-9 w-9" title="Fit to screen" onClick={onFit}><Maximize2 className="h-4 w-4" /></Button>
 
       <AIQuickActionsMenu />
-      <Button variant="outline" size="sm" className="h-9 gap-1.5 hidden sm:inline-flex">
+      <Button variant="outline" size="sm" className="h-9 gap-1.5 hidden sm:inline-flex" onClick={onPreview}>
         <Play className="h-3.5 w-3.5" /> Preview
       </Button>
       <Button size="sm" className="h-9 gap-1.5 bg-primary hover:bg-primary/90" onClick={onExport}>
         <Download className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Export</span>
       </Button>
-      <Button size="sm" variant="secondary" className="h-9 gap-1.5 hidden sm:inline-flex">
+      <Button size="sm" variant="secondary" className="h-9 gap-1.5 hidden sm:inline-flex" onClick={onPublish}>
         <Send className="h-3.5 w-3.5" /> Publish
       </Button>
 
@@ -527,22 +537,20 @@ const BrandKitPanel: React.FC = () => {
   );
 };
 
-const LayersPanel: React.FC<{ canvas: FabricCanvas | null; version: number }> = ({ canvas, version }) => {
+const LayersPanel: React.FC<{
+  canvas: FabricCanvas | null;
+  version: number;
+  selected: any;
+  onSelect: (o: any) => void;
+  onChanged: () => void;
+}> = ({ canvas, version, selected, onSelect, onChanged }) => {
   const objs = canvas?.getObjects() || [];
-  const [locked, setLocked] = useState<Record<number, boolean>>({});
-  const [hidden, setHidden] = useState<Record<number, boolean>>({});
   const [dragIdx, setDragIdx] = useState<number | null>(null);
 
   const typeIcon = (type: string) => {
     if (type === 'textbox' || type === 'i-text') return <Type className="h-3.5 w-3.5" />;
     if (type === 'image' || type === 'video') return <ImageIcon className="h-3.5 w-3.5" />;
     return <Shapes className="h-3.5 w-3.5" />;
-  };
-
-  const handleVisibility = (idx: number, o: any) => {
-    const next = !hidden[idx];
-    setHidden(prev => ({ ...prev, [idx]: next }));
-    if (canvas) { o.visible = !next; canvas.renderAll(); }
   };
 
   return (
@@ -553,38 +561,47 @@ const LayersPanel: React.FC<{ canvas: FabricCanvas | null; version: number }> = 
         <div className="space-y-1">
           {[...objs].reverse().map((o: any, i) => {
             const realIdx = objs.length - 1 - i;
-            const isLocked = locked[realIdx];
-            const isHidden = hidden[realIdx];
+            const locked = isLocked(o);
+            const hidden = o.visible === false;
+            const isActive = selected === o;
             return (
-              <div key={i}
-                className={`group flex items-center gap-2 rounded-lg border bg-background px-3 py-2 transition-all
+              <div key={realIdx}
+                onClick={() => {
+                  if (!canvas) return;
+                  canvas.setActiveObject(o);
+                  canvas.requestRenderAll();
+                  onSelect(o);
+                }}
+                className={`group flex cursor-pointer items-center gap-2 rounded-lg border bg-background px-3 py-2 transition-all
                   ${dragIdx === i ? 'opacity-50 scale-[1.02] shadow-md' : ''}
-                  ${isHidden ? 'opacity-40' : ''}
+                  ${hidden ? 'opacity-40' : ''}
+                  ${isActive ? 'border-primary ring-1 ring-primary/40' : ''}
                 `}
                 draggable
                 onDragStart={() => setDragIdx(i)}
-                onDragOver={(e) => { e.preventDefault(); if (dragIdx !== null && dragIdx !== i) setDragIdx(i); }}
-                onDragEnd={() => {
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => {
                   if (dragIdx === null || dragIdx === i) { setDragIdx(null); return; }
-                  const items = [...objs].reverse();
-                  const [moved] = items.splice(dragIdx, 1);
-                  items.splice(i, 0, moved);
-                  canvas?.clear(); items.reverse().forEach((item: any) => canvas?.add(item)); canvas?.renderAll();
+                  const from = objs.length - 1 - dragIdx;
+                  const moved = objs[from];
+                  reorderLayer(canvas, moved, realIdx);
                   setDragIdx(null);
+                  onChanged();
                 }}
+                onDragEnd={() => setDragIdx(null)}
               >
                 <GripVertical className="h-3.5 w-3.5 text-muted-foreground cursor-grab active:cursor-grabbing shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                 <span className="shrink-0 text-muted-foreground">{typeIcon(o.type)}</span>
                 <span className="flex-1 truncate text-xs">{o.type === 'textbox' ? o.text?.slice(0, 24) || 'Text' : o.type}</span>
-                <button onClick={() => handleVisibility(realIdx, o)}
+                <button onClick={(e) => { e.stopPropagation(); setVisible(canvas, o, hidden); onChanged(); }}
                   className="h-6 w-6 flex items-center justify-center rounded hover:bg-muted shrink-0">
-                  {isHidden ? <EyeOff className="h-3.5 w-3.5 text-muted-foreground" /> : <Eye className="h-3.5 w-3.5 text-muted-foreground" />}
+                  {hidden ? <EyeOff className="h-3.5 w-3.5 text-muted-foreground" /> : <Eye className="h-3.5 w-3.5 text-muted-foreground" />}
                 </button>
-                <button onClick={() => { setLocked(prev => ({ ...prev, [realIdx]: !isLocked })); }}
+                <button onClick={(e) => { e.stopPropagation(); setLocked(canvas, o, !locked); onChanged(); }}
                   className="h-6 w-6 flex items-center justify-center rounded hover:bg-muted shrink-0">
-                  {isLocked ? <Lock className="h-3.5 w-3.5 text-amber-500" /> : <Unlock className="h-3.5 w-3.5 text-muted-foreground" />}
+                  {locked ? <Lock className="h-3.5 w-3.5 text-amber-500" /> : <Unlock className="h-3.5 w-3.5 text-muted-foreground" />}
                 </button>
-                <button onClick={() => { canvas?.remove(o); canvas?.renderAll(); }}
+                <button onClick={(e) => { e.stopPropagation(); deleteObject(canvas, o); onSelect(null); onChanged(); }}
                   className="h-6 w-6 flex items-center justify-center rounded hover:bg-destructive/10 shrink-0">
                   <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
                 </button>
@@ -598,43 +615,56 @@ const LayersPanel: React.FC<{ canvas: FabricCanvas | null; version: number }> = 
 };
 
 /* ---------- Canvas Sub-toolbar ---------- */
-const CanvasSubToolbar: React.FC = () => (
-  <div className="hidden md:flex h-11 items-center gap-1 border-b bg-card/60 px-3 overflow-x-auto">
-    <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs"><Play className="h-3.5 w-3.5" /> Animate</Button>
-    <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs">Position</Button>
-    <Separator orientation="vertical" className="h-5 mx-1" />
-    <Button variant="ghost" size="icon" className="h-8 w-8"><AlignVerticalJustifyCenter className="h-4 w-4" /></Button>
-    <Button variant="ghost" size="icon" className="h-8 w-8"><MoveUp className="h-4 w-4" /></Button>
-    <Button variant="ghost" size="icon" className="h-8 w-8"><MoveDown className="h-4 w-4" /></Button>
-    <Button variant="ghost" size="icon" className="h-8 w-8"><Lock className="h-4 w-4" /></Button>
-    <Button variant="ghost" size="icon" className="h-8 w-8"><Unlock className="h-4 w-4" /></Button>
-    <div className="flex-1" />
-    <Select defaultValue="desktop">
-      <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue /></SelectTrigger>
-      <SelectContent>
-        <SelectItem value="desktop">Desktop</SelectItem>
-        <SelectItem value="mobile">Mobile</SelectItem>
-        <SelectItem value="instagram">Instagram</SelectItem>
-        <SelectItem value="facebook">Facebook</SelectItem>
-        <SelectItem value="tiktok">TikTok</SelectItem>
-        <SelectItem value="linkedin">LinkedIn</SelectItem>
-        <SelectItem value="youtube">YouTube</SelectItem>
-      </SelectContent>
-    </Select>
-  </div>
-);
+const CanvasSubToolbar: React.FC<{
+  canvas: FabricCanvas | null;
+  selected: any;
+  onChanged: () => void;
+  preset: string;
+  onPresetChange: (v: string) => void;
+  onOpenAnimate: () => void;
+  onOpenPosition: () => void;
+}> = ({ canvas, selected, onChanged, preset, onPresetChange, onOpenAnimate, onOpenPosition }) => {
+  const act = (fn: () => void) => { if (!selected) { toast({ title: 'Select a layer first' }); return; } fn(); onChanged(); };
+  const locked = isLocked(selected);
+  return (
+    <div className="hidden md:flex h-11 items-center gap-1 border-b bg-card/60 px-3 overflow-x-auto">
+      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={onOpenAnimate}><Play className="h-3.5 w-3.5" /> Animate</Button>
+      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={onOpenPosition}>Position</Button>
+      <Separator orientation="vertical" className="h-5 mx-1" />
+      <Button variant="ghost" size="icon" className="h-8 w-8" title="Center on canvas"
+        onClick={() => act(() => { alignObject(canvas, selected, 'center-h'); alignObject(canvas, selected, 'center-v'); })}>
+        <AlignVerticalJustifyCenter className="h-4 w-4" />
+      </Button>
+      <Button variant="ghost" size="icon" className="h-8 w-8" title="Bring forward"
+        onClick={() => act(() => moveLayer(canvas, selected, 'up'))}><MoveUp className="h-4 w-4" /></Button>
+      <Button variant="ghost" size="icon" className="h-8 w-8" title="Send backward"
+        onClick={() => act(() => moveLayer(canvas, selected, 'down'))}><MoveDown className="h-4 w-4" /></Button>
+      <Button variant="ghost" size="icon" className={`h-8 w-8 ${locked ? 'text-amber-500' : ''}`} title="Lock layer"
+        onClick={() => act(() => setLocked(canvas, selected, true))}><Lock className="h-4 w-4" /></Button>
+      <Button variant="ghost" size="icon" className="h-8 w-8" title="Unlock layer"
+        onClick={() => act(() => setLocked(canvas, selected, false))}><Unlock className="h-4 w-4" /></Button>
+      <div className="flex-1" />
+      <Select value={preset} onValueChange={onPresetChange}>
+        <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {Object.entries(ARTBOARD_PRESETS).map(([k, v]) => (
+            <SelectItem key={k} value={k}>{v.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+};
 
 /* ---------- Canvas Stage ---------- */
 const CANVAS_WIDTH = 360;
 const CANVAS_HEIGHT = 640;
 
-const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: number): number => {
+const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: number, w: number, h: number): number => {
   const pad = isMobile ? 24 : 48;
   const availW = containerWidth - pad;
   const availH = containerHeight - pad;
-  const scaleX = availW / CANVAS_WIDTH;
-  const scaleY = availH / CANVAS_HEIGHT;
-  return Math.min(scaleX, scaleY, 1) * 100;
+  return Math.min(availW / w, availH / h, 1) * 100;
 };
 
   const CanvasStage: React.FC<{
@@ -645,7 +675,10 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
   seedDefault: boolean;
   onCanvasWrapperRef?: (el: HTMLDivElement | null) => void;
   isMobile: boolean;
-}> = ({ onCanvasReady, onSelection, zoom, onZoomChange, seedDefault, onCanvasWrapperRef, isMobile }) => {
+  artboard: { width: number; height: number };
+  showGrid: boolean;
+  fitToken: number;
+}> = ({ onCanvasReady, onSelection, zoom, onZoomChange, seedDefault, onCanvasWrapperRef, isMobile, artboard, showGrid, fitToken }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -659,23 +692,32 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
     onCanvasWrapperRef?.(wrapperRef.current);
   }, [onCanvasWrapperRef]);
 
-  // Auto-fit canvas to viewport on mount
+  // Auto-fit canvas to viewport on mount, on artboard change and on "Fit" requests
   useEffect(() => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const z = fitZoom(isMobile, rect.width, rect.height);
+    const z = fitZoom(isMobile, rect.width, rect.height, artboard.width, artboard.height);
     onZoomChange(Math.round(z));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [artboard.width, artboard.height, fitToken]);
+
+  // Keep the Fabric surface in sync with the selected artboard preset
+  useEffect(() => {
+    const c = canvasRef.current;
+    if (!c) return;
+    c.setDimensions({ width: artboard.width, height: artboard.height });
+    c.requestRenderAll();
+  }, [artboard.width, artboard.height]);
 
   useEffect(() => {
     if (initialized.current || !ref.current) return;
     initialized.current = true;
     const c = new FabricCanvas(ref.current, {
-      width: CANVAS_WIDTH,
-      height: CANVAS_HEIGHT,
+      width: artboard.width,
+      height: artboard.height,
       backgroundColor: '#ffffff',
     });
+    canvasRef.current = c;
 
     c.on('object:added', (e: any) => {
       if (e.target) {
@@ -761,14 +803,24 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
         ref={wrapperRef}
         className="relative bg-white shrink-0"
         style={{
-          width: CANVAS_WIDTH,
-          height: CANVAS_HEIGHT,
+          width: artboard.width,
+          height: artboard.height,
           boxShadow: '0 0 0 1px rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.4)',
           transform: `scale(${zoom / 100})`,
           transformOrigin: 'center center',
         }}
       >
         <canvas ref={ref} className="block" />
+        {showGrid && (
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              backgroundImage:
+                'linear-gradient(to right, rgba(108,99,255,0.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(108,99,255,0.25) 1px, transparent 1px)',
+              backgroundSize: '20px 20px',
+            }}
+          />
+        )}
       </div>
     </div>
   );
@@ -1566,6 +1618,13 @@ const EditorInner: React.FC = () => {
   const [timelineOpen, setTimelineOpen] = useState(true);
   const [toolbarPos, setToolbarPos] = useState<{ left: number; top: number } | null>(null);
   const [canvasWrapperEl, setCanvasWrapperEl] = useState<HTMLDivElement | null>(null);
+  const [showGrid, setShowGrid] = useState(false);
+  const [fitToken, setFitToken] = useState(0);
+  const [preset, setPreset] = useState('mobile');
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [pages, setPages] = useState<any[]>([]);
+  const [pageIdx, setPageIdx] = useState(0);
+  const artboard = ARTBOARD_PRESETS[preset] ?? ARTBOARD_PRESETS.mobile;
   const isMobile = useIsMobile();
   const isVideo = false; // TODO: detect from canvas content
   const currentTools = getToolsForSelection(selected);
@@ -1577,37 +1636,47 @@ const EditorInner: React.FC = () => {
   const [historyIdx, setHistoryIdx] = useState(-1);
   const historyRef = useRef(history);
   const historyIdxRef = useRef(historyIdx);
+  const isRestoringRef = useRef(false);
   historyRef.current = history;
   historyIdxRef.current = historyIdx;
 
   const saveSnapshot = useCallback((c: FabricCanvas) => {
+    if (isRestoringRef.current) return;
     const json = JSON.stringify((c as any).toJSON(['id']));
+    if (historyRef.current[historyIdxRef.current] === json) return;
     setHistory(prev => {
       const trimmed = prev.slice(0, historyIdxRef.current + 1);
       const next = [...trimmed, json];
-      if (next.length > 50) next.shift();
-      return next;
+      return next.length > 50 ? next.slice(next.length - 50) : next;
     });
     setHistoryIdx(prev => Math.min(prev + 1, 49));
   }, []);
 
+  const restore = useCallback(async (c: FabricCanvas, idx: number) => {
+    isRestoringRef.current = true;
+    try {
+      const json = JSON.parse(historyRef.current[idx]);
+      await c.loadFromJSON(json);
+      c.discardActiveObject();
+      c.requestRenderAll();
+      setSelected(null);
+      setHistoryIdx(idx);
+      forceUpdate(n => n + 1);
+    } finally {
+      // let Fabric finish emitting object:added events before re-arming history
+      setTimeout(() => { isRestoringRef.current = false; }, 0);
+    }
+  }, []);
+
   const onUndo = useCallback(() => {
-    const c = canvas;
-    if (!c || historyIdxRef.current <= 0) return;
-    const newIdx = historyIdxRef.current - 1;
-    setHistoryIdx(newIdx);
-    const json = JSON.parse(historyRef.current[newIdx]);
-    c.loadFromJSON(json, () => { c.renderAll(); });
-  }, [canvas]);
+    if (!canvas || historyIdxRef.current <= 0) return;
+    restore(canvas, historyIdxRef.current - 1);
+  }, [canvas, restore]);
 
   const onRedo = useCallback(() => {
-    const c = canvas;
-    if (!c || historyIdxRef.current >= historyRef.current.length - 1) return;
-    const newIdx = historyIdxRef.current + 1;
-    setHistoryIdx(newIdx);
-    const json = JSON.parse(historyRef.current[newIdx]);
-    c.loadFromJSON(json, () => { c.renderAll(); });
-  }, [canvas]);
+    if (!canvas || historyIdxRef.current >= historyRef.current.length - 1) return;
+    restore(canvas, historyIdxRef.current + 1);
+  }, [canvas, restore]);
 
   const canUndo = historyIdx > 0;
   const canRedo = historyIdx < history.length - 1;
@@ -1626,6 +1695,11 @@ const EditorInner: React.FC = () => {
       canvas.off('object:modified', save);
       canvas.off('object:removed', save);
     };
+  }, [canvas, saveSnapshot]);
+
+  const markChanged = useCallback(() => {
+    if (canvas) saveSnapshot(canvas);
+    forceUpdate(n => n + 1);
   }, [canvas, saveSnapshot]);
 
   // ---- Auto-save canvas to localStorage ----
@@ -1657,25 +1731,35 @@ const EditorInner: React.FC = () => {
 
   const deleteSelected = useCallback(() => {
     if (!selected || !canvas) return;
-    canvas.remove(selected);
-    canvas.discardActiveObject();
-    canvas.renderAll();
+    deleteObject(canvas, selected);
     setSelected(null);
     forceUpdate(n => n + 1);
   }, [selected, canvas]);
 
-  const copySelected = useCallback(() => {
+  const duplicateSelected = useCallback(async () => {
+    if (!selected || !canvas) return;
+    const clone = await duplicateObject(canvas, selected);
+    if (clone) setSelected(clone);
+    forceUpdate(n => n + 1);
+  }, [selected, canvas]);
+
+  const clipboardRef = useRef<any>(null);
+
+  const copySelected = useCallback(async () => {
     if (!selected) return;
-    (window as any).__editorClipboard = { type: selected.type, json: selected.toJSON(['id']) };
+    clipboardRef.current = await selected.clone();
+    toast({ title: 'Copied', description: 'Press Ctrl/Cmd + V to paste.' });
   }, [selected]);
 
-  const pasteClipboard = useCallback(() => {
-    if (!canvas || !(window as any).__editorClipboard) return;
-    const data = (window as any).__editorClipboard;
-    canvas.loadFromJSON({ ...(canvas as any).toJSON(['id']), objects: [...canvas.getObjects(), data.json] }, () => {
-      canvas.renderAll();
-      forceUpdate(n => n + 1);
-    });
+  const pasteClipboard = useCallback(async () => {
+    if (!canvas || !clipboardRef.current) return;
+    const clone: any = await clipboardRef.current.clone();
+    clone.set({ left: (clone.left || 0) + 20, top: (clone.top || 0) + 20 });
+    canvas.add(clone);
+    canvas.setActiveObject(clone);
+    canvas.requestRenderAll();
+    setSelected(clone);
+    forceUpdate(n => n + 1);
   }, [canvas]);
 
   useKeyboardShortcuts({
@@ -1687,6 +1771,7 @@ const EditorInner: React.FC = () => {
       { key: 'z', ctrlKey: true, metaKey: true, shiftKey: true, action: onRedo, description: 'Redo', category: 'Canvas' },
       { key: 'c', ctrlKey: true, metaKey: true, action: copySelected, description: 'Copy', category: 'Canvas' },
       { key: 'v', ctrlKey: true, metaKey: true, action: pasteClipboard, description: 'Paste', category: 'Canvas' },
+      { key: 'd', ctrlKey: true, metaKey: true, action: duplicateSelected, description: 'Duplicate', category: 'Canvas' },
       { key: 'ArrowUp', action: () => nudge(0, -1), description: 'Nudge up', category: 'Canvas' },
       { key: 'ArrowDown', action: () => nudge(0, 1), description: 'Nudge down', category: 'Canvas' },
       { key: 'ArrowLeft', action: () => nudge(-1, 0), description: 'Nudge left', category: 'Canvas' },
@@ -1859,6 +1944,58 @@ const EditorInner: React.FC = () => {
     setActiveTool(null);
   }, []);
 
+  // ---- Preview / Publish / Pages ----
+  const openPreview = useCallback(() => {
+    if (!canvas) return;
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
+    setPreviewUrl(canvas.toDataURL({ format: 'png', quality: 1, multiplier: 2 }));
+  }, [canvas]);
+
+  const onPublish = useCallback(() => {
+    if (!canvas) return;
+    try {
+      localStorage.setItem(
+        'advista.editor.publishDraft',
+        JSON.stringify({ name: projectName, json: (canvas as any).toJSON(['id']), preview: canvas.toDataURL({ format: 'png', multiplier: 1 }) }),
+      );
+    } catch { /* preview may exceed quota — publishing still proceeds */ }
+    toast({ title: 'Design ready to publish', description: 'Pick a campaign to attach this creative to.' });
+    navigate('/campaigns');
+  }, [canvas, projectName, navigate]);
+
+  const addPage = useCallback(() => {
+    if (!canvas) return;
+    const snapshot = (canvas as any).toJSON(['id']);
+    setPages((prev) => {
+      const next = [...prev];
+      next[pageIdx] = snapshot;
+      next.push(null);
+      setPageIdx(next.length - 1);
+      return next;
+    });
+    canvas.clear();
+    canvas.backgroundColor = '#ffffff';
+    canvas.requestRenderAll();
+    setSelected(null);
+    forceUpdate((n) => n + 1);
+  }, [canvas, pageIdx]);
+
+  const goToPage = useCallback(async (idx: number) => {
+    if (!canvas || idx === pageIdx) return;
+    const snapshot = (canvas as any).toJSON(['id']);
+    const next = [...pages];
+    next[pageIdx] = snapshot;
+    setPages(next);
+    const target = next[idx];
+    if (target) await canvas.loadFromJSON(target);
+    else { canvas.clear(); canvas.backgroundColor = '#ffffff'; }
+    canvas.requestRenderAll();
+    setPageIdx(idx);
+    setSelected(null);
+    forceUpdate((n) => n + 1);
+  }, [canvas, pages, pageIdx]);
+
   const renderLeftPanel = () => {
     switch (activeTab) {
       case 'templates': return <StudioTemplatesPanel onUse={(t: StudioTemplate) => loadTemplateRecord(t)} />;
@@ -1867,7 +2004,7 @@ const EditorInner: React.FC = () => {
       case 'text': return <TextPanel onAdd={addText} />;
       case 'elements': return <StudioElementsPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} brandColors={brandPalette} selected={selected} />;
       case 'brand': return <BrandKitPanel />;
-      case 'layers': return <LayersPanel canvas={canvas} version={tick} />;
+      case 'layers': return <LayersPanel canvas={canvas} version={tick} selected={selected} onSelect={setSelected} onChanged={markChanged} />;
       case 'media': return <StudioMediaPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} selected={selected} />;
       case 'uploads': return <StudioUploadsPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} selected={selected} />;
       case 'projects': return <SimplePanel title="Projects"><p className="text-xs text-muted-foreground">Your recent projects.</p></SimplePanel>;
@@ -1888,6 +2025,9 @@ const EditorInner: React.FC = () => {
         onSelection={(o) => { setSelected(o); forceUpdate((n) => n + 1); }}
         onCanvasWrapperRef={(el) => setCanvasWrapperEl(el)}
         isMobile={isMobile}
+        artboard={artboard}
+        showGrid={showGrid}
+        fitToken={fitToken}
       />
 
       {/* Onboarding overlay when canvas is empty */}
@@ -1925,22 +2065,49 @@ const EditorInner: React.FC = () => {
         <div className="absolute z-30 pointer-events-auto animate-in fade-in"
           style={{ left: toolbarPos.left, top: toolbarPos.top, transform: 'translateX(-50%)' }}>
           <div className="flex items-center gap-0.5 px-2 py-1.5 rounded-full shadow-lg" style={{ backgroundColor: '#2D2D2D', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
-            <button className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-white/10 text-white">
+            <button title="AI suggestions for this layer"
+              onClick={() => { setActiveTab('ai-studio'); setSheetExpanded(true); }}
+              className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-white/10 text-white">
               <Sparkles className="h-3.5 w-3.5 text-primary" />
               <span className="text-xs font-semibold">AI</span>
             </button>
             <div className="w-px h-4 mx-0.5" style={{ backgroundColor: '#444444' }} />
-            <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Edit3 className="h-3.5 w-3.5" /></button>
-            <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Copy className="h-3.5 w-3.5" /></button>
-            <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Trash2 className="h-3.5 w-3.5" /></button>
-            <button className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><MoreHorizontal className="h-3.5 w-3.5" /></button>
+            <button title="Edit layer"
+              onClick={() => {
+                if (selectionType === 'text') { canvas?.setActiveObject(selected); (selected as any).enterEditing?.(); canvas?.requestRenderAll(); }
+                else if (selectionType === 'image') { setActiveTab('media'); setSheetExpanded(true); }
+                else { setActiveTab('elements'); setSheetExpanded(true); }
+              }}
+              className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Edit3 className="h-3.5 w-3.5" /></button>
+            <button title="Duplicate" onClick={duplicateSelected}
+              className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Copy className="h-3.5 w-3.5" /></button>
+            <button title="Delete" onClick={deleteSelected}
+              className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Trash2 className="h-3.5 w-3.5" /></button>
+            <button title={isLocked(selected) ? 'Unlock layer' : 'Lock layer'}
+              onClick={() => { setLocked(canvas, selected, !isLocked(selected)); markChanged(); }}
+              className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white">
+              {isLocked(selected) ? <Lock className="h-3.5 w-3.5 text-amber-400" /> : <Unlock className="h-3.5 w-3.5" />}
+            </button>
+            <button title="Bring forward" onClick={() => { moveLayer(canvas, selected, 'up'); markChanged(); }}
+              className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><MoveUp className="h-3.5 w-3.5" /></button>
           </div>
         </div>
       )}
 
-      {/* Bottom bar — Add page */}
+      {/* Bottom bar — pages */}
       <div className="flex items-center justify-center gap-2 py-2" style={{ backgroundColor: isMobile ? 'transparent' : '#1A1A1A', borderTop: isMobile ? 'none' : '1px solid #2D2D2D' }}>
-        <button className="flex items-center gap-2 h-9 rounded-lg px-4 text-xs" style={{ backgroundColor: '#2D2D2D', border: '1px solid #444444', color: '#CCCCCC' }}>
+        {pages.length > 1 && pages.map((_, i) => (
+          <button key={i} onClick={() => goToPage(i)}
+            className="h-9 min-w-9 rounded-lg px-3 text-xs"
+            style={{
+              backgroundColor: i === pageIdx ? '#6C63FF' : '#2D2D2D',
+              border: '1px solid #444444',
+              color: i === pageIdx ? '#FFFFFF' : '#CCCCCC',
+            }}>
+            {i + 1}
+          </button>
+        ))}
+        <button onClick={addPage} className="flex items-center gap-2 h-9 rounded-lg px-4 text-xs" style={{ backgroundColor: '#2D2D2D', border: '1px solid #444444', color: '#CCCCCC' }}>
           <Plus className="h-3.5 w-3.5" /> Add page
         </button>
       </div>
@@ -1964,12 +2131,26 @@ const EditorInner: React.FC = () => {
           onToggleLeft={() => isMobile ? navigate('/dashboard') : setLeftOpen(true)}
           onToggleRight={() => setRightOpen(true)}
           isMobile={isMobile}
+          showGrid={showGrid}
+          onToggleGrid={() => setShowGrid((g) => !g)}
+          onFit={() => setFitToken((t) => t + 1)}
+          onPreview={openPreview}
+          onPublish={onPublish}
+          artboardLabel={`${artboard.label} · ${artboard.width}×${artboard.height} px`}
         />
       </div>
 
       {/* Desktop only: Editor Second Bar */}
       <div className="editor-second-bar flex-shrink-0">
-        <CanvasSubToolbar />
+        <CanvasSubToolbar
+          canvas={canvas}
+          selected={selected}
+          onChanged={markChanged}
+          preset={preset}
+          onPresetChange={setPreset}
+          onOpenAnimate={() => { setActiveTab('ai-studio'); setActiveTool('animate'); }}
+          onOpenPosition={() => { setActiveTab('layers'); setActiveTool('position'); }}
+        />
       </div>
 
       {/* Mobile layout: Top Bar → Canvas → Bottom Sheet → Contextual Toolbar */}
@@ -2074,6 +2255,19 @@ const EditorInner: React.FC = () => {
           <div key={activeTab} className="flex-1 min-h-0 overflow-hidden">{renderLeftPanel()}</div>
         </SheetContent>
       </Sheet>
+
+      {/* Preview — a read-only render of the current page */}
+      {previewUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6" onClick={() => setPreviewUrl(null)}>
+          <div className="flex max-h-full flex-col items-center gap-3" onClick={(e) => e.stopPropagation()}>
+            <img src={previewUrl} alt={`${projectName} preview`} className="max-h-[75vh] max-w-full rounded-lg shadow-2xl" />
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="secondary" onClick={onExport}><Download className="mr-1.5 h-3.5 w-3.5" /> Export PNG</Button>
+              <Button size="sm" variant="outline" onClick={() => setPreviewUrl(null)}><X className="mr-1.5 h-3.5 w-3.5" /> Close</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
