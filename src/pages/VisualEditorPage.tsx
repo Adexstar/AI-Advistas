@@ -1618,6 +1618,13 @@ const EditorInner: React.FC = () => {
   const [timelineOpen, setTimelineOpen] = useState(true);
   const [toolbarPos, setToolbarPos] = useState<{ left: number; top: number } | null>(null);
   const [canvasWrapperEl, setCanvasWrapperEl] = useState<HTMLDivElement | null>(null);
+  const [showGrid, setShowGrid] = useState(false);
+  const [fitToken, setFitToken] = useState(0);
+  const [preset, setPreset] = useState('mobile');
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [pages, setPages] = useState<any[]>([]);
+  const [pageIdx, setPageIdx] = useState(0);
+  const artboard = ARTBOARD_PRESETS[preset] ?? ARTBOARD_PRESETS.mobile;
   const isMobile = useIsMobile();
   const isVideo = false; // TODO: detect from canvas content
   const currentTools = getToolsForSelection(selected);
@@ -1629,37 +1636,47 @@ const EditorInner: React.FC = () => {
   const [historyIdx, setHistoryIdx] = useState(-1);
   const historyRef = useRef(history);
   const historyIdxRef = useRef(historyIdx);
+  const isRestoringRef = useRef(false);
   historyRef.current = history;
   historyIdxRef.current = historyIdx;
 
   const saveSnapshot = useCallback((c: FabricCanvas) => {
+    if (isRestoringRef.current) return;
     const json = JSON.stringify((c as any).toJSON(['id']));
+    if (historyRef.current[historyIdxRef.current] === json) return;
     setHistory(prev => {
       const trimmed = prev.slice(0, historyIdxRef.current + 1);
       const next = [...trimmed, json];
-      if (next.length > 50) next.shift();
-      return next;
+      return next.length > 50 ? next.slice(next.length - 50) : next;
     });
     setHistoryIdx(prev => Math.min(prev + 1, 49));
   }, []);
 
+  const restore = useCallback(async (c: FabricCanvas, idx: number) => {
+    isRestoringRef.current = true;
+    try {
+      const json = JSON.parse(historyRef.current[idx]);
+      await c.loadFromJSON(json);
+      c.discardActiveObject();
+      c.requestRenderAll();
+      setSelected(null);
+      setHistoryIdx(idx);
+      forceUpdate(n => n + 1);
+    } finally {
+      // let Fabric finish emitting object:added events before re-arming history
+      setTimeout(() => { isRestoringRef.current = false; }, 0);
+    }
+  }, []);
+
   const onUndo = useCallback(() => {
-    const c = canvas;
-    if (!c || historyIdxRef.current <= 0) return;
-    const newIdx = historyIdxRef.current - 1;
-    setHistoryIdx(newIdx);
-    const json = JSON.parse(historyRef.current[newIdx]);
-    c.loadFromJSON(json, () => { c.renderAll(); });
-  }, [canvas]);
+    if (!canvas || historyIdxRef.current <= 0) return;
+    restore(canvas, historyIdxRef.current - 1);
+  }, [canvas, restore]);
 
   const onRedo = useCallback(() => {
-    const c = canvas;
-    if (!c || historyIdxRef.current >= historyRef.current.length - 1) return;
-    const newIdx = historyIdxRef.current + 1;
-    setHistoryIdx(newIdx);
-    const json = JSON.parse(historyRef.current[newIdx]);
-    c.loadFromJSON(json, () => { c.renderAll(); });
-  }, [canvas]);
+    if (!canvas || historyIdxRef.current >= historyRef.current.length - 1) return;
+    restore(canvas, historyIdxRef.current + 1);
+  }, [canvas, restore]);
 
   const canUndo = historyIdx > 0;
   const canRedo = historyIdx < history.length - 1;
@@ -1678,6 +1695,11 @@ const EditorInner: React.FC = () => {
       canvas.off('object:modified', save);
       canvas.off('object:removed', save);
     };
+  }, [canvas, saveSnapshot]);
+
+  const markChanged = useCallback(() => {
+    if (canvas) saveSnapshot(canvas);
+    forceUpdate(n => n + 1);
   }, [canvas, saveSnapshot]);
 
   // ---- Auto-save canvas to localStorage ----
