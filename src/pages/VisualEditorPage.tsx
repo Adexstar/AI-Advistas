@@ -33,6 +33,7 @@ import { AIQuickActionsMenu } from '@/components/visual-editor/ai/AIQuickActions
 import { consumePendingEditorTemplate, peekPendingEditorTemplate } from '@/lib/templateEditorSession';
 import { TemplateEngine } from '@/services/templates/TemplateEngine';
 import { loadTemplateJSONIntoCanvas } from '@/services/templates/loadIntoCanvas';
+import { supabase } from '@/integrations/supabase/client';
 import { useAIContext } from '@/contexts/AIContext';
 import {
   TemplatesPanel as StudioTemplatesPanel,
