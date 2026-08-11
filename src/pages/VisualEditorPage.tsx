@@ -1808,8 +1808,9 @@ const EditorInner: React.FC = () => {
         });
         const json = inst.json as any;
 
-        // Fabric v6: loadFromJSON is promise-based (the 2nd arg is a reviver, not a callback).
-        await canvas.loadFromJSON(json);
+        // Resilient load — unresolved {{image}} placeholders become editable
+        // placeholder layers instead of blowing up the whole document.
+        const result = await loadTemplateJSONIntoCanvas(canvas, json);
 
         if (json?.background) canvas.backgroundColor = json.background as string;
 
