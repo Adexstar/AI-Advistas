@@ -109,6 +109,7 @@ export const TemplatesPanel: React.FC<{ onUse: (t: StudioTemplate) => void }> = 
       const { data, error } = await supabase
         .from('templates')
         .select('id,name,description,category,platform,preview_url,thumbnail_url,template_json,popularity_score')
+        .eq('is_active', true)
         .order('popularity_score', { ascending: false })
         .limit(120);
       if (error) throw error;

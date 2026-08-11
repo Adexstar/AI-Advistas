@@ -139,6 +139,7 @@ export const useDashboardData = (range: Range = 'daily') => {
       const { data, error } = await supabase
         .from('templates')
         .select('id, name, popularity_score, thumbnail_url, preview_url, created_at')
+        .eq('is_active', true)
         .order('popularity_score', { ascending: false })
         .limit(10);
       if (error) throw error;

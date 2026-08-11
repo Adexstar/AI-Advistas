@@ -81,6 +81,7 @@ export const useTemplates = () => {
       const { data, error } = await supabase
         .from('templates')
         .select('*')
+        .eq('is_active', true)
         .order('popularity_score', { ascending: false })
         .order('name', { ascending: true });
 
