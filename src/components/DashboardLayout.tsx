@@ -127,7 +127,15 @@ const pageMeta: { match: (p: string) => boolean; title: string; description: str
   { match: (p) => p.startsWith("/marketplace"), title: "Asset Marketplace", description: "Templates, stock and brand packs." },
   { match: (p) => p.startsWith("/developer"), title: "Developer Center", description: "API keys, webhooks and SDKs." },
   { match: (p) => p.startsWith("/system"), title: "System Monitor", description: "Admin-only infrastructure health." },
-  { match: (p) => p.startsWith("/admin"), title: "Admin", description: "Workspace controls." },
+  { match: (p) => p.startsWith("/admin/users"), title: "Users", description: "Every account, plan and usage in one place." },
+  { match: (p) => p.startsWith("/admin/templates"), title: "Template Curation", description: "Review, approve and manage the template library." },
+  { match: (p) => p.startsWith("/admin/decisions"), title: "AI Decisions Log", description: "Every AI action, filterable and explainable." },
+  { match: (p) => p.startsWith("/admin/analytics"), title: "System Analytics", description: "Growth, usage patterns and category trends." },
+  { match: (p) => p.startsWith("/admin/providers"), title: "API & Providers", description: "Provider health, quotas and key management." },
+  { match: (p) => p.startsWith("/admin/playbooks"), title: "Category Playbooks", description: "Tune AI behaviour per industry." },
+  { match: (p) => p.startsWith("/admin/settings"), title: "System Settings", description: "Global configuration and danger zone." },
+  { match: (p) => p.startsWith("/admin"), title: "Admin Dashboard", description: "System health, revenue and things that need attention." },
+
 ];
 
 const NavItemRow = ({
