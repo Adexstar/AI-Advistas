@@ -300,18 +300,14 @@ const SidebarBody = ({
               ))}
               {group.title === "Account" && isAdmin && (
                 <>
-                  <NavItemRow
-                    item={{ name: "Admin", href: "/admin", icon: Shield }}
-                    collapsed={collapsed}
-                    onNavigate={close}
-                  />
-                  <NavItemRow
-                    item={{ name: "Providers", href: "/admin/providers", icon: Plug }}
-                    collapsed={collapsed}
-                    onNavigate={close}
-                  />
+                  {!collapsed && <div className="border-t border-white/10 mx-3 my-2" />}
+                  {!collapsed && <p className="sidebar-section-label">Admin</p>}
+                  {adminNavItems.map((item) => (
+                    <NavItemRow key={item.name} item={item} collapsed={collapsed} onNavigate={close} />
+                  ))}
                 </>
               )}
+
             </div>
           ))}
 
