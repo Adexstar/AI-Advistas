@@ -1292,6 +1292,54 @@ export type Database = {
         }
         Relationships: []
       }
+      system_settings: {
+        Row: {
+          ai_model: string
+          created_at: string
+          decision_log_retention_days: number
+          default_autonomy: string
+          default_plan: string
+          free_ai_credits: number
+          id: string
+          image_model: string
+          maintenance_mode: boolean
+          platform_name: string
+          signups_open: boolean
+          singleton: boolean
+          updated_at: string
+        }
+        Insert: {
+          ai_model?: string
+          created_at?: string
+          decision_log_retention_days?: number
+          default_autonomy?: string
+          default_plan?: string
+          free_ai_credits?: number
+          id?: string
+          image_model?: string
+          maintenance_mode?: boolean
+          platform_name?: string
+          signups_open?: boolean
+          singleton?: boolean
+          updated_at?: string
+        }
+        Update: {
+          ai_model?: string
+          created_at?: string
+          decision_log_retention_days?: number
+          default_autonomy?: string
+          default_plan?: string
+          free_ai_credits?: number
+          id?: string
+          image_model?: string
+          maintenance_mode?: boolean
+          platform_name?: string
+          signups_open?: boolean
+          singleton?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       template_collection_items: {
         Row: {
           collection_id: string
@@ -1523,6 +1571,7 @@ export type Database = {
           description: string | null
           dimensions: Json | null
           external_id: string | null
+          featured: boolean
           file_path: string | null
           file_size: number | null
           file_type: string | null
@@ -1543,9 +1592,13 @@ export type Database = {
           popularity_score: number
           premium: boolean
           preview_url: string | null
+          review_note: string | null
+          review_status: string
+          reviewed_at: string | null
           source: string
           source_id: string | null
           source_license: string | null
+          submitted_by: string | null
           template_json: Json | null
           template_source: string
           thumbnail_url: string | null
@@ -1564,6 +1617,7 @@ export type Database = {
           description?: string | null
           dimensions?: Json | null
           external_id?: string | null
+          featured?: boolean
           file_path?: string | null
           file_size?: number | null
           file_type?: string | null
@@ -1584,9 +1638,13 @@ export type Database = {
           popularity_score?: number
           premium?: boolean
           preview_url?: string | null
+          review_note?: string | null
+          review_status?: string
+          reviewed_at?: string | null
           source?: string
           source_id?: string | null
           source_license?: string | null
+          submitted_by?: string | null
           template_json?: Json | null
           template_source?: string
           thumbnail_url?: string | null
@@ -1605,6 +1663,7 @@ export type Database = {
           description?: string | null
           dimensions?: Json | null
           external_id?: string | null
+          featured?: boolean
           file_path?: string | null
           file_size?: number | null
           file_type?: string | null
@@ -1625,9 +1684,13 @@ export type Database = {
           popularity_score?: number
           premium?: boolean
           preview_url?: string | null
+          review_note?: string | null
+          review_status?: string
+          reviewed_at?: string | null
           source?: string
           source_id?: string | null
           source_license?: string | null
+          submitted_by?: string | null
           template_json?: Json | null
           template_source?: string
           thumbnail_url?: string | null
@@ -1788,6 +1851,75 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_action_trends: { Args: never; Returns: Json }
+      admin_decision_stats: { Args: never; Returns: Json }
+      admin_list_decisions: {
+        Args: {
+          p_action?: string
+          p_category?: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_since?: string
+          p_status?: string
+        }
+        Returns: {
+          action: string
+          campaign_id: string
+          campaign_name: string
+          category: string
+          confidence: number
+          created_at: string
+          id: string
+          page: string
+          reasoning: string
+          signal: string
+          status: string
+          total_count: number
+          trigger_source: string
+          user_id: string
+          user_name: string
+        }[]
+      }
+      admin_list_users: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_plan?: string
+          p_search?: string
+          p_status?: string
+        }
+        Returns: {
+          ai_credits: number
+          avatar_url: string
+          campaigns: number
+          display_name: string
+          email: string
+          joined_at: string
+          last_active: string
+          plan: string
+          status: string
+          storage_bytes: number
+          total_count: number
+          user_id: string
+        }[]
+      }
+      admin_overview_stats: { Args: never; Returns: Json }
+      admin_plan_distribution: {
+        Args: never
+        Returns: {
+          plan: string
+          users: number
+        }[]
+      }
+      admin_user_detail: { Args: { p_user_id: string }; Returns: Json }
+      admin_user_growth: {
+        Args: { p_days?: number }
+        Returns: {
+          day: string
+          users: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1823,6 +1955,7 @@ export type Database = {
           description: string | null
           dimensions: Json | null
           external_id: string | null
+          featured: boolean
           file_path: string | null
           file_size: number | null
           file_type: string | null
@@ -1843,9 +1976,13 @@ export type Database = {
           popularity_score: number
           premium: boolean
           preview_url: string | null
+          review_note: string | null
+          review_status: string
+          reviewed_at: string | null
           source: string
           source_id: string | null
           source_license: string | null
+          submitted_by: string | null
           template_json: Json | null
           template_source: string
           thumbnail_url: string | null
