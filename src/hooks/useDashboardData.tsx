@@ -29,8 +29,10 @@ export interface AnalyticsRow {
 export interface TemplateRow {
   id: string;
   name: string;
-  usage_count: number;
+  usage_count?: number;
+  popularity_score?: number | null;
   thumbnail_url: string | null;
+  preview_url?: string | null;
   created_at: string;
 }
 
@@ -135,9 +137,9 @@ export const useDashboardData = (range: Range = 'daily') => {
     queryKey: ['dash-templates'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('ad_templates')
-        .select('id, name, usage_count, thumbnail_url, created_at')
-        .order('usage_count', { ascending: false })
+        .from('templates')
+        .select('id, name, popularity_score, thumbnail_url, preview_url, created_at')
+        .order('popularity_score', { ascending: false })
         .limit(10);
       if (error) throw error;
       return (data ?? []) as TemplateRow[];

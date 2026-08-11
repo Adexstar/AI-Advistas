@@ -381,8 +381,8 @@ const TemplateLibrary = () => {
     queryFn: async () => {
       const { data, error } = await (supabase as any).rpc('template_category_counts', { p_source: 'advista_original' });
       if (error) throw error;
-      return ((data ?? []) as Array<{ category: string; template_count: number }>).reduce<Record<string, number>>((acc, row) => {
-        acc[row.category] = Number(row.template_count ?? 0);
+      return ((data ?? []) as Array<{ category: string; count: number; template_count?: number }>).reduce<Record<string, number>>((acc, row) => {
+        acc[row.category] = Number(row.count ?? row.template_count ?? 0);
         return acc;
       }, {});
     },
