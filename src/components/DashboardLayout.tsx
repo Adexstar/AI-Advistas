@@ -9,6 +9,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import {
   BarChart3,
   Bell,
+  Brain,
+  Target,
+  SlidersHorizontal,
+
   ChevronLeft,
   Code2,
   CreditCard,
