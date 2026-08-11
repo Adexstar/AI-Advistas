@@ -1,52 +1,36 @@
-# AdVista External Services — Adapter & Cache Implementation
+# Fix: Templates not showing
 
-Much of Layer 3 is already in place (`TemplateService`, `MediaService`, `PublishingEngine`, `BrandService`, Freepik + Cloudinary + OpenAI + Ayrshare adapters). This plan fills the remaining gaps so external providers become swappable infrastructure behind AdVista's services.
+Not a "templates are AdVista-owned" problem — the 30 AdVista Originals do exist in the database. Three separate bugs are stopping them from reaching the screen.
 
-## Scope
+## What I verified
 
-### 1. Provider adapters (replace stubs with real edge-function calls)
-- **Media search adapters**: `pexels`, `pixabay`, `unsplash` — each backed by a small `search-<provider>` edge function that holds the API key and normalizes results to `MediaAsset`.
-- **Media generation adapters**: `ideogram`, `leonardo`, `runway`, `kling`, `veo` — each backed by a `generate-<provider>` edge function returning a Cloudinary-persisted `MediaAsset`.
-- Adapter files live in `src/services/media/providers/`. They only call edge functions — never external APIs directly.
-- `isConfigured()` returns true when the corresponding secret is expected to exist server-side; server returns 501 otherwise.
+- `templates` table: 30 rows, all `source = advista_original`.
+- `ad_templates` table: 0 rows.
+- The Template Library page reads `ad_templates` (the empty one), not `templates`.
+- Neither table has any Data API grants, so even a correct query returns a permission error for signed-in and anonymous users.
+- The page calls an RPC named `template_category_counts` that does not exist in the database, so the category counts fail too.
 
-### 2. Unified search cache (24h)
-- New table `provider_search_cache` (provider, query_hash, ctx_hash, results jsonb, expires_at).
-- Wrap `MediaService.search` with a cache check → call adapters on miss → store.
-- Same pattern reused by `TemplateService.importFromFreepik` search calls.
+## The fix
 
-### 3. AI-driven provider routing
-- Add `MediaService.smartSearch(ctx)` that expands the intent via `AIGateway` (synonyms + category context) and ranks combined results by relevance/quality/orientation/brand-color match.
-- Media Library and Visual Editor consume `smartSearch`, not raw provider calls.
+1. Grant Data API access
+   - `GRANT SELECT ON public.templates TO anon, authenticated` (RLS already allows public read).
+   - Same for `ad_templates` plus write privileges for authenticated/admin flows.
+   - Without this nothing renders regardless of the other fixes.
 
-### 4. Edge functions (new)
-- `search-pexels`, `search-pixabay`, `search-unsplash`
-- `generate-ideogram`, `generate-leonardo`, `generate-runway`, `generate-kling`, `generate-veo`
-- Each: CORS, Zod input validation, normalized response, graceful 501 when the provider secret is missing.
+2. Point the library at the real table
+   - Switch the Template Library's data hook from `ad_templates` to `templates`, mapping the fields the cards use (name, description, thumbnail/preview URL, category, platform, objective, popularity, tags).
+   - Keep the existing card layout, filters, and detail panel untouched — only the data source changes.
+   - Same for the other reads still pointing at the empty `ad_templates` (dashboard "top templates" widget, analytics widget) so they show real data instead of nothing.
 
-### 5. Secrets (requested only when the user opts in)
-- `PEXELS_API_KEY`, `PIXABAY_API_KEY`, `UNSPLASH_ACCESS_KEY`, `LEONARDO_API_KEY`, `IDEOGRAM_API_KEY`, `RUNWAY_API_KEY`, `KLING_API_KEY`, `VEO_API_KEY`.
-- Not added preemptively — we ship the adapters + edge functions; each provider lights up when its secret is added.
-
-### 6. Cleanup
-- Remove any remaining direct provider calls from pages (audit `src/pages` for `fetch("https://api.*")` and route through services).
-- Ensure `PublishingEngine` remains the only publish entry point (already true).
-
-## Out of scope
-- No UI redesign. Media Library, Template Library, and Visual Editor keep their current UX; only the data source becomes unified.
-- Paid ads adapters (Meta/TikTok/Google) stay as seams — real OAuth wiring is a later layer.
+3. Add the missing category-count function
+   - Create `template_category_counts(p_source text)` returning category + count from `templates`, so every category card shows its real number (including `0 Templates`, as previously requested).
 
 ## Technical notes
-- Cache key: `sha256(provider + '|' + normalized(query) + '|' + JSON.stringify(ctx))`.
-- All adapters return `MediaAsset` shape already defined in `src/services/media/types.ts`.
-- Edge functions use `npm:@supabase/supabase-js@2` + `corsHeaders` per project convention.
-- `provider_search_cache` gets `GRANT`s + RLS: readable by `authenticated`, writable by `service_role` only (edge functions write).
 
-## Deliverables
-1. Migration for `provider_search_cache`.
-2. 8 new edge functions.
-3. Replacement of `stubs.ts` with real adapter files (`pexels.ts`, `pixabay.ts`, `unsplash.ts`, `ideogram.ts`, `leonardo.ts`, `runway.ts`, `kling.ts`, `veo.ts`).
-4. `MediaService.smartSearch` + cache wrapper.
-5. Short doc block at top of `src/services/index.ts` naming the four service entry points as the only allowed external surface.
+- Files touched: `src/hooks/useTemplates.tsx` (repoint to `templates`), `src/pages/TemplateLibrary.tsx` (field mapping only), `src/hooks/useDashboardData.tsx`, `src/hooks/useAnalytics.ts`.
+- One migration: grants on both tables + the `template_category_counts` SQL function (stable, `search_path = public`).
+- No visual/layout changes.
 
-Approve and I'll implement in one pass.
+## Verification
+
+After the change: query the library route and confirm 30 template cards render, category counts are non-zero for populated categories, and the detail panel opens for an AdVista Original.
