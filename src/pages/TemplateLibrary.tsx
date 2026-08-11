@@ -379,9 +379,9 @@ const TemplateLibrary = () => {
   const { data: categoryCounts = {} } = useQuery<Record<string, number>, Error>({
     queryKey: ['template-category-counts'],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('template_category_counts', { p_source: 'advista_original' });
+      const { data, error } = await (supabase as any).rpc('template_category_counts', { p_source: 'advista_original' });
       if (error) throw error;
-      return (data ?? []).reduce<Record<string, number>>((acc, row) => {
+      return ((data ?? []) as Array<{ category: string; template_count: number }>).reduce<Record<string, number>>((acc, row) => {
         acc[row.category] = Number(row.template_count ?? 0);
         return acc;
       }, {});

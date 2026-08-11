@@ -14,6 +14,7 @@ import { runwayProvider } from "./providers/runway";
 import { klingProvider } from "./providers/kling";
 import { veoProvider } from "./providers/veo";
 import { withProviderCache } from "./cache";
+import { AIGateway } from "@/services/ai/AIGateway";
 import type { MediaAsset, MediaSearchContext, MediaProvider } from "./types";
 
 const searchProviders: MediaProvider[] = [
@@ -34,6 +35,31 @@ const videoGenProviders = {
   kling: klingProvider,
   veo: veoProvider,
 } as const;
+
+// AI intent expansion: "coffee" → cafe, espresso, barista, warm interior…
+// Cached for 24h so repeated searches never re-hit the model.
+async function expandIntent(ctx: MediaSearchContext): Promise<string[]> {
+  const base = ctx.intent.trim();
+  if (!base) return [base];
+  try {
+    return await withProviderCache("intent-expansion", { base, category: ctx.category, goal: ctx.goal }, async () => {
+      const res = await AIGateway.route({
+        specialist: "creative_strategist",
+        systemPrompt:
+          "You expand a marketing media search intent into 3-5 concrete stock-photo search phrases. Reply with a JSON array of strings only.",
+        userPrompt: `Intent: ${base}\nCategory: ${ctx.category ?? "any"}\nPlatform: ${ctx.platform ?? "any"}\nGoal: ${ctx.goal ?? "any"}`,
+        temperature: 0.4,
+        maxTokens: 150,
+      });
+      const match = res.content.match(/\[[\s\S]*\]/);
+      const parsed = match ? JSON.parse(match[0]) : [];
+      const terms = Array.isArray(parsed) ? parsed.filter((t) => typeof t === "string" && t.trim()) : [];
+      return [base, ...terms.slice(0, 4)];
+    });
+  } catch {
+    return [base];
+  }
+}
 
 function rankResults(results: MediaAsset[], ctx: MediaSearchContext): MediaAsset[] {
   const brand = (ctx.brandColors ?? []).map((c) => c.toLowerCase());
@@ -97,9 +123,23 @@ export const MediaService = {
     });
   },
 
-  // Smart search: identical to search() today; reserved for AI intent expansion.
+  // Smart search: AI expands the user's intent into related search terms,
+  // every term is searched across providers (cached), then results are
+  // de-duplicated and ranked. The UI never learns which provider replied.
   async smartSearch(ctx: MediaSearchContext): Promise<MediaAsset[]> {
-    return this.search(ctx);
+    const terms = await expandIntent(ctx);
+    const batches = await Promise.all(
+      terms.map((intent) => this.search({ ...ctx, intent }).catch(() => [] as MediaAsset[])),
+    );
+    const seen = new Set<string>();
+    const merged: MediaAsset[] = [];
+    for (const asset of batches.flat()) {
+      const key = asset.url || `${asset.provider}:${asset.id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push(asset);
+    }
+    return rankResults(merged, ctx);
   },
 
   listProviders() {

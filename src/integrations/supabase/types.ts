@@ -1856,13 +1856,6 @@ export type Database = {
         Args: { template_id: string }
         Returns: undefined
       }
-      template_category_counts: {
-        Args: { p_source?: string }
-        Returns: {
-          category: string
-          template_count: number
-        }[]
-      }
       search_templates: {
         Args: {
           p_brand_compat?: string
