@@ -1529,9 +1529,12 @@ export type Database = {
           format: string | null
           height: number | null
           id: string
+          imported_at: string | null
           industry_tags: string[] | null
+          is_active: boolean
           is_file_based: boolean
           layout_dna: Json
+          license_expires_at: string | null
           metadata: Json
           name: string
           objective: string | null
@@ -1541,10 +1544,13 @@ export type Database = {
           premium: boolean
           preview_url: string | null
           source: string
+          source_id: string | null
+          source_license: string | null
           template_json: Json | null
           template_source: string
           thumbnail_url: string | null
           updated_at: string
+          usage_count: number
           width: number | null
         }
         Insert: {
@@ -1564,9 +1570,12 @@ export type Database = {
           format?: string | null
           height?: number | null
           id?: string
+          imported_at?: string | null
           industry_tags?: string[] | null
+          is_active?: boolean
           is_file_based?: boolean
           layout_dna?: Json
+          license_expires_at?: string | null
           metadata?: Json
           name: string
           objective?: string | null
@@ -1576,10 +1585,13 @@ export type Database = {
           premium?: boolean
           preview_url?: string | null
           source?: string
+          source_id?: string | null
+          source_license?: string | null
           template_json?: Json | null
           template_source?: string
           thumbnail_url?: string | null
           updated_at?: string
+          usage_count?: number
           width?: number | null
         }
         Update: {
@@ -1599,9 +1611,12 @@ export type Database = {
           format?: string | null
           height?: number | null
           id?: string
+          imported_at?: string | null
           industry_tags?: string[] | null
+          is_active?: boolean
           is_file_based?: boolean
           layout_dna?: Json
+          license_expires_at?: string | null
           metadata?: Json
           name?: string
           objective?: string | null
@@ -1611,10 +1626,13 @@ export type Database = {
           premium?: boolean
           preview_url?: string | null
           source?: string
+          source_id?: string | null
+          source_license?: string | null
           template_json?: Json | null
           template_source?: string
           thumbnail_url?: string | null
           updated_at?: string
+          usage_count?: number
           width?: number | null
         }
         Relationships: []
@@ -1811,9 +1829,12 @@ export type Database = {
           format: string | null
           height: number | null
           id: string
+          imported_at: string | null
           industry_tags: string[] | null
+          is_active: boolean
           is_file_based: boolean
           layout_dna: Json
+          license_expires_at: string | null
           metadata: Json
           name: string
           objective: string | null
@@ -1823,10 +1844,13 @@ export type Database = {
           premium: boolean
           preview_url: string | null
           source: string
+          source_id: string | null
+          source_license: string | null
           template_json: Json | null
           template_source: string
           thumbnail_url: string | null
           updated_at: string
+          usage_count: number
           width: number | null
         }[]
         SetofOptions: {
