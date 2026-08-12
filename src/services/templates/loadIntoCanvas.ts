@@ -94,12 +94,42 @@ export interface LoadResult {
   degraded: boolean;
 }
 
+/** Verifies remote images actually load; swaps in a placeholder when they don't. */
+const preflightImages = async (json: AnyObj): Promise<AnyObj> => {
+  const check = (src: string) =>
+    new Promise<boolean>((resolve) => {
+      const img = new Image();
+      const done = (ok: boolean) => { img.onload = null; img.onerror = null; resolve(ok); };
+      img.crossOrigin = 'anonymous';
+      img.onload = () => done(true);
+      img.onerror = () => done(false);
+      setTimeout(() => done(false), 8000);
+      img.src = src;
+    });
+
+  const objects = await Promise.all(
+    ((json.objects ?? []) as AnyObj[]).map(async (o) => {
+      if (!isImage(o) || o.isPlaceholder || !/^https?:/i.test(String(o.src ?? ''))) return o;
+      const ok = await check(String(o.src));
+      if (ok) return o;
+      return {
+        ...o,
+        src: makePlaceholderImage(Number(o.width) || 400, Number(o.height) || 400, o.name ? String(o.name) : 'Image'),
+        isPlaceholder: true,
+      };
+    }),
+  );
+  return { ...json, objects };
+};
+
 /** Clears the canvas and loads a (sanitized) template JSON into it. */
 export async function loadTemplateJSONIntoCanvas(
   canvas: FabricCanvas,
   rawJson: AnyObj,
+  options: { fallbackImageSrc?: string } = {},
 ): Promise<LoadResult> {
-  const json = sanitizeTemplateJSON(rawJson);
+  const json = await preflightImages(sanitizeTemplateJSON(rawJson, options.fallbackImageSrc));
+
 
   try {
     await canvas.loadFromJSON(json);
