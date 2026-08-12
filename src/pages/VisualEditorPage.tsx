@@ -808,8 +808,8 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
   }, [onZoomChange]);
 
   return (
-    <div ref={containerRef} className="flex-1 flex items-center justify-center overflow-hidden select-none"
-      style={{ backgroundColor: '#1A1A1A' }}
+    <div ref={containerRef} className="canvas-viewport relative flex-1 min-w-0 flex items-center justify-center overflow-hidden select-none p-4 sm:p-6"
+      style={{ backgroundColor: '#1A1A1A', boxSizing: 'border-box' }}
       onWheel={handleWheel}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -824,7 +824,7 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
       )}
       <div
         ref={wrapperRef}
-        className="relative bg-white shrink-0"
+        className="canvas-card relative bg-white shrink-0 overflow-hidden"
         style={{
           width: artboard.width,
           height: artboard.height,
@@ -833,6 +833,7 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
           transformOrigin: 'center center',
         }}
       >
+
         <canvas ref={ref} className="block" />
         {showGrid && (
           <div
