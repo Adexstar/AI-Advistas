@@ -2001,9 +2001,18 @@ const EditorInner: React.FC = () => {
           obj.aiReplaceable = src.aiReplaceable;
           if (obj.type === 'textbox' || obj.type === 'i-text' || obj.type === 'text') {
             obj.editable = true; // double-click to edit copy live
+            // Keep copy inside the artboard: never let a text layer run off-canvas.
+            const maxW = Math.max(40, canvas.getWidth() - (obj.left || 0) - 8);
+            if (obj.type === 'textbox') {
+              const current = (obj.width || 0) * (obj.scaleX || 1);
+              if (current > maxW) obj.set({ width: maxW / (obj.scaleX || 1), splitByGrapheme: true });
+            } else if ((obj.width || 0) * (obj.scaleX || 1) > maxW) {
+              obj.set({ scaleX: maxW / (obj.width || maxW), scaleY: maxW / (obj.width || maxW) });
+            }
           }
           obj.setCoords();
         });
+
 
         canvas.discardActiveObject();
         canvas.requestRenderAll();
