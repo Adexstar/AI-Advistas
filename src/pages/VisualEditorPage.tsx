@@ -663,11 +663,12 @@ const CANVAS_WIDTH = 360;
 const CANVAS_HEIGHT = 640;
 
 const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: number, w: number, h: number): number => {
-  const pad = isMobile ? 24 : 48;
-  const availW = containerWidth - pad;
-  const availH = containerHeight - pad;
+  const pad = isMobile ? 32 : 48;
+  const availW = Math.max(40, containerWidth - pad);
+  const availH = Math.max(40, containerHeight - pad);
   return Math.min(availW / w, availH / h, 1) * 100;
 };
+
 
   const CanvasStage: React.FC<{
   onCanvasReady: (c: FabricCanvas) => void;
@@ -694,14 +695,34 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
     onCanvasWrapperRef?.(wrapperRef.current);
   }, [onCanvasWrapperRef]);
 
-  // Auto-fit canvas to viewport on mount, on artboard change and on "Fit" requests
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
+  // Auto-fit canvas to viewport on mount, on artboard change, on "Fit" requests
+  // and whenever the viewport itself resizes (rotation, panel toggles, mobile).
+  const applyFit = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    if (rect.width < 20 || rect.height < 20) return;
     const z = fitZoom(isMobile, rect.width, rect.height, artboard.width, artboard.height);
-    onZoomChange(Math.round(z));
+    onZoomChange(Math.max(5, Math.round(z)));
+  }, [isMobile, artboard.width, artboard.height, onZoomChange]);
+
+  useEffect(() => {
+    applyFit();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [artboard.width, artboard.height, fitToken]);
+  }, [artboard.width, artboard.height, fitToken, isMobile]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => applyFit());
+    ro.observe(el);
+    window.addEventListener('resize', applyFit);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', applyFit);
+    };
+  }, [applyFit]);
+
 
   // Keep the Fabric surface in sync with the selected artboard preset
   useEffect(() => {
@@ -787,8 +808,8 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
   }, [onZoomChange]);
 
   return (
-    <div ref={containerRef} className="flex-1 flex items-center justify-center overflow-hidden select-none"
-      style={{ backgroundColor: '#1A1A1A' }}
+    <div ref={containerRef} className="canvas-viewport relative flex-1 min-w-0 flex items-center justify-center overflow-hidden select-none p-4 sm:p-6"
+      style={{ backgroundColor: '#1A1A1A', boxSizing: 'border-box' }}
       onWheel={handleWheel}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -803,7 +824,7 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
       )}
       <div
         ref={wrapperRef}
-        className="relative bg-white shrink-0"
+        className="canvas-card relative bg-white shrink-0 overflow-hidden"
         style={{
           width: artboard.width,
           height: artboard.height,
@@ -812,6 +833,7 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
           transformOrigin: 'center center',
         }}
       >
+
         <canvas ref={ref} className="block" />
         {showGrid && (
           <div
@@ -1955,7 +1977,10 @@ const EditorInner: React.FC = () => {
 
         // Resilient load — unresolved {{image}} placeholders become editable
         // placeholder layers instead of blowing up the whole document.
-        const result = await loadTemplateJSONIntoCanvas(canvas, json);
+        const result = await loadTemplateJSONIntoCanvas(canvas, json, {
+          fallbackImageSrc: template.preview_url || template.thumbnail_url || template.image_url || undefined,
+        });
+
 
         if (json?.background) canvas.backgroundColor = json.background as string;
 
@@ -1998,9 +2023,18 @@ const EditorInner: React.FC = () => {
           obj.aiReplaceable = src.aiReplaceable;
           if (obj.type === 'textbox' || obj.type === 'i-text' || obj.type === 'text') {
             obj.editable = true; // double-click to edit copy live
+            // Keep copy inside the artboard: never let a text layer run off-canvas.
+            const maxW = Math.max(40, canvas.getWidth() - (obj.left || 0) - 8);
+            if (obj.type === 'textbox') {
+              const current = (obj.width || 0) * (obj.scaleX || 1);
+              if (current > maxW) obj.set({ width: maxW / (obj.scaleX || 1), splitByGrapheme: true });
+            } else if ((obj.width || 0) * (obj.scaleX || 1) > maxW) {
+              obj.set({ scaleX: maxW / (obj.width || maxW), scaleY: maxW / (obj.width || maxW) });
+            }
           }
           obj.setCoords();
         });
+
 
         canvas.discardActiveObject();
         canvas.requestRenderAll();
