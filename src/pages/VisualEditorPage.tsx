@@ -695,14 +695,34 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
     onCanvasWrapperRef?.(wrapperRef.current);
   }, [onCanvasWrapperRef]);
 
-  // Auto-fit canvas to viewport on mount, on artboard change and on "Fit" requests
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
+  // Auto-fit canvas to viewport on mount, on artboard change, on "Fit" requests
+  // and whenever the viewport itself resizes (rotation, panel toggles, mobile).
+  const applyFit = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    if (rect.width < 20 || rect.height < 20) return;
     const z = fitZoom(isMobile, rect.width, rect.height, artboard.width, artboard.height);
-    onZoomChange(Math.round(z));
+    onZoomChange(Math.max(5, Math.round(z)));
+  }, [isMobile, artboard.width, artboard.height, onZoomChange]);
+
+  useEffect(() => {
+    applyFit();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [artboard.width, artboard.height, fitToken]);
+  }, [artboard.width, artboard.height, fitToken, isMobile]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => applyFit());
+    ro.observe(el);
+    window.addEventListener('resize', applyFit);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', applyFit);
+    };
+  }, [applyFit]);
+
 
   // Keep the Fabric surface in sync with the selected artboard preset
   useEffect(() => {
