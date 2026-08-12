@@ -38,19 +38,36 @@ export const makePlaceholderImage = (width = 400, height = 400, label = 'Image')
 
 const isImage = (o: AnyObj) => String(o?.type ?? '').toLowerCase() === 'image';
 
-const sanitizeObject = (o: AnyObj): AnyObj => {
+const CLOUD_NAME = (import.meta as any)?.env?.VITE_CLOUDINARY_CLOUD_NAME as string | undefined;
+
+/**
+ * Normalises whatever a template stored in `src` into something the browser
+ * can actually fetch: absolute URLs pass through, Cloudinary public ids get
+ * expanded, relative paths become origin-absolute.
+ */
+export const resolveImageSrc = (raw: unknown): string | null => {
+  const src = typeof raw === 'string' ? raw.trim() : '';
+  if (!src || UNRESOLVED.test(src)) return null;
+  if (/^(https?:|data:|blob:)/i.test(src)) return src;
+  if (src.startsWith('//')) return `https:${src}`;
+  if (src.startsWith('/')) return src; // app-relative asset
+  if (CLOUD_NAME) return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${src.replace(/^\/+/, '')}`;
+  return `/${src.replace(/^\/+/, '')}`;
+};
+
+const sanitizeObject = (o: AnyObj, fallbackImageSrc?: string): AnyObj => {
   const next: AnyObj = { ...o };
 
   if (isImage(next)) {
-    const src = typeof next.src === 'string' ? next.src.trim() : '';
-    const unusable = !src || UNRESOLVED.test(src) || src.startsWith('{{');
-    if (unusable) {
+    const resolved = resolveImageSrc(next.src) ?? (fallbackImageSrc ? resolveImageSrc(fallbackImageSrc) : null);
+    if (!resolved) {
       const w = Number(next.width) || 400;
       const h = Number(next.height) || 400;
       next.src = makePlaceholderImage(w, h, next.name ? String(next.name) : 'Image');
       next.isPlaceholder = true;
-    } else if (/^https?:/i.test(src)) {
-      next.crossOrigin = next.crossOrigin ?? 'anonymous';
+    } else {
+      next.src = resolved;
+      if (/^https?:/i.test(resolved)) next.crossOrigin = next.crossOrigin ?? 'anonymous';
     }
   }
 
@@ -61,14 +78,15 @@ const sanitizeObject = (o: AnyObj): AnyObj => {
     );
   }
 
-  if (Array.isArray(next.objects)) next.objects = next.objects.map(sanitizeObject);
+  if (Array.isArray(next.objects)) next.objects = next.objects.map((c: AnyObj) => sanitizeObject(c, fallbackImageSrc));
   return next;
 };
 
-export const sanitizeTemplateJSON = (json: AnyObj): AnyObj => ({
+export const sanitizeTemplateJSON = (json: AnyObj, fallbackImageSrc?: string): AnyObj => ({
   ...json,
-  objects: Array.isArray(json?.objects) ? json.objects.map(sanitizeObject) : [],
+  objects: Array.isArray(json?.objects) ? json.objects.map((o) => sanitizeObject(o, fallbackImageSrc)) : [],
 });
+
 
 export interface LoadResult {
   loaded: number;
