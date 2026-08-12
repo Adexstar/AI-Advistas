@@ -663,11 +663,12 @@ const CANVAS_WIDTH = 360;
 const CANVAS_HEIGHT = 640;
 
 const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: number, w: number, h: number): number => {
-  const pad = isMobile ? 24 : 48;
-  const availW = containerWidth - pad;
-  const availH = containerHeight - pad;
+  const pad = isMobile ? 32 : 48;
+  const availW = Math.max(40, containerWidth - pad);
+  const availH = Math.max(40, containerHeight - pad);
   return Math.min(availW / w, availH / h, 1) * 100;
 };
+
 
   const CanvasStage: React.FC<{
   onCanvasReady: (c: FabricCanvas) => void;
