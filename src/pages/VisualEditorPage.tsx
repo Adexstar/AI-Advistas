@@ -821,16 +821,20 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
     const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
     const delta = dist - pinchDist.current;
     pinchDist.current = dist;
-    onZoomChange(Math.max(25, Math.min(400, zoomRef.current + delta * 0.5)));
+    onZoomChange(Math.round(clampZoom(zoomRef.current + delta * 0.5)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onZoomChange]);
+
+  const pendingImages = imageStatuses.filter((s) => s.status === 'loading');
+  const failedImages = imageStatuses.filter((s) => s.status === 'failed');
 
   return (
     <div ref={containerRef} className="canvas-viewport relative flex-1 min-w-0 flex items-center justify-center overflow-hidden select-none p-4 sm:p-6"
       style={{ backgroundColor: '#1A1A1A', boxSizing: 'border-box' }}
-      onWheel={handleWheel}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
     >
+
       {/* Loading skeleton */}
       {loading && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3" style={{ backgroundColor: '#1A1A1A' }}>
