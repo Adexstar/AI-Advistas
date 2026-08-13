@@ -867,9 +867,54 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
           />
         )}
       </div>
+
+      {/* Per-layer image loading / failure state */}
+      {(pendingImages.length > 0 || failedImages.length > 0) && (
+        <div className="absolute left-3 top-3 z-30 max-w-[240px] rounded-xl border border-white/10 bg-black/70 p-2 text-[11px] text-white backdrop-blur">
+          {pendingImages.length > 0 && (
+            <div className="flex items-center gap-2 px-1 py-0.5 text-white/80">
+              <RefreshCw className="h-3 w-3 animate-spin" />
+              Loading {pendingImages.length} image{pendingImages.length > 1 ? 's' : ''}…
+            </div>
+          )}
+          {failedImages.length > 0 && (
+            <div className="space-y-1">
+              <div className="px-1 py-0.5 font-medium text-amber-300">
+                {failedImages.length} image{failedImages.length > 1 ? 's' : ''} failed to load
+              </div>
+              <ul className="max-h-24 space-y-0.5 overflow-auto px-1 text-white/60">
+                {failedImages.slice(0, 4).map((s) => (
+                  <li key={s.id} className="truncate">• {s.name} ({s.attempts} tries)</li>
+                ))}
+              </ul>
+              <Button size="sm" variant="secondary" className="h-6 w-full text-[11px]" disabled={retryingImages} onClick={onRetryImages}>
+                <RefreshCw className={`mr-1 h-3 w-3 ${retryingImages ? 'animate-spin' : ''}`} />
+                {retryingImages ? 'Retrying…' : 'Retry images'}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Zoom controls with one-click fit-to-screen */}
+      <div className="absolute bottom-3 right-3 z-30 flex items-center gap-1 rounded-full border border-white/10 bg-black/70 px-1.5 py-1 text-white backdrop-blur">
+        <Button variant="ghost" size="icon" className="h-6 w-6 text-white hover:bg-white/10" onClick={() => onZoomChange(Math.round(clampZoom(zoom / 1.2)))} aria-label="Zoom out">
+          <Minus className="h-3.5 w-3.5" />
+        </Button>
+        <button className="min-w-[44px] text-center text-[11px] font-medium hover:text-primary" onClick={() => onZoomChange(100)} title="Reset to 100%">
+          {Math.round(zoom)}%
+        </button>
+        <Button variant="ghost" size="icon" className="h-6 w-6 text-white hover:bg-white/10" onClick={() => onZoomChange(Math.round(clampZoom(zoom * 1.2)))} aria-label="Zoom in">
+          <Plus className="h-3.5 w-3.5" />
+        </Button>
+        <Button variant="ghost" size="sm" className="h-6 gap-1 px-2 text-[11px] text-white hover:bg-white/10" onClick={applyFit} aria-label="Fit to screen">
+          <Maximize2 className="h-3 w-3" /> Fit
+        </Button>
+      </div>
     </div>
   );
 };
+
 
 /* ---------- Timeline ---------- */
 const TL_LABEL_W = 110;
