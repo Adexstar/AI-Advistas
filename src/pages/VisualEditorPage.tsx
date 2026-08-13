@@ -681,7 +681,10 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
   artboard: { width: number; height: number };
   showGrid: boolean;
   fitToken: number;
-}> = ({ onCanvasReady, onSelection, zoom, onZoomChange, seedDefault, onCanvasWrapperRef, isMobile, artboard, showGrid, fitToken }) => {
+  imageStatuses?: ImageLayerStatus[];
+  onRetryImages?: () => void;
+  retryingImages?: boolean;
+}> = ({ onCanvasReady, onSelection, zoom, onZoomChange, seedDefault, onCanvasWrapperRef, isMobile, artboard, showGrid, fitToken, imageStatuses = [], onRetryImages, retryingImages }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
