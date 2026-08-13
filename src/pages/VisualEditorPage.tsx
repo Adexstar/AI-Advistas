@@ -2136,6 +2136,24 @@ const EditorInner: React.FC = () => {
     [canvas, brandKits, brand, effectiveContext, saveSnapshot],
   );
 
+  const handleRetryImages = useCallback(async () => {
+    if (!canvas) return;
+    setRetryingImages(true);
+    try {
+      const { recovered, stillFailing } = await retryFailedImages(canvas, upsertImageStatus);
+      forceUpdate((n) => n + 1);
+      toast({
+        title: recovered ? `${recovered} image${recovered > 1 ? 's' : ''} recovered` : 'Still unavailable',
+        description: stillFailing ? `${stillFailing} image${stillFailing > 1 ? 's' : ''} still failing — try replacing the layer.` : 'All template images loaded.',
+        variant: stillFailing && !recovered ? 'destructive' : undefined,
+      });
+    } finally {
+      setRetryingImages(false);
+    }
+  }, [canvas, upsertImageStatus]);
+
+
+
   // On canvas ready → load a pending template (session handoff) or ?template=<id>.
   useEffect(() => {
     if (!canvas) return;
