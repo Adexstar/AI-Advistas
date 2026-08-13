@@ -88,52 +88,148 @@ export const sanitizeTemplateJSON = (json: AnyObj, fallbackImageSrc?: string): A
 });
 
 
+export interface ImageLayerStatus {
+  id: string;
+  name: string;
+  src: string;
+  status: 'loading' | 'loaded' | 'failed';
+  attempts: number;
+}
+
+export type ImageStatusListener = (status: ImageLayerStatus) => void;
+
 export interface LoadResult {
   loaded: number;
   skipped: number;
   degraded: boolean;
+  images: ImageLayerStatus[];
 }
 
+const loadImage = (src: string, timeout = 8000) =>
+  new Promise<boolean>((resolve) => {
+    const img = new Image();
+    const done = (ok: boolean) => {
+      img.onload = null;
+      img.onerror = null;
+      resolve(ok);
+    };
+    img.crossOrigin = 'anonymous';
+    img.onload = () => done(true);
+    img.onerror = () => done(false);
+    setTimeout(() => done(false), timeout);
+    img.src = src;
+  });
+
+const bust = (src: string, attempt: number) => {
+  if (attempt === 0 || /^data:/i.test(src)) return src;
+  return `${src}${src.includes('?') ? '&' : '?'}_r=${attempt}`;
+};
+
+/** Loads with retries (exponential-ish backoff) before giving up on a layer. */
+const loadWithRetry = async (src: string, attempts = 3): Promise<{ ok: boolean; tries: number }> => {
+  for (let i = 0; i < attempts; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    const ok = await loadImage(bust(src, i));
+    if (ok) return { ok: true, tries: i + 1 };
+    // eslint-disable-next-line no-await-in-loop
+    if (i < attempts - 1) await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+  }
+  return { ok: false, tries: attempts };
+};
+
 /** Verifies remote images actually load; swaps in a placeholder when they don't. */
-const preflightImages = async (json: AnyObj): Promise<AnyObj> => {
-  const check = (src: string) =>
-    new Promise<boolean>((resolve) => {
-      const img = new Image();
-      const done = (ok: boolean) => { img.onload = null; img.onerror = null; resolve(ok); };
-      img.crossOrigin = 'anonymous';
-      img.onload = () => done(true);
-      img.onerror = () => done(false);
-      setTimeout(() => done(false), 8000);
-      img.src = src;
-    });
+const preflightImages = async (
+  json: AnyObj,
+  onStatus?: ImageStatusListener,
+): Promise<{ json: AnyObj; images: ImageLayerStatus[] }> => {
+  const images: ImageLayerStatus[] = [];
 
   const objects = await Promise.all(
-    ((json.objects ?? []) as AnyObj[]).map(async (o) => {
+    ((json.objects ?? []) as AnyObj[]).map(async (o, idx) => {
       if (!isImage(o) || o.isPlaceholder || !/^https?:/i.test(String(o.src ?? ''))) return o;
-      const ok = await check(String(o.src));
-      if (ok) return o;
+      const src = String(o.src);
+      const entry: ImageLayerStatus = {
+        id: String(o.id ?? `img-${idx}`),
+        name: String(o.name ?? `Image ${idx + 1}`),
+        src,
+        status: 'loading',
+        attempts: 0,
+      };
+      images.push(entry);
+      onStatus?.({ ...entry });
+
+      const { ok, tries } = await loadWithRetry(src);
+      entry.attempts = tries;
+      entry.status = ok ? 'loaded' : 'failed';
+      onStatus?.({ ...entry });
+      if (ok) return { ...o, layerId: entry.id };
       return {
         ...o,
+        layerId: entry.id,
+        failedSrc: src,
         src: makePlaceholderImage(Number(o.width) || 400, Number(o.height) || 400, o.name ? String(o.name) : 'Image'),
         isPlaceholder: true,
       };
     }),
   );
-  return { ...json, objects };
+  return { json: { ...json, objects }, images };
 };
+
+/**
+ * Re-attempts every layer whose image failed to load. Placeholder art is swapped
+ * back to the real image on success; failures stay visible and retryable.
+ */
+export async function retryFailedImages(
+  canvas: FabricCanvas,
+  onStatus?: ImageStatusListener,
+): Promise<{ recovered: number; stillFailing: number }> {
+  const targets = canvas.getObjects().filter((o: any) => o?.failedSrc);
+  let recovered = 0;
+  for (const obj of targets as any[]) {
+    const src = String(obj.failedSrc);
+    const base: ImageLayerStatus = {
+      id: String(obj.layerId ?? obj.name ?? 'image'),
+      name: String(obj.name ?? 'Image'),
+      src,
+      status: 'loading',
+      attempts: 0,
+    };
+    onStatus?.({ ...base });
+    // eslint-disable-next-line no-await-in-loop
+    const { ok, tries } = await loadWithRetry(src, 2);
+    if (ok) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        await obj.setSrc(src, { crossOrigin: 'anonymous' });
+        obj.isPlaceholder = false;
+        delete obj.failedSrc;
+        recovered += 1;
+        onStatus?.({ ...base, status: 'loaded', attempts: tries });
+      } catch {
+        onStatus?.({ ...base, status: 'failed', attempts: tries });
+      }
+    } else {
+      onStatus?.({ ...base, status: 'failed', attempts: tries });
+    }
+  }
+  canvas.requestRenderAll();
+  return { recovered, stillFailing: targets.length - recovered };
+}
 
 /** Clears the canvas and loads a (sanitized) template JSON into it. */
 export async function loadTemplateJSONIntoCanvas(
   canvas: FabricCanvas,
   rawJson: AnyObj,
-  options: { fallbackImageSrc?: string } = {},
+  options: { fallbackImageSrc?: string; onImageStatus?: ImageStatusListener } = {},
 ): Promise<LoadResult> {
-  const json = await preflightImages(sanitizeTemplateJSON(rawJson, options.fallbackImageSrc));
-
+  const { json, images } = await preflightImages(
+    sanitizeTemplateJSON(rawJson, options.fallbackImageSrc),
+    options.onImageStatus,
+  );
 
   try {
     await canvas.loadFromJSON(json);
-    return { loaded: canvas.getObjects().length, skipped: 0, degraded: false };
+    return { loaded: canvas.getObjects().length, skipped: 0, degraded: false, images };
   } catch (err) {
     console.warn('[templates] bulk load failed, falling back to per-object enliven', err);
   }
@@ -146,12 +242,17 @@ export async function loadTemplateJSONIntoCanvas(
   for (const obj of (json.objects ?? []) as AnyObj[]) {
     try {
       const [live] = await util.enlivenObjects([obj as any]);
-      if (live) canvas.add(live as any);
+      if (live) {
+        (live as any).failedSrc = (obj as any).failedSrc;
+        (live as any).layerId = (obj as any).layerId;
+        canvas.add(live as any);
+      }
     } catch (e) {
       skipped += 1;
       console.warn('[templates] skipped layer', obj?.name ?? obj?.type, e);
     }
   }
   canvas.requestRenderAll();
-  return { loaded: canvas.getObjects().length, skipped, degraded: true };
+  return { loaded: canvas.getObjects().length, skipped, degraded: true, images };
 }
+

@@ -32,7 +32,7 @@ import { AIActionsMenu } from '@/components/visual-editor/ai/AIActionsMenu';
 import { AIQuickActionsMenu } from '@/components/visual-editor/ai/AIQuickActionsMenu';
 import { consumePendingEditorTemplate, peekPendingEditorTemplate } from '@/lib/templateEditorSession';
 import { TemplateEngine } from '@/services/templates/TemplateEngine';
-import { loadTemplateJSONIntoCanvas } from '@/services/templates/loadIntoCanvas';
+import { loadTemplateJSONIntoCanvas, retryFailedImages, type ImageLayerStatus } from '@/services/templates/loadIntoCanvas';
 import { supabase } from '@/integrations/supabase/client';
 import { useAIContext } from '@/contexts/AIContext';
 import {
@@ -681,7 +681,10 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
   artboard: { width: number; height: number };
   showGrid: boolean;
   fitToken: number;
-}> = ({ onCanvasReady, onSelection, zoom, onZoomChange, seedDefault, onCanvasWrapperRef, isMobile, artboard, showGrid, fitToken }) => {
+  imageStatuses?: ImageLayerStatus[];
+  onRetryImages?: () => void;
+  retryingImages?: boolean;
+}> = ({ onCanvasReady, onSelection, zoom, onZoomChange, seedDefault, onCanvasWrapperRef, isMobile, artboard, showGrid, fitToken, imageStatuses = [], onRetryImages, retryingImages }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -770,12 +773,26 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
   // -- Gesture handlers --
   const pinchDist = useRef(0);
   const lastTap = useRef(0);
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    if (!e.ctrlKey && !e.metaKey) return;
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -5 : 5;
-    onZoomChange(Math.max(25, Math.min(400, zoom + delta)));
-  }, [zoom, onZoomChange]);
+  const MIN_ZOOM = 10;
+  const MAX_ZOOM = 400;
+  const clampZoom = (z: number) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
+
+  // Native, non-passive wheel listener: React's onWheel is passive so
+  // preventDefault() would be ignored and the page would scroll behind.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return; // plain scroll stays scroll
+      e.preventDefault();
+      const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
+      onZoomChange(Math.round(clampZoom(zoomRef.current * Math.exp(-dy * 0.0015))));
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onZoomChange]);
+
 
   const handleDoubleTap = useCallback((e: React.TouchEvent) => {
     const now = Date.now();
@@ -804,16 +821,20 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
     const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
     const delta = dist - pinchDist.current;
     pinchDist.current = dist;
-    onZoomChange(Math.max(25, Math.min(400, zoomRef.current + delta * 0.5)));
+    onZoomChange(Math.round(clampZoom(zoomRef.current + delta * 0.5)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onZoomChange]);
+
+  const pendingImages = imageStatuses.filter((s) => s.status === 'loading');
+  const failedImages = imageStatuses.filter((s) => s.status === 'failed');
 
   return (
     <div ref={containerRef} className="canvas-viewport relative flex-1 min-w-0 flex items-center justify-center overflow-hidden select-none p-4 sm:p-6"
       style={{ backgroundColor: '#1A1A1A', boxSizing: 'border-box' }}
-      onWheel={handleWheel}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
     >
+
       {/* Loading skeleton */}
       {loading && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3" style={{ backgroundColor: '#1A1A1A' }}>
@@ -846,9 +867,54 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
           />
         )}
       </div>
+
+      {/* Per-layer image loading / failure state */}
+      {(pendingImages.length > 0 || failedImages.length > 0) && (
+        <div className="absolute left-3 top-3 z-30 max-w-[240px] rounded-xl border border-white/10 bg-black/70 p-2 text-[11px] text-white backdrop-blur">
+          {pendingImages.length > 0 && (
+            <div className="flex items-center gap-2 px-1 py-0.5 text-white/80">
+              <RefreshCw className="h-3 w-3 animate-spin" />
+              Loading {pendingImages.length} image{pendingImages.length > 1 ? 's' : ''}…
+            </div>
+          )}
+          {failedImages.length > 0 && (
+            <div className="space-y-1">
+              <div className="px-1 py-0.5 font-medium text-amber-300">
+                {failedImages.length} image{failedImages.length > 1 ? 's' : ''} failed to load
+              </div>
+              <ul className="max-h-24 space-y-0.5 overflow-auto px-1 text-white/60">
+                {failedImages.slice(0, 4).map((s) => (
+                  <li key={s.id} className="truncate">• {s.name} ({s.attempts} tries)</li>
+                ))}
+              </ul>
+              <Button size="sm" variant="secondary" className="h-6 w-full text-[11px]" disabled={retryingImages} onClick={onRetryImages}>
+                <RefreshCw className={`mr-1 h-3 w-3 ${retryingImages ? 'animate-spin' : ''}`} />
+                {retryingImages ? 'Retrying…' : 'Retry images'}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Zoom controls with one-click fit-to-screen */}
+      <div className="absolute bottom-3 right-3 z-30 flex items-center gap-1 rounded-full border border-white/10 bg-black/70 px-1.5 py-1 text-white backdrop-blur">
+        <Button variant="ghost" size="icon" className="h-6 w-6 text-white hover:bg-white/10" onClick={() => onZoomChange(Math.round(clampZoom(zoom / 1.2)))} aria-label="Zoom out">
+          <Minus className="h-3.5 w-3.5" />
+        </Button>
+        <button className="min-w-[44px] text-center text-[11px] font-medium hover:text-primary" onClick={() => onZoomChange(100)} title="Reset to 100%">
+          {Math.round(zoom)}%
+        </button>
+        <Button variant="ghost" size="icon" className="h-6 w-6 text-white hover:bg-white/10" onClick={() => onZoomChange(Math.round(clampZoom(zoom * 1.2)))} aria-label="Zoom in">
+          <Plus className="h-3.5 w-3.5" />
+        </Button>
+        <Button variant="ghost" size="sm" className="h-6 gap-1 px-2 text-[11px] text-white hover:bg-white/10" onClick={applyFit} aria-label="Fit to screen">
+          <Maximize2 className="h-3 w-3" /> Fit
+        </Button>
+      </div>
     </div>
   );
 };
+
 
 /* ---------- Timeline ---------- */
 const TL_LABEL_W = 110;
@@ -1787,6 +1853,19 @@ const EditorInner: React.FC = () => {
   const [canvasWrapperEl, setCanvasWrapperEl] = useState<HTMLDivElement | null>(null);
   const [showGrid, setShowGrid] = useState(false);
   const [fitToken, setFitToken] = useState(0);
+  const [imageStatuses, setImageStatuses] = useState<ImageLayerStatus[]>([]);
+  const [retryingImages, setRetryingImages] = useState(false);
+
+  const upsertImageStatus = useCallback((s: ImageLayerStatus) => {
+    setImageStatuses((prev) => {
+      const i = prev.findIndex((p) => p.id === s.id);
+      if (i === -1) return [...prev, s];
+      const next = [...prev];
+      next[i] = s;
+      return next;
+    });
+  }, []);
+
   const [preset, setPreset] = useState('mobile');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [pages, setPages] = useState<any[]>([]);
@@ -1977,8 +2056,10 @@ const EditorInner: React.FC = () => {
 
         // Resilient load — unresolved {{image}} placeholders become editable
         // placeholder layers instead of blowing up the whole document.
+        setImageStatuses([]);
         const result = await loadTemplateJSONIntoCanvas(canvas, json, {
           fallbackImageSrc: template.preview_url || template.thumbnail_url || template.image_url || undefined,
+          onImageStatus: upsertImageStatus,
         });
 
 
@@ -2054,6 +2135,24 @@ const EditorInner: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [canvas, brandKits, brand, effectiveContext, saveSnapshot],
   );
+
+  const handleRetryImages = useCallback(async () => {
+    if (!canvas) return;
+    setRetryingImages(true);
+    try {
+      const { recovered, stillFailing } = await retryFailedImages(canvas, upsertImageStatus);
+      forceUpdate((n) => n + 1);
+      toast({
+        title: recovered ? `${recovered} image${recovered > 1 ? 's' : ''} recovered` : 'Still unavailable',
+        description: stillFailing ? `${stillFailing} image${stillFailing > 1 ? 's' : ''} still failing — try replacing the layer.` : 'All template images loaded.',
+        variant: stillFailing && !recovered ? 'destructive' : undefined,
+      });
+    } finally {
+      setRetryingImages(false);
+    }
+  }, [canvas, upsertImageStatus]);
+
+
 
   // On canvas ready → load a pending template (session handoff) or ?template=<id>.
   useEffect(() => {
@@ -2220,6 +2319,9 @@ const EditorInner: React.FC = () => {
         artboard={artboard}
         showGrid={showGrid}
         fitToken={fitToken}
+        imageStatuses={imageStatuses}
+        onRetryImages={handleRetryImages}
+        retryingImages={retryingImages}
       />
 
       {/* Onboarding overlay when canvas is empty */}
