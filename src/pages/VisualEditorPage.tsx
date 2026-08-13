@@ -773,12 +773,26 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
   // -- Gesture handlers --
   const pinchDist = useRef(0);
   const lastTap = useRef(0);
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    if (!e.ctrlKey && !e.metaKey) return;
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -5 : 5;
-    onZoomChange(Math.max(25, Math.min(400, zoom + delta)));
-  }, [zoom, onZoomChange]);
+  const MIN_ZOOM = 10;
+  const MAX_ZOOM = 400;
+  const clampZoom = (z: number) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
+
+  // Native, non-passive wheel listener: React's onWheel is passive so
+  // preventDefault() would be ignored and the page would scroll behind.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return; // plain scroll stays scroll
+      e.preventDefault();
+      const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
+      onZoomChange(Math.round(clampZoom(zoomRef.current * Math.exp(-dy * 0.0015))));
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onZoomChange]);
+
 
   const handleDoubleTap = useCallback((e: React.TouchEvent) => {
     const now = Date.now();
