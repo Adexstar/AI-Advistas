@@ -2056,8 +2056,10 @@ const EditorInner: React.FC = () => {
 
         // Resilient load — unresolved {{image}} placeholders become editable
         // placeholder layers instead of blowing up the whole document.
+        setImageStatuses([]);
         const result = await loadTemplateJSONIntoCanvas(canvas, json, {
           fallbackImageSrc: template.preview_url || template.thumbnail_url || template.image_url || undefined,
+          onImageStatus: upsertImageStatus,
         });
 
 
