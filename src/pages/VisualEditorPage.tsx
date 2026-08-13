@@ -1853,6 +1853,19 @@ const EditorInner: React.FC = () => {
   const [canvasWrapperEl, setCanvasWrapperEl] = useState<HTMLDivElement | null>(null);
   const [showGrid, setShowGrid] = useState(false);
   const [fitToken, setFitToken] = useState(0);
+  const [imageStatuses, setImageStatuses] = useState<ImageLayerStatus[]>([]);
+  const [retryingImages, setRetryingImages] = useState(false);
+
+  const upsertImageStatus = useCallback((s: ImageLayerStatus) => {
+    setImageStatuses((prev) => {
+      const i = prev.findIndex((p) => p.id === s.id);
+      if (i === -1) return [...prev, s];
+      const next = [...prev];
+      next[i] = s;
+      return next;
+    });
+  }, []);
+
   const [preset, setPreset] = useState('mobile');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [pages, setPages] = useState<any[]>([]);
