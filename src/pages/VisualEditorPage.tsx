@@ -2319,6 +2319,9 @@ const EditorInner: React.FC = () => {
         artboard={artboard}
         showGrid={showGrid}
         fitToken={fitToken}
+        imageStatuses={imageStatuses}
+        onRetryImages={handleRetryImages}
+        retryingImages={retryingImages}
       />
 
       {/* Onboarding overlay when canvas is empty */}
