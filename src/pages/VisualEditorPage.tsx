@@ -777,8 +777,6 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
   // -- Gesture handlers --
   const pinchDist = useRef(0);
   const lastTap = useRef(0);
-  const MIN_ZOOM = 10;
-  const MAX_ZOOM = 400;
   const clampZoom = (z: number) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
 
   // Native, non-passive wheel listener: React's onWheel is passive so
