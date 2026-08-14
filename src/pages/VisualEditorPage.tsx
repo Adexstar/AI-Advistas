@@ -623,9 +623,10 @@ const CanvasSubToolbar: React.FC<{
   onChanged: () => void;
   preset: string;
   onPresetChange: (v: string) => void;
+  customArtboard?: { label: string; width: number; height: number } | null;
   onOpenAnimate: () => void;
   onOpenPosition: () => void;
-}> = ({ canvas, selected, onChanged, preset, onPresetChange, onOpenAnimate, onOpenPosition }) => {
+}> = ({ canvas, selected, onChanged, preset, onPresetChange, customArtboard, onOpenAnimate, onOpenPosition }) => {
   const act = (fn: () => void) => { if (!selected) { toast({ title: 'Select a layer first' }); return; } fn(); onChanged(); };
   const locked = isLocked(selected);
   return (
@@ -647,8 +648,9 @@ const CanvasSubToolbar: React.FC<{
         onClick={() => act(() => setLocked(canvas, selected, false))}><Unlock className="h-4 w-4" /></Button>
       <div className="flex-1" />
       <Select value={preset} onValueChange={onPresetChange}>
-        <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="h-8 w-[170px] text-xs"><SelectValue /></SelectTrigger>
         <SelectContent>
+          {customArtboard && <SelectItem value="custom">{customArtboard.label}</SelectItem>}
           {Object.entries(ARTBOARD_PRESETS).map(([k, v]) => (
             <SelectItem key={k} value={k}>{v.label}</SelectItem>
           ))}
@@ -662,11 +664,15 @@ const CanvasSubToolbar: React.FC<{
 const CANVAS_WIDTH = 360;
 const CANVAS_HEIGHT = 640;
 
+const MIN_ZOOM = 10;
+const MAX_ZOOM = 400;
+
 const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: number, w: number, h: number): number => {
-  const pad = isMobile ? 32 : 48;
-  const availW = Math.max(40, containerWidth - pad);
-  const availH = Math.max(40, containerHeight - pad);
-  return Math.min(availW / w, availH / h, 1) * 100;
+  const margin = isMobile ? 16 : 24;
+  const availW = Math.max(40, containerWidth - margin * 2);
+  const availH = Math.max(40, containerHeight - margin * 2);
+  const z = Math.min(availW / w, availH / h) * 100;
+  return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
 };
 
 
@@ -773,8 +779,6 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
   // -- Gesture handlers --
   const pinchDist = useRef(0);
   const lastTap = useRef(0);
-  const MIN_ZOOM = 10;
-  const MAX_ZOOM = 400;
   const clampZoom = (z: number) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
 
   // Native, non-passive wheel listener: React's onWheel is passive so
@@ -829,7 +833,7 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
   const failedImages = imageStatuses.filter((s) => s.status === 'failed');
 
   return (
-    <div ref={containerRef} className="canvas-viewport relative flex-1 min-w-0 flex items-center justify-center overflow-hidden select-none p-4 sm:p-6"
+    <div ref={containerRef} className="canvas-viewport relative flex-1 min-w-0 overflow-hidden select-none"
       style={{ backgroundColor: '#1A1A1A', boxSizing: 'border-box' }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -843,30 +847,46 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
           <div className="h-2 w-24 animate-pulse rounded-full" style={{ backgroundColor: '#2D2D2D' }} />
         </div>
       )}
-      <div
-        ref={wrapperRef}
-        className="canvas-card relative bg-white shrink-0 overflow-hidden"
-        style={{
-          width: artboard.width,
-          height: artboard.height,
-          boxShadow: '0 0 0 1px rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.4)',
-          transform: `scale(${zoom / 100})`,
-          transformOrigin: 'center center',
-        }}
-      >
-
-        <canvas ref={ref} className="block" />
-        {showGrid && (
+      {/* Scroll layer: pans when the user zooms past fit, never clips the artboard. */}
+      <div className="absolute inset-0 overflow-auto">
+        {/* Centering shell: fills the viewport so small artboards stay centered. */}
+        <div className="flex min-h-full min-w-full items-center justify-center p-4 sm:p-6" style={{ width: 'max-content' }}>
+          {/* Outer box carries the *scaled* footprint so layout/centering is correct at any zoom. */}
           <div
-            className="pointer-events-none absolute inset-0"
+            className="relative shrink-0"
             style={{
-              backgroundImage:
-                'linear-gradient(to right, rgba(108,99,255,0.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(108,99,255,0.25) 1px, transparent 1px)',
-              backgroundSize: '20px 20px',
+              width: artboard.width * (zoom / 100),
+              height: artboard.height * (zoom / 100),
             }}
-          />
-        )}
+          >
+            <div
+              ref={wrapperRef}
+              className="canvas-card absolute left-0 top-0 bg-white overflow-hidden"
+              style={{
+                width: artboard.width,
+                height: artboard.height,
+                boxShadow: '0 0 0 1px rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.4)',
+                transform: `scale(${zoom / 100})`,
+                transformOrigin: 'top left',
+              }}
+            >
+              <canvas ref={ref} className="block" />
+              {showGrid && (
+                <div
+                  className="pointer-events-none absolute inset-0"
+                  style={{
+                    backgroundImage:
+                      'linear-gradient(to right, rgba(108,99,255,0.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(108,99,255,0.25) 1px, transparent 1px)',
+                    backgroundSize: '20px 20px',
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        </div>
       </div>
+
+
 
       {/* Per-layer image loading / failure state */}
       {(pendingImages.length > 0 || failedImages.length > 0) && (
@@ -1877,10 +1897,13 @@ const EditorInner: React.FC = () => {
   }, []);
 
   const [preset, setPreset] = useState('mobile');
+  // Templates bring their own frame — kept as a "custom" artboard so the
+  // design renders at its authored size instead of being squeezed into a preset.
+  const [customArtboard, setCustomArtboard] = useState<{ label: string; width: number; height: number } | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [pages, setPages] = useState<any[]>([]);
   const [pageIdx, setPageIdx] = useState(0);
-  const artboard = ARTBOARD_PRESETS[preset] ?? ARTBOARD_PRESETS.mobile;
+  const artboard = (preset === 'custom' && customArtboard) ? customArtboard : (ARTBOARD_PRESETS[preset] ?? ARTBOARD_PRESETS.mobile);
   const isMobile = useIsMobile();
   const isVideo = false; // TODO: detect from canvas content
   const currentTools = getToolsForSelection(selected);
@@ -2075,25 +2098,20 @@ const EditorInner: React.FC = () => {
 
         if (json?.background) canvas.backgroundColor = json.background as string;
 
-        // Fit the template artboard into the editor canvas so everything is visible.
-        const tw = Number(template.width) || json?.width || canvas.getWidth();
-        const th = Number(template.height) || json?.height || canvas.getHeight();
-        const fit = Math.min(canvas.getWidth() / tw, canvas.getHeight() / th);
-        const offsetX = (canvas.getWidth() - tw * fit) / 2;
-        const offsetY = (canvas.getHeight() - th * fit) / 2;
+        // The artboard adopts the template's own frame so the design renders
+        // at its authored size and proportions — nothing is squeezed or cropped.
+        const tw = Math.round(Number(template.width) || Number(json?.width) || canvas.getWidth());
+        const th = Math.round(Number(template.height) || Number(json?.height) || canvas.getHeight());
+        if (tw > 1 && th > 1) {
+          setCustomArtboard({ label: `Custom · ${tw}×${th}`, width: tw, height: th });
+          setPreset('custom');
+          canvas.setDimensions({ width: tw, height: th });
+        }
 
         const srcObjects: any[] = Array.isArray(json?.objects) ? json.objects : [];
 
         canvas.getObjects().forEach((obj: any, i) => {
           const src = srcObjects[i] ?? {};
-          if (fit !== 1) {
-            obj.set({
-              left: (obj.left || 0) * fit + offsetX,
-              top: (obj.top || 0) * fit + offsetY,
-              scaleX: (obj.scaleX || 1) * fit,
-              scaleY: (obj.scaleY || 1) * fit,
-            });
-          }
           // Everything stays fully editable — templates are a starting point, not a lock.
           obj.set({
             selectable: true,
@@ -2125,6 +2143,10 @@ const EditorInner: React.FC = () => {
           }
           obj.setCoords();
         });
+
+        // Re-fit the viewport now that the artboard matches the template.
+        setFitToken((t) => t + 1);
+
 
 
         canvas.discardActiveObject();
@@ -2452,6 +2474,7 @@ const EditorInner: React.FC = () => {
           onChanged={markChanged}
           preset={preset}
           onPresetChange={setPreset}
+          customArtboard={customArtboard}
           onOpenAnimate={() => { setActiveTab('ai-studio'); setActiveTool('animate'); }}
           onOpenPosition={() => { setActiveTab('layers'); setActiveTool('position'); }}
         />
