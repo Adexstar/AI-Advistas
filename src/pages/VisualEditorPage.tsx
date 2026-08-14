@@ -2096,25 +2096,20 @@ const EditorInner: React.FC = () => {
 
         if (json?.background) canvas.backgroundColor = json.background as string;
 
-        // Fit the template artboard into the editor canvas so everything is visible.
-        const tw = Number(template.width) || json?.width || canvas.getWidth();
-        const th = Number(template.height) || json?.height || canvas.getHeight();
-        const fit = Math.min(canvas.getWidth() / tw, canvas.getHeight() / th);
-        const offsetX = (canvas.getWidth() - tw * fit) / 2;
-        const offsetY = (canvas.getHeight() - th * fit) / 2;
+        // The artboard adopts the template's own frame so the design renders
+        // at its authored size and proportions — nothing is squeezed or cropped.
+        const tw = Math.round(Number(template.width) || Number(json?.width) || canvas.getWidth());
+        const th = Math.round(Number(template.height) || Number(json?.height) || canvas.getHeight());
+        if (tw > 1 && th > 1) {
+          setCustomArtboard({ label: `Custom · ${tw}×${th}`, width: tw, height: th });
+          setPreset('custom');
+          canvas.setDimensions({ width: tw, height: th });
+        }
 
         const srcObjects: any[] = Array.isArray(json?.objects) ? json.objects : [];
 
         canvas.getObjects().forEach((obj: any, i) => {
           const src = srcObjects[i] ?? {};
-          if (fit !== 1) {
-            obj.set({
-              left: (obj.left || 0) * fit + offsetX,
-              top: (obj.top || 0) * fit + offsetY,
-              scaleX: (obj.scaleX || 1) * fit,
-              scaleY: (obj.scaleY || 1) * fit,
-            });
-          }
           // Everything stays fully editable — templates are a starting point, not a lock.
           obj.set({
             selectable: true,
@@ -2146,6 +2141,10 @@ const EditorInner: React.FC = () => {
           }
           obj.setCoords();
         });
+
+        // Re-fit the viewport now that the artboard matches the template.
+        setFitToken((t) => t + 1);
+
 
 
         canvas.discardActiveObject();
