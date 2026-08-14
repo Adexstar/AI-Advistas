@@ -1498,6 +1498,16 @@ const RightPanel: React.FC<{
 }> = ({ selected, canvas, onClose }) => {
   const [, bump] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Keep inspector fields in sync with direct canvas manipulation
+  useEffect(() => {
+    if (!canvas) return;
+    const refresh = () => bump((n) => n + 1);
+    const events = ['object:modified', 'object:moving', 'object:scaling', 'object:rotating', 'text:changed'];
+    events.forEach((e) => canvas.on(e as any, refresh));
+    return () => { events.forEach((e) => canvas.off(e as any, refresh)); };
+  }, [canvas]);
+
   const type = String(selected?.type ?? '').toLowerCase();
   const isText = type === 'textbox' || type === 'text' || type === 'i-text';
   const isImage = type === 'image';
