@@ -2474,6 +2474,7 @@ const EditorInner: React.FC = () => {
           onChanged={markChanged}
           preset={preset}
           onPresetChange={setPreset}
+          customArtboard={customArtboard}
           onOpenAnimate={() => { setActiveTab('ai-studio'); setActiveTool('animate'); }}
           onOpenPosition={() => { setActiveTab('layers'); setActiveTool('position'); }}
         />
