@@ -623,9 +623,10 @@ const CanvasSubToolbar: React.FC<{
   onChanged: () => void;
   preset: string;
   onPresetChange: (v: string) => void;
+  customArtboard?: { label: string; width: number; height: number } | null;
   onOpenAnimate: () => void;
   onOpenPosition: () => void;
-}> = ({ canvas, selected, onChanged, preset, onPresetChange, onOpenAnimate, onOpenPosition }) => {
+}> = ({ canvas, selected, onChanged, preset, onPresetChange, customArtboard, onOpenAnimate, onOpenPosition }) => {
   const act = (fn: () => void) => { if (!selected) { toast({ title: 'Select a layer first' }); return; } fn(); onChanged(); };
   const locked = isLocked(selected);
   return (
