@@ -831,7 +831,7 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
   const failedImages = imageStatuses.filter((s) => s.status === 'failed');
 
   return (
-    <div ref={containerRef} className="canvas-viewport relative flex-1 min-w-0 flex items-center justify-center overflow-hidden select-none p-4 sm:p-6"
+    <div ref={containerRef} className="canvas-viewport relative flex-1 min-w-0 overflow-auto select-none"
       style={{ backgroundColor: '#1A1A1A', boxSizing: 'border-box' }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -845,30 +845,43 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
           <div className="h-2 w-24 animate-pulse rounded-full" style={{ backgroundColor: '#2D2D2D' }} />
         </div>
       )}
-      <div
-        ref={wrapperRef}
-        className="canvas-card relative bg-white shrink-0 overflow-hidden"
-        style={{
-          width: artboard.width,
-          height: artboard.height,
-          boxShadow: '0 0 0 1px rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.4)',
-          transform: `scale(${zoom / 100})`,
-          transformOrigin: 'center center',
-        }}
-      >
-
-        <canvas ref={ref} className="block" />
-        {showGrid && (
+      {/* Centering shell: min-size fills the viewport so small artboards stay
+          centered, while large ones simply scroll instead of being clipped. */}
+      <div className="flex min-h-full min-w-full items-center justify-center p-4 sm:p-6" style={{ width: 'max-content' }}>
+        {/* Outer box carries the *scaled* footprint so layout/centering is correct at any zoom. */}
+        <div
+          className="relative shrink-0"
+          style={{
+            width: artboard.width * (zoom / 100),
+            height: artboard.height * (zoom / 100),
+          }}
+        >
           <div
-            className="pointer-events-none absolute inset-0"
+            ref={wrapperRef}
+            className="canvas-card absolute left-0 top-0 bg-white overflow-hidden"
             style={{
-              backgroundImage:
-                'linear-gradient(to right, rgba(108,99,255,0.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(108,99,255,0.25) 1px, transparent 1px)',
-              backgroundSize: '20px 20px',
+              width: artboard.width,
+              height: artboard.height,
+              boxShadow: '0 0 0 1px rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.4)',
+              transform: `scale(${zoom / 100})`,
+              transformOrigin: 'top left',
             }}
-          />
-        )}
+          >
+            <canvas ref={ref} className="block" />
+            {showGrid && (
+              <div
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  backgroundImage:
+                    'linear-gradient(to right, rgba(108,99,255,0.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(108,99,255,0.25) 1px, transparent 1px)',
+                  backgroundSize: '20px 20px',
+                }}
+              />
+            )}
+          </div>
+        </div>
       </div>
+
 
       {/* Per-layer image loading / failure state */}
       {(pendingImages.length > 0 || failedImages.length > 0) && (
