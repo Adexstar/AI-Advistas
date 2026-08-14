@@ -648,8 +648,9 @@ const CanvasSubToolbar: React.FC<{
         onClick={() => act(() => setLocked(canvas, selected, false))}><Unlock className="h-4 w-4" /></Button>
       <div className="flex-1" />
       <Select value={preset} onValueChange={onPresetChange}>
-        <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="h-8 w-[170px] text-xs"><SelectValue /></SelectTrigger>
         <SelectContent>
+          {customArtboard && <SelectItem value="custom">{customArtboard.label}</SelectItem>}
           {Object.entries(ARTBOARD_PRESETS).map(([k, v]) => (
             <SelectItem key={k} value={k}>{v.label}</SelectItem>
           ))}
