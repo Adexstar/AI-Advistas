@@ -662,11 +662,15 @@ const CanvasSubToolbar: React.FC<{
 const CANVAS_WIDTH = 360;
 const CANVAS_HEIGHT = 640;
 
+const MIN_ZOOM = 10;
+const MAX_ZOOM = 400;
+
 const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: number, w: number, h: number): number => {
-  const pad = isMobile ? 32 : 48;
-  const availW = Math.max(40, containerWidth - pad);
-  const availH = Math.max(40, containerHeight - pad);
-  return Math.min(availW / w, availH / h, 1) * 100;
+  const margin = isMobile ? 16 : 24;
+  const availW = Math.max(40, containerWidth - margin * 2);
+  const availH = Math.max(40, containerHeight - margin * 2);
+  const z = Math.min(availW / w, availH / h) * 100;
+  return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
 };
 
 
