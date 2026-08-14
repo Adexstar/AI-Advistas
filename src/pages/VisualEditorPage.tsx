@@ -1498,6 +1498,16 @@ const RightPanel: React.FC<{
 }> = ({ selected, canvas, onClose }) => {
   const [, bump] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Keep inspector fields in sync with direct canvas manipulation
+  useEffect(() => {
+    if (!canvas) return;
+    const refresh = () => bump((n) => n + 1);
+    const events = ['object:modified', 'object:moving', 'object:scaling', 'object:rotating', 'text:changed'];
+    events.forEach((e) => canvas.on(e as any, refresh));
+    return () => { events.forEach((e) => canvas.off(e as any, refresh)); };
+  }, [canvas]);
+
   const type = String(selected?.type ?? '').toLowerCase();
   const isText = type === 'textbox' || type === 'text' || type === 'i-text';
   const isImage = type === 'image';
@@ -2530,7 +2540,15 @@ const EditorInner: React.FC = () => {
         </>
       )}
 
+      {/* Inspector slide-over — used when the docked right panel isn't visible */}
+      <Sheet open={rightOpen} onOpenChange={setRightOpen}>
+        <SheetContent side="right" className="w-[min(20rem,calc(100vw-2rem))] p-0 flex flex-col">
+          <RightPanel selected={selected} canvas={canvas} onClose={() => setRightOpen(false)} />
+        </SheetContent>
+      </Sheet>
+
       {/* Desktop left sheet (hidden on mobile — hamburger goes to dashboard) */}
+
       <Sheet open={leftOpen && !isMobile} onOpenChange={setLeftOpen}>
         <SheetContent side="left" className="w-[min(20rem,calc(100vw-2rem))] p-0 flex flex-col">
           <div className="flex items-center gap-1 border-b bg-[hsl(245,45%,10%)] p-2 overflow-x-auto">
