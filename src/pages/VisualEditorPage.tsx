@@ -1895,10 +1895,13 @@ const EditorInner: React.FC = () => {
   }, []);
 
   const [preset, setPreset] = useState('mobile');
+  // Templates bring their own frame — kept as a "custom" artboard so the
+  // design renders at its authored size instead of being squeezed into a preset.
+  const [customArtboard, setCustomArtboard] = useState<{ label: string; width: number; height: number } | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [pages, setPages] = useState<any[]>([]);
   const [pageIdx, setPageIdx] = useState(0);
-  const artboard = ARTBOARD_PRESETS[preset] ?? ARTBOARD_PRESETS.mobile;
+  const artboard = (preset === 'custom' && customArtboard) ? customArtboard : (ARTBOARD_PRESETS[preset] ?? ARTBOARD_PRESETS.mobile);
   const isMobile = useIsMobile();
   const isVideo = false; // TODO: detect from canvas content
   const currentTools = getToolsForSelection(selected);
