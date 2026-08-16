@@ -1009,6 +1009,17 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
         <Button variant="ghost" size="sm" className="h-6 gap-1 px-2 text-[11px] text-white hover:bg-white/10" onClick={applyFit} aria-label="Fit to screen">
           <Maximize2 className="h-3 w-3" /> Fit
         </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`h-6 gap-1 px-2 text-[11px] hover:bg-white/10 ${debug ? 'text-cyan-300' : 'text-white'}`}
+          onClick={() => setDebug((d) => !d)}
+          aria-pressed={debug}
+          aria-label="Toggle debug overlay"
+          title="Debug overlay: template frame + layer bounds"
+        >
+          <Box className="h-3 w-3" /> Debug
+        </Button>
       </div>
     </div>
   );
