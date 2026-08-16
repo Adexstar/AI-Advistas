@@ -832,6 +832,50 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
   const pendingImages = imageStatuses.filter((s) => s.status === 'loading');
   const failedImages = imageStatuses.filter((s) => s.status === 'failed');
 
+  /* ---- Debug overlay: template frame + per-layer bounding boxes ---- */
+  const [debug, setDebug] = useState(false);
+  const [boxes, setBoxes] = useState<{ id: string; name: string; left: number; top: number; width: number; height: number }[]>([]);
+  const rafRef = useRef<number | null>(null);
+
+  const syncBoxes = useCallback(() => {
+    const c = canvasRef.current;
+    if (!c) return;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      setBoxes(
+        c.getObjects().map((o: any, i: number) => {
+          const r = o.getBoundingRect();
+          return {
+            id: (o as any).id ?? `layer-${i}`,
+            name: o.type === 'textbox' || o.type === 'i-text' || o.type === 'text'
+              ? `${i}: text "${String(o.text ?? '').slice(0, 12)}"`
+              : `${i}: ${o.type}`,
+            left: r.left, top: r.top, width: r.width, height: r.height,
+          };
+        })
+      );
+    });
+  }, []);
+
+  useEffect(() => {
+    const c = canvasRef.current;
+    if (!debug || !c) return;
+    syncBoxes();
+    const evts = ['after:render', 'object:added', 'object:removed'] as const;
+    evts.forEach((e) => c.on(e as any, syncBoxes));
+    return () => {
+      evts.forEach((e) => c.off(e as any, syncBoxes));
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [debug, syncBoxes]);
+
+  useEffect(() => {
+    if (debug) syncBoxes();
+  }, [debug, zoom, artboard.width, artboard.height, syncBoxes]);
+
+  const invZoom = 100 / Math.max(zoom, 1); // keep outline/label size constant on screen
+
+
   return (
     <div ref={containerRef} className="canvas-viewport relative flex-1 min-w-0 overflow-hidden select-none"
       style={{ backgroundColor: '#1A1A1A', boxSizing: 'border-box' }}
@@ -881,6 +925,41 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
                   }}
                 />
               )}
+              {debug && (
+                <div className="pointer-events-none absolute inset-0 z-20">
+                  {/* Template frame */}
+                  <div
+                    className="absolute inset-0"
+                    style={{ outline: `${2 * invZoom}px solid rgba(34,211,238,0.9)`, outlineOffset: `-${invZoom}px` }}
+                  />
+                  {boxes.map((b) => (
+                    <div
+                      key={b.id}
+                      className="absolute"
+                      style={{
+                        left: b.left,
+                        top: b.top,
+                        width: b.width,
+                        height: b.height,
+                        outline: `${invZoom}px dashed rgba(244,114,182,0.9)`,
+                      }}
+                    >
+                      <span
+                        className="absolute whitespace-nowrap bg-[rgba(244,114,182,0.9)] px-[2px] font-mono text-white"
+                        style={{
+                          fontSize: 10 * invZoom,
+                          lineHeight: `${12 * invZoom}px`,
+                          top: -12 * invZoom,
+                          left: 0,
+                        }}
+                      >
+                        {b.name} · {Math.round(b.width)}×{Math.round(b.height)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
             </div>
           </div>
         </div>
@@ -929,6 +1008,17 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
         </Button>
         <Button variant="ghost" size="sm" className="h-6 gap-1 px-2 text-[11px] text-white hover:bg-white/10" onClick={applyFit} aria-label="Fit to screen">
           <Maximize2 className="h-3 w-3" /> Fit
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`h-6 gap-1 px-2 text-[11px] hover:bg-white/10 ${debug ? 'text-cyan-300' : 'text-white'}`}
+          onClick={() => setDebug((d) => !d)}
+          aria-pressed={debug}
+          aria-label="Toggle debug overlay"
+          title="Debug overlay: template frame + layer bounds"
+        >
+          <Box className="h-3 w-3" /> Debug
         </Button>
       </div>
     </div>
