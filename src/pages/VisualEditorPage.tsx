@@ -832,6 +832,50 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
   const pendingImages = imageStatuses.filter((s) => s.status === 'loading');
   const failedImages = imageStatuses.filter((s) => s.status === 'failed');
 
+  /* ---- Debug overlay: template frame + per-layer bounding boxes ---- */
+  const [debug, setDebug] = useState(false);
+  const [boxes, setBoxes] = useState<{ id: string; name: string; left: number; top: number; width: number; height: number }[]>([]);
+  const rafRef = useRef<number | null>(null);
+
+  const syncBoxes = useCallback(() => {
+    const c = canvasRef.current;
+    if (!c) return;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      setBoxes(
+        c.getObjects().map((o: any, i: number) => {
+          const r = o.getBoundingRect();
+          return {
+            id: (o as any).id ?? `layer-${i}`,
+            name: o.type === 'textbox' || o.type === 'i-text' || o.type === 'text'
+              ? `${i}: text "${String(o.text ?? '').slice(0, 12)}"`
+              : `${i}: ${o.type}`,
+            left: r.left, top: r.top, width: r.width, height: r.height,
+          };
+        })
+      );
+    });
+  }, []);
+
+  useEffect(() => {
+    const c = canvasRef.current;
+    if (!debug || !c) return;
+    syncBoxes();
+    const evts = ['after:render', 'object:added', 'object:removed'] as const;
+    evts.forEach((e) => c.on(e as any, syncBoxes));
+    return () => {
+      evts.forEach((e) => c.off(e as any, syncBoxes));
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [debug, syncBoxes]);
+
+  useEffect(() => {
+    if (debug) syncBoxes();
+  }, [debug, zoom, artboard.width, artboard.height, syncBoxes]);
+
+  const invZoom = 100 / Math.max(zoom, 1); // keep outline/label size constant on screen
+
+
   return (
     <div ref={containerRef} className="canvas-viewport relative flex-1 min-w-0 overflow-hidden select-none"
       style={{ backgroundColor: '#1A1A1A', boxSizing: 'border-box' }}
