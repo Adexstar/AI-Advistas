@@ -925,6 +925,41 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
                   }}
                 />
               )}
+              {debug && (
+                <div className="pointer-events-none absolute inset-0 z-20">
+                  {/* Template frame */}
+                  <div
+                    className="absolute inset-0"
+                    style={{ outline: `${2 * invZoom}px solid rgba(34,211,238,0.9)`, outlineOffset: `-${invZoom}px` }}
+                  />
+                  {boxes.map((b) => (
+                    <div
+                      key={b.id}
+                      className="absolute"
+                      style={{
+                        left: b.left,
+                        top: b.top,
+                        width: b.width,
+                        height: b.height,
+                        outline: `${invZoom}px dashed rgba(244,114,182,0.9)`,
+                      }}
+                    >
+                      <span
+                        className="absolute whitespace-nowrap bg-[rgba(244,114,182,0.9)] px-[2px] font-mono text-white"
+                        style={{
+                          fontSize: 10 * invZoom,
+                          lineHeight: `${12 * invZoom}px`,
+                          top: -12 * invZoom,
+                          left: 0,
+                        }}
+                      >
+                        {b.name} · {Math.round(b.width)}×{Math.round(b.height)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
             </div>
           </div>
         </div>
