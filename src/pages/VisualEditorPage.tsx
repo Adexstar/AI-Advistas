@@ -667,8 +667,14 @@ const CANVAS_HEIGHT = 640;
 const MIN_ZOOM = 10;
 const MAX_ZOOM = 400;
 
+// Single source of spacing around the artboard: the gutter lives in the fit
+// math only, never as padding on the centering shell (that would double up
+// and crop the design at exact fit).
+const GUTTER_MOBILE = 16;
+const GUTTER_DESKTOP = 24;
+
 const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: number, w: number, h: number): number => {
-  const margin = isMobile ? 16 : 24;
+  const margin = isMobile ? GUTTER_MOBILE : GUTTER_DESKTOP;
   const availW = Math.max(40, containerWidth - margin * 2);
   const availH = Math.max(40, containerHeight - margin * 2);
   const z = Math.min(availW / w, availH / h) * 100;
