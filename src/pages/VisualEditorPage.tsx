@@ -855,8 +855,8 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
       )}
       {/* Scroll layer: pans when the user zooms past fit, never clips the artboard. */}
       <div className="absolute inset-0 overflow-auto">
-        {/* Centering shell: fills the viewport so small artboards stay centered. */}
-        <div className="flex min-h-full min-w-full items-center justify-center p-4 sm:p-6" style={{ width: 'max-content' }}>
+        {/* Centering shell: no padding here — the gutter lives in the fit math. */}
+        <div className="grid min-h-full min-w-full place-items-center">
           {/* Outer box carries the *scaled* footprint so layout/centering is correct at any zoom. */}
           <div
             className="relative shrink-0"
@@ -891,6 +891,7 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
           </div>
         </div>
       </div>
+
 
 
 
