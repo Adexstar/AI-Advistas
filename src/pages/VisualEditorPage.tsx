@@ -1918,7 +1918,28 @@ const EditorInner: React.FC = () => {
   const [pageIdx, setPageIdx] = useState(0);
   const artboard = (preset === 'custom' && customArtboard) ? customArtboard : (ARTBOARD_PRESETS[preset] ?? ARTBOARD_PRESETS.mobile);
   const isMobile = useIsMobile();
-  const isVideo = false; // TODO: detect from canvas content
+  const { videoUrl } = useVisualEditor();
+  const isVideo = !!videoUrl;
+
+  // A video frame gets the same treatment as a template: the artboard adopts the
+  // clip's own aspect ratio so the fit path centres it without cropping.
+  useEffect(() => {
+    if (!videoUrl) return;
+    let cancelled = false;
+    const v = document.createElement('video');
+    v.preload = 'metadata';
+    v.onloadedmetadata = () => {
+      if (cancelled) return;
+      const w = v.videoWidth || 1080;
+      const h = v.videoHeight || 1920;
+      setCustomArtboard({ label: `Video (${w}×${h})`, width: w, height: h });
+      setPreset('custom');
+      setFitToken((t) => t + 1);
+    };
+    v.src = videoUrl;
+    return () => { cancelled = true; v.onloadedmetadata = null; };
+  }, [videoUrl]);
+
   const currentTools = getToolsForSelection(selected);
   const aiActions = getAiActions(selected);
   const selectionType = !selected ? null : (selected.type === 'textbox' || selected.type === 'text' || selected.type === 'i-text' ? 'text' : selected.type === 'image' ? 'image' : selected.type === 'video' ? 'video' : 'other');
