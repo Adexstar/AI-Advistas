@@ -667,8 +667,14 @@ const CANVAS_HEIGHT = 640;
 const MIN_ZOOM = 10;
 const MAX_ZOOM = 400;
 
+// Single source of spacing around the artboard: the gutter lives in the fit
+// math only, never as padding on the centering shell (that would double up
+// and crop the design at exact fit).
+const GUTTER_MOBILE = 16;
+const GUTTER_DESKTOP = 24;
+
 const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: number, w: number, h: number): number => {
-  const margin = isMobile ? 16 : 24;
+  const margin = isMobile ? GUTTER_MOBILE : GUTTER_DESKTOP;
   const availW = Math.max(40, containerWidth - margin * 2);
   const availH = Math.max(40, containerHeight - margin * 2);
   const z = Math.min(availW / w, availH / h) * 100;
@@ -717,8 +723,14 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
 
   useEffect(() => {
     applyFit();
+    // Panels/sheets/timeline animate — re-fit once the transition settles so the
+    // artboard uses the real free space instead of the mid-animation box.
+    const raf = requestAnimationFrame(applyFit);
+    const t = setTimeout(applyFit, 320);
+    return () => { cancelAnimationFrame(raf); clearTimeout(t); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [artboard.width, artboard.height, fitToken, isMobile]);
+
 
   useEffect(() => {
     const el = containerRef.current;
@@ -849,8 +861,8 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
       )}
       {/* Scroll layer: pans when the user zooms past fit, never clips the artboard. */}
       <div className="absolute inset-0 overflow-auto">
-        {/* Centering shell: fills the viewport so small artboards stay centered. */}
-        <div className="flex min-h-full min-w-full items-center justify-center p-4 sm:p-6" style={{ width: 'max-content' }}>
+        {/* Centering shell: no padding here — the gutter lives in the fit math. */}
+        <div className="grid min-h-full min-w-full place-items-center">
           {/* Outer box carries the *scaled* footprint so layout/centering is correct at any zoom. */}
           <div
             className="relative shrink-0"
@@ -885,6 +897,7 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
           </div>
         </div>
       </div>
+
 
 
 
@@ -1905,7 +1918,28 @@ const EditorInner: React.FC = () => {
   const [pageIdx, setPageIdx] = useState(0);
   const artboard = (preset === 'custom' && customArtboard) ? customArtboard : (ARTBOARD_PRESETS[preset] ?? ARTBOARD_PRESETS.mobile);
   const isMobile = useIsMobile();
-  const isVideo = false; // TODO: detect from canvas content
+  const { videoUrl } = useVisualEditor();
+  const isVideo = !!videoUrl;
+
+  // A video frame gets the same treatment as a template: the artboard adopts the
+  // clip's own aspect ratio so the fit path centres it without cropping.
+  useEffect(() => {
+    if (!videoUrl) return;
+    let cancelled = false;
+    const v = document.createElement('video');
+    v.preload = 'metadata';
+    v.onloadedmetadata = () => {
+      if (cancelled) return;
+      const w = v.videoWidth || 1080;
+      const h = v.videoHeight || 1920;
+      setCustomArtboard({ label: `Video (${w}×${h})`, width: w, height: h });
+      setPreset('custom');
+      setFitToken((t) => t + 1);
+    };
+    v.src = videoUrl;
+    return () => { cancelled = true; v.onloadedmetadata = null; };
+  }, [videoUrl]);
+
   const currentTools = getToolsForSelection(selected);
   const aiActions = getAiActions(selected);
   const selectionType = !selected ? null : (selected.type === 'textbox' || selected.type === 'text' || selected.type === 'i-text' ? 'text' : selected.type === 'image' ? 'image' : selected.type === 'video' ? 'video' : 'other');
@@ -2350,7 +2384,7 @@ const EditorInner: React.FC = () => {
         isMobile={isMobile}
         artboard={artboard}
         showGrid={showGrid}
-        fitToken={fitToken}
+        fitToken={fitToken + (sheetExpanded ? 1000 : 0)}
         imageStatuses={imageStatuses}
         onRetryImages={handleRetryImages}
         retryingImages={retryingImages}
