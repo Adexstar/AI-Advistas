@@ -723,8 +723,14 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
 
   useEffect(() => {
     applyFit();
+    // Panels/sheets/timeline animate — re-fit once the transition settles so the
+    // artboard uses the real free space instead of the mid-animation box.
+    const raf = requestAnimationFrame(applyFit);
+    const t = setTimeout(applyFit, 320);
+    return () => { cancelAnimationFrame(raf); clearTimeout(t); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [artboard.width, artboard.height, fitToken, isMobile]);
+
 
   useEffect(() => {
     const el = containerRef.current;
