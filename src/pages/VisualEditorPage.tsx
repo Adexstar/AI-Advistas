@@ -2363,7 +2363,7 @@ const EditorInner: React.FC = () => {
         isMobile={isMobile}
         artboard={artboard}
         showGrid={showGrid}
-        fitToken={fitToken + (sheetExpanded ? 1000 : 0) + (timelineOpen ? 10000 : 0) + (selected ? 100000 : 0)}
+        fitToken={fitToken + (sheetExpanded ? 1000 : 0)}
         imageStatuses={imageStatuses}
         onRetryImages={handleRetryImages}
         retryingImages={retryingImages}
