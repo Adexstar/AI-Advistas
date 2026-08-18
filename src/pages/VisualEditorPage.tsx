@@ -718,7 +718,8 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
     const rect = el.getBoundingClientRect();
     if (rect.width < 20 || rect.height < 20) return;
     const z = fitZoom(isMobile, rect.width, rect.height, artboard.width, artboard.height);
-    onZoomChange(Math.max(5, Math.round(z)));
+    // Floor so rounding can never push the scaled artboard past the viewport.
+    onZoomChange(Math.max(5, Math.floor(z)));
   }, [isMobile, artboard.width, artboard.height, onZoomChange]);
 
   useEffect(() => {
