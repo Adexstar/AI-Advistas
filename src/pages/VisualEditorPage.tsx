@@ -718,7 +718,8 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
     const rect = el.getBoundingClientRect();
     if (rect.width < 20 || rect.height < 20) return;
     const z = fitZoom(isMobile, rect.width, rect.height, artboard.width, artboard.height);
-    onZoomChange(Math.max(5, Math.round(z)));
+    // Floor so rounding can never push the scaled artboard past the viewport.
+    onZoomChange(Math.max(5, Math.floor(z)));
   }, [isMobile, artboard.width, artboard.height, onZoomChange]);
 
   useEffect(() => {
@@ -861,12 +862,14 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
       )}
       {/* Scroll layer: pans when the user zooms past fit, never clips the artboard. */}
       <div className="absolute inset-0 overflow-auto">
-        {/* Centering shell: no padding here — the gutter lives in the fit math. */}
-        <div className="grid min-h-full min-w-full place-items-center">
+        {/* Centering shell: grid + margin:auto centers the scaled footprint and,
+            unlike place-items-center, never clips the top/left when it overflows. */}
+        <div className="grid min-h-full min-w-full" style={{ padding: isMobile ? GUTTER_MOBILE : GUTTER_DESKTOP }}>
           {/* Outer box carries the *scaled* footprint so layout/centering is correct at any zoom. */}
           <div
             className="relative shrink-0"
             style={{
+              margin: 'auto',
               width: artboard.width * (zoom / 100),
               height: artboard.height * (zoom / 100),
             }}
