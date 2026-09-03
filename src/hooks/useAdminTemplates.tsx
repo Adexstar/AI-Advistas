@@ -27,6 +27,9 @@ export interface AdminTemplate {
   source_license: string | null;
   license_expires_at: string | null;
   imported_at: string | null;
+  review_status: string;
+  review_note: string | null;
+  reviewed_at: string | null;
   created_at: string;
   updated_at: string;
 }
