@@ -133,15 +133,19 @@ async function cachedSearch(
   }
   const results = await searchProviders(providers, query, limit);
   if (results.length) {
-    await admin.from("provider_search_cache").upsert(
-      {
-        provider: "stock-templates",
-        cache_key: cacheKey,
-        results: results as unknown as Record<string, unknown>,
-        expires_at: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
-      },
-      { onConflict: "provider,cache_key" },
-    );
+    try {
+      await admin.from("provider_search_cache").upsert(
+        {
+          provider: "stock-templates",
+          cache_key: cacheKey,
+          results: results as unknown as Record<string, unknown>,
+          expires_at: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
+        },
+        { onConflict: "provider,cache_key" },
+      );
+    } catch (err) {
+      console.warn("cache write skipped", err);
+    }
   }
   return results;
 }
