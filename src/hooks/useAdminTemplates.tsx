@@ -90,3 +90,42 @@ export const useToggleTemplateActive = () => {
     onError: (e: Error) => toast.error(e.message),
   });
 };
+
+// Approval flow for imported (pending) templates. `is_active` is the gate:
+// approved => is_active true + review_status 'approved'.
+export const useReviewTemplates = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ ids, decision, note }: { ids: string[]; decision: 'approved' | 'rejected'; note?: string }) => {
+      const patch =
+        decision === 'approved'
+          ? { is_active: true, review_status: 'approved', reviewed_at: new Date().toISOString(), review_note: note ?? null }
+          : { is_active: false, review_status: 'rejected', reviewed_at: new Date().toISOString(), review_note: note ?? null };
+      const { error } = await supabase.from('templates').update(patch as any).in('id', ids);
+      if (error) throw new Error(error.message);
+      return ids.length;
+    },
+    onSuccess: (count, vars) => {
+      qc.invalidateQueries({ queryKey: ['admin-templates'] });
+      qc.invalidateQueries({ queryKey: ['templates'] });
+      toast.success(`${count} template${count === 1 ? '' : 's'} ${vars.decision}`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+};
+
+export const useDeleteTemplates = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase.from('templates').delete().in('id', ids);
+      if (error) throw new Error(error.message);
+      return ids.length;
+    },
+    onSuccess: (count) => {
+      qc.invalidateQueries({ queryKey: ['admin-templates'] });
+      toast.success(`${count} template${count === 1 ? '' : 's'} deleted`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+};
