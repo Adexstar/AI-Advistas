@@ -20,6 +20,7 @@ import {
   HelpCircle,
   ImageIcon,
   LayoutDashboard,
+  LayoutGrid,
   LayoutTemplate,
   LogOut,
   Megaphone,
