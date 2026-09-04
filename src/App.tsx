@@ -34,6 +34,7 @@ const OriginalTemplateDetail = lazy(() => import("./pages/OriginalTemplateDetail
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminProviders = lazy(() => import("./pages/AdminProviders"));
 const AdminTemplates = lazy(() => import("./pages/AdminTemplates"));
+const AdminTemplateGallery = lazy(() => import("./pages/AdminTemplateGallery"));
 const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const AdminDecisions = lazy(() => import("./pages/AdminDecisions"));
 const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
@@ -232,6 +233,7 @@ const AppContent = () => {
               <Route index element={<AdminDashboard />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="templates" element={<AdminTemplates />} />
+              <Route path="templates/gallery" element={<AdminTemplateGallery />} />
               <Route path="decisions" element={<AdminDecisions />} />
               <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="providers" element={<AdminProviders />} />
