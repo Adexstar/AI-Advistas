@@ -2125,10 +2125,11 @@ const EditorInner: React.FC = () => {
         const json = inst.json as any;
 
         // Resilient load — unresolved {{image}} placeholders become editable
-        // placeholder layers instead of blowing up the whole document.
+        // "Add image" slots instead of blowing up the whole document. The
+        // template's own preview is a full-frame render, so it is deliberately
+        // NOT dropped into a single layer.
         setImageStatuses([]);
         const result = await loadTemplateJSONIntoCanvas(canvas, json, {
-          fallbackImageSrc: template.preview_url || template.thumbnail_url || template.image_url || undefined,
           onImageStatus: upsertImageStatus,
         });
 
@@ -2137,13 +2138,47 @@ const EditorInner: React.FC = () => {
 
         // The artboard adopts the template's own frame so the design renders
         // at its authored size and proportions — nothing is squeezed or cropped.
-        const tw = Math.round(Number(template.width) || Number(json?.width) || canvas.getWidth());
-        const th = Math.round(Number(template.height) || Number(json?.height) || canvas.getHeight());
+        // Never fall back to the *current* canvas size: that leaves the Fabric
+        // surface and the artboard frame out of sync and crops the design.
+        const objectsBounds = () => {
+          const objs = canvas.getObjects();
+          if (!objs.length) return null;
+          let w = 0;
+          let h = 0;
+          objs.forEach((o: any) => {
+            const r = o.getBoundingRect?.();
+            if (!r) return;
+            w = Math.max(w, r.left + r.width);
+            h = Math.max(h, r.top + r.height);
+          });
+          return w > 1 && h > 1 ? { w: Math.round(w), h: Math.round(h) } : null;
+        };
+        const bounds = objectsBounds();
+        const tw = Math.round(Number(template.width) || Number(json?.width) || bounds?.w || 1080);
+        const th = Math.round(Number(template.height) || Number(json?.height) || bounds?.h || 1080);
         if (tw > 1 && th > 1) {
           setCustomArtboard({ label: `Custom · ${tw}×${th}`, width: tw, height: th });
           setPreset('custom');
           canvas.setDimensions({ width: tw, height: th });
         }
+
+        // If the design was authored on a different frame, scale every layer
+        // into the artboard so nothing sits half outside it.
+        const aw = Number(json?.width) || 0;
+        const ah = Number(json?.height) || 0;
+        if (aw > 1 && ah > 1 && (Math.abs(aw - tw) > 1 || Math.abs(ah - th) > 1)) {
+          const k = Math.min(tw / aw, th / ah);
+          canvas.getObjects().forEach((o: any) => {
+            o.set({
+              left: (o.left || 0) * k,
+              top: (o.top || 0) * k,
+              scaleX: (o.scaleX || 1) * k,
+              scaleY: (o.scaleY || 1) * k,
+            });
+            o.setCoords();
+          });
+        }
+
 
         const srcObjects: any[] = Array.isArray(json?.objects) ? json.objects : [];
 

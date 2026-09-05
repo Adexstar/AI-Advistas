@@ -55,21 +55,39 @@ export const resolveImageSrc = (raw: unknown): string | null => {
   return `/${src.replace(/^\/+/, '')}`;
 };
 
+// A hero/background slot is the only place where dropping in the template's
+// own artwork makes sense — a logo slot must never be filled with it.
+const isHeroSlot = (o: AnyObj) => {
+  const hint = `${o?.name ?? ''} ${o?.variableKey ?? ''} ${o?.meta?.role ?? ''} ${o?.src ?? ''}`.toLowerCase();
+  if (/logo|badge|avatar|icon/.test(hint)) return false;
+  return /hero|product|background|bg|photo|image/.test(hint);
+};
+
+const slotLabel = (o: AnyObj) => {
+  const raw = String(o?.variableKey ?? o?.name ?? '').trim();
+  const key = raw.replace(/\{\{|\}\}/g, '').split('.').pop() ?? '';
+  const pretty = key.replace(/[_-]+/g, ' ').trim();
+  return pretty ? `Add ${pretty.toLowerCase()}` : 'Add image';
+};
+
 const sanitizeObject = (o: AnyObj, fallbackImageSrc?: string): AnyObj => {
   const next: AnyObj = { ...o };
 
   if (isImage(next)) {
-    const resolved = resolveImageSrc(next.src) ?? (fallbackImageSrc ? resolveImageSrc(fallbackImageSrc) : null);
+    const resolved =
+      resolveImageSrc(next.src) ??
+      (fallbackImageSrc && isHeroSlot(next) ? resolveImageSrc(fallbackImageSrc) : null);
     if (!resolved) {
       const w = Number(next.width) || 400;
       const h = Number(next.height) || 400;
-      next.src = makePlaceholderImage(w, h, next.name ? String(next.name) : 'Image');
+      next.src = makePlaceholderImage(w, h, slotLabel(next));
       next.isPlaceholder = true;
     } else {
       next.src = resolved;
       if (/^https?:/i.test(resolved)) next.crossOrigin = next.crossOrigin ?? 'anonymous';
     }
   }
+
 
   if (typeof next.text === 'string' && UNRESOLVED.test(next.text)) {
     // Leave the layer editable but readable instead of showing raw mustaches.
