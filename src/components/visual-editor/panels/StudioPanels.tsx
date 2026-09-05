@@ -96,6 +96,8 @@ export type StudioTemplate = {
   preview_url: string | null;
   thumbnail_url: string | null;
   template_json: any;
+  width?: number | null;
+  height?: number | null;
   popularity_score?: number | null;
 };
 
@@ -108,7 +110,7 @@ export const TemplatesPanel: React.FC<{ onUse: (t: StudioTemplate) => void }> = 
     queryFn: async () => {
       const { data, error } = await supabase
         .from('templates')
-        .select('id,name,description,category,platform,preview_url,thumbnail_url,template_json,popularity_score')
+        .select('id,name,description,category,platform,preview_url,thumbnail_url,template_json,width,height,popularity_score')
         .eq('is_active', true)
         .order('popularity_score', { ascending: false })
         .limit(120);
