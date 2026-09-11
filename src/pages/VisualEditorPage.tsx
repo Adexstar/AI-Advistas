@@ -1626,10 +1626,10 @@ const RightPanel: React.FC<{
         </div>
       ) : (
         <Tabs defaultValue="design" className="flex flex-1 min-h-0 flex-col">
-          <TabsList className="mx-4 mt-3 grid grid-cols-3 rounded-xl bg-muted/60">
-            <TabsTrigger value="design" className="text-xs">Design</TabsTrigger>
-            <TabsTrigger value="animation" className="text-xs">Animation</TabsTrigger>
-            <TabsTrigger value="position" className="text-xs">Position</TabsTrigger>
+          <TabsList className="mx-4 mt-3 grid h-auto grid-cols-3 rounded-xl bg-muted/60">
+            <TabsTrigger value="design" className="min-w-0 whitespace-normal px-2 text-xs">Design</TabsTrigger>
+            <TabsTrigger value="animation" className="min-w-0 whitespace-normal px-2 text-xs">Animation</TabsTrigger>
+            <TabsTrigger value="position" className="min-w-0 whitespace-normal px-2 text-xs">Position</TabsTrigger>
           </TabsList>
 
           <ScrollArea className="flex-1 min-h-0">

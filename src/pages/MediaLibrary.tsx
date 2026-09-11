@@ -374,7 +374,7 @@ const MediaLibrary: React.FC = () => {
       {/* Filters bar */}
       <Card className="p-2 sm:p-3 flex flex-wrap items-center gap-2 border-border/60">
         <Tabs value={tab} onValueChange={setTab} className="flex-1 min-w-0">
-          <TabsList className="bg-transparent gap-1 flex-wrap h-auto">
+          <TabsList className="flex h-auto max-w-full flex-wrap justify-start gap-1 bg-transparent">
             {[
               ['all', 'All Media', counts.all],
               ['image', 'Images', counts.image],
@@ -385,7 +385,7 @@ const MediaLibrary: React.FC = () => {
               <TabsTrigger
                 key={val as string}
                 value={val as string}
-                className="data-[state=active]:bg-violet-100 data-[state=active]:text-violet-700 dark:data-[state=active]:bg-violet-950/40 rounded-full px-3"
+                className="min-w-0 whitespace-normal rounded-full px-3 data-[state=active]:bg-violet-100 data-[state=active]:text-violet-700 dark:data-[state=active]:bg-violet-950/40"
               >
                 <span>{label}</span>
                 <span className="ml-2 text-xs text-muted-foreground">{n as number}</span>
