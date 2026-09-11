@@ -153,13 +153,15 @@ export function CampaignAnalyticsTab({ campaignId, campaign }: Props) {
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="platforms">Platforms</TabsTrigger>
-          <TabsTrigger value="creatives">Creatives</TabsTrigger>
-          <TabsTrigger value="audience">Audience</TabsTrigger>
-          <TabsTrigger value="insights">AI Insights</TabsTrigger>
-        </TabsList>
+        <div className="tabs-scroll-shell">
+          <TabsList className="tabs-scroll-list">
+            <TabsTrigger value="overview" className="shrink-0">Overview</TabsTrigger>
+            <TabsTrigger value="platforms" className="shrink-0">Platforms</TabsTrigger>
+            <TabsTrigger value="creatives" className="shrink-0">Creatives</TabsTrigger>
+            <TabsTrigger value="audience" className="shrink-0">Audience</TabsTrigger>
+            <TabsTrigger value="insights" className="shrink-0">AI Insights</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="overview" className="space-y-4">
           <Card>

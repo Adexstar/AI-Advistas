@@ -22,8 +22,8 @@ export const TargetAudienceInsights = ({ isLoading }: TargetAudienceInsightsProp
   return (
     <Card className="h-full">
       <CardHeader className="pb-4">
-        <div className="flex items-start justify-between">
-          <div>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
             <CardTitle>Target Audience Insights</CardTitle>
             <CardDescription>Advanced audience analysis across demographics</CardDescription>
           </div>
@@ -32,11 +32,11 @@ export const TargetAudienceInsights = ({ isLoading }: TargetAudienceInsightsProp
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="demographics" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="demographics">Demographics</TabsTrigger>
-            <TabsTrigger value="interests">Interests</TabsTrigger>
-            <TabsTrigger value="behaviors">Behaviors</TabsTrigger>
-            <TabsTrigger value="locations">Locations</TabsTrigger>
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:grid-cols-4">
+            <TabsTrigger value="demographics" className="min-w-0 whitespace-normal px-2">Demographics</TabsTrigger>
+            <TabsTrigger value="interests" className="min-w-0 whitespace-normal px-2">Interests</TabsTrigger>
+            <TabsTrigger value="behaviors" className="min-w-0 whitespace-normal px-2">Behaviors</TabsTrigger>
+            <TabsTrigger value="locations" className="min-w-0 whitespace-normal px-2">Locations</TabsTrigger>
           </TabsList>
 
           <TabsContent value="demographics" className="mt-4">

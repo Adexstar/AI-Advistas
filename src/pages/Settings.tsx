@@ -68,7 +68,7 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-2xl bg-secondary/55 p-2 sm:grid-cols-4 lg:grid-cols-8">
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-2xl bg-secondary/55 p-2 sm:grid-cols-4 xl:grid-cols-9">
           <TabsTrigger value="profile" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">General</TabsTrigger>
           <TabsTrigger value="workspace" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Workspace</TabsTrigger>
           <TabsTrigger value="ai" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">AI Preferences</TabsTrigger>

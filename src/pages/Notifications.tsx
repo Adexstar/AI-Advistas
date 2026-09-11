@@ -50,7 +50,7 @@ const Notifications = () => {
       <Tabs defaultValue="all">
         <TabsList className="flex h-auto w-full flex-wrap gap-1 rounded-2xl bg-muted/40 p-1">
           {categories.map((c) => (
-            <TabsTrigger key={c.id} value={c.id} className="rounded-xl px-3 py-1.5 text-xs">
+            <TabsTrigger key={c.id} value={c.id} className="min-w-0 whitespace-normal rounded-xl px-3 py-1.5 text-xs">
               {c.label}
             </TabsTrigger>
           ))}

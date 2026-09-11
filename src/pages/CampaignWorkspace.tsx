@@ -175,9 +175,9 @@ const CampaignWorkspace = () => {
         </div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <div className="sticky top-0 z-10 -mx-4 overflow-x-auto bg-[#FAFAFA] px-4 pb-1">
-            <TabsList className="inline-flex h-auto gap-1 rounded-xl border bg-card p-1">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="min-w-0 space-y-6">
+          <div className="tabs-scroll-shell sticky top-0 z-10 -mx-4 w-[calc(100%+2rem)] bg-[#FAFAFA] px-4 pb-2">
+            <TabsList className="tabs-scroll-list inline-flex h-auto gap-1 rounded-xl border bg-card p-1">
               {CAMPAIGN_TABS.map((tab) => {
                 const Icon = tab.icon;
                 return (
@@ -187,7 +187,7 @@ const CampaignWorkspace = () => {
                     className="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
                   >
                     <Icon className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span>{tab.label}</span>
                   </TabsTrigger>
                 );
               })}

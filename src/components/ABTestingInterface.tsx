@@ -393,8 +393,8 @@ export const ABTestingInterface = ({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <FlaskConical className="h-6 w-6 text-primary" />
             A/B Testing
@@ -408,12 +408,14 @@ export const ABTestingInterface = ({
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="running">Running Tests</TabsTrigger>
-          <TabsTrigger value="completed">Completed</TabsTrigger>
-          <TabsTrigger value="insights">Insights</TabsTrigger>
-        </TabsList>
+        <div className="tabs-scroll-shell">
+          <TabsList className="tabs-scroll-list">
+            <TabsTrigger value="overview" className="shrink-0">Overview</TabsTrigger>
+            <TabsTrigger value="running" className="shrink-0">Running Tests</TabsTrigger>
+            <TabsTrigger value="completed" className="shrink-0">Completed</TabsTrigger>
+            <TabsTrigger value="insights" className="shrink-0">Insights</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="overview" className="space-y-6">
           {/* Stats Cards */}

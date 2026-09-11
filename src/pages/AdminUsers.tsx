@@ -38,7 +38,7 @@ export default function AdminUsers() {
   return (
     <div className="space-y-4 p-4 md:p-6">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-[220px] flex-1">
+        <div className="relative min-w-0 flex-[1_1_220px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
@@ -51,7 +51,7 @@ export default function AdminUsers() {
           />
         </div>
         <Select value={plan} onValueChange={(v) => { setPlan(v); setPage(1); }}>
-          <SelectTrigger className="w-[150px]"><SelectValue placeholder="All plans" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[150px]"><SelectValue placeholder="All plans" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All plans</SelectItem>
             <SelectItem value="free">Free</SelectItem>
@@ -61,7 +61,7 @@ export default function AdminUsers() {
           </SelectContent>
         </Select>
         <Select value={status} onValueChange={(v) => { setStatus(v); setPage(1); }}>
-          <SelectTrigger className="w-[150px]"><SelectValue placeholder="All status" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[150px]"><SelectValue placeholder="All status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All status</SelectItem>
             <SelectItem value="active">Active</SelectItem>

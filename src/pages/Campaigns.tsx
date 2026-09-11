@@ -144,8 +144,8 @@ const Campaigns = () => {
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full sm:w-auto">
-          <TabsList className="flex-wrap h-auto">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full min-w-0 sm:w-auto">
+          <TabsList className="flex h-auto max-w-full flex-wrap justify-start gap-1">
             <TabsTrigger value="all">All <span className="ml-1.5 text-xs text-muted-foreground">{counts.total}</span></TabsTrigger>
             <TabsTrigger value="active">Active <span className="ml-1.5 text-xs text-muted-foreground">{counts.active}</span></TabsTrigger>
             <TabsTrigger value="draft">Draft <span className="ml-1.5 text-xs text-muted-foreground">{counts.draft}</span></TabsTrigger>
