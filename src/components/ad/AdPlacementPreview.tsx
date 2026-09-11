@@ -117,9 +117,9 @@ const AdPlacementPreview = ({ adContent }: AdPlacementPreviewProps) => {
         </CardHeader>
         <CardContent className="space-y-4">
           <Tabs value={selectedPlatform} onValueChange={setSelectedPlatform}>
-            <TabsList className="grid grid-cols-4 w-full">
+            <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:grid-cols-4">
               {previewTemplates.map((platform) => (
-                <TabsTrigger key={platform.id} value={platform.id}>
+                <TabsTrigger key={platform.id} value={platform.id} className="min-w-0 whitespace-normal px-2">
                   {platform.name}
                 </TabsTrigger>
               ))}

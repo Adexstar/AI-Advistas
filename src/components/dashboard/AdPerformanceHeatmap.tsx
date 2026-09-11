@@ -45,11 +45,11 @@ export const AdPerformanceHeatmap = ({ isLoading }: AdPerformanceHeatmapProps) =
       </CardHeader>
       <CardContent>
         <Tabs value={metric} onValueChange={(v) => setMetric(v as Metric)}>
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="ctr">CTR</TabsTrigger>
-            <TabsTrigger value="clicks">Clicks</TabsTrigger>
-            <TabsTrigger value="impressions">Impressions</TabsTrigger>
-            <TabsTrigger value="conversions">Conversions</TabsTrigger>
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:grid-cols-4">
+            <TabsTrigger value="ctr" className="min-w-0 whitespace-normal">CTR</TabsTrigger>
+            <TabsTrigger value="clicks" className="min-w-0 whitespace-normal">Clicks</TabsTrigger>
+            <TabsTrigger value="impressions" className="min-w-0 whitespace-normal">Impressions</TabsTrigger>
+            <TabsTrigger value="conversions" className="min-w-0 whitespace-normal">Conversions</TabsTrigger>
           </TabsList>
           <TabsContent value={metric} className="mt-4">
             <div className="space-y-3">

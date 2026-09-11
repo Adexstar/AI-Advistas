@@ -641,10 +641,10 @@ const TemplateBrowser = ({
             </div>
 
             <Tabs value={filterSource} onValueChange={(value) => setFilterSource(value as typeof filterSource)}>
-              <TabsList className="grid w-full grid-cols-3 rounded-2xl bg-secondary/60 p-1">
-                <TabsTrigger value="all">All ({allTemplates.length})</TabsTrigger>
-                <TabsTrigger value="internal">Internal ({sourceCounts.internal})</TabsTrigger>
-                <TabsTrigger value="freepik">Freepik ({sourceCounts.freepik})</TabsTrigger>
+              <TabsList className="grid h-auto w-full grid-cols-1 gap-1 rounded-2xl bg-secondary/60 p-1 sm:grid-cols-3">
+                <TabsTrigger value="all" className="min-w-0 whitespace-normal">All ({allTemplates.length})</TabsTrigger>
+                <TabsTrigger value="internal" className="min-w-0 whitespace-normal">Internal ({sourceCounts.internal})</TabsTrigger>
+                <TabsTrigger value="freepik" className="min-w-0 whitespace-normal">Freepik ({sourceCounts.freepik})</TabsTrigger>
               </TabsList>
             </Tabs>
 

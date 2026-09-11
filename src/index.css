@@ -476,12 +476,47 @@ p  { line-height: 1.6; }
   .page-content {
     flex: 1;
     height: 100%;
+    width: 100%;
+    min-width: 0;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 1.5rem;
     width: 100%;
     max-width: 1600px;
     margin-inline: auto;
+  }
+
+  .page-content > * {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  /* Deliberate horizontal rails keep dense navigation inside its page. */
+  .tabs-scroll-shell {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tabs-scroll-shell::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .tabs-scroll-shell::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: hsl(var(--border));
+  }
+
+  .tabs-scroll-list {
+    width: max-content;
+    min-width: 100%;
+    max-width: none;
+    justify-content: flex-start;
   }
 
   @media (max-width: 768px) {

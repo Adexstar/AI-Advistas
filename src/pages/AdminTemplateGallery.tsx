@@ -228,10 +228,12 @@ export default function AdminTemplateGallery() {
       {/* Review gallery */}
       <Tabs value={tab} onValueChange={(v) => { setTab(v); setSelected(new Set()); }}>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <TabsList>
-            <TabsTrigger value="pending">Pending review ({pending.length})</TabsTrigger>
-            <TabsTrigger value="approved">Approved ({approved.length})</TabsTrigger>
-          </TabsList>
+          <div className="tabs-scroll-shell flex-1 sm:w-auto">
+            <TabsList className="tabs-scroll-list">
+              <TabsTrigger value="pending" className="shrink-0">Pending review ({pending.length})</TabsTrigger>
+              <TabsTrigger value="approved" className="shrink-0">Approved ({approved.length})</TabsTrigger>
+            </TabsList>
+          </div>
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter templates" className="pl-9" />

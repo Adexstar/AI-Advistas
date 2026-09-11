@@ -257,11 +257,13 @@ export const PerformancePrediction = ({
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="detailed">Detailed Analysis</TabsTrigger>
-          <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
-        </TabsList>
+        <div className="tabs-scroll-shell">
+          <TabsList className="tabs-scroll-list">
+            <TabsTrigger value="overview" className="shrink-0">Overview</TabsTrigger>
+            <TabsTrigger value="detailed" className="shrink-0">Detailed Analysis</TabsTrigger>
+            <TabsTrigger value="recommendations" className="shrink-0">Recommendations</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="overview">
           {/* Prediction Cards */}

@@ -163,13 +163,13 @@ const AdSimulatorPage = () => {
             transition={{ delay: 0.1 }}
           >
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <div className="flex justify-center mb-6">
-                <TabsList className="grid grid-cols-2 w-fit">
-                  <TabsTrigger value="simulator" className="flex items-center gap-2">
+              <div className="mb-6 flex justify-center">
+                <TabsList className="grid h-auto w-full max-w-lg grid-cols-1 gap-1 sm:grid-cols-2">
+                  <TabsTrigger value="simulator" className="flex min-w-0 items-center gap-2 whitespace-normal">
                     <Target className="h-4 w-4" />
                     Performance Simulator
                   </TabsTrigger>
-                  <TabsTrigger value="placements" className="flex items-center gap-2">
+                  <TabsTrigger value="placements" className="flex min-w-0 items-center gap-2 whitespace-normal">
                     <PlayCircle className="h-4 w-4" />
                     Placement Preview
                   </TabsTrigger>
