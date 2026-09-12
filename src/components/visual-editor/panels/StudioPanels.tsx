@@ -13,9 +13,9 @@ import {
   Search, Upload, Loader2, ImageIcon, Video, Music, FileText, Pipette, Plus, X, Info,
 } from 'lucide-react';
 
-const PANEL = 'flex h-full min-h-0 flex-col bg-[#2D2D2D]';
-const HEAD = 'px-4 py-3 border-b border-[#3D3D3D]';
-const H2 = 'text-base font-bold text-white';
+const PANEL = 'studio-panel flex h-full min-h-0 flex-col';
+const HEAD = 'px-4 py-3 border-b border-[#454545]';
+const H2 = 'editor-heading text-base font-semibold text-white';
 const FIELD =
   'w-full h-10 pl-9 pr-3 rounded-lg text-sm bg-[#3D3D3D] border border-[#555555] text-white placeholder:text-[#888888] outline-none';
 
@@ -136,8 +136,17 @@ export const TemplatesPanel: React.FC<{ onUse: (t: StudioTemplate) => void }> = 
 
   return (
     <div className={PANEL}>
-      <div className={HEAD}><h2 className={H2}>Templates</h2></div>
+      <div className={HEAD}>
+        <h2 className={H2}>Templates</h2>
+        <p className="mt-0.5 text-[11px] text-[#AAAAAA]">Start from a design, then make every layer yours.</p>
+      </div>
       <div className="flex-1 min-h-0 overflow-y-auto p-4">
+        <div className="mb-3 rounded-lg border border-[#555555] bg-[#1A1A1A] p-2.5">
+          <div className="flex items-center gap-2">
+            <Plus className="h-4 w-4 text-[#A78BFA]" />
+            <span className="text-xs text-[#AAAAAA]">Describe your ideal design</span>
+          </div>
+        </div>
         <SearchField value={q} onChange={setQ} placeholder="Search templates" />
         <div className="flex flex-wrap gap-1.5 mb-4">
           {categories.map((c) => (
@@ -163,14 +172,15 @@ export const TemplatesPanel: React.FC<{ onUse: (t: StudioTemplate) => void }> = 
           <EmptyState>No templates match “{q || cat}”. Try another search or category.</EmptyState>
         )}
 
-        <div className="grid grid-cols-2 gap-2">
+        {filtered.length > 0 && <div className="mb-2 flex items-center justify-between"><p className="text-xs font-semibold text-white">Recently used</p><span className="text-[10px] text-[#AAAAAA]">See all</span></div>}
+        <div className="grid grid-cols-2 gap-3">
           {filtered.map((t) => {
             const src = t.preview_url || t.thumbnail_url;
             return (
               <button
                 key={t.id}
                 onClick={() => onUse(t)}
-                className="group relative aspect-square w-full overflow-hidden rounded-lg border border-[#3D3D3D] bg-[#1A1A1A] text-left hover:border-[#6C63FF] transition-colors"
+                className="group relative aspect-[4/5] w-full overflow-hidden rounded-lg border border-[#3D3D3D] bg-[#1A1A1A] text-left hover:border-[#A78BFA] transition-colors"
               >
                 {src ? (
                   <img src={src} alt={t.name} loading="lazy" className="h-full w-full object-cover" />
