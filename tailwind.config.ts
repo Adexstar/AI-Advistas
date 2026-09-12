@@ -20,6 +20,8 @@ export default {
 		extend: {
 			fontFamily: {
 				'orkney': ['Inter', 'system-ui', 'sans-serif'],
+				'editor-heading': ['Outfit', 'system-ui', 'sans-serif'],
+				'editor-body': ['Figtree', 'system-ui', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',

@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Sparkles } from "lucide-react";
 import { useAIContext } from "@/contexts/AIContext";
 import { useAIStatus } from "@/contexts/AIStatusContext";
+import { useAuth } from "@/hooks/useAuth";
+import { DecisionService } from "@/services/ai/DecisionService";
 import { AIPreviewDialog } from "./AIPreviewDialog";
 import {
   AISuggestion,
@@ -44,6 +46,7 @@ export const AIActionsMenu: React.FC<Props> = ({ selected, canvas, trigger, alig
   const kind = detectKind(selected);
   const { brand, playbook, effectiveContext } = useAIContext();
   const { mode, setStatus } = useAIStatus();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [suggestion, setSuggestion] = useState<AISuggestion | null>(null);
 
@@ -83,12 +86,28 @@ export const AIActionsMenu: React.FC<Props> = ({ selected, canvas, trigger, alig
     setStatus("approval", "Review AI suggestion");
   };
 
-  const applySuggestion = (s: AISuggestion) => {
+  const applySuggestion = async (s: AISuggestion) => {
     // Human first: only apply on explicit confirmation. Text is safely mutable.
     if (s.kind === "text" && selected && canvas && typeof selected.set === "function") {
       const value = s.after.value.replace(/^•\s?/, "").split("\n")[0];
       selected.set("text", value);
       canvas.renderAll();
+    }
+    if (user?.id) {
+      try {
+        const decision = await DecisionService.record(user.id, {
+          page: "visual-editor",
+          trigger_source: "confirmed_ai_action",
+          category: playbook?.category ?? effectiveContext?.active_category ?? null,
+          signal: `${kind}:${s.action}`,
+          action: s.action,
+          reasoning: s.reason,
+          confidence: s.confidence,
+        });
+        await DecisionService.resolve(decision.id, "applied");
+      } catch (error) {
+        console.error("[VisualEditor] decision logging failed", error);
+      }
     }
     setSuggestion(null);
     setStatus("ready");

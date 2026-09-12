@@ -111,6 +111,18 @@ All colors MUST be HSL.
     --sidebar-border: 247 26% 24%;
 
     --sidebar-ring: 252 83% 61%;
+
+    /* AdVista Studio */
+    --studio-bg: 0 0% 10%;
+    --studio-panel: 0 0% 18%;
+    --studio-panel-raised: 0 0% 24%;
+    --studio-line: 0 0% 27%;
+    --studio-text: 0 0% 100%;
+    --studio-muted: 0 0% 68%;
+    --studio-brand-start: 244 100% 69%;
+    --studio-brand-end: 255 90% 76%;
+    --gradient-studio: linear-gradient(105deg, hsl(var(--studio-brand-start)), hsl(var(--studio-brand-end)));
+    --shadow-studio-tray: 0 -18px 45px hsl(0 0% 0% / 0.42);
   }
 
   .dark {
@@ -149,6 +161,46 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer components {
+  .visual-editor {
+    font-family: "Figtree", system-ui, sans-serif;
+    color: hsl(var(--studio-text));
+    background: hsl(var(--studio-bg));
+  }
+
+  .visual-editor .editor-heading {
+    font-family: "Outfit", system-ui, sans-serif;
+    letter-spacing: 0;
+  }
+
+  .studio-command-bar {
+    background: var(--gradient-studio);
+    color: hsl(var(--studio-text));
+  }
+
+  .studio-panel {
+    background: hsl(var(--studio-panel));
+    color: hsl(var(--studio-text));
+    border-color: hsl(var(--studio-line));
+  }
+
+  .studio-tool-rail {
+    background: hsl(var(--studio-bg));
+    color: hsl(var(--studio-muted));
+    border-color: hsl(var(--studio-line));
+    padding-bottom: var(--safe-bottom);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .visual-editor *, .visual-editor *::before, .visual-editor *::after {
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
   }
 }
 

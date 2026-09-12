@@ -50,3 +50,23 @@ The selected direction is the Canva-inspired studio, adapted to AdVista rather t
 - Test desktop at 1280×1800: left panel, artboard, right inspector, timeline, template loading, and resizing.
 - Confirm no panel or control overlaps, no artboard clipping, no horizontal page overflow, and no bottom-tool changes in content or order.
 - Run the production build and focused editor checks before completion.
+
+After the rebuild, verify these AdVista-specific 
+
+behaviors are preserved:
+
+1. Hook/Body/CTA zone indicators still show  on the timeline
+
+2. Object role tagging (✨ sparkle button) still appears in the floating toolbar
+
+3. Brand Kit enforcement flags still appear in the right panel when non-brand colors used
+
+4. Pre-export ad health checklist still fires on Export click
+
+5. ai_context is still read on editor load
+
+6. decisions table is still written to on every confirmed AI action.
+
+These are AdVista's differentiators — do not remove them during the rebuild.
+
+&nbsp;
