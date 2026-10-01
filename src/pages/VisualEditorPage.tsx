@@ -82,10 +82,10 @@ const INSTA_STORY = [
 
 /* ---------- Left Icon Rail ---------- */
 const IconRail: React.FC<{ active: string; onChange: (id: string) => void }> = ({ active, onChange }) => (
-  <aside className="hidden md:flex h-full w-[56px] shrink-0 flex-col items-stretch bg-[hsl(245,45%,10%)] text-slate-200 border-r border-white/5">
+  <aside className="studio-tool-rail hidden md:flex h-full w-[64px] shrink-0 flex-col items-stretch border-r">
     <div className="flex items-center justify-center py-3 border-b border-white/5">
-      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-glow shadow-lg">
-        <Sparkles className="h-3.5 w-3.5 text-white" />
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-lg">
+        <Sparkles className="h-4 w-4 text-primary-foreground" />
       </div>
     </div>
     <div className="pt-1 pb-1 text-[8px] font-semibold uppercase tracking-wider text-white/40 text-center leading-tight">
@@ -153,36 +153,40 @@ const TopToolbar: React.FC<{
 
   if (isMobile) {
     return (
-      <header className="flex h-[52px] shrink-0 items-center gap-2 border-b bg-card/95 backdrop-blur px-2">
-        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={onToggleLeft}>
-          <Menu className="h-4 w-4" />
+      <header className="studio-command-bar flex h-[60px] shrink-0 items-center gap-1 px-2 shadow-lg">
+        <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onToggleLeft} aria-label="Back to dashboard">
+          <ChevronLeft className="h-5 w-5" />
         </Button>
-        {editing ? (
-          <Input autoFocus value={projectName} onChange={(e) => setProjectName(e.target.value)}
-            onBlur={() => setEditing(false)} onKeyDown={(e) => e.key === 'Enter' && setEditing(false)}
-            className="h-8 flex-1 text-sm font-semibold" />
-        ) : (
-          <button onClick={() => setEditing(true)}
-            className="group flex items-center gap-1 rounded-lg px-1.5 py-1 hover:bg-muted/70 flex-1 min-w-0">
-            <span className="truncate text-sm font-semibold text-foreground">{projectName}</span>
-            <Edit3 className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0" />
-          </button>
-        )}
-        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={onUndo} disabled={!canUndo}><Undo2 className={`h-4 w-4 ${canUndo ? '' : 'opacity-30'}`} /></Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={onRedo} disabled={!canRedo}><Redo2 className={`h-4 w-4 ${canRedo ? '' : 'opacity-30'}`} /></Button>
-        <Button size="icon" className="h-8 w-8 shrink-0 bg-primary hover:bg-primary/90" onClick={onExport}>
-          <Download className="h-4 w-4" />
+        <div className="min-w-0 flex-1 px-1">
+          <p className="editor-heading truncate text-[15px] font-semibold leading-tight">AdVista Studio</p>
+          {editing ? (
+            <Input autoFocus value={projectName} onChange={(e) => setProjectName(e.target.value)}
+              onBlur={() => setEditing(false)} onKeyDown={(e) => e.key === 'Enter' && setEditing(false)}
+              className="mt-0.5 h-5 border-primary-foreground/30 bg-primary-foreground/10 px-1.5 text-[10px] text-inherit" />
+          ) : (
+            <button onClick={() => setEditing(true)} className="block max-w-full truncate text-left text-[10px] text-primary-foreground/75">
+              {projectName}
+            </button>
+          )}
+        </div>
+        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onUndo} disabled={!canUndo} aria-label="Undo"><Undo2 className={`h-4 w-4 ${canUndo ? '' : 'opacity-40'}`} /></Button>
+        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onRedo} disabled={!canRedo} aria-label="Redo"><Redo2 className={`h-4 w-4 ${canRedo ? '' : 'opacity-40'}`} /></Button>
+        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onToggleRight} aria-label="Open inspector"><MoreHorizontal className="h-5 w-5" /></Button>
+        <Button variant="ghost" size="sm" className="h-9 shrink-0 gap-1 px-2.5 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onExport}>
+          <Download className="h-4 w-4" /><span className="text-xs font-semibold">Export</span>
         </Button>
       </header>
     );
   }
 
   return (
-    <header className="flex h-[52px] shrink-0 items-center gap-2 border-b bg-card/95 backdrop-blur px-2 sm:px-4">
-      <Button variant="ghost" size="icon" className="hidden md:inline-flex h-9 w-9" onClick={() => navigate('/dashboard')}>
+    <header className="studio-command-bar flex h-[60px] shrink-0 items-center gap-2 px-2 shadow-lg sm:px-4">
+      <Button variant="ghost" size="icon" className="hidden h-9 w-9 text-inherit hover:bg-primary-foreground/10 hover:text-inherit md:inline-flex" onClick={() => navigate('/dashboard')}>
         <ChevronLeft className="h-4 w-4" />
       </Button>
       <div className="flex min-w-0 items-center gap-2">
+        <span className="editor-heading hidden text-lg font-semibold lg:inline">AdVista Studio</span>
+        <span className="hidden h-5 w-px bg-primary-foreground/30 lg:block" />
         {editing ? (
           <Input
             autoFocus
@@ -190,32 +194,32 @@ const TopToolbar: React.FC<{
             onChange={(e) => setProjectName(e.target.value)}
             onBlur={() => setEditing(false)}
             onKeyDown={(e) => e.key === 'Enter' && setEditing(false)}
-            className="h-8 w-40 sm:w-56 text-sm font-semibold"
+            className="h-8 w-40 border-primary-foreground/30 bg-primary-foreground/10 text-sm font-semibold text-inherit sm:w-56"
           />
         ) : (
           <button
             onClick={() => setEditing(true)}
-            className="group flex items-center gap-1.5 rounded-lg px-1.5 py-1 hover:bg-muted/70"
+            className="group flex items-center gap-1.5 rounded-lg px-1.5 py-1 hover:bg-primary-foreground/10"
           >
-            <span className="truncate text-sm font-semibold text-foreground max-w-[140px] sm:max-w-[220px]">{projectName}</span>
-            <Edit3 className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100" />
+            <span className="max-w-[140px] truncate text-sm font-semibold sm:max-w-[220px]">{projectName}</span>
+            <Edit3 className="h-3.5 w-3.5 opacity-0 group-hover:opacity-80" />
           </button>
         )}
-        <span className="hidden lg:inline text-[11px] text-muted-foreground">{artboardLabel}</span>
+        <span className="hidden text-[11px] text-primary-foreground/70 xl:inline">{artboardLabel}</span>
       </div>
 
-      <Badge variant="secondary" className="hidden sm:inline-flex gap-1 rounded-full bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+      <Badge variant="secondary" className="hidden gap-1 rounded-full border-primary-foreground/20 bg-primary-foreground/15 text-inherit sm:inline-flex">
         <Check className="h-3 w-3" /> Saved
       </Badge>
 
       <div className="ml-1 hidden md:flex items-center gap-1">
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onUndo} disabled={!canUndo}><Undo2 className={`h-4 w-4 ${canUndo ? '' : 'opacity-30'}`} /></Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onRedo} disabled={!canRedo}><Redo2 className={`h-4 w-4 ${canRedo ? '' : 'opacity-30'}`} /></Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onUndo} disabled={!canUndo}><Undo2 className={`h-4 w-4 ${canUndo ? '' : 'opacity-30'}`} /></Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onRedo} disabled={!canRedo}><Redo2 className={`h-4 w-4 ${canRedo ? '' : 'opacity-30'}`} /></Button>
       </div>
 
       <div className="flex-1" />
 
-      <div className="hidden md:flex items-center gap-1 rounded-lg border bg-background px-1 py-1">
+      <div className="hidden items-center gap-1 rounded-lg border border-primary-foreground/20 bg-primary-foreground/10 px-1 py-1 md:flex">
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoom(Math.max(25, zoom - 10))}>
           <Minus className="h-3.5 w-3.5" />
         </Button>
@@ -225,17 +229,17 @@ const TopToolbar: React.FC<{
         </Button>
       </div>
 
-      <Button variant={showGrid ? 'secondary' : 'ghost'} size="icon" className="hidden lg:inline-flex h-9 w-9" title="Grid" onClick={onToggleGrid}><Grid3x3 className="h-4 w-4" /></Button>
-      <Button variant="ghost" size="icon" className="hidden lg:inline-flex h-9 w-9" title="Fit to screen" onClick={onFit}><Maximize2 className="h-4 w-4" /></Button>
+      <Button variant="ghost" size="icon" className="hidden h-9 w-9 text-inherit hover:bg-primary-foreground/10 hover:text-inherit lg:inline-flex" title="Grid" onClick={onToggleGrid}><Grid3x3 className="h-4 w-4" /></Button>
+      <Button variant="ghost" size="icon" className="hidden h-9 w-9 text-inherit hover:bg-primary-foreground/10 hover:text-inherit lg:inline-flex" title="Fit to screen" onClick={onFit}><Maximize2 className="h-4 w-4" /></Button>
 
       <AIQuickActionsMenu />
-      <Button variant="outline" size="sm" className="h-9 gap-1.5 hidden sm:inline-flex" onClick={onPreview}>
+      <Button variant="ghost" size="sm" className="hidden h-9 gap-1.5 text-inherit hover:bg-primary-foreground/10 hover:text-inherit sm:inline-flex" onClick={onPreview}>
         <Play className="h-3.5 w-3.5" /> Preview
       </Button>
-      <Button size="sm" className="h-9 gap-1.5 bg-primary hover:bg-primary/90" onClick={onExport}>
+      <Button variant="ghost" size="sm" className="h-9 gap-1.5 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onExport}>
         <Download className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Export</span>
       </Button>
-      <Button size="sm" variant="secondary" className="h-9 gap-1.5 hidden sm:inline-flex" onClick={onPublish}>
+      <Button size="sm" variant="secondary" className="hidden h-9 gap-1.5 border-primary-foreground/20 bg-primary-foreground text-primary sm:inline-flex" onClick={onPublish}>
         <Send className="h-3.5 w-3.5" /> Publish
       </Button>
 
@@ -847,17 +851,17 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
 
   return (
     <div ref={containerRef} className="canvas-viewport relative flex-1 min-w-0 overflow-hidden select-none"
-      style={{ backgroundColor: '#1A1A1A', boxSizing: 'border-box' }}
+      style={{ backgroundColor: 'hsl(var(--studio-bg))', boxSizing: 'border-box' }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
     >
 
       {/* Loading skeleton */}
       {loading && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3" style={{ backgroundColor: '#1A1A1A' }}>
-          <div className="h-10 w-10 animate-pulse rounded-xl" style={{ backgroundColor: '#2D2D2D' }} />
-          <div className="h-3 w-32 animate-pulse rounded-full" style={{ backgroundColor: '#2D2D2D' }} />
-          <div className="h-2 w-24 animate-pulse rounded-full" style={{ backgroundColor: '#2D2D2D' }} />
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-studio-bg">
+          <div className="h-10 w-10 animate-pulse rounded-lg bg-studio-panel" />
+          <div className="h-3 w-32 animate-pulse rounded-full bg-studio-panel" />
+          <div className="h-2 w-24 animate-pulse rounded-full bg-studio-panel" />
         </div>
       )}
       {/* Scroll layer: pans when the user zooms past fit, never clips the artboard. */}
@@ -876,7 +880,7 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
           >
             <div
               ref={wrapperRef}
-              className="canvas-card absolute left-0 top-0 bg-white overflow-hidden"
+              className="canvas-card absolute left-0 top-0 overflow-hidden bg-background"
               style={{
                 width: artboard.width,
                 height: artboard.height,
@@ -957,8 +961,11 @@ const TL_LABEL_W = 110;
 
 const trackMetaFor = (obj: any) => {
   const t = obj?.type;
-  if (t === 'textbox' || t === 'text' || t === 'i-text')
-    return { icon: Type, color: '#1B7A6B', label: (obj.text || 'Text').toString().slice(0, 24) || 'Text' };
+  if (t === 'textbox' || t === 'text' || t === 'i-text') {
+    const source = `${obj?.variableKey ?? ''} ${obj?.name ?? ''} ${obj?.text ?? ''}`.toLowerCase();
+    const role = source.includes('headline') || source.includes('hook') ? 'Hook' : source.includes('cta') || source.includes('action') ? 'CTA' : 'Body';
+    return { icon: Type, color: '#1B7A6B', label: `✦ ${role} · ${(obj.text || 'Text').toString().slice(0, 18)}` };
+  }
   if (t === 'image') return { icon: ImageIcon, color: '#2563A8', label: obj.name || 'Image' };
   if (t === 'video') return { icon: Video, color: '#8B5CF6', label: obj.name || 'Video' };
   if (t === 'audio') return { icon: Music, color: '#B45309', label: obj.name || 'Audio' };
@@ -1290,17 +1297,17 @@ const ContextualToolbar: React.FC<{
   active: string | null;
   onToolTap: (id: string) => void;
 }> = ({ tools, active, onToolTap }) => (
-  <nav className="flex items-center gap-0.5 overflow-x-auto px-2 py-1.5 border-t bg-card/95 backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+  <nav className="studio-tool-rail z-40 flex min-h-[66px] shrink-0 items-center gap-0.5 overflow-x-auto border-t px-2 py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
     {tools.map((t) => {
       const Icon = t.icon;
       const isActive = active === t.id;
       return (
         <button key={t.id} onClick={() => onToolTap(t.id)}
-          className={`flex shrink-0 flex-col items-center gap-0.5 rounded-xl px-2.5 py-1.5 transition-colors ${
-            isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted'
+          className={`flex min-w-[58px] shrink-0 flex-col items-center gap-1 rounded-lg px-2 py-1.5 transition-colors ${
+            isActive ? 'bg-primary/20 text-primary-glow' : 'text-inherit hover:bg-studio-panel'
           }`}>
           <Icon className="h-5 w-5" />
-          <span className="text-[8px] font-medium whitespace-nowrap">{t.label}</span>
+          <span className="whitespace-nowrap text-[9px] font-medium">{t.label}</span>
         </button>
       );
     })}
@@ -1482,39 +1489,45 @@ const MobileBottomSheet: React.FC<{
   label: string;
 }> = ({ open, onClose, children, label }) => {
   const [visible, setVisible] = useState(false);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const [full, setFull] = useState(false);
+  const panelRef = useRef<HTMLElement>(null);
   const startY = useRef(0);
 
   useEffect(() => {
-    if (open) { setVisible(true); return; }
+    if (open) { setVisible(true); setFull(false); return; }
     const timer = setTimeout(() => setVisible(false), 300);
     return () => clearTimeout(timer);
   }, [open]);
 
   const handleTouchStart = (e: React.TouchEvent) => { startY.current = e.touches[0].clientY; };
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (startY.current - e.changedTouches[0].clientY < -80) onClose();
+    const delta = startY.current - e.changedTouches[0].clientY;
+    if (delta < -80) {
+      if (full) setFull(false);
+      else onClose();
+    }
+    if (delta > 80) setFull(true);
   };
 
   if (!visible && !open) return null;
 
   return (
-    <div
+    <section
       ref={panelRef}
-      className={`border-t bg-card shadow-2xl overflow-y-auto transition-all duration-300 ease-out ${
-        open ? 'translate-y-0 max-h-[45vh]' : 'translate-y-full max-h-0'
+      className={`studio-panel absolute inset-x-0 bottom-0 z-30 shrink-0 overflow-y-auto rounded-t-2xl border-t shadow-[var(--shadow-studio-tray)] transition-all duration-300 ease-out ${
+        open ? `translate-y-0 ${full ? 'max-h-[68vh]' : 'max-h-[46vh]'}` : 'translate-y-full max-h-0'
       }`}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
       {/* Drag handle */}
-      <div className="flex items-center justify-center py-2 sticky top-0 bg-card z-10">
-        <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
-      </div>
+      <button type="button" className="sticky top-0 z-10 flex w-full items-center justify-center bg-studio-panel py-2" onClick={() => setFull((value) => !value)} aria-label={full ? 'Collapse panel' : 'Expand panel'}>
+        <span className="h-1 w-10 rounded-full bg-studio-muted/50" />
+      </button>
       {/* Header with close */}
       <div className="flex items-center justify-between px-4 pb-2">
-        <span className="text-sm font-semibold text-foreground">{label}</span>
-        <button onClick={onClose} className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-muted">
+        <span className="editor-heading text-sm font-semibold text-studio-text">{label}</span>
+        <button onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-lg text-studio-muted hover:bg-studio-panel-raised hover:text-studio-text">
           <X className="h-4 w-4" />
         </button>
       </div>
@@ -1522,7 +1535,7 @@ const MobileBottomSheet: React.FC<{
       <div className="px-4 pb-4">
         {children}
       </div>
-    </div>
+    </section>
   );
 };
 
@@ -1610,9 +1623,12 @@ const RightPanel: React.FC<{
   const setHeight = (h: number) => update('scaleY', (h || 1) / (selected.height || 1));
 
   return (
-    <aside className="flex h-full min-h-0 w-full flex-col bg-card border-l">
-      <div className="flex items-center justify-between px-4 py-3 border-b">
-        <h2 className="text-base font-semibold">{isText ? 'Text' : isImage ? 'Image' : selected ? 'Properties' : 'Design'}</h2>
+    <aside className="studio-panel flex h-full min-h-0 w-full flex-col border-l">
+      <div className="flex items-center justify-between border-b border-studio-line px-4 py-3">
+        <div>
+          <h2 className="editor-heading text-base font-semibold">{isText ? 'Text' : isImage ? 'Image' : selected ? 'Properties' : 'Design'}</h2>
+          {selected?.variableKey && <p className="mt-0.5 text-[10px] text-studio-muted">✦ {selected.variableKey}</p>}
+        </div>
         {onClose && <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onClose}><X className="h-4 w-4" /></Button>}
       </div>
 
@@ -1626,7 +1642,7 @@ const RightPanel: React.FC<{
         </div>
       ) : (
         <Tabs defaultValue="design" className="flex flex-1 min-h-0 flex-col">
-          <TabsList className="mx-4 mt-3 grid h-auto grid-cols-3 rounded-xl bg-muted/60">
+          <TabsList className="mx-4 mt-3 grid h-auto grid-cols-3 rounded-lg bg-studio-bg">
             <TabsTrigger value="design" className="min-w-0 whitespace-normal px-2 text-xs">Design</TabsTrigger>
             <TabsTrigger value="animation" className="min-w-0 whitespace-normal px-2 text-xs">Animation</TabsTrigger>
             <TabsTrigger value="position" className="min-w-0 whitespace-normal px-2 text-xs">Position</TabsTrigger>
@@ -2202,6 +2218,7 @@ const EditorInner: React.FC = () => {
           obj.variableKey = src.variableKey;
           obj.brandReplaceable = src.brandReplaceable;
           obj.aiReplaceable = src.aiReplaceable;
+          obj.brandCompliant = Boolean(activeKit && src.brandReplaceable);
           if (obj.type === 'textbox' || obj.type === 'i-text' || obj.type === 'text') {
             obj.editable = true; // double-click to edit copy live
             // Keep copy inside the artboard: never let a text layer run off-canvas.
@@ -2300,9 +2317,19 @@ const EditorInner: React.FC = () => {
 
   const onExport = () => {
     if (!canvas) return;
+    const objects = canvas.getObjects() as any[];
+    const text = objects.filter((obj) => ['textbox', 'text', 'i-text'].includes(obj.type));
+    const hasCTA = text.some((obj) => `${obj.variableKey ?? ''} ${obj.name ?? ''} ${obj.text ?? ''}`.toLowerCase().includes('cta'));
+    const missing: string[] = [];
+    if (!objects.length) missing.push('content');
+    if (!hasCTA) missing.push('CTA');
+    if (!activeKit) missing.push('Brand Kit');
     const url = canvas.toDataURL({ format: 'png', quality: 1, multiplier: 2 });
     const a = document.createElement('a'); a.href = url; a.download = `${projectName || 'design'}.png`; a.click();
-    toast({ title: 'Exported', description: 'Your design has been downloaded.' });
+    toast({
+      title: missing.length ? 'Exported with ad health notes' : 'Exported · Ad health passed',
+      description: missing.length ? `Downloaded. Review ${missing.join(', ')} before publishing.` : 'Copy, CTA, and Brand Kit checks passed.',
+    });
   };
 
   // Compute floating toolbar position relative to selected object
@@ -2428,15 +2455,15 @@ const EditorInner: React.FC = () => {
         retryingImages={retryingImages}
       />
 
-      {/* Onboarding overlay when canvas is empty */}
+      {/* Empty-state controls float over the artboard without masking the workspace. */}
       {isEmpty && (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none" style={{ backgroundColor: 'rgba(26,26,26,0.85)' }}>
-          <div className="pointer-events-auto max-w-xs text-center px-6">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/20">
+        <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center">
+          <div className="pointer-events-auto max-w-[18rem] px-6 text-center drop-shadow-lg">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/30 backdrop-blur">
               <Sparkles className="h-6 w-6 text-primary" />
             </div>
-            <h3 className="text-base font-semibold text-white mb-1">Start creating</h3>
-            <p className="text-xs text-gray-400 mb-5">Tap a tool below to add text, images, shapes, or upload your own media.</p>
+            <h3 className="editor-heading mb-1 text-lg font-semibold text-studio-text">Start creating</h3>
+            <p className="mb-4 text-xs text-studio-muted">Choose a tool below or open a template.</p>
             <div className="grid grid-cols-3 gap-2">
               {[
                 { label: 'Text', icon: Type, action: () => addText('New Text', 32, 'bold'), color: 'from-blue-500 to-blue-600' },
@@ -2444,8 +2471,7 @@ const EditorInner: React.FC = () => {
                 { label: 'Upload', icon: Upload, action: () => { setActiveTab('uploads'); setSheetExpanded(true); }, color: 'from-emerald-500 to-emerald-600' },
               ].map(({ label, icon: Icon, action, color }) => (
                 <button key={label} onClick={action}
-                  className="flex flex-col items-center gap-1.5 rounded-xl px-3 py-3 transition hover:scale-105"
-                  style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}>
+                  className="flex flex-col items-center gap-1.5 rounded-lg bg-studio-panel/90 px-3 py-3 transition hover:bg-studio-panel-raised">
                   <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${color} flex items-center justify-center`}>
                     <Icon className="h-4 w-4 text-white" />
                   </div>
@@ -2453,7 +2479,7 @@ const EditorInner: React.FC = () => {
                 </button>
               ))}
             </div>
-            <p className="mt-4 text-[10px] text-gray-500">Tip: Tap a template to start from a pre-made design</p>
+            <p className="mt-3 text-[10px] text-studio-muted">Templates remain fully editable.</p>
           </div>
         </div>
       )}
@@ -2493,7 +2519,7 @@ const EditorInner: React.FC = () => {
       )}
 
       {/* Bottom bar — pages */}
-      <div className="flex items-center justify-center gap-2 py-2" style={{ backgroundColor: isMobile ? 'transparent' : '#1A1A1A', borderTop: isMobile ? 'none' : '1px solid #2D2D2D' }}>
+      <div className="flex shrink-0 items-center justify-center gap-2 border-t border-studio-line bg-studio-bg py-2">
         {pages.length > 1 && pages.map((_, i) => (
           <button key={i} onClick={() => goToPage(i)}
             className="h-9 min-w-9 rounded-lg px-3 text-xs"
@@ -2513,7 +2539,7 @@ const EditorInner: React.FC = () => {
   );
 
   return (
-    <div className="visual-editor flex h-screen w-full flex-col overflow-hidden bg-background">
+    <div className="visual-editor flex h-[100dvh] w-full flex-col overflow-hidden bg-studio-bg">
       {/* Editor Top Bar */}
       <div className="editor-top-bar flex-shrink-0">
         <TopToolbar
@@ -2555,32 +2581,31 @@ const EditorInner: React.FC = () => {
       {/* Mobile layout: Top Bar → Canvas → Bottom Sheet → Contextual Toolbar */}
       {isMobile ? (
         <>
-          {/* Canvas — takes remaining space */}
-          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+          {/* Canvas and work tray share one stage so opening tools never distorts the artboard. */}
+          <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
             <div className="editor-canvas-area relative flex flex-1 min-w-0 flex-col overflow-hidden">
               {renderCanvas()}
             </div>
-          </div>
-
-          {/* Slide-Up Panel — contextual tool sheet or creation panel */}
-          <MobileBottomSheet open={sheetExpanded} onClose={() => { setSheetExpanded(false); setActiveTool(null); }}
-            label={activeTool ? (currentTools.find(t => t.id === activeTool)?.label || activeTool) : (LEFT_TABS.find(t => t.id === activeTab)?.label || 'Create')}>
-            {/* AI prompt bar — contextual based on selection */}
-            <div className="flex items-center gap-2 mb-3 overflow-x-auto [scrollbar-width:none]">
-              <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 shrink-0">
-                <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
-                <span className="text-xs text-muted-foreground whitespace-nowrap">Ask AI</span>
+            {/* Slide-Up Panel — contextual tool sheet or creation panel */}
+            <MobileBottomSheet open={sheetExpanded} onClose={() => { setSheetExpanded(false); setActiveTool(null); }}
+              label={activeTool ? (currentTools.find(t => t.id === activeTool)?.label || activeTool) : (LEFT_TABS.find(t => t.id === activeTab)?.label || 'Create')}>
+              {/* AI prompt bar — contextual based on selection */}
+              <div className="mb-3 flex items-center gap-2 overflow-x-auto [scrollbar-width:none]">
+                <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-primary/20 px-3 py-1.5">
+                  <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary-glow" />
+                  <span className="whitespace-nowrap text-xs text-studio-text">Ask AI</span>
+                </div>
+                {aiActions.slice(0, 4).map(a => (
+                  <button key={a.id} className="shrink-0 whitespace-nowrap rounded-full border border-studio-line px-3 py-1.5 text-xs text-studio-muted transition hover:bg-studio-panel-raised hover:text-studio-text">
+                    {a.label}
+                  </button>
+                ))}
               </div>
-              {aiActions.slice(0, 4).map(a => (
-                <button key={a.id} className="whitespace-nowrap rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted transition shrink-0">
-                  {a.label}
-                </button>
-              ))}
-            </div>
-            <div className="h-0.5 bg-border mb-3" />
-            {/* Tool sheet content or creation panels */}
-            {activeTool && selected ? renderToolSheet(activeTool, selected, canvas) : renderLeftPanel()}
-          </MobileBottomSheet>
+              <div className="mb-3 h-px bg-studio-line" />
+              {/* Tool sheet content or creation panels */}
+              {activeTool && selected ? renderToolSheet(activeTool, selected, canvas) : renderLeftPanel()}
+            </MobileBottomSheet>
+          </div>
 
           {/* Contextual Toolbar — auto-switches based on selection */}
           <ContextualToolbar
@@ -2606,7 +2631,7 @@ const EditorInner: React.FC = () => {
             {/* Left: Icon Rail + Panel */}
             <div className="editor-left-panel flex h-full overflow-hidden">
               <IconRail active={activeTab} onChange={selectTab} />
-              <div className="editor-panel-content hidden md:flex h-full w-[264px] shrink-0 flex-col overflow-hidden border-r">
+              <div className="editor-panel-content studio-panel hidden h-full w-[280px] shrink-0 flex-col overflow-hidden border-r md:flex">
                 <div key={activeTab} className="flex h-full min-h-0 flex-col">
                   {renderLeftPanel()}
                 </div>
@@ -2620,7 +2645,7 @@ const EditorInner: React.FC = () => {
 
             {/* Desktop right panel — contextual */}
             {selected && (
-              <div className="editor-right-panel hidden lg:flex w-[240px] shrink-0 border-l overflow-y-auto">
+               <div className="editor-right-panel studio-panel hidden w-[260px] shrink-0 overflow-y-auto border-l lg:flex">
                 <RightPanel selected={selected} canvas={canvas} onClose={() => setRightOpen(false)} />
               </div>
             )}
