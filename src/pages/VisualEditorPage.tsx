@@ -1623,9 +1623,12 @@ const RightPanel: React.FC<{
   const setHeight = (h: number) => update('scaleY', (h || 1) / (selected.height || 1));
 
   return (
-    <aside className="flex h-full min-h-0 w-full flex-col bg-card border-l">
-      <div className="flex items-center justify-between px-4 py-3 border-b">
-        <h2 className="text-base font-semibold">{isText ? 'Text' : isImage ? 'Image' : selected ? 'Properties' : 'Design'}</h2>
+    <aside className="studio-panel flex h-full min-h-0 w-full flex-col border-l">
+      <div className="flex items-center justify-between border-b border-studio-line px-4 py-3">
+        <div>
+          <h2 className="editor-heading text-base font-semibold">{isText ? 'Text' : isImage ? 'Image' : selected ? 'Properties' : 'Design'}</h2>
+          {selected?.variableKey && <p className="mt-0.5 text-[10px] text-studio-muted">✦ {selected.variableKey}</p>}
+        </div>
         {onClose && <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onClose}><X className="h-4 w-4" /></Button>}
       </div>
 
@@ -1639,7 +1642,7 @@ const RightPanel: React.FC<{
         </div>
       ) : (
         <Tabs defaultValue="design" className="flex flex-1 min-h-0 flex-col">
-          <TabsList className="mx-4 mt-3 grid h-auto grid-cols-3 rounded-xl bg-muted/60">
+          <TabsList className="mx-4 mt-3 grid h-auto grid-cols-3 rounded-lg bg-studio-bg">
             <TabsTrigger value="design" className="min-w-0 whitespace-normal px-2 text-xs">Design</TabsTrigger>
             <TabsTrigger value="animation" className="min-w-0 whitespace-normal px-2 text-xs">Animation</TabsTrigger>
             <TabsTrigger value="position" className="min-w-0 whitespace-normal px-2 text-xs">Position</TabsTrigger>
@@ -2215,6 +2218,7 @@ const EditorInner: React.FC = () => {
           obj.variableKey = src.variableKey;
           obj.brandReplaceable = src.brandReplaceable;
           obj.aiReplaceable = src.aiReplaceable;
+          obj.brandCompliant = Boolean(activeKit && src.brandReplaceable);
           if (obj.type === 'textbox' || obj.type === 'i-text' || obj.type === 'text') {
             obj.editable = true; // double-click to edit copy live
             // Keep copy inside the artboard: never let a text layer run off-canvas.
@@ -2313,9 +2317,19 @@ const EditorInner: React.FC = () => {
 
   const onExport = () => {
     if (!canvas) return;
+    const objects = canvas.getObjects() as any[];
+    const text = objects.filter((obj) => ['textbox', 'text', 'i-text'].includes(obj.type));
+    const hasCTA = text.some((obj) => `${obj.variableKey ?? ''} ${obj.name ?? ''} ${obj.text ?? ''}`.toLowerCase().includes('cta'));
+    const missing: string[] = [];
+    if (!objects.length) missing.push('content');
+    if (!hasCTA) missing.push('CTA');
+    if (!activeKit) missing.push('Brand Kit');
     const url = canvas.toDataURL({ format: 'png', quality: 1, multiplier: 2 });
     const a = document.createElement('a'); a.href = url; a.download = `${projectName || 'design'}.png`; a.click();
-    toast({ title: 'Exported', description: 'Your design has been downloaded.' });
+    toast({
+      title: missing.length ? 'Exported with ad health notes' : 'Exported · Ad health passed',
+      description: missing.length ? `Downloaded. Review ${missing.join(', ')} before publishing.` : 'Copy, CTA, and Brand Kit checks passed.',
+    });
   };
 
   // Compute floating toolbar position relative to selected object
