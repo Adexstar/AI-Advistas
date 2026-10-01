@@ -1490,7 +1490,7 @@ const MobileBottomSheet: React.FC<{
 }> = ({ open, onClose, children, label }) => {
   const [visible, setVisible] = useState(false);
   const [full, setFull] = useState(false);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
   const startY = useRef(0);
 
   useEffect(() => {
@@ -1524,7 +1524,6 @@ const MobileBottomSheet: React.FC<{
       <button type="button" className="sticky top-0 z-10 flex w-full items-center justify-center bg-studio-panel py-2" onClick={() => setFull((value) => !value)} aria-label={full ? 'Collapse panel' : 'Expand panel'}>
         <span className="h-1 w-10 rounded-full bg-studio-muted/50" />
       </button>
-      </div>
       {/* Header with close */}
       <div className="flex items-center justify-between px-4 pb-2">
         <span className="editor-heading text-sm font-semibold text-studio-text">{label}</span>
