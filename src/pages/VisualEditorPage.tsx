@@ -82,10 +82,10 @@ const INSTA_STORY = [
 
 /* ---------- Left Icon Rail ---------- */
 const IconRail: React.FC<{ active: string; onChange: (id: string) => void }> = ({ active, onChange }) => (
-  <aside className="hidden md:flex h-full w-[56px] shrink-0 flex-col items-stretch bg-[hsl(245,45%,10%)] text-slate-200 border-r border-white/5">
+  <aside className="studio-tool-rail hidden md:flex h-full w-[64px] shrink-0 flex-col items-stretch border-r">
     <div className="flex items-center justify-center py-3 border-b border-white/5">
-      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-glow shadow-lg">
-        <Sparkles className="h-3.5 w-3.5 text-white" />
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-lg">
+        <Sparkles className="h-4 w-4 text-primary-foreground" />
       </div>
     </div>
     <div className="pt-1 pb-1 text-[8px] font-semibold uppercase tracking-wider text-white/40 text-center leading-tight">
@@ -153,36 +153,40 @@ const TopToolbar: React.FC<{
 
   if (isMobile) {
     return (
-      <header className="flex h-[52px] shrink-0 items-center gap-2 border-b bg-card/95 backdrop-blur px-2">
-        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={onToggleLeft}>
-          <Menu className="h-4 w-4" />
+      <header className="studio-command-bar flex h-[60px] shrink-0 items-center gap-1 px-2 shadow-lg">
+        <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onToggleLeft} aria-label="Back to dashboard">
+          <ChevronLeft className="h-5 w-5" />
         </Button>
-        {editing ? (
-          <Input autoFocus value={projectName} onChange={(e) => setProjectName(e.target.value)}
-            onBlur={() => setEditing(false)} onKeyDown={(e) => e.key === 'Enter' && setEditing(false)}
-            className="h-8 flex-1 text-sm font-semibold" />
-        ) : (
-          <button onClick={() => setEditing(true)}
-            className="group flex items-center gap-1 rounded-lg px-1.5 py-1 hover:bg-muted/70 flex-1 min-w-0">
-            <span className="truncate text-sm font-semibold text-foreground">{projectName}</span>
-            <Edit3 className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0" />
-          </button>
-        )}
-        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={onUndo} disabled={!canUndo}><Undo2 className={`h-4 w-4 ${canUndo ? '' : 'opacity-30'}`} /></Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={onRedo} disabled={!canRedo}><Redo2 className={`h-4 w-4 ${canRedo ? '' : 'opacity-30'}`} /></Button>
-        <Button size="icon" className="h-8 w-8 shrink-0 bg-primary hover:bg-primary/90" onClick={onExport}>
-          <Download className="h-4 w-4" />
+        <div className="min-w-0 flex-1 px-1">
+          <p className="editor-heading truncate text-[15px] font-semibold leading-tight">AdVista Studio</p>
+          {editing ? (
+            <Input autoFocus value={projectName} onChange={(e) => setProjectName(e.target.value)}
+              onBlur={() => setEditing(false)} onKeyDown={(e) => e.key === 'Enter' && setEditing(false)}
+              className="mt-0.5 h-5 border-primary-foreground/30 bg-primary-foreground/10 px-1.5 text-[10px] text-inherit" />
+          ) : (
+            <button onClick={() => setEditing(true)} className="block max-w-full truncate text-left text-[10px] text-primary-foreground/75">
+              {projectName}
+            </button>
+          )}
+        </div>
+        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onUndo} disabled={!canUndo} aria-label="Undo"><Undo2 className={`h-4 w-4 ${canUndo ? '' : 'opacity-40'}`} /></Button>
+        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onRedo} disabled={!canRedo} aria-label="Redo"><Redo2 className={`h-4 w-4 ${canRedo ? '' : 'opacity-40'}`} /></Button>
+        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onToggleRight} aria-label="Open inspector"><MoreHorizontal className="h-5 w-5" /></Button>
+        <Button variant="ghost" size="sm" className="h-9 shrink-0 gap-1 px-2.5 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onExport}>
+          <Download className="h-4 w-4" /><span className="text-xs font-semibold">Export</span>
         </Button>
       </header>
     );
   }
 
   return (
-    <header className="flex h-[52px] shrink-0 items-center gap-2 border-b bg-card/95 backdrop-blur px-2 sm:px-4">
-      <Button variant="ghost" size="icon" className="hidden md:inline-flex h-9 w-9" onClick={() => navigate('/dashboard')}>
+    <header className="studio-command-bar flex h-[60px] shrink-0 items-center gap-2 px-2 shadow-lg sm:px-4">
+      <Button variant="ghost" size="icon" className="hidden h-9 w-9 text-inherit hover:bg-primary-foreground/10 hover:text-inherit md:inline-flex" onClick={() => navigate('/dashboard')}>
         <ChevronLeft className="h-4 w-4" />
       </Button>
       <div className="flex min-w-0 items-center gap-2">
+        <span className="editor-heading hidden text-lg font-semibold lg:inline">AdVista Studio</span>
+        <span className="hidden h-5 w-px bg-primary-foreground/30 lg:block" />
         {editing ? (
           <Input
             autoFocus
@@ -190,32 +194,32 @@ const TopToolbar: React.FC<{
             onChange={(e) => setProjectName(e.target.value)}
             onBlur={() => setEditing(false)}
             onKeyDown={(e) => e.key === 'Enter' && setEditing(false)}
-            className="h-8 w-40 sm:w-56 text-sm font-semibold"
+            className="h-8 w-40 border-primary-foreground/30 bg-primary-foreground/10 text-sm font-semibold text-inherit sm:w-56"
           />
         ) : (
           <button
             onClick={() => setEditing(true)}
-            className="group flex items-center gap-1.5 rounded-lg px-1.5 py-1 hover:bg-muted/70"
+            className="group flex items-center gap-1.5 rounded-lg px-1.5 py-1 hover:bg-primary-foreground/10"
           >
-            <span className="truncate text-sm font-semibold text-foreground max-w-[140px] sm:max-w-[220px]">{projectName}</span>
-            <Edit3 className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100" />
+            <span className="max-w-[140px] truncate text-sm font-semibold sm:max-w-[220px]">{projectName}</span>
+            <Edit3 className="h-3.5 w-3.5 opacity-0 group-hover:opacity-80" />
           </button>
         )}
-        <span className="hidden lg:inline text-[11px] text-muted-foreground">{artboardLabel}</span>
+        <span className="hidden text-[11px] text-primary-foreground/70 xl:inline">{artboardLabel}</span>
       </div>
 
-      <Badge variant="secondary" className="hidden sm:inline-flex gap-1 rounded-full bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+      <Badge variant="secondary" className="hidden gap-1 rounded-full border-primary-foreground/20 bg-primary-foreground/15 text-inherit sm:inline-flex">
         <Check className="h-3 w-3" /> Saved
       </Badge>
 
       <div className="ml-1 hidden md:flex items-center gap-1">
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onUndo} disabled={!canUndo}><Undo2 className={`h-4 w-4 ${canUndo ? '' : 'opacity-30'}`} /></Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onRedo} disabled={!canRedo}><Redo2 className={`h-4 w-4 ${canRedo ? '' : 'opacity-30'}`} /></Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onUndo} disabled={!canUndo}><Undo2 className={`h-4 w-4 ${canUndo ? '' : 'opacity-30'}`} /></Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onRedo} disabled={!canRedo}><Redo2 className={`h-4 w-4 ${canRedo ? '' : 'opacity-30'}`} /></Button>
       </div>
 
       <div className="flex-1" />
 
-      <div className="hidden md:flex items-center gap-1 rounded-lg border bg-background px-1 py-1">
+      <div className="hidden items-center gap-1 rounded-lg border border-primary-foreground/20 bg-primary-foreground/10 px-1 py-1 md:flex">
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoom(Math.max(25, zoom - 10))}>
           <Minus className="h-3.5 w-3.5" />
         </Button>
@@ -225,17 +229,17 @@ const TopToolbar: React.FC<{
         </Button>
       </div>
 
-      <Button variant={showGrid ? 'secondary' : 'ghost'} size="icon" className="hidden lg:inline-flex h-9 w-9" title="Grid" onClick={onToggleGrid}><Grid3x3 className="h-4 w-4" /></Button>
-      <Button variant="ghost" size="icon" className="hidden lg:inline-flex h-9 w-9" title="Fit to screen" onClick={onFit}><Maximize2 className="h-4 w-4" /></Button>
+      <Button variant="ghost" size="icon" className="hidden h-9 w-9 text-inherit hover:bg-primary-foreground/10 hover:text-inherit lg:inline-flex" title="Grid" onClick={onToggleGrid}><Grid3x3 className="h-4 w-4" /></Button>
+      <Button variant="ghost" size="icon" className="hidden h-9 w-9 text-inherit hover:bg-primary-foreground/10 hover:text-inherit lg:inline-flex" title="Fit to screen" onClick={onFit}><Maximize2 className="h-4 w-4" /></Button>
 
       <AIQuickActionsMenu />
-      <Button variant="outline" size="sm" className="h-9 gap-1.5 hidden sm:inline-flex" onClick={onPreview}>
+      <Button variant="ghost" size="sm" className="hidden h-9 gap-1.5 text-inherit hover:bg-primary-foreground/10 hover:text-inherit sm:inline-flex" onClick={onPreview}>
         <Play className="h-3.5 w-3.5" /> Preview
       </Button>
-      <Button size="sm" className="h-9 gap-1.5 bg-primary hover:bg-primary/90" onClick={onExport}>
+      <Button variant="ghost" size="sm" className="h-9 gap-1.5 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onExport}>
         <Download className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Export</span>
       </Button>
-      <Button size="sm" variant="secondary" className="h-9 gap-1.5 hidden sm:inline-flex" onClick={onPublish}>
+      <Button size="sm" variant="secondary" className="hidden h-9 gap-1.5 border-primary-foreground/20 bg-primary-foreground text-primary sm:inline-flex" onClick={onPublish}>
         <Send className="h-3.5 w-3.5" /> Publish
       </Button>
 
