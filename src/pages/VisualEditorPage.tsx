@@ -961,8 +961,11 @@ const TL_LABEL_W = 110;
 
 const trackMetaFor = (obj: any) => {
   const t = obj?.type;
-  if (t === 'textbox' || t === 'text' || t === 'i-text')
-    return { icon: Type, color: '#1B7A6B', label: (obj.text || 'Text').toString().slice(0, 24) || 'Text' };
+  if (t === 'textbox' || t === 'text' || t === 'i-text') {
+    const source = `${obj?.variableKey ?? ''} ${obj?.name ?? ''} ${obj?.text ?? ''}`.toLowerCase();
+    const role = source.includes('headline') || source.includes('hook') ? 'Hook' : source.includes('cta') || source.includes('action') ? 'CTA' : 'Body';
+    return { icon: Type, color: '#1B7A6B', label: `✦ ${role} · ${(obj.text || 'Text').toString().slice(0, 18)}` };
+  }
   if (t === 'image') return { icon: ImageIcon, color: '#2563A8', label: obj.name || 'Image' };
   if (t === 'video') return { icon: Video, color: '#8B5CF6', label: obj.name || 'Video' };
   if (t === 'audio') return { icon: Music, color: '#B45309', label: obj.name || 'Audio' };
@@ -1294,17 +1297,17 @@ const ContextualToolbar: React.FC<{
   active: string | null;
   onToolTap: (id: string) => void;
 }> = ({ tools, active, onToolTap }) => (
-  <nav className="flex items-center gap-0.5 overflow-x-auto px-2 py-1.5 border-t bg-card/95 backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+  <nav className="studio-tool-rail z-40 flex min-h-[66px] shrink-0 items-center gap-0.5 overflow-x-auto border-t px-2 py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
     {tools.map((t) => {
       const Icon = t.icon;
       const isActive = active === t.id;
       return (
         <button key={t.id} onClick={() => onToolTap(t.id)}
-          className={`flex shrink-0 flex-col items-center gap-0.5 rounded-xl px-2.5 py-1.5 transition-colors ${
-            isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted'
+          className={`flex min-w-[58px] shrink-0 flex-col items-center gap-1 rounded-lg px-2 py-1.5 transition-colors ${
+            isActive ? 'bg-primary/20 text-primary-glow' : 'text-inherit hover:bg-studio-panel'
           }`}>
           <Icon className="h-5 w-5" />
-          <span className="text-[8px] font-medium whitespace-nowrap">{t.label}</span>
+          <span className="whitespace-nowrap text-[9px] font-medium">{t.label}</span>
         </button>
       );
     })}
@@ -1486,39 +1489,46 @@ const MobileBottomSheet: React.FC<{
   label: string;
 }> = ({ open, onClose, children, label }) => {
   const [visible, setVisible] = useState(false);
+  const [full, setFull] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const startY = useRef(0);
 
   useEffect(() => {
-    if (open) { setVisible(true); return; }
+    if (open) { setVisible(true); setFull(false); return; }
     const timer = setTimeout(() => setVisible(false), 300);
     return () => clearTimeout(timer);
   }, [open]);
 
   const handleTouchStart = (e: React.TouchEvent) => { startY.current = e.touches[0].clientY; };
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (startY.current - e.changedTouches[0].clientY < -80) onClose();
+    const delta = startY.current - e.changedTouches[0].clientY;
+    if (delta < -80) {
+      if (full) setFull(false);
+      else onClose();
+    }
+    if (delta > 80) setFull(true);
   };
 
   if (!visible && !open) return null;
 
   return (
-    <div
+    <section
       ref={panelRef}
-      className={`border-t bg-card shadow-2xl overflow-y-auto transition-all duration-300 ease-out ${
-        open ? 'translate-y-0 max-h-[45vh]' : 'translate-y-full max-h-0'
+      className={`studio-panel z-30 shrink-0 overflow-y-auto rounded-t-2xl border-t shadow-[var(--shadow-studio-tray)] transition-all duration-300 ease-out ${
+        open ? `translate-y-0 ${full ? 'max-h-[68vh]' : 'max-h-[46vh]'}` : 'translate-y-full max-h-0'
       }`}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
       {/* Drag handle */}
-      <div className="flex items-center justify-center py-2 sticky top-0 bg-card z-10">
-        <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+      <button type="button" className="sticky top-0 z-10 flex w-full items-center justify-center bg-studio-panel py-2" onClick={() => setFull((value) => !value)} aria-label={full ? 'Collapse panel' : 'Expand panel'}>
+        <span className="h-1 w-10 rounded-full bg-studio-muted/50" />
+      </button>
       </div>
       {/* Header with close */}
       <div className="flex items-center justify-between px-4 pb-2">
-        <span className="text-sm font-semibold text-foreground">{label}</span>
-        <button onClick={onClose} className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-muted">
+        <span className="editor-heading text-sm font-semibold text-studio-text">{label}</span>
+        <button onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-lg text-studio-muted hover:bg-studio-panel-raised hover:text-studio-text">
           <X className="h-4 w-4" />
         </button>
       </div>
@@ -1526,7 +1536,7 @@ const MobileBottomSheet: React.FC<{
       <div className="px-4 pb-4">
         {children}
       </div>
-    </div>
+    </section>
   );
 };
 
