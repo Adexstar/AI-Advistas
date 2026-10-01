@@ -851,17 +851,17 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
 
   return (
     <div ref={containerRef} className="canvas-viewport relative flex-1 min-w-0 overflow-hidden select-none"
-      style={{ backgroundColor: '#1A1A1A', boxSizing: 'border-box' }}
+      style={{ backgroundColor: 'hsl(var(--studio-bg))', boxSizing: 'border-box' }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
     >
 
       {/* Loading skeleton */}
       {loading && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3" style={{ backgroundColor: '#1A1A1A' }}>
-          <div className="h-10 w-10 animate-pulse rounded-xl" style={{ backgroundColor: '#2D2D2D' }} />
-          <div className="h-3 w-32 animate-pulse rounded-full" style={{ backgroundColor: '#2D2D2D' }} />
-          <div className="h-2 w-24 animate-pulse rounded-full" style={{ backgroundColor: '#2D2D2D' }} />
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-studio-bg">
+          <div className="h-10 w-10 animate-pulse rounded-lg bg-studio-panel" />
+          <div className="h-3 w-32 animate-pulse rounded-full bg-studio-panel" />
+          <div className="h-2 w-24 animate-pulse rounded-full bg-studio-panel" />
         </div>
       )}
       {/* Scroll layer: pans when the user zooms past fit, never clips the artboard. */}
@@ -880,7 +880,7 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
           >
             <div
               ref={wrapperRef}
-              className="canvas-card absolute left-0 top-0 bg-white overflow-hidden"
+              className="canvas-card absolute left-0 top-0 overflow-hidden bg-background"
               style={{
                 width: artboard.width,
                 height: artboard.height,
@@ -2442,15 +2442,15 @@ const EditorInner: React.FC = () => {
         retryingImages={retryingImages}
       />
 
-      {/* Onboarding overlay when canvas is empty */}
+      {/* Empty-state controls float over the artboard without masking the workspace. */}
       {isEmpty && (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none" style={{ backgroundColor: 'rgba(26,26,26,0.85)' }}>
-          <div className="pointer-events-auto max-w-xs text-center px-6">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/20">
+        <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center">
+          <div className="pointer-events-auto max-w-[18rem] px-6 text-center drop-shadow-lg">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/30 backdrop-blur">
               <Sparkles className="h-6 w-6 text-primary" />
             </div>
-            <h3 className="text-base font-semibold text-white mb-1">Start creating</h3>
-            <p className="text-xs text-gray-400 mb-5">Tap a tool below to add text, images, shapes, or upload your own media.</p>
+            <h3 className="editor-heading mb-1 text-lg font-semibold text-studio-text">Start creating</h3>
+            <p className="mb-4 text-xs text-studio-muted">Choose a tool below or open a template.</p>
             <div className="grid grid-cols-3 gap-2">
               {[
                 { label: 'Text', icon: Type, action: () => addText('New Text', 32, 'bold'), color: 'from-blue-500 to-blue-600' },
@@ -2458,8 +2458,7 @@ const EditorInner: React.FC = () => {
                 { label: 'Upload', icon: Upload, action: () => { setActiveTab('uploads'); setSheetExpanded(true); }, color: 'from-emerald-500 to-emerald-600' },
               ].map(({ label, icon: Icon, action, color }) => (
                 <button key={label} onClick={action}
-                  className="flex flex-col items-center gap-1.5 rounded-xl px-3 py-3 transition hover:scale-105"
-                  style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}>
+                  className="flex flex-col items-center gap-1.5 rounded-lg bg-studio-panel/90 px-3 py-3 transition hover:bg-studio-panel-raised">
                   <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${color} flex items-center justify-center`}>
                     <Icon className="h-4 w-4 text-white" />
                   </div>
@@ -2467,7 +2466,7 @@ const EditorInner: React.FC = () => {
                 </button>
               ))}
             </div>
-            <p className="mt-4 text-[10px] text-gray-500">Tip: Tap a template to start from a pre-made design</p>
+            <p className="mt-3 text-[10px] text-studio-muted">Templates remain fully editable.</p>
           </div>
         </div>
       )}
@@ -2507,7 +2506,7 @@ const EditorInner: React.FC = () => {
       )}
 
       {/* Bottom bar — pages */}
-      <div className="flex items-center justify-center gap-2 py-2" style={{ backgroundColor: isMobile ? 'transparent' : '#1A1A1A', borderTop: isMobile ? 'none' : '1px solid #2D2D2D' }}>
+      <div className="flex shrink-0 items-center justify-center gap-2 border-t border-studio-line bg-studio-bg py-2">
         {pages.length > 1 && pages.map((_, i) => (
           <button key={i} onClick={() => goToPage(i)}
             className="h-9 min-w-9 rounded-lg px-3 text-xs"
@@ -2527,7 +2526,7 @@ const EditorInner: React.FC = () => {
   );
 
   return (
-    <div className="visual-editor flex h-screen w-full flex-col overflow-hidden bg-background">
+    <div className="visual-editor flex h-[100dvh] w-full flex-col overflow-hidden bg-studio-bg">
       {/* Editor Top Bar */}
       <div className="editor-top-bar flex-shrink-0">
         <TopToolbar
@@ -2580,18 +2579,18 @@ const EditorInner: React.FC = () => {
           <MobileBottomSheet open={sheetExpanded} onClose={() => { setSheetExpanded(false); setActiveTool(null); }}
             label={activeTool ? (currentTools.find(t => t.id === activeTool)?.label || activeTool) : (LEFT_TABS.find(t => t.id === activeTab)?.label || 'Create')}>
             {/* AI prompt bar — contextual based on selection */}
-            <div className="flex items-center gap-2 mb-3 overflow-x-auto [scrollbar-width:none]">
-              <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 shrink-0">
-                <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
-                <span className="text-xs text-muted-foreground whitespace-nowrap">Ask AI</span>
+            <div className="mb-3 flex items-center gap-2 overflow-x-auto [scrollbar-width:none]">
+              <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-primary/20 px-3 py-1.5">
+                <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary-glow" />
+                <span className="whitespace-nowrap text-xs text-studio-text">Ask AI</span>
               </div>
               {aiActions.slice(0, 4).map(a => (
-                <button key={a.id} className="whitespace-nowrap rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted transition shrink-0">
+                <button key={a.id} className="shrink-0 whitespace-nowrap rounded-full border border-studio-line px-3 py-1.5 text-xs text-studio-muted transition hover:bg-studio-panel-raised hover:text-studio-text">
                   {a.label}
                 </button>
               ))}
             </div>
-            <div className="h-0.5 bg-border mb-3" />
+            <div className="mb-3 h-px bg-studio-line" />
             {/* Tool sheet content or creation panels */}
             {activeTool && selected ? renderToolSheet(activeTool, selected, canvas) : renderLeftPanel()}
           </MobileBottomSheet>
@@ -2620,7 +2619,7 @@ const EditorInner: React.FC = () => {
             {/* Left: Icon Rail + Panel */}
             <div className="editor-left-panel flex h-full overflow-hidden">
               <IconRail active={activeTab} onChange={selectTab} />
-              <div className="editor-panel-content hidden md:flex h-full w-[264px] shrink-0 flex-col overflow-hidden border-r">
+              <div className="editor-panel-content studio-panel hidden h-full w-[280px] shrink-0 flex-col overflow-hidden border-r md:flex">
                 <div key={activeTab} className="flex h-full min-h-0 flex-col">
                   {renderLeftPanel()}
                 </div>
@@ -2634,7 +2633,7 @@ const EditorInner: React.FC = () => {
 
             {/* Desktop right panel — contextual */}
             {selected && (
-              <div className="editor-right-panel hidden lg:flex w-[240px] shrink-0 border-l overflow-y-auto">
+               <div className="editor-right-panel studio-panel hidden w-[260px] shrink-0 overflow-y-auto border-l lg:flex">
                 <RightPanel selected={selected} canvas={canvas} onClose={() => setRightOpen(false)} />
               </div>
             )}

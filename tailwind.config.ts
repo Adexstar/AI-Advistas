@@ -24,6 +24,14 @@ export default {
 				'editor-body': ['Figtree', 'system-ui', 'sans-serif'],
 			},
 			colors: {
+				studio: {
+					bg: 'hsl(var(--studio-bg))',
+					panel: 'hsl(var(--studio-panel))',
+					'panel-raised': 'hsl(var(--studio-panel-raised))',
+					line: 'hsl(var(--studio-line))',
+					text: 'hsl(var(--studio-text))',
+					muted: 'hsl(var(--studio-muted))',
+				},
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
