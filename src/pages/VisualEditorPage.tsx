@@ -1514,7 +1514,7 @@ const MobileBottomSheet: React.FC<{
   return (
     <section
       ref={panelRef}
-      className={`studio-panel z-30 shrink-0 overflow-y-auto rounded-t-2xl border-t shadow-[var(--shadow-studio-tray)] transition-all duration-300 ease-out ${
+      className={`studio-panel absolute inset-x-0 bottom-0 z-30 shrink-0 overflow-y-auto rounded-t-2xl border-t shadow-[var(--shadow-studio-tray)] transition-all duration-300 ease-out ${
         open ? `translate-y-0 ${full ? 'max-h-[68vh]' : 'max-h-[46vh]'}` : 'translate-y-full max-h-0'
       }`}
       onTouchStart={handleTouchStart}
@@ -2581,32 +2581,31 @@ const EditorInner: React.FC = () => {
       {/* Mobile layout: Top Bar → Canvas → Bottom Sheet → Contextual Toolbar */}
       {isMobile ? (
         <>
-          {/* Canvas — takes remaining space */}
-          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+          {/* Canvas and work tray share one stage so opening tools never distorts the artboard. */}
+          <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
             <div className="editor-canvas-area relative flex flex-1 min-w-0 flex-col overflow-hidden">
               {renderCanvas()}
             </div>
-          </div>
-
-          {/* Slide-Up Panel — contextual tool sheet or creation panel */}
-          <MobileBottomSheet open={sheetExpanded} onClose={() => { setSheetExpanded(false); setActiveTool(null); }}
-            label={activeTool ? (currentTools.find(t => t.id === activeTool)?.label || activeTool) : (LEFT_TABS.find(t => t.id === activeTab)?.label || 'Create')}>
-            {/* AI prompt bar — contextual based on selection */}
-            <div className="mb-3 flex items-center gap-2 overflow-x-auto [scrollbar-width:none]">
-              <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-primary/20 px-3 py-1.5">
-                <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary-glow" />
-                <span className="whitespace-nowrap text-xs text-studio-text">Ask AI</span>
+            {/* Slide-Up Panel — contextual tool sheet or creation panel */}
+            <MobileBottomSheet open={sheetExpanded} onClose={() => { setSheetExpanded(false); setActiveTool(null); }}
+              label={activeTool ? (currentTools.find(t => t.id === activeTool)?.label || activeTool) : (LEFT_TABS.find(t => t.id === activeTab)?.label || 'Create')}>
+              {/* AI prompt bar — contextual based on selection */}
+              <div className="mb-3 flex items-center gap-2 overflow-x-auto [scrollbar-width:none]">
+                <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-primary/20 px-3 py-1.5">
+                  <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary-glow" />
+                  <span className="whitespace-nowrap text-xs text-studio-text">Ask AI</span>
+                </div>
+                {aiActions.slice(0, 4).map(a => (
+                  <button key={a.id} className="shrink-0 whitespace-nowrap rounded-full border border-studio-line px-3 py-1.5 text-xs text-studio-muted transition hover:bg-studio-panel-raised hover:text-studio-text">
+                    {a.label}
+                  </button>
+                ))}
               </div>
-              {aiActions.slice(0, 4).map(a => (
-                <button key={a.id} className="shrink-0 whitespace-nowrap rounded-full border border-studio-line px-3 py-1.5 text-xs text-studio-muted transition hover:bg-studio-panel-raised hover:text-studio-text">
-                  {a.label}
-                </button>
-              ))}
-            </div>
-            <div className="mb-3 h-px bg-studio-line" />
-            {/* Tool sheet content or creation panels */}
-            {activeTool && selected ? renderToolSheet(activeTool, selected, canvas) : renderLeftPanel()}
-          </MobileBottomSheet>
+              <div className="mb-3 h-px bg-studio-line" />
+              {/* Tool sheet content or creation panels */}
+              {activeTool && selected ? renderToolSheet(activeTool, selected, canvas) : renderLeftPanel()}
+            </MobileBottomSheet>
+          </div>
 
           {/* Contextual Toolbar — auto-switches based on selection */}
           <ContextualToolbar
