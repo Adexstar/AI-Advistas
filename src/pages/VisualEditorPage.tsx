@@ -624,7 +624,7 @@ const LayersPanel: React.FC<{
               >
                 <GripVertical className="hidden h-4 w-4 shrink-0 cursor-grab text-studio-muted sm:block" />
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-background"
-                  style={{ backgroundImage: 'repeating-conic-gradient(rgba(255,255,255,0.05) 0 25%, transparent 0 50%)', backgroundSize: '10px 10px' }}>
+                  style={{ backgroundColor: '#ffffff', backgroundImage: 'repeating-conic-gradient(rgba(0,0,0,0.06) 0 25%, transparent 0 50%)', backgroundSize: '10px 10px' }}>
                   {thumb ? <img src={thumb} alt="" className="max-h-full max-w-full object-contain" /> : <span className="text-studio-muted">{typeIcon(o.type)}</span>}
                 </div>
                 <div className="min-w-0 flex-1">
