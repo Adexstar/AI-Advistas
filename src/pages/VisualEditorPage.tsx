@@ -2350,7 +2350,10 @@ const EditorInner: React.FC = () => {
 
   const addText = (text: string, size: number, weight: string) => {
     if (!canvas) return;
-    const tb = new Textbox(text, { left: 60, top: 60, fontSize: size, fontWeight: weight, fill: '#ffffff', fontFamily: 'Poppins', width: 320 });
+    const bgFill = String(canvas.backgroundColor || '#ffffff').toLowerCase();
+    const darkBg = !['#ffffff', '#fff', 'white', ''].includes(bgFill);
+    const w = Math.min(320, (canvas.getWidth?.() || 360) - 48);
+    const tb = new Textbox(text, { left: 24, top: 60, fontSize: size, fontWeight: weight, fill: darkBg ? '#ffffff' : '#111111', fontFamily: 'Poppins', width: w });
     canvas.add(tb); canvas.setActiveObject(tb); canvas.renderAll();
     setSelected(tb); forceUpdate((n) => n + 1);
   };
