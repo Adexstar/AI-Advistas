@@ -605,7 +605,7 @@ const LayersPanel: React.FC<{
                   canvas.requestRenderAll();
                   onSelect(o);
                 }}
-                className={`group flex cursor-pointer items-center gap-3 rounded-xl border p-2 transition-all
+                className={`group flex cursor-pointer items-center gap-2 rounded-xl border p-2 transition-all
                   ${isActive ? 'border-primary bg-primary/10' : 'border-studio-line bg-studio-panel-raised hover:border-studio-muted/40'}
                   ${dragIdx === i ? 'opacity-50' : ''}
                   ${hidden ? 'opacity-50' : ''}
@@ -622,9 +622,9 @@ const LayersPanel: React.FC<{
                 }}
                 onDragEnd={() => setDragIdx(null)}
               >
-                <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-studio-muted" />
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-studio-bg"
-                  style={{ backgroundImage: 'repeating-conic-gradient(rgba(255,255,255,0.05) 0 25%, transparent 0 50%)', backgroundSize: '10px 10px' }}>
+                <GripVertical className="hidden h-4 w-4 shrink-0 cursor-grab text-studio-muted sm:block" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-background"
+                  style={{ backgroundColor: '#ffffff', backgroundImage: 'repeating-conic-gradient(rgba(0,0,0,0.06) 0 25%, transparent 0 50%)', backgroundSize: '10px 10px' }}>
                   {thumb ? <img src={thumb} alt="" className="max-h-full max-w-full object-contain" /> : <span className="text-studio-muted">{typeIcon(o.type)}</span>}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -636,10 +636,6 @@ const LayersPanel: React.FC<{
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center">
-                  <button onClick={(e) => { e.stopPropagation(); moveLayer(canvas, o, 'up'); onChanged(); }} aria-label="Bring forward"
-                    className="flex h-8 w-7 items-center justify-center rounded-md text-studio-muted hover:text-studio-text"><ChevronUp className="h-4 w-4" /></button>
-                  <button onClick={(e) => { e.stopPropagation(); moveLayer(canvas, o, 'down'); onChanged(); }} aria-label="Send backward"
-                    className="flex h-8 w-7 items-center justify-center rounded-md text-studio-muted hover:text-studio-text"><ChevronDown className="h-4 w-4" /></button>
                   <button onClick={(e) => { e.stopPropagation(); setVisible(canvas, o, hidden); onChanged(); }} aria-label={hidden ? 'Show' : 'Hide'}
                     className="flex h-8 w-7 items-center justify-center rounded-md text-studio-muted hover:text-studio-text">
                     {hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -2350,7 +2346,10 @@ const EditorInner: React.FC = () => {
 
   const addText = (text: string, size: number, weight: string) => {
     if (!canvas) return;
-    const tb = new Textbox(text, { left: 60, top: 60, fontSize: size, fontWeight: weight, fill: '#ffffff', fontFamily: 'Poppins', width: 320 });
+    const bgFill = String(canvas.backgroundColor || '#ffffff').toLowerCase();
+    const darkBg = !['#ffffff', '#fff', 'white', ''].includes(bgFill);
+    const w = Math.min(320, (canvas.getWidth?.() || 360) - 48);
+    const tb = new Textbox(text, { left: 24, top: 60, fontSize: size, fontWeight: weight, fill: darkBg ? '#ffffff' : '#111111', fontFamily: 'Poppins', width: w });
     canvas.add(tb); canvas.setActiveObject(tb); canvas.renderAll();
     setSelected(tb); forceUpdate((n) => n + 1);
   };

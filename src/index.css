@@ -169,6 +169,23 @@ All colors MUST be HSL.
     font-family: "Figtree", system-ui, sans-serif;
     color: hsl(var(--studio-text));
     background: hsl(var(--studio-bg));
+    /* Re-map shared tokens so inputs, selects and buttons render dark inside the studio */
+    --background: var(--studio-bg);
+    --foreground: var(--studio-text);
+    --card: var(--studio-panel);
+    --card-foreground: var(--studio-text);
+    --muted: var(--studio-panel-raised);
+    --muted-foreground: var(--studio-muted);
+    --secondary: var(--studio-panel-raised);
+    --secondary-foreground: var(--studio-text);
+    --accent: var(--studio-panel-raised);
+    --accent-foreground: var(--studio-text);
+    --border: var(--studio-line);
+    --input: var(--studio-line);
+  }
+
+  .visual-editor .canvas-card {
+    background: hsl(0 0% 100%);
   }
 
   .visual-editor .editor-heading {
