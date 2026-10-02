@@ -559,17 +559,44 @@ const LayersPanel: React.FC<{
     return <Shapes className="h-3.5 w-3.5" />;
   };
 
+  const thumbFor = (o: any): string | null => {
+    try {
+      const w = (o.width || 1) * (o.scaleX || 1);
+      return o.toDataURL?.({ format: 'png', multiplier: Math.min(1, 96 / Math.max(1, w)) }) ?? null;
+    } catch { return null; }
+  };
+  const roleFor = (o: any) => {
+    const src = `${o?.variableKey ?? ''} ${o?.name ?? ''}`.toLowerCase();
+    if (src.includes('headline') || src.includes('hook')) return 'Hook';
+    if (src.includes('cta')) return 'CTA';
+    if (src.includes('logo')) return 'Logo';
+    if (src.includes('product') || src.includes('image')) return 'Hero';
+    return null;
+  };
+  const nameFor = (o: any) =>
+    (o.type === 'textbox' || o.type === 'i-text' || o.type === 'text')
+      ? (o.text?.slice(0, 28) || 'Text')
+      : (o.name || (o.type ? o.type.charAt(0).toUpperCase() + o.type.slice(1) : 'Layer'));
+
   return (
-    <SimplePanel title="Layers">
+    <div className="flex h-full min-h-0 flex-col" data-version={version}>
+      <div className="flex items-center justify-between px-1 pb-3">
+        <h3 className="editor-heading text-base font-semibold text-studio-text">Layers</h3>
+        <span className="text-xs text-studio-muted">{objs.length} item{objs.length === 1 ? '' : 's'}</span>
+      </div>
       {objs.length === 0 ? (
-        <p className="text-xs text-muted-foreground">Layers will appear here as you add elements.</p>
+        <div className="rounded-xl border border-dashed border-studio-line px-4 py-8 text-center text-xs text-studio-muted">
+          Layers will appear here as you add elements.
+        </div>
       ) : (
-        <div className="space-y-1">
+        <div className="space-y-2 overflow-y-auto pb-2">
           {[...objs].reverse().map((o: any, i) => {
             const realIdx = objs.length - 1 - i;
             const locked = isLocked(o);
             const hidden = o.visible === false;
             const isActive = selected === o;
+            const thumb = thumbFor(o);
+            const role = roleFor(o);
             return (
               <div key={realIdx}
                 onClick={() => {
@@ -578,10 +605,10 @@ const LayersPanel: React.FC<{
                   canvas.requestRenderAll();
                   onSelect(o);
                 }}
-                className={`group flex cursor-pointer items-center gap-2 rounded-lg border bg-background px-3 py-2 transition-all
-                  ${dragIdx === i ? 'opacity-50 scale-[1.02] shadow-md' : ''}
-                  ${hidden ? 'opacity-40' : ''}
-                  ${isActive ? 'border-primary ring-1 ring-primary/40' : ''}
+                className={`group flex cursor-pointer items-center gap-3 rounded-xl border p-2 transition-all
+                  ${isActive ? 'border-primary bg-primary/10' : 'border-studio-line bg-studio-panel-raised hover:border-studio-muted/40'}
+                  ${dragIdx === i ? 'opacity-50' : ''}
+                  ${hidden ? 'opacity-50' : ''}
                 `}
                 draggable
                 onDragStart={() => setDragIdx(i)}
@@ -589,34 +616,49 @@ const LayersPanel: React.FC<{
                 onDrop={() => {
                   if (dragIdx === null || dragIdx === i) { setDragIdx(null); return; }
                   const from = objs.length - 1 - dragIdx;
-                  const moved = objs[from];
-                  reorderLayer(canvas, moved, realIdx);
+                  reorderLayer(canvas, objs[from], realIdx);
                   setDragIdx(null);
                   onChanged();
                 }}
                 onDragEnd={() => setDragIdx(null)}
               >
-                <GripVertical className="h-3.5 w-3.5 text-muted-foreground cursor-grab active:cursor-grabbing shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                <span className="shrink-0 text-muted-foreground">{typeIcon(o.type)}</span>
-                <span className="flex-1 truncate text-xs">{o.type === 'textbox' ? o.text?.slice(0, 24) || 'Text' : o.type}</span>
-                <button onClick={(e) => { e.stopPropagation(); setVisible(canvas, o, hidden); onChanged(); }}
-                  className="h-6 w-6 flex items-center justify-center rounded hover:bg-muted shrink-0">
-                  {hidden ? <EyeOff className="h-3.5 w-3.5 text-muted-foreground" /> : <Eye className="h-3.5 w-3.5 text-muted-foreground" />}
-                </button>
-                <button onClick={(e) => { e.stopPropagation(); setLocked(canvas, o, !locked); onChanged(); }}
-                  className="h-6 w-6 flex items-center justify-center rounded hover:bg-muted shrink-0">
-                  {locked ? <Lock className="h-3.5 w-3.5 text-amber-500" /> : <Unlock className="h-3.5 w-3.5 text-muted-foreground" />}
-                </button>
-                <button onClick={(e) => { e.stopPropagation(); deleteObject(canvas, o); onSelect(null); onChanged(); }}
-                  className="h-6 w-6 flex items-center justify-center rounded hover:bg-destructive/10 shrink-0">
-                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
-                </button>
+                <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-studio-muted" />
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-studio-bg"
+                  style={{ backgroundImage: 'repeating-conic-gradient(rgba(255,255,255,0.05) 0 25%, transparent 0 50%)', backgroundSize: '10px 10px' }}>
+                  {thumb ? <img src={thumb} alt="" className="max-h-full max-w-full object-contain" /> : <span className="text-studio-muted">{typeIcon(o.type)}</span>}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-studio-text">{nameFor(o)}</p>
+                  <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-studio-muted">
+                    {typeIcon(o.type)}
+                    {role && <span className="rounded-full bg-primary/20 px-1.5 py-px text-[10px] text-primary-glow">✦ {role}</span>}
+                    {locked && <span>Locked</span>}
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center">
+                  <button onClick={(e) => { e.stopPropagation(); moveLayer(canvas, o, 'up'); onChanged(); }} aria-label="Bring forward"
+                    className="flex h-8 w-7 items-center justify-center rounded-md text-studio-muted hover:text-studio-text"><ChevronUp className="h-4 w-4" /></button>
+                  <button onClick={(e) => { e.stopPropagation(); moveLayer(canvas, o, 'down'); onChanged(); }} aria-label="Send backward"
+                    className="flex h-8 w-7 items-center justify-center rounded-md text-studio-muted hover:text-studio-text"><ChevronDown className="h-4 w-4" /></button>
+                  <button onClick={(e) => { e.stopPropagation(); setVisible(canvas, o, hidden); onChanged(); }} aria-label={hidden ? 'Show' : 'Hide'}
+                    className="flex h-8 w-7 items-center justify-center rounded-md text-studio-muted hover:text-studio-text">
+                    {hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); setLocked(canvas, o, !locked); onChanged(); }} aria-label={locked ? 'Unlock' : 'Lock'}
+                    className="flex h-8 w-7 items-center justify-center rounded-md text-studio-muted hover:text-studio-text">
+                    {locked ? <Lock className="h-4 w-4 text-primary-glow" /> : <Unlock className="h-4 w-4" />}
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); deleteObject(canvas, o); onSelect(null); onChanged(); }} aria-label="Delete"
+                    className="flex h-8 w-7 items-center justify-center rounded-md text-studio-muted hover:text-destructive">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             );
           })}
         </div>
       )}
-    </SimplePanel>
+    </div>
   );
 };
 
@@ -884,7 +926,7 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
               style={{
                 width: artboard.width,
                 height: artboard.height,
-                boxShadow: '0 0 0 1px rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.4)',
+                boxShadow: '0 1px 0 rgba(255,255,255,0.04), 0 18px 48px -12px rgba(0,0,0,0.65)',
                 transform: `scale(${zoom / 100})`,
                 transformOrigin: 'top left',
               }}
@@ -935,6 +977,12 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
           )}
         </div>
       )}
+
+      {/* Page indicator (Canva-style) */}
+      <div className="pointer-events-none absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5" aria-hidden>
+        <span className="h-1.5 w-5 rounded-full bg-studio-muted/70" />
+        <span className="h-1.5 w-1.5 rounded-full bg-studio-muted/30" />
+      </div>
 
       {/* Zoom controls with one-click fit-to-screen */}
       <div className="absolute bottom-3 right-3 z-30 flex items-center gap-1 rounded-full border border-white/10 bg-black/70 px-1.5 py-1 text-white backdrop-blur">
@@ -2603,7 +2651,11 @@ const EditorInner: React.FC = () => {
               </div>
               <div className="mb-3 h-px bg-studio-line" />
               {/* Tool sheet content or creation panels */}
-              {activeTool && selected ? renderToolSheet(activeTool, selected, canvas) : renderLeftPanel()}
+              {activeTool && selected
+                ? renderToolSheet(activeTool, selected, canvas)
+                : selected && activeTab !== 'layers'
+                  ? <div className="-mx-4 -mb-4 h-[52vh]"><RightPanel selected={selected} canvas={canvas} /></div>
+                  : renderLeftPanel()}
             </MobileBottomSheet>
           </div>
 
