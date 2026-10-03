@@ -2509,36 +2509,41 @@ const EditorInner: React.FC = () => {
         imageStatuses={imageStatuses}
         onRetryImages={handleRetryImages}
         retryingImages={retryingImages}
-      />
-
-      {/* Empty-state controls float over the artboard without masking the workspace. */}
-      {isEmpty && (
-        <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center">
-          <div className="pointer-events-auto max-w-[18rem] px-6 text-center drop-shadow-lg">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/30 backdrop-blur">
-              <Sparkles className="h-6 w-6 text-primary" />
+        emptyOverlay={isEmpty ? (
+          // Sized in container units so it always stays inside the artboard edges.
+          <div className="flex h-full w-full flex-col items-center justify-center text-center text-studio-bg"
+            style={{ padding: '6cqw', gap: '2.5cqh' }}>
+            <div className="flex items-center justify-center rounded-[22%] bg-primary/15"
+              style={{ width: 'clamp(28px, 16cqw, 64px)', height: 'clamp(28px, 16cqw, 64px)' }}>
+              <Sparkles className="text-primary" style={{ width: '50%', height: '50%' }} />
             </div>
-            <h3 className="editor-heading mb-1 text-lg font-semibold text-studio-text">Start creating</h3>
-            <p className="mb-4 text-xs text-studio-muted">Choose a tool below or open a template.</p>
-            <div className="grid grid-cols-3 gap-2">
+            <div>
+              <h3 className="editor-heading font-semibold leading-tight" style={{ fontSize: 'clamp(12px, 6.5cqw, 26px)' }}>Start creating</h3>
+              <p className="mt-1 opacity-60" style={{ fontSize: 'clamp(9px, 3.6cqw, 14px)' }}>
+                Tap a tool below to add text, images, shapes, or upload your own media.
+              </p>
+            </div>
+            <div className="grid w-full grid-cols-3" style={{ gap: '2.5cqw' }}>
               {[
                 { label: 'Text', icon: Type, action: () => addText('New Text', 32, 'bold'), color: 'from-blue-500 to-blue-600' },
                 { label: 'Shape', icon: Shapes, action: () => addShape('rectangle'), color: 'from-purple-500 to-purple-600' },
                 { label: 'Upload', icon: Upload, action: () => { setActiveTab('uploads'); setSheetExpanded(true); }, color: 'from-emerald-500 to-emerald-600' },
               ].map(({ label, icon: Icon, action, color }) => (
                 <button key={label} onClick={action}
-                  className="flex flex-col items-center gap-1.5 rounded-lg bg-studio-panel/90 px-3 py-3 transition hover:bg-studio-panel-raised">
-                  <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${color} flex items-center justify-center`}>
-                    <Icon className="h-4 w-4 text-white" />
+                  className="flex min-w-0 flex-col items-center rounded-xl bg-studio-bg/[0.06] transition hover:bg-studio-bg/[0.12]"
+                  style={{ padding: '3.5cqw 1cqw', gap: '2cqw' }}>
+                  <div className={`flex items-center justify-center rounded-lg bg-gradient-to-br ${color}`}
+                    style={{ width: 'clamp(20px, 11cqw, 40px)', height: 'clamp(20px, 11cqw, 40px)' }}>
+                    <Icon className="text-white" style={{ width: '50%', height: '50%' }} />
                   </div>
-                  <span className="text-[10px] font-medium text-gray-300">{label}</span>
+                  <span className="truncate font-medium" style={{ fontSize: 'clamp(8px, 3.4cqw, 13px)' }}>{label}</span>
                 </button>
               ))}
             </div>
-            <p className="mt-3 text-[10px] text-studio-muted">Templates remain fully editable.</p>
+            <p className="opacity-45" style={{ fontSize: 'clamp(8px, 3cqw, 12px)' }}>Tip: Tap a template to start from a pre-made design</p>
           </div>
-        </div>
-      )}
+        ) : undefined}
+      />
 
       {/* Floating Toolbar — simplified, contextual above object */}
       {selected && toolbarPos && (
