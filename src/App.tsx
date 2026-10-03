@@ -222,7 +222,6 @@ const AppContent = () => {
             <Route path="/ai-editor" element={<Navigate to="/create-ad" replace />} />
             <Route path="/simulator" element={<Navigate to="/create-ad" replace />} />
             <Route path="/visual-editor" element={<ProtectedRoute><VisualEditorPage /></ProtectedRoute>} />
-            {import.meta.env.DEV && <Route path="/__editor-qa" element={<VisualEditorPage />} />}
 
             <Route path="/admin" element={
               <ProtectedRoute>
