@@ -715,10 +715,13 @@ const MAX_ZOOM = 400;
 const GUTTER_MOBILE = 16;
 const GUTTER_DESKTOP = 24;
 
+// Bottom band reserved for page dots + zoom pill so they never cover the artboard.
+const CONTROL_BAND = 52;
+
 const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: number, w: number, h: number): number => {
   const margin = isMobile ? GUTTER_MOBILE : GUTTER_DESKTOP;
   const availW = Math.max(40, containerWidth - margin * 2);
-  const availH = Math.max(40, containerHeight - margin * 2);
+  const availH = Math.max(40, containerHeight - margin - CONTROL_BAND);
   const z = Math.min(availW / w, availH / h) * 100;
   return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
 };
