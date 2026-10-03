@@ -741,7 +741,8 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
   imageStatuses?: ImageLayerStatus[];
   onRetryImages?: () => void;
   retryingImages?: boolean;
-}> = ({ onCanvasReady, onSelection, zoom, onZoomChange, seedDefault, onCanvasWrapperRef, isMobile, artboard, showGrid, fitToken, imageStatuses = [], onRetryImages, retryingImages }) => {
+  emptyOverlay?: React.ReactNode;
+}> = ({ onCanvasReady, onSelection, zoom, onZoomChange, seedDefault, onCanvasWrapperRef, isMobile, artboard, showGrid, fitToken, imageStatuses = [], onRetryImages, retryingImages, emptyOverlay }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -909,7 +910,7 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
       <div className="absolute inset-0 overflow-auto">
         {/* Centering shell: grid + margin:auto centers the scaled footprint and,
             unlike place-items-center, never clips the top/left when it overflows. */}
-        <div className="grid min-h-full min-w-full" style={{ padding: isMobile ? GUTTER_MOBILE : GUTTER_DESKTOP }}>
+        <div className="grid min-h-full min-w-full" style={{ padding: isMobile ? GUTTER_MOBILE : GUTTER_DESKTOP, paddingBottom: CONTROL_BAND }}>
           {/* Outer box carries the *scaled* footprint so layout/centering is correct at any zoom. */}
           <div
             className="relative shrink-0"
@@ -919,6 +920,11 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
               height: artboard.height * (zoom / 100),
             }}
           >
+            {emptyOverlay && (
+              <div className="absolute inset-0 z-20 overflow-hidden" style={{ containerType: 'size' } as React.CSSProperties}>
+                {emptyOverlay}
+              </div>
+            )}
             <div
               ref={wrapperRef}
               className="canvas-card absolute left-0 top-0 overflow-hidden bg-background"
