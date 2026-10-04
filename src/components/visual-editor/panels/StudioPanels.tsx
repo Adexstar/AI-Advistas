@@ -296,65 +296,144 @@ export const MediaPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: () 
   );
 };
 
+const MAX_UPLOAD_MB = 20;
+const readAsDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
+  const r = new FileReader();
+  r.onload = () => resolve(String(r.result));
+  r.onerror = () => reject(r.error);
+  r.readAsDataURL(file);
+});
+
 export const UploadsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: () => void; selected?: any }> = ({ canvas, onChanged, selected }) => {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const rollRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const filesRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const [view, setView] = useState<'roll' | 'all'>('roll');
   const [q, setQ] = useState('');
+  const [dragOver, setDragOver] = useState(false);
+  // Images picked this session — shown instantly, even before the cloud upload finishes.
+  const [session, setSession] = useState<{ id: string; name: string; src: string; status: 'uploading' | 'saved' | 'local' }[]>([]);
   const { data, isLoading } = useMediaRows();
-  const rows = (data ?? []).filter((m) => m.name.toLowerCase().includes(q.trim().toLowerCase()));
+  const all = (data ?? []).filter((m) => m.name.toLowerCase().includes(q.trim().toLowerCase()));
+  const rows = view === 'roll' ? all.filter((m) => m.type === 'image') : all;
+
+  const place = async (src: string) => {
+    if (selected && selected.type === 'image') await replaceImageSource(canvas, selected, src, onChanged);
+    else await addImageToCanvas(canvas, src, onChanged);
+  };
 
   const upload = async (files: FileList | null) => {
-    if (!files?.length || !user?.id) return;
+    if (!files?.length) return;
     setBusy(true);
+    let failed = 0;
     try {
       for (const file of Array.from(files)) {
-        const path = `${user.id}/${Date.now()}-${file.name}`;
-        const { error: upErr } = await supabase.storage.from('media-library').upload(path, file, { upsert: false });
-        if (upErr) throw upErr;
-        const url = await signedMediaUrl(path);
+        if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+          toast({ title: `${file.name} is too large`, description: `Max ${MAX_UPLOAD_MB}MB per file.`, variant: 'destructive' });
+          continue;
+        }
         const type = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'document';
-        await supabase.from('media_assets').insert({
-          user_id: user.id, name: file.name, type, file_path: path, file_url: url,
-          file_size: file.size, mime_type: file.type, source: 'upload',
-        } as any);
+        const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
         if (type === 'image') {
-          if (selected && selected.type === 'image') await replaceImageSource(canvas, selected, url, onChanged);
-          else await addImageToCanvas(canvas, url, onChanged);
+          const local = await readAsDataUrl(file);
+          setSession((s) => [{ id, name: file.name, src: local, status: user ? 'uploading' : 'local' }, ...s]);
+          await place(local);
+        }
+        if (!user?.id) continue;
+        try {
+          const safe = file.name.replace(/[^\w.\-]+/g, '_');
+          const path = `${user.id}/${Date.now()}-${safe}`;
+          const { error: upErr } = await supabase.storage.from('media-library').upload(path, file, { upsert: false, contentType: file.type });
+          if (upErr) throw upErr;
+          const url = await signedMediaUrl(path);
+          const { error: insErr } = await supabase.from('media_assets').insert({
+            user_id: user.id, name: file.name, type, file_path: path, file_url: url,
+            file_size: file.size, mime_type: file.type, source: 'upload',
+          } as any);
+          if (insErr) throw insErr;
+          setSession((s) => s.map((x) => (x.id === id ? { ...x, status: 'saved' } : x)));
+        } catch (e) {
+          failed++;
+          setSession((s) => s.map((x) => (x.id === id ? { ...x, status: 'local' } : x)));
         }
       }
       qc.invalidateQueries({ queryKey: ['editor-media'] });
-      toast({ title: 'Upload complete', description: 'Your files are in the media library.' });
-    } catch (e: any) {
-      toast({ title: 'Upload failed', description: e?.message ?? 'Try again.', variant: 'destructive' });
+      if (failed) toast({ title: 'Added to your design', description: `${failed} file(s) couldn’t be saved to your library — they’re still on the canvas.`, variant: 'destructive' });
+      else toast({ title: 'Added to your design', description: user ? 'Also saved to your camera roll.' : 'Sign in to keep uploads in your library.' });
     } finally {
       setBusy(false);
+      [rollRef, cameraRef, filesRef].forEach((r) => { if (r.current) r.current.value = ''; });
     }
   };
+
+  const tile = 'flex flex-col items-center justify-center gap-1.5 rounded-lg bg-[#3D3D3D] py-3 text-[11px] font-medium text-[#CCCCCC] hover:bg-[#474747] disabled:opacity-60';
 
   return (
     <div className={PANEL}>
       <div className={HEAD}><h2 className={H2}>Uploads</h2></div>
-      <div className="flex-1 min-h-0 overflow-y-auto p-4">
-        <input ref={inputRef} type="file" multiple accept="image/*,video/*,audio/*" hidden onChange={(e) => upload(e.target.files)} />
+      <div
+        className={`flex-1 min-h-0 overflow-y-auto p-4 ${dragOver ? 'ring-2 ring-inset ring-[#6C63FF]' : ''}`}
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => { e.preventDefault(); setDragOver(false); upload(e.dataTransfer.files); }}
+      >
+        <input ref={rollRef} type="file" multiple accept="image/*" hidden onChange={(e) => upload(e.target.files)} />
+        <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => upload(e.target.files)} />
+        <input ref={filesRef} type="file" multiple accept="image/*,video/*,audio/*" hidden onChange={(e) => upload(e.target.files)} />
         <SelectedBanner
           selected={selected}
           hint={selected?.type === 'image'
-            ? 'Uploads and library items will replace this image layer.'
-            : 'Uploads will be added to the canvas as new layers.'}
+            ? 'Picking a photo will replace this image layer.'
+            : 'Photos you pick are added to the canvas as new layers.'}
         />
         <button
-          onClick={() => inputRef.current?.click()}
-          disabled={busy || !user}
-          className="mb-4 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#6C63FF] text-sm font-semibold text-white hover:bg-[#5B52E0] disabled:opacity-60"
+          onClick={() => rollRef.current?.click()}
+          disabled={busy}
+          className="mb-2 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#6C63FF] text-sm font-semibold text-white hover:bg-[#5B52E0] disabled:opacity-60"
         >
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-          {busy ? 'Uploading…' : 'Upload files'}
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+          {busy ? 'Adding…' : 'Choose from camera roll'}
         </button>
+        <div className="mb-4 grid grid-cols-2 gap-2">
+          <button className={tile} disabled={busy} onClick={() => cameraRef.current?.click()}>
+            <Plus className="h-4 w-4" /> Take photo
+          </button>
+          <button className={tile} disabled={busy} onClick={() => filesRef.current?.click()}>
+            <Upload className="h-4 w-4" /> Video & audio
+          </button>
+        </div>
+
+        {session.length > 0 && (
+          <div className="mb-4">
+            <p className="mb-2 text-xs font-semibold text-[#CCCCCC]">Just added</p>
+            <div className="grid grid-cols-3 gap-2">
+              {session.map((s) => (
+                <button key={s.id} onClick={() => place(s.src)} title={s.name}
+                  className="relative aspect-square overflow-hidden rounded-lg bg-[#3D3D3D]">
+                  <img src={s.src} alt={s.name} className="h-full w-full object-cover" />
+                  {s.status === 'uploading' && <span className="absolute inset-0 flex items-center justify-center bg-black/40"><Loader2 className="h-4 w-4 animate-spin text-white" /></span>}
+                  {s.status === 'local' && <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1 text-[9px] text-amber-300">Not saved</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="mb-3 flex gap-1.5">
+          {([['roll', 'Camera roll'], ['all', 'All uploads']] as const).map(([k, label]) => (
+            <button key={k} onClick={() => setView(k)}
+              className={`rounded-full px-3 py-1 text-[11px] ${view === k ? 'bg-[#6C63FF] text-white' : 'bg-[#3D3D3D] text-[#CCCCCC]'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
         <SearchField value={q} onChange={setQ} placeholder="Search uploads" />
-        {isLoading && <div className="grid grid-cols-3 gap-2">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="aspect-square rounded-lg bg-[#3D3D3D]" />)}</div>}
-        {!isLoading && rows.length === 0 && <EmptyState>Nothing uploaded yet. Add images, video or audio to use them on the canvas.</EmptyState>}
+        {!user && <EmptyState>Sign in to keep your photos in your camera roll across sessions.</EmptyState>}
+        {user && isLoading && <div className="grid grid-cols-3 gap-2">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="aspect-square rounded-lg bg-[#3D3D3D]" />)}</div>}
+        {user && !isLoading && rows.length === 0 && <EmptyState>No photos yet. Pick some from your camera roll or drop them here.</EmptyState>}
         <MediaGrid rows={rows} canvas={canvas} onChanged={onChanged} selected={selected} />
       </div>
     </div>
