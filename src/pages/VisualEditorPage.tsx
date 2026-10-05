@@ -2251,6 +2251,7 @@ const EditorInner: React.FC = () => {
           const offsetX = (tw - aw * k) / 2;
           const offsetY = (th - ah * k) / 2;
           canvas.getObjects().forEach((o: any) => {
+            if (o.type === 'image' && o.mediaFit === 'cover') return;
             o.set({
               left: offsetX + (o.left || 0) * k,
               top: offsetY + (o.top || 0) * k,
