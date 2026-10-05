@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { signedMediaUrl } from '@/lib/mediaUrl';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
+import { addImageCoveringCanvas, replaceImageKeepingFrame } from '@/components/visual-editor/canvasImagePlacement';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Search, Upload, Loader2, ImageIcon, Video, Music, FileText, Pipette, Plus, X, Info,
@@ -53,13 +54,27 @@ export const SelectedBanner: React.FC<{ selected: any; hint: string }> = ({ sele
 async function addImageToCanvas(canvas: FabricCanvas | null, url: string, onChanged?: () => void) {
   if (!canvas) return;
   try {
-    const img = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
-    const maxW = (canvas.getWidth() || 800) * 0.6;
-    if (img.width && img.width > maxW) img.scale(maxW / img.width);
-    img.set({ left: 40, top: 40 });
-    canvas.add(img);
-    canvas.setActiveObject(img);
-    canvas.requestRenderAll();
+    if (canvas.getObjects().length === 0) {
+      await addImageCoveringCanvas(canvas, url);
+    } else {
+      const img = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
+      const canvasWidth = canvas.getWidth() || 1080;
+      const canvasHeight = canvas.getHeight() || 1350;
+      const sourceWidth = Math.max(1, Number(img.width) || 1);
+      const sourceHeight = Math.max(1, Number(img.height) || 1);
+      const scale = Math.min((canvasWidth * 0.72) / sourceWidth, (canvasHeight * 0.72) / sourceHeight);
+      img.set({
+        left: (canvasWidth - sourceWidth * scale) / 2,
+        top: (canvasHeight - sourceHeight * scale) / 2,
+        scaleX: scale,
+        scaleY: scale,
+        name: 'Image layer',
+        mediaFit: 'contain',
+      });
+      canvas.add(img);
+      canvas.setActiveObject(img);
+      canvas.requestRenderAll();
+    }
     onChanged?.();
   } catch {
     toast({ title: 'Could not load image', description: 'The asset could not be added to the canvas.', variant: 'destructive' });
@@ -69,16 +84,7 @@ async function addImageToCanvas(canvas: FabricCanvas | null, url: string, onChan
 async function replaceImageSource(canvas: FabricCanvas | null, target: any, url: string, onChanged?: () => void) {
   if (!canvas || !target) return;
   try {
-    const next = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
-    const w = target.getScaledWidth?.() ?? target.width ?? 200;
-    if (next.width) next.scale(w / next.width);
-    next.set({ left: target.left, top: target.top, angle: target.angle ?? 0 });
-    const idx = canvas.getObjects().indexOf(target);
-    canvas.remove(target);
-    canvas.add(next);
-    if (idx >= 0) (canvas as any).moveObjectTo?.(next, idx);
-    canvas.setActiveObject(next);
-    canvas.requestRenderAll();
+    await replaceImageKeepingFrame(canvas, target, url);
     onChanged?.();
     toast({ title: 'Layer replaced', description: 'The selected image now uses the new asset.' });
   } catch {

@@ -46,7 +46,12 @@ export const replaceImageKeepingFrame = async (
   url: string,
 ) => {
   const next = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' }) as EditableImage;
-  const frame = target.getBoundingRect();
+  const frame = {
+    left: Number(target.left) || 0,
+    top: Number(target.top) || 0,
+    width: target.getScaledWidth(),
+    height: target.getScaledHeight(),
+  };
   const metadata = {
     name: target.name,
     id: target.id,

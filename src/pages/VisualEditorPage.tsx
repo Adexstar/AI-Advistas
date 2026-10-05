@@ -48,6 +48,7 @@ import {
   ARTBOARD_PRESETS, alignObject, deleteObject, duplicateObject, isLocked, moveLayer,
   reorderLayer, setLocked, setVisible,
 } from '@/components/visual-editor/canvasActions';
+import { scaleImageToCover } from '@/components/visual-editor/canvasImagePlacement';
 
 /* ---------- Constants ---------- */
 const LEFT_TABS = [
@@ -703,8 +704,8 @@ const CanvasSubToolbar: React.FC<{
 };
 
 /* ---------- Canvas Stage ---------- */
-const CANVAS_WIDTH = 360;
-const CANVAS_HEIGHT = 640;
+const CANVAS_WIDTH = 1080;
+const CANVAS_HEIGHT = 1920;
 
 const MIN_ZOOM = 10;
 const MAX_ZOOM = 400;
@@ -797,6 +798,10 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
     const c = canvasRef.current;
     if (!c) return;
     c.setDimensions({ width: artboard.width, height: artboard.height });
+    c.getObjects().forEach((object: any) => {
+      if (object.type !== 'image' || object.mediaFit !== 'cover') return;
+      scaleImageToCover(object, { left: 0, top: 0, width: artboard.width, height: artboard.height });
+    });
     c.requestRenderAll();
   }, [artboard.width, artboard.height]);
 
@@ -1981,14 +1986,14 @@ const EditorInner: React.FC = () => {
     });
   }, []);
 
-  const [preset, setPreset] = useState('mobile');
+  const [preset, setPreset] = useState('instagramPortrait');
   // Templates bring their own frame — kept as a "custom" artboard so the
   // design renders at its authored size instead of being squeezed into a preset.
   const [customArtboard, setCustomArtboard] = useState<{ label: string; width: number; height: number } | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [pages, setPages] = useState<any[]>([]);
   const [pageIdx, setPageIdx] = useState(0);
-  const artboard = (preset === 'custom' && customArtboard) ? customArtboard : (ARTBOARD_PRESETS[preset] ?? ARTBOARD_PRESETS.mobile);
+  const artboard = (preset === 'custom' && customArtboard) ? customArtboard : (ARTBOARD_PRESETS[preset] ?? ARTBOARD_PRESETS.instagramPortrait);
   const isMobile = useIsMobile();
   const { videoUrl } = useVisualEditor();
   const isVideo = !!videoUrl;
@@ -2231,16 +2236,24 @@ const EditorInner: React.FC = () => {
           canvas.setDimensions({ width: tw, height: th });
         }
 
+        const loadedObjects = canvas.getObjects() as any[];
+        if (loadedObjects.length === 1 && loadedObjects[0]?.type === 'image') {
+          scaleImageToCover(loadedObjects[0], { left: 0, top: 0, width: tw, height: th });
+          loadedObjects[0].set({ name: loadedObjects[0].name || 'Template artwork', mediaFit: 'cover' });
+        }
+
         // If the design was authored on a different frame, scale every layer
         // into the artboard so nothing sits half outside it.
         const aw = Number(json?.width) || 0;
         const ah = Number(json?.height) || 0;
         if (aw > 1 && ah > 1 && (Math.abs(aw - tw) > 1 || Math.abs(ah - th) > 1)) {
           const k = Math.min(tw / aw, th / ah);
+          const offsetX = (tw - aw * k) / 2;
+          const offsetY = (th - ah * k) / 2;
           canvas.getObjects().forEach((o: any) => {
             o.set({
-              left: (o.left || 0) * k,
-              top: (o.top || 0) * k,
+              left: offsetX + (o.left || 0) * k,
+              top: offsetY + (o.top || 0) * k,
               scaleX: (o.scaleX || 1) * k,
               scaleY: (o.scaleY || 1) * k,
             });

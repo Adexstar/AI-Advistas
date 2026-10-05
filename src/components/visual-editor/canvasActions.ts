@@ -93,11 +93,12 @@ export function alignObject(
 }
 
 export const ARTBOARD_PRESETS: Record<string, { label: string; width: number; height: number }> = {
-  desktop: { label: 'Desktop', width: 640, height: 360 },
-  mobile: { label: 'Mobile', width: 360, height: 640 },
-  instagram: { label: 'Instagram', width: 540, height: 540 },
-  facebook: { label: 'Facebook', width: 600, height: 315 },
-  tiktok: { label: 'TikTok', width: 360, height: 640 },
-  linkedin: { label: 'LinkedIn', width: 600, height: 400 },
-  youtube: { label: 'YouTube', width: 640, height: 360 },
+  instagramPortrait: { label: 'Instagram Portrait Post · 1080×1350', width: 1080, height: 1350 },
+  pinterest: { label: 'Pinterest Pin (2:3) · 1000×1500', width: 1000, height: 1500 },
+  reels: { label: 'Instagram Reels / Mobile Video · 1080×1920', width: 1080, height: 1920 },
+  tiktok: { label: 'TikTok Video · 1080×1920', width: 1080, height: 1920 },
+  instagramSquare: { label: 'Instagram Square · 1080×1080', width: 1080, height: 1080 },
+  facebook: { label: 'Facebook Post · 1200×1200', width: 1200, height: 1200 },
+  linkedin: { label: 'LinkedIn Landscape · 1200×628', width: 1200, height: 628 },
+  youtube: { label: 'YouTube / Desktop · 1920×1080', width: 1920, height: 1080 },
 };
