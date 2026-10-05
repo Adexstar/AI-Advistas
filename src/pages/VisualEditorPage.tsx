@@ -2038,7 +2038,7 @@ const EditorInner: React.FC = () => {
 
   const saveSnapshot = useCallback((c: FabricCanvas) => {
     if (isRestoringRef.current) return;
-    const json = JSON.stringify((c as any).toJSON(['id']));
+    const json = JSON.stringify((c as any).toJSON(SERIALIZED_CANVAS_PROPS));
     if (historyRef.current[historyIdxRef.current] === json) return;
     setHistory(prev => {
       const trimmed = prev.slice(0, historyIdxRef.current + 1);
@@ -2098,10 +2098,38 @@ const EditorInner: React.FC = () => {
     forceUpdate(n => n + 1);
   }, [canvas, saveSnapshot]);
 
+  const changeArtboardPreset = useCallback((nextPreset: string) => {
+    if (nextPreset === preset) return;
+    const next = nextPreset === 'custom' ? customArtboard : ARTBOARD_PRESETS[nextPreset];
+    if (!next) return;
+    const previous = artboard;
+    if (canvas && previous.width > 0 && previous.height > 0) {
+      const scale = Math.min(next.width / previous.width, next.height / previous.height);
+      const offsetX = (next.width - previous.width * scale) / 2;
+      const offsetY = (next.height - previous.height * scale) / 2;
+      canvas.getObjects().forEach((object: any) => {
+        if (object.type === 'image' && object.mediaFit === 'cover') {
+          scaleImageToCover(object, { left: 0, top: 0, width: next.width, height: next.height });
+          return;
+        }
+        object.set({
+          left: offsetX + (Number(object.left) || 0) * scale,
+          top: offsetY + (Number(object.top) || 0) * scale,
+          scaleX: (Number(object.scaleX) || 1) * scale,
+          scaleY: (Number(object.scaleY) || 1) * scale,
+        });
+        object.setCoords?.();
+      });
+    }
+    setPreset(nextPreset);
+    setFitToken((token) => token + 1);
+    if (canvas) saveSnapshot(canvas);
+  }, [artboard, canvas, customArtboard, preset, saveSnapshot]);
+
   // ---- Auto-save canvas to localStorage ----
   const autoSaveData = useMemo(() => {
     if (!canvas) return null;
-    try { return { json: (canvas as any).toJSON(['id']), name: projectName, zoom }; }
+    try { return { json: (canvas as any).toJSON(SERIALIZED_CANVAS_PROPS), name: projectName, zoom }; }
     catch { return null; }
   }, [canvas, historyIdx, projectName, zoom]);
 
@@ -2455,7 +2483,7 @@ const EditorInner: React.FC = () => {
     try {
       localStorage.setItem(
         'advista.editor.publishDraft',
-        JSON.stringify({ name: projectName, json: (canvas as any).toJSON(['id']), preview: canvas.toDataURL({ format: 'png', multiplier: 1 }) }),
+        JSON.stringify({ name: projectName, json: (canvas as any).toJSON(SERIALIZED_CANVAS_PROPS), preview: canvas.toDataURL({ format: 'png', multiplier: 1 }) }),
       );
     } catch { /* preview may exceed quota — publishing still proceeds */ }
     toast({ title: 'Design ready to publish', description: 'Pick a campaign to attach this creative to.' });
@@ -2464,7 +2492,7 @@ const EditorInner: React.FC = () => {
 
   const addPage = useCallback(() => {
     if (!canvas) return;
-    const snapshot = (canvas as any).toJSON(['id']);
+    const snapshot = (canvas as any).toJSON(SERIALIZED_CANVAS_PROPS);
     setPages((prev) => {
       const next = [...prev];
       next[pageIdx] = snapshot;
@@ -2481,7 +2509,7 @@ const EditorInner: React.FC = () => {
 
   const goToPage = useCallback(async (idx: number) => {
     if (!canvas || idx === pageIdx) return;
-    const snapshot = (canvas as any).toJSON(['id']);
+    const snapshot = (canvas as any).toJSON(SERIALIZED_CANVAS_PROPS);
     const next = [...pages];
     next[pageIdx] = snapshot;
     setPages(next);
