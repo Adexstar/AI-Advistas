@@ -48,6 +48,7 @@ import {
   ARTBOARD_PRESETS, alignObject, deleteObject, duplicateObject, isLocked, moveLayer,
   reorderLayer, setLocked, setVisible,
 } from '@/components/visual-editor/canvasActions';
+import { replaceImageKeepingFrame, scaleImageToCover } from '@/components/visual-editor/canvasImagePlacement';
 
 /* ---------- Constants ---------- */
 const LEFT_TABS = [
@@ -703,8 +704,9 @@ const CanvasSubToolbar: React.FC<{
 };
 
 /* ---------- Canvas Stage ---------- */
-const CANVAS_WIDTH = 360;
-const CANVAS_HEIGHT = 640;
+const CANVAS_WIDTH = 1080;
+const CANVAS_HEIGHT = 1920;
+const SERIALIZED_CANVAS_PROPS = ['id', 'name', 'mediaFit', 'variableKey', 'brandReplaceable', 'aiReplaceable', 'brandCompliant'];
 
 const MIN_ZOOM = 10;
 const MAX_ZOOM = 400;
@@ -797,6 +799,10 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
     const c = canvasRef.current;
     if (!c) return;
     c.setDimensions({ width: artboard.width, height: artboard.height });
+    c.getObjects().forEach((object: any) => {
+      if (object.type !== 'image' || object.mediaFit !== 'cover') return;
+      scaleImageToCover(object, { left: 0, top: 0, width: artboard.width, height: artboard.height });
+    });
     c.requestRenderAll();
   }, [artboard.width, artboard.height]);
 
@@ -1597,7 +1603,10 @@ const RightPanel: React.FC<{
   selected: any;
   canvas: FabricCanvas | null;
   onClose?: () => void;
-}> = ({ selected, canvas, onClose }) => {
+  preset?: string;
+  customArtboard?: { label: string; width: number; height: number } | null;
+  onPresetChange?: (value: string) => void;
+}> = ({ selected, canvas, onClose, preset, customArtboard, onPresetChange }) => {
   const [, bump] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -1649,22 +1658,7 @@ const RightPanel: React.FC<{
     if (!canvas || !selected) return;
     const url = URL.createObjectURL(file);
     try {
-      const img: any = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
-      const targetW = (selected.width || 0) * (selected.scaleX || 1);
-      const targetH = (selected.height || 0) * (selected.scaleY || 1);
-      img.set({
-        left: selected.left, top: selected.top, angle: selected.angle,
-        originX: selected.originX, originY: selected.originY,
-        scaleX: targetW ? targetW / (img.width || 1) : 1,
-        scaleY: targetH ? targetH / (img.height || 1) : 1,
-        name: selected.name,
-      });
-      const idx = canvas.getObjects().indexOf(selected);
-      canvas.remove(selected);
-      canvas.add(img);
-      if (idx >= 0) (canvas as any).moveObjectTo?.(img, idx);
-      canvas.setActiveObject(img);
-      canvas.requestRenderAll();
+      await replaceImageKeepingFrame(canvas, selected, url);
     } catch {
       toast({ title: 'Could not load image', description: 'Try a different file.', variant: 'destructive' });
     }
@@ -1686,12 +1680,29 @@ const RightPanel: React.FC<{
       </div>
 
       {!selected ? (
-        <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
-          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-            <MousePointer className="h-6 w-6 text-primary" />
+        <div className="flex flex-1 flex-col p-5">
+          {preset && onPresetChange && (
+            <div className="mb-6 text-left">
+              <p className="mb-2 text-xs font-semibold text-studio-muted">Design size</p>
+              <Select value={preset} onValueChange={onPresetChange}>
+                <SelectTrigger className="h-11 w-full"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {customArtboard && <SelectItem value="custom">{customArtboard.label}</SelectItem>}
+                  {Object.entries(ARTBOARD_PRESETS).map(([key, value]) => (
+                    <SelectItem key={key} value={key}>{value.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="mt-2 text-[11px] leading-relaxed text-studio-muted">Photos fill this size automatically without stretching.</p>
+            </div>
+          )}
+          <div className="flex flex-1 flex-col items-center justify-center text-center">
+            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+              <MousePointer className="h-6 w-6 text-primary" />
+            </div>
+            <p className="text-sm font-medium">No selection</p>
+            <p className="mt-1 text-xs text-muted-foreground">Select an element on the canvas to edit its properties.</p>
           </div>
-          <p className="text-sm font-medium">No selection</p>
-          <p className="mt-1 text-xs text-muted-foreground">Select an element on the canvas to edit its properties.</p>
         </div>
       ) : (
         <Tabs defaultValue="design" className="flex flex-1 min-h-0 flex-col">
@@ -1981,14 +1992,14 @@ const EditorInner: React.FC = () => {
     });
   }, []);
 
-  const [preset, setPreset] = useState('mobile');
+  const [preset, setPreset] = useState('instagramPortrait');
   // Templates bring their own frame — kept as a "custom" artboard so the
   // design renders at its authored size instead of being squeezed into a preset.
   const [customArtboard, setCustomArtboard] = useState<{ label: string; width: number; height: number } | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [pages, setPages] = useState<any[]>([]);
   const [pageIdx, setPageIdx] = useState(0);
-  const artboard = (preset === 'custom' && customArtboard) ? customArtboard : (ARTBOARD_PRESETS[preset] ?? ARTBOARD_PRESETS.mobile);
+  const artboard = (preset === 'custom' && customArtboard) ? customArtboard : (ARTBOARD_PRESETS[preset] ?? ARTBOARD_PRESETS.instagramPortrait);
   const isMobile = useIsMobile();
   const { videoUrl } = useVisualEditor();
   const isVideo = !!videoUrl;
@@ -2027,7 +2038,7 @@ const EditorInner: React.FC = () => {
 
   const saveSnapshot = useCallback((c: FabricCanvas) => {
     if (isRestoringRef.current) return;
-    const json = JSON.stringify((c as any).toJSON(['id']));
+    const json = JSON.stringify((c as any).toJSON(SERIALIZED_CANVAS_PROPS));
     if (historyRef.current[historyIdxRef.current] === json) return;
     setHistory(prev => {
       const trimmed = prev.slice(0, historyIdxRef.current + 1);
@@ -2087,10 +2098,38 @@ const EditorInner: React.FC = () => {
     forceUpdate(n => n + 1);
   }, [canvas, saveSnapshot]);
 
+  const changeArtboardPreset = useCallback((nextPreset: string) => {
+    if (nextPreset === preset) return;
+    const next = nextPreset === 'custom' ? customArtboard : ARTBOARD_PRESETS[nextPreset];
+    if (!next) return;
+    const previous = artboard;
+    if (canvas && previous.width > 0 && previous.height > 0) {
+      const scale = Math.min(next.width / previous.width, next.height / previous.height);
+      const offsetX = (next.width - previous.width * scale) / 2;
+      const offsetY = (next.height - previous.height * scale) / 2;
+      canvas.getObjects().forEach((object: any) => {
+        if (object.type === 'image' && object.mediaFit === 'cover') {
+          scaleImageToCover(object, { left: 0, top: 0, width: next.width, height: next.height });
+          return;
+        }
+        object.set({
+          left: offsetX + (Number(object.left) || 0) * scale,
+          top: offsetY + (Number(object.top) || 0) * scale,
+          scaleX: (Number(object.scaleX) || 1) * scale,
+          scaleY: (Number(object.scaleY) || 1) * scale,
+        });
+        object.setCoords?.();
+      });
+    }
+    setPreset(nextPreset);
+    setFitToken((token) => token + 1);
+    if (canvas) saveSnapshot(canvas);
+  }, [artboard, canvas, customArtboard, preset, saveSnapshot]);
+
   // ---- Auto-save canvas to localStorage ----
   const autoSaveData = useMemo(() => {
     if (!canvas) return null;
-    try { return { json: (canvas as any).toJSON(['id']), name: projectName, zoom }; }
+    try { return { json: (canvas as any).toJSON(SERIALIZED_CANVAS_PROPS), name: projectName, zoom }; }
     catch { return null; }
   }, [canvas, historyIdx, projectName, zoom]);
 
@@ -2231,16 +2270,25 @@ const EditorInner: React.FC = () => {
           canvas.setDimensions({ width: tw, height: th });
         }
 
+        const loadedObjects = canvas.getObjects() as any[];
+        if (loadedObjects.length === 1 && loadedObjects[0]?.type === 'image') {
+          scaleImageToCover(loadedObjects[0], { left: 0, top: 0, width: tw, height: th });
+          loadedObjects[0].set({ name: loadedObjects[0].name || 'Template artwork', mediaFit: 'cover' });
+        }
+
         // If the design was authored on a different frame, scale every layer
         // into the artboard so nothing sits half outside it.
         const aw = Number(json?.width) || 0;
         const ah = Number(json?.height) || 0;
         if (aw > 1 && ah > 1 && (Math.abs(aw - tw) > 1 || Math.abs(ah - th) > 1)) {
           const k = Math.min(tw / aw, th / ah);
+          const offsetX = (tw - aw * k) / 2;
+          const offsetY = (th - ah * k) / 2;
           canvas.getObjects().forEach((o: any) => {
+            if (o.type === 'image' && o.mediaFit === 'cover') return;
             o.set({
-              left: (o.left || 0) * k,
-              top: (o.top || 0) * k,
+              left: offsetX + (o.left || 0) * k,
+              top: offsetY + (o.top || 0) * k,
               scaleX: (o.scaleX || 1) * k,
               scaleY: (o.scaleY || 1) * k,
             });
@@ -2435,7 +2483,7 @@ const EditorInner: React.FC = () => {
     try {
       localStorage.setItem(
         'advista.editor.publishDraft',
-        JSON.stringify({ name: projectName, json: (canvas as any).toJSON(['id']), preview: canvas.toDataURL({ format: 'png', multiplier: 1 }) }),
+        JSON.stringify({ name: projectName, json: (canvas as any).toJSON(SERIALIZED_CANVAS_PROPS), preview: canvas.toDataURL({ format: 'png', multiplier: 1 }) }),
       );
     } catch { /* preview may exceed quota — publishing still proceeds */ }
     toast({ title: 'Design ready to publish', description: 'Pick a campaign to attach this creative to.' });
@@ -2444,7 +2492,7 @@ const EditorInner: React.FC = () => {
 
   const addPage = useCallback(() => {
     if (!canvas) return;
-    const snapshot = (canvas as any).toJSON(['id']);
+    const snapshot = (canvas as any).toJSON(SERIALIZED_CANVAS_PROPS);
     setPages((prev) => {
       const next = [...prev];
       next[pageIdx] = snapshot;
@@ -2461,7 +2509,7 @@ const EditorInner: React.FC = () => {
 
   const goToPage = useCallback(async (idx: number) => {
     if (!canvas || idx === pageIdx) return;
-    const snapshot = (canvas as any).toJSON(['id']);
+    const snapshot = (canvas as any).toJSON(SERIALIZED_CANVAS_PROPS);
     const next = [...pages];
     next[pageIdx] = snapshot;
     setPages(next);
@@ -2632,7 +2680,7 @@ const EditorInner: React.FC = () => {
           selected={selected}
           onChanged={markChanged}
           preset={preset}
-          onPresetChange={setPreset}
+          onPresetChange={changeArtboardPreset}
           customArtboard={customArtboard}
           onOpenAnimate={() => { setActiveTab('ai-studio'); setActiveTool('animate'); }}
           onOpenPosition={() => { setActiveTab('layers'); setActiveTool('position'); }}
@@ -2667,7 +2715,7 @@ const EditorInner: React.FC = () => {
               {activeTool && selected
                 ? renderToolSheet(activeTool, selected, canvas)
                 : selected && activeTab !== 'layers'
-                  ? <div className="-mx-4 -mb-4 h-[52vh]"><RightPanel selected={selected} canvas={canvas} /></div>
+                  ? <div className="-mx-4 -mb-4 h-[52vh]"><RightPanel selected={selected} canvas={canvas} preset={preset} customArtboard={customArtboard} onPresetChange={changeArtboardPreset} /></div>
                   : renderLeftPanel()}
             </MobileBottomSheet>
           </div>
@@ -2711,7 +2759,7 @@ const EditorInner: React.FC = () => {
             {/* Desktop right panel — contextual */}
             {selected && (
                <div className="editor-right-panel studio-panel hidden w-[260px] shrink-0 overflow-y-auto border-l lg:flex">
-                <RightPanel selected={selected} canvas={canvas} onClose={() => setRightOpen(false)} />
+                <RightPanel selected={selected} canvas={canvas} onClose={() => setRightOpen(false)} preset={preset} customArtboard={customArtboard} onPresetChange={changeArtboardPreset} />
               </div>
             )}
           </div>
@@ -2728,7 +2776,7 @@ const EditorInner: React.FC = () => {
       {/* Inspector slide-over — used when the docked right panel isn't visible */}
       <Sheet open={rightOpen} onOpenChange={setRightOpen}>
         <SheetContent side="right" className="w-[min(20rem,calc(100vw-2rem))] p-0 flex flex-col">
-          <RightPanel selected={selected} canvas={canvas} onClose={() => setRightOpen(false)} />
+          <RightPanel selected={selected} canvas={canvas} onClose={() => setRightOpen(false)} preset={preset} customArtboard={customArtboard} onPresetChange={changeArtboardPreset} />
         </SheetContent>
       </Sheet>
 
