@@ -48,7 +48,7 @@ import {
   ARTBOARD_PRESETS, alignObject, deleteObject, duplicateObject, isLocked, moveLayer,
   reorderLayer, setLocked, setVisible,
 } from '@/components/visual-editor/canvasActions';
-import { scaleImageToCover } from '@/components/visual-editor/canvasImagePlacement';
+import { replaceImageKeepingFrame, scaleImageToCover } from '@/components/visual-editor/canvasImagePlacement';
 
 /* ---------- Constants ---------- */
 const LEFT_TABS = [
@@ -706,6 +706,7 @@ const CanvasSubToolbar: React.FC<{
 /* ---------- Canvas Stage ---------- */
 const CANVAS_WIDTH = 1080;
 const CANVAS_HEIGHT = 1920;
+const SERIALIZED_CANVAS_PROPS = ['id', 'name', 'mediaFit', 'variableKey', 'brandReplaceable', 'aiReplaceable', 'brandCompliant'];
 
 const MIN_ZOOM = 10;
 const MAX_ZOOM = 400;
@@ -1602,7 +1603,10 @@ const RightPanel: React.FC<{
   selected: any;
   canvas: FabricCanvas | null;
   onClose?: () => void;
-}> = ({ selected, canvas, onClose }) => {
+  preset?: string;
+  customArtboard?: { label: string; width: number; height: number } | null;
+  onPresetChange?: (value: string) => void;
+}> = ({ selected, canvas, onClose, preset, customArtboard, onPresetChange }) => {
   const [, bump] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -1654,22 +1658,7 @@ const RightPanel: React.FC<{
     if (!canvas || !selected) return;
     const url = URL.createObjectURL(file);
     try {
-      const img: any = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
-      const targetW = (selected.width || 0) * (selected.scaleX || 1);
-      const targetH = (selected.height || 0) * (selected.scaleY || 1);
-      img.set({
-        left: selected.left, top: selected.top, angle: selected.angle,
-        originX: selected.originX, originY: selected.originY,
-        scaleX: targetW ? targetW / (img.width || 1) : 1,
-        scaleY: targetH ? targetH / (img.height || 1) : 1,
-        name: selected.name,
-      });
-      const idx = canvas.getObjects().indexOf(selected);
-      canvas.remove(selected);
-      canvas.add(img);
-      if (idx >= 0) (canvas as any).moveObjectTo?.(img, idx);
-      canvas.setActiveObject(img);
-      canvas.requestRenderAll();
+      await replaceImageKeepingFrame(canvas, selected, url);
     } catch {
       toast({ title: 'Could not load image', description: 'Try a different file.', variant: 'destructive' });
     }
@@ -1691,12 +1680,29 @@ const RightPanel: React.FC<{
       </div>
 
       {!selected ? (
-        <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
-          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-            <MousePointer className="h-6 w-6 text-primary" />
+        <div className="flex flex-1 flex-col p-5">
+          {preset && onPresetChange && (
+            <div className="mb-6 text-left">
+              <p className="mb-2 text-xs font-semibold text-studio-muted">Design size</p>
+              <Select value={preset} onValueChange={onPresetChange}>
+                <SelectTrigger className="h-11 w-full"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {customArtboard && <SelectItem value="custom">{customArtboard.label}</SelectItem>}
+                  {Object.entries(ARTBOARD_PRESETS).map(([key, value]) => (
+                    <SelectItem key={key} value={key}>{value.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="mt-2 text-[11px] leading-relaxed text-studio-muted">Photos fill this size automatically without stretching.</p>
+            </div>
+          )}
+          <div className="flex flex-1 flex-col items-center justify-center text-center">
+            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+              <MousePointer className="h-6 w-6 text-primary" />
+            </div>
+            <p className="text-sm font-medium">No selection</p>
+            <p className="mt-1 text-xs text-muted-foreground">Select an element on the canvas to edit its properties.</p>
           </div>
-          <p className="text-sm font-medium">No selection</p>
-          <p className="mt-1 text-xs text-muted-foreground">Select an element on the canvas to edit its properties.</p>
         </div>
       ) : (
         <Tabs defaultValue="design" className="flex flex-1 min-h-0 flex-col">
