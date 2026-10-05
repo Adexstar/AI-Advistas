@@ -2680,7 +2680,7 @@ const EditorInner: React.FC = () => {
           selected={selected}
           onChanged={markChanged}
           preset={preset}
-          onPresetChange={setPreset}
+          onPresetChange={changeArtboardPreset}
           customArtboard={customArtboard}
           onOpenAnimate={() => { setActiveTab('ai-studio'); setActiveTool('animate'); }}
           onOpenPosition={() => { setActiveTab('layers'); setActiveTool('position'); }}
@@ -2715,7 +2715,7 @@ const EditorInner: React.FC = () => {
               {activeTool && selected
                 ? renderToolSheet(activeTool, selected, canvas)
                 : selected && activeTab !== 'layers'
-                  ? <div className="-mx-4 -mb-4 h-[52vh]"><RightPanel selected={selected} canvas={canvas} /></div>
+                  ? <div className="-mx-4 -mb-4 h-[52vh]"><RightPanel selected={selected} canvas={canvas} preset={preset} customArtboard={customArtboard} onPresetChange={changeArtboardPreset} /></div>
                   : renderLeftPanel()}
             </MobileBottomSheet>
           </div>
@@ -2759,7 +2759,7 @@ const EditorInner: React.FC = () => {
             {/* Desktop right panel — contextual */}
             {selected && (
                <div className="editor-right-panel studio-panel hidden w-[260px] shrink-0 overflow-y-auto border-l lg:flex">
-                <RightPanel selected={selected} canvas={canvas} onClose={() => setRightOpen(false)} />
+                <RightPanel selected={selected} canvas={canvas} onClose={() => setRightOpen(false)} preset={preset} customArtboard={customArtboard} onPresetChange={changeArtboardPreset} />
               </div>
             )}
           </div>
@@ -2776,7 +2776,7 @@ const EditorInner: React.FC = () => {
       {/* Inspector slide-over — used when the docked right panel isn't visible */}
       <Sheet open={rightOpen} onOpenChange={setRightOpen}>
         <SheetContent side="right" className="w-[min(20rem,calc(100vw-2rem))] p-0 flex flex-col">
-          <RightPanel selected={selected} canvas={canvas} onClose={() => setRightOpen(false)} />
+          <RightPanel selected={selected} canvas={canvas} onClose={() => setRightOpen(false)} preset={preset} customArtboard={customArtboard} onPresetChange={changeArtboardPreset} />
         </SheetContent>
       </Sheet>
 
