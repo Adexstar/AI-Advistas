@@ -25,11 +25,12 @@ import { setPendingEditorTemplate } from '@/lib/templateEditorSession';
 import type { TemplateRecord } from '@/services/templates/types';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { CATEGORY_OPTIONS } from '@/utils/templateCategories';
 
-const CATEGORIES = ['Beauty', 'Fashion', 'Restaurant & Food', 'Fitness', 'Real Estate', 'SaaS & Technology', 'E-commerce'];
+const CATEGORIES = CATEGORY_OPTIONS.map((category) => category.label);
 
 const providerLabel = (s: string) =>
-  s === 'pexels' ? 'Pexels' : s === 'freepik' ? 'Freepik' : s;
+  s === 'pexels' ? 'Pexels' : s === 'unsplash' ? 'Unsplash' : s === 'pixabay' ? 'Pixabay' : s;
 
 const Thumb = ({ src, alt }: { src?: string | null; alt: string }) => {
   const [failed, setFailed] = useState(false);
@@ -67,7 +68,7 @@ export default function AdminTemplateGallery() {
 
   // Import panel state
   const [importQuery, setImportQuery] = useState('');
-  const [providers, setProviders] = useState<StockProvider[]>(['freepik', 'pexels']);
+  const [providers, setProviders] = useState<StockProvider[]>(['pexels', 'unsplash', 'pixabay']);
   const [importCategory, setImportCategory] = useState<string>('none');
   const [results, setResults] = useState<StockItem[]>([]);
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -143,7 +144,7 @@ export default function AdminTemplateGallery() {
             <div>
               <h2 className="text-base font-semibold">Import from providers</h2>
               <p className="text-sm text-muted-foreground">
-                Search Freepik and Pexels. Imports land as pending until you approve them.
+                Search Pexels, Unsplash, and Pixabay. Imports land as pending until you approve them.
               </p>
             </div>
             <Button
@@ -181,7 +182,7 @@ export default function AdminTemplateGallery() {
           </div>
 
           <div className="flex flex-wrap items-center gap-4">
-            {(['freepik', 'pexels'] as StockProvider[]).map((p) => (
+            {(['pexels', 'unsplash', 'pixabay'] as StockProvider[]).map((p) => (
               <label key={p} className="flex cursor-pointer items-center gap-2 text-sm">
                 <Checkbox checked={providers.includes(p)} onCheckedChange={() => toggleProvider(p)} />
                 {providerLabel(p)}

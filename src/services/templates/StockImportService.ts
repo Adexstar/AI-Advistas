@@ -1,10 +1,10 @@
 // StockImportService — the ONLY client entry point for importing third-party
-// stock assets (Freepik, Pexels) into AdVista's `templates` table.
+// stock assets (Pexels, Unsplash, Pixabay) into AdVista's `templates` table.
 // All provider traffic is server-side (edge function `import-stock-templates`),
 // results are cached 24h, and every import lands as pending (is_active=false).
 import { supabase } from "@/integrations/supabase/client";
 
-export type StockProvider = "freepik" | "pexels";
+export type StockProvider = "pexels" | "unsplash" | "pixabay";
 
 export interface StockItem {
   provider: StockProvider;
@@ -16,7 +16,9 @@ export interface StockItem {
   height: number;
   license: string;
   author?: string;
+  author_url?: string;
   page_url?: string;
+  download_location?: string;
   tags?: string[];
 }
 
@@ -47,7 +49,7 @@ export const StockImportService = {
     return call<ImportResponse>({ mode: "import", items, category: category ?? null });
   },
 
-  seedStarterPack(providers: StockProvider[] = ["freepik", "pexels"], perQuery = 5) {
+  seedStarterPack(providers: StockProvider[] = ["pexels", "unsplash", "pixabay"], perQuery = 5) {
     return call<ImportResponse>({ mode: "seed", providers, perQuery });
   },
 };

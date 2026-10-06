@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { setPendingEditorTemplate } from "@/lib/templateEditorSession";
 import type { TemplateRecord } from "@/services/templates/types";
+import { CATEGORY_OPTIONS, normalizeTemplateCategory } from "@/utils/templateCategories";
 import {
   Search, Sparkles, Heart, Eye, Pencil, X, AlertTriangle, RefreshCw,
   Facebook, Instagram, Linkedin, Youtube, LayoutGrid, ImageIcon,
@@ -24,7 +25,7 @@ import {
 const PAGE_SIZE = 12;
 const FAV_KEY = "advista_template_favorites";
 
-const CATEGORY_CHIPS = ["All", "Beauty", "Fashion", "Real Estate", "SaaS & Technology", "Restaurant & Food", "Fitness", "E-commerce"];
+const CATEGORY_CHIPS = ["All", ...CATEGORY_OPTIONS.map((category) => category.label)];
 const PLATFORM_CHIPS = ["All", "Instagram", "Instagram Story", "Facebook", "TikTok", "LinkedIn", "Google Display"];
 const FORMAT_CHIPS = ["All", "square", "story", "portrait", "landscape"];
 const FORMAT_LABEL: Record<string, string> = { square: "Post", story: "Story", portrait: "Portrait", landscape: "Landscape" };
@@ -120,7 +121,7 @@ export default function Templates() {
     return rows
       .map((t) => {
         let score = 0;
-        if (ctxCategory && t.category?.toLowerCase() === String(ctxCategory).toLowerCase()) score += 30;
+        if (ctxCategory && normalizeTemplateCategory(t.category) === normalizeTemplateCategory(String(ctxCategory))) score += 30;
         if (ctxGoal && t.objective?.toLowerCase() === String(ctxGoal).toLowerCase()) score += 25;
         if (ctxPlatform && t.platform?.toLowerCase() === String(ctxPlatform).toLowerCase()) score += 20;
         const brandReady = hasBrandVars(t);
@@ -135,9 +136,9 @@ export default function Templates() {
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return scored.filter(({ t }) => {
-      if (ctxActive && ctxCategory && t.category?.toLowerCase() !== String(ctxCategory).toLowerCase()) return false;
+      if (ctxActive && ctxCategory && normalizeTemplateCategory(t.category) !== normalizeTemplateCategory(String(ctxCategory))) return false;
       if (ctxActive && ctxGoal && t.objective?.toLowerCase() !== String(ctxGoal).toLowerCase()) return false;
-      if (category !== "All" && t.category !== category) return false;
+      if (category !== "All" && normalizeTemplateCategory(t.category) !== normalizeTemplateCategory(category)) return false;
       if (platform !== "All" && t.platform !== platform) return false;
       if (format !== "All" && t.format !== format) return false;
       if (!q) return true;

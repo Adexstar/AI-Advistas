@@ -73,6 +73,7 @@ import {
 } from 'lucide-react';
 import { TemplateDetailPanel } from '@/components/templates/TemplateDetailPanel';
 import { setPendingEditorTemplate } from '@/lib/templateEditorSession';
+import { CATEGORY_OPTIONS, normalizeTemplateCategory } from '@/utils/templateCategories';
 
 
 const PLATFORM_TABS = [
@@ -89,9 +90,18 @@ const CATEGORIES = [
   { id: 'beauty', label: 'Beauty', icon: Sparkles, color: 'bg-[#FCE7F3] text-pink-500' },
   { id: 'fashion', label: 'Fashion', icon: Shirt, color: 'bg-[#1F2937] text-white' },
   { id: 'real_estate', label: 'Real Estate', icon: Home, color: 'bg-[#DBEAFE] text-blue-600' },
-  { id: 'food', label: 'Food', icon: UtensilsCrossed, color: 'bg-[#FEF3C7] text-orange-500' },
-  { id: 'saas', label: 'SaaS', icon: Laptop, color: 'bg-[#EDE9FE] text-purple-600' },
+  { id: 'food', label: 'Restaurant & Food', icon: UtensilsCrossed, color: 'bg-[#FEF3C7] text-orange-500' },
+  { id: 'saas', label: 'SaaS & Technology', icon: Laptop, color: 'bg-[#EDE9FE] text-purple-600' },
   { id: 'fitness', label: 'Fitness', icon: Flame, color: 'bg-[#FEE2E2] text-red-500' },
+  { id: 'ecommerce', label: 'E-commerce', icon: LayoutGrid, color: 'bg-[#DCFCE7] text-emerald-600' },
+  { id: 'healthcare', label: 'Healthcare', icon: Heart, color: 'bg-[#DCFCE7] text-emerald-600' },
+  { id: 'education', label: 'Education', icon: LayoutGrid, color: 'bg-[#DBEAFE] text-blue-600' },
+  { id: 'automotive', label: 'Automotive', icon: Sparkles, color: 'bg-[#F3E8FF] text-violet-600' },
+  { id: 'finance', label: 'Finance', icon: Laptop, color: 'bg-[#E0F2FE] text-sky-600' },
+  { id: 'travel', label: 'Travel & Leisure', icon: Sparkles, color: 'bg-[#FDE68A] text-amber-600' },
+  { id: 'agency', label: 'Agency', icon: Sparkles, color: 'bg-[#FDF2F8] text-pink-600' },
+  { id: 'seasonal', label: 'Seasonal', icon: Sparkles, color: 'bg-[#EDE9FE] text-violet-600' },
+  { id: 'business', label: 'Business', icon: LayoutGrid, color: 'bg-[#F3F4F6] text-slate-700' },
 ];
 
 const CATEGORY_GRADIENTS: Record<string, string> = {
@@ -101,12 +111,13 @@ const CATEGORY_GRADIENTS: Record<string, string> = {
   food: 'linear-gradient(135deg, #3D2B1F, #8B5E3C)',
   saas: 'linear-gradient(135deg, #1E3A5F, #2D5F9A)',
   fitness: 'linear-gradient(135deg, #1A1A24, #8B1A1A)',
+  ecommerce: 'linear-gradient(135deg, #14532D, #22C55E)',
 };
 
 const DEFAULT_CATEGORY_GRADIENT = 'linear-gradient(135deg, #6C63FF, #A78BFA)';
 
 const categoryGradient = (category?: string | null) =>
-  CATEGORY_GRADIENTS[String(category ?? '').toLowerCase()] ?? DEFAULT_CATEGORY_GRADIENT;
+  CATEGORY_GRADIENTS[normalizeTemplateCategory(category)] ?? DEFAULT_CATEGORY_GRADIENT;
 
 const FAV_KEY = 'advista_template_favorites';
 const ASSIGN_KEY = 'advista_template_assignments';
@@ -382,7 +393,9 @@ const TemplateLibrary = () => {
       const { data, error } = await (supabase as any).rpc('template_category_counts', { p_source: 'advista_original' });
       if (error) throw error;
       return ((data ?? []) as Array<{ category: string; count: number; template_count?: number }>).reduce<Record<string, number>>((acc, row) => {
-        acc[row.category] = Number(row.count ?? row.template_count ?? 0);
+        const key = normalizeTemplateCategory(row.category);
+        if (!key) return acc;
+        acc[key] = Number(row.count ?? row.template_count ?? 0);
         return acc;
       }, {});
     },
@@ -415,7 +428,7 @@ const TemplateLibrary = () => {
       const ps = (t as AdTemplate).platforms || ((t as OriginalTemplate).platform ? [(t as OriginalTemplate).platform] : []);
       return ps.includes(platform);
     });
-    if (category) list = list.filter((t) => t.category === category);
+    if (category) list = list.filter((t) => normalizeTemplateCategory(t.category) === category);
     if (search) {
       const q = search.toLowerCase();
       list = list.filter((t) =>

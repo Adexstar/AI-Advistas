@@ -2,8 +2,8 @@
 // Modes:
 //   search -> normalized provider results (nothing written)
 //   import -> writes selected normalized items into public.templates as PENDING
-//   seed   -> bulk starter pack across both providers, all PENDING
-// Providers: Freepik (FREEPIK_API_KEY) and Pexels (PEXELS_API_KEY).
+//   seed   -> bulk starter pack across all providers, all PENDING
+// Providers: Pexels, Unsplash, and Pixabay.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -14,13 +14,14 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-const FREEPIK_KEY = Deno.env.get("FREEPIK_API_KEY");
 const PEXELS_KEY = Deno.env.get("PEXELS_API_KEY");
+const UNSPLASH_KEY = Deno.env.get("UNSPLASH_ACCESS_KEY");
+const PIXABAY_KEY = Deno.env.get("PIXABAY_API_KEY");
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 interface StockItem {
-  provider: "freepik" | "pexels";
+  provider: "pexels" | "unsplash" | "pixabay";
   source_id: string;
   name: string;
   image_url: string;
@@ -29,7 +30,9 @@ interface StockItem {
   height: number;
   license: string;
   author?: string;
+  author_url?: string;
   page_url?: string;
+  download_location?: string;
   tags?: string[];
 }
 
@@ -40,44 +43,6 @@ const json = (body: unknown, status = 200) =>
   });
 
 // ---------- providers ----------
-
-async function searchFreepik(query: string, limit: number): Promise<StockItem[]> {
-  if (!FREEPIK_KEY) return [];
-  const params = new URLSearchParams({
-    term: query,
-    page: "1",
-    limit: String(limit),
-    order: "relevance",
-  });
-  const res = await fetch(`https://api.freepik.com/v1/resources?${params}`, {
-    headers: { "x-freepik-api-key": FREEPIK_KEY, Accept: "application/json" },
-  });
-  if (!res.ok) {
-    console.error("freepik search failed", res.status, await res.text());
-    return [];
-  }
-  const body = await res.json();
-  const rows = (body?.data ?? []) as any[];
-  return rows
-    .map((i) => {
-      const src = i.image?.source ?? {};
-      const url = src.url ?? i.preview?.url ?? i.thumbnail?.url ?? "";
-      return {
-        provider: "freepik" as const,
-        source_id: String(i.id),
-        name: String(i.title ?? "Freepik asset").slice(0, 140),
-        image_url: url,
-        thumbnail_url: src.url ?? i.thumbnail?.url ?? url,
-        width: Number(src.size?.split?.("x")?.[0]) || Number(i.image?.source?.width) || 1080,
-        height: Number(src.size?.split?.("x")?.[1]) || Number(i.image?.source?.height) || 1080,
-        license: i.licenses?.[0]?.type ? `freepik:${i.licenses[0].type}` : "freepik",
-        author: i.author?.name,
-        page_url: i.url,
-        tags: Array.isArray(i.related?.keywords) ? i.related.keywords.slice(0, 8) : undefined,
-      };
-    })
-    .filter((i) => i.image_url);
-}
 
 async function searchPexels(query: string, limit: number): Promise<StockItem[]> {
   if (!PEXELS_KEY) return [];
@@ -105,10 +70,73 @@ async function searchPexels(query: string, limit: number): Promise<StockItem[]> 
   })).filter((i) => i.image_url);
 }
 
+async function searchUnsplash(query: string, limit: number): Promise<StockItem[]> {
+  if (!UNSPLASH_KEY) return [];
+  const params = new URLSearchParams({ query, per_page: String(Math.min(limit, 30)) });
+  const res = await fetch(`https://api.unsplash.com/search/photos?${params}`, {
+    headers: { Authorization: `Client-ID ${UNSPLASH_KEY}`, "Accept-Version": "v1" },
+  });
+  if (!res.ok) {
+    console.error("unsplash search failed", res.status, await res.text());
+    return [];
+  }
+  const body = await res.json();
+  return ((body?.results ?? []) as any[]).map((p) => {
+    const authorUrl = p.user?.links?.html
+      ? `${p.user.links.html}?utm_source=advista&utm_medium=referral`
+      : undefined;
+    return {
+      provider: "unsplash" as const,
+      source_id: String(p.id),
+      name: String(p.alt_description || p.description || `Unsplash photo ${p.id}`).slice(0, 140),
+      image_url: p.urls?.regular ?? p.urls?.full ?? "",
+      thumbnail_url: p.urls?.small ?? p.urls?.thumb ?? "",
+      width: Number(p.width) || 1080,
+      height: Number(p.height) || 1080,
+      license: "unsplash:license",
+      author: p.user?.name,
+      author_url: authorUrl,
+      page_url: p.links?.html,
+      download_location: p.links?.download_location,
+      tags: (p.tags ?? []).slice(0, 8).map((tag: any) => tag.title).filter(Boolean),
+    };
+  }).filter((item) => item.image_url);
+}
+
+async function searchPixabay(query: string, limit: number): Promise<StockItem[]> {
+  if (!PIXABAY_KEY) return [];
+  const params = new URLSearchParams({
+    key: PIXABAY_KEY,
+    q: query,
+    image_type: "all",
+    per_page: String(Math.min(limit, 200)),
+  });
+  const res = await fetch(`https://pixabay.com/api/?${params}`);
+  if (!res.ok) {
+    console.error("pixabay search failed", res.status, await res.text());
+    return [];
+  }
+  const body = await res.json();
+  return ((body?.hits ?? []) as any[]).map((image) => ({
+    provider: "pixabay" as const,
+    source_id: String(image.id),
+    name: String(image.tags || `Pixabay image ${image.id}`).slice(0, 140),
+    image_url: image.largeImageURL ?? image.webformatURL ?? "",
+    thumbnail_url: image.previewURL ?? image.webformatURL ?? "",
+    width: Number(image.imageWidth) || 1080,
+    height: Number(image.imageHeight) || 1080,
+    license: "pixabay:content-license",
+    author: image.user,
+    page_url: image.pageURL,
+    tags: String(image.tags ?? "").split(",").map((tag: string) => tag.trim()).filter(Boolean).slice(0, 8),
+  })).filter((item) => item.image_url);
+}
+
 async function searchProviders(providers: string[], query: string, limit: number) {
   const jobs: Promise<StockItem[]>[] = [];
-  if (providers.includes("freepik")) jobs.push(searchFreepik(query, limit).catch(() => []));
   if (providers.includes("pexels")) jobs.push(searchPexels(query, limit).catch(() => []));
+  if (providers.includes("unsplash")) jobs.push(searchUnsplash(query, limit).catch(() => []));
+  if (providers.includes("pixabay")) jobs.push(searchPixabay(query, limit).catch(() => []));
   const out = await Promise.all(jobs);
   return out.flat();
 }
@@ -263,7 +291,9 @@ function toTemplateRow(item: StockItem, category: string | null, userId: string)
   const { format, width, height } = pickFormat(item.width, item.height);
   return {
     name: item.name,
-    description: item.author ? `${item.provider === "pexels" ? "Photo" : "Asset"} by ${item.author}` : null,
+    description: item.author
+      ? `Photo by ${item.author}${item.provider === "unsplash" ? " on Unsplash" : ` on ${item.provider === "pexels" ? "Pexels" : "Pixabay"}`}`
+      : null,
     category,
     platform: format === "story" ? "Instagram Story" : "Instagram",
     objective: "awareness",
@@ -276,7 +306,7 @@ function toTemplateRow(item: StockItem, category: string | null, userId: string)
     ai_tags: item.tags ?? (category ? [category] : []),
     industry_tags: category ? [category] : [],
     brand_compatible: true,
-    premium: item.provider === "freepik",
+    premium: false,
     popularity_score: 0,
     is_active: false,
     review_status: "pending",
@@ -289,7 +319,9 @@ function toTemplateRow(item: StockItem, category: string | null, userId: string)
     created_by: userId,
     metadata: {
       author: item.author ?? null,
+      author_url: item.author_url ?? null,
       page_url: item.page_url ?? null,
+      download_location: item.download_location ?? null,
       original_width: item.width,
       original_height: item.height,
       recommended_platforms: ["Instagram", "Facebook"],
@@ -304,7 +336,29 @@ const SEED_QUERIES: { query: string; category: string }[] = [
   { query: "gym fitness training", category: "Fitness" },
   { query: "modern house real estate", category: "Real Estate" },
   { query: "software startup workspace", category: "SaaS & Technology" },
+  { query: "online shopping product", category: "E-commerce" },
+  { query: "healthcare clinic doctor", category: "Healthcare" },
+  { query: "education learning classroom", category: "Education" },
+  { query: "automotive car dealership", category: "Automotive" },
+  { query: "finance fintech business", category: "Finance" },
+  { query: "travel destination resort", category: "Travel" },
+  { query: "creative marketing agency", category: "Agency" },
+  { query: "seasonal holiday promotion", category: "Seasonal" },
+  { query: "professional business team", category: "Business" },
 ];
+
+async function trackUnsplashDownloads(items: StockItem[]) {
+  if (!UNSPLASH_KEY) return;
+  await Promise.all(items.filter((item) => item.provider === "unsplash" && item.download_location).map(async (item) => {
+    try {
+      const url = new URL(item.download_location!);
+      if (url.origin !== "https://api.unsplash.com") return;
+      await fetch(url, { headers: { Authorization: `Client-ID ${UNSPLASH_KEY}`, "Accept-Version": "v1" } });
+    } catch (err) {
+      console.warn("unsplash download tracking failed", err);
+    }
+  }));
+}
 
 // ---------- handler ----------
 
@@ -330,9 +384,10 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const mode = String(body.mode ?? "search");
+    const validProviders = ["pexels", "unsplash", "pixabay"];
     const providers: string[] = Array.isArray(body.providers) && body.providers.length
-      ? body.providers.filter((p: string) => p === "freepik" || p === "pexels")
-      : ["freepik", "pexels"];
+      ? [...new Set(body.providers.filter((p: string) => validProviders.includes(p)))]
+      : validProviders;
 
     if (mode === "search") {
       const query = String(body.query ?? "").trim();
@@ -341,7 +396,11 @@ Deno.serve(async (req) => {
       const results = await cachedSearch(admin, providers, query, limit);
       return json({
         results,
-        providers: { freepik: !!FREEPIK_KEY, pexels: !!PEXELS_KEY },
+        providers: {
+          pexels: !!PEXELS_KEY,
+          unsplash: !!UNSPLASH_KEY,
+          pixabay: !!PIXABAY_KEY,
+        },
       });
     }
 
@@ -399,6 +458,8 @@ Deno.serve(async (req) => {
         console.error("insert failed", insErr);
         return json({ error: insErr.message }, 500);
       }
+
+      await trackUnsplashDownloads(fresh);
 
       return json({
         imported: inserted?.length ?? 0,
