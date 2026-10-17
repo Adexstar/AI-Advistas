@@ -41,7 +41,7 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary via-primary-900 to-primary-800">
+    <section className="relative min-h-[100dvh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary via-primary-900 to-primary-800">
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0 bg-grid-pattern bg-[length:60px_60px]" />
       </div>
@@ -52,19 +52,19 @@ const HeroSection = () => {
         initial="hidden"
         animate="visible"
       >
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="grid lg:grid-cols-2 gap-6 items-center">
           {/* Left Column - Content */}
           <div className="text-left">
             <motion.div 
               variants={itemVariants}
               className="inline-flex items-center px-4 py-2 bg-gradient-glass backdrop-blur-sm rounded-full border border-white/20 mb-6"
             >
-              <span className="text-sm font-medium text-white">🤖 AI-Powered</span>
+              <span className="text-sm font-medium text-white">AI-Powered</span>
             </motion.div>
             
             <motion.h1 
               variants={itemVariants}
-              className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 text-white leading-tight"
+              className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-white leading-[1.1]"
             >
               Transform Your 
               <span className="bg-gradient-to-r from-yellow-400 to-yellow-300 bg-clip-text text-transparent">
@@ -76,7 +76,7 @@ const HeroSection = () => {
             
             <motion.p 
               variants={itemVariants}
-              className="text-xl text-white/80 mb-8 max-w-lg leading-relaxed"
+              className="text-base text-white/80 mb-8 max-w-[65ch] leading-relaxed"
             >
               Create compelling ads for your brand, music, movies, and videos. Deploy across all major platforms with intelligent targeting and real-time optimization.
             </motion.p>
