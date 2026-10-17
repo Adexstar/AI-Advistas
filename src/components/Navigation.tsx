@@ -84,7 +84,7 @@ const Navigation = () => {
           </div>
 
           <div className="md:hidden">
-            <Button variant="ghost" size="icon" ariaExpanded={isOpen} ariaLabel={isOpen ? 'Close navigation menu' : 'Open navigation menu'} className="rounded-xl border border-border/70 bg-white/60" onClick={() => setIsOpen((current) => !current)}>
+            <Button variant="ghost" size="icon" aria-expanded={isOpen} aria-label={isOpen ? 'Close navigation menu' : 'Open navigation menu'} className="rounded-xl border border-border/70 bg-white/60" onClick={() => setIsOpen((current) => !current)}>
               {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
           </div>
