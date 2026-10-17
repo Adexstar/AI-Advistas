@@ -73,33 +73,52 @@ export type Database = {
       }
       ads: {
         Row: {
+          campaign_id: string | null
+          canvas_data: Json | null
           content: Json
           created_at: string
           id: string
+          name: string
           preview_url: string | null
+          status: string
           template_id: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          campaign_id?: string | null
+          canvas_data?: Json | null
           content?: Json
           created_at?: string
           id?: string
+          name?: string
           preview_url?: string | null
+          status?: string
           template_id?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          campaign_id?: string | null
+          canvas_data?: Json | null
           content?: Json
           created_at?: string
           id?: string
+          name?: string
           preview_url?: string | null
+          status?: string
           template_id?: string | null
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "ads_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ads_template_id_fkey"
             columns: ["template_id"]
@@ -443,6 +462,48 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_assets: {
+        Row: {
+          ad_id: string
+          campaign_id: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ad_id: string
+          campaign_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ad_id?: string
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_assets_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: true
+            referencedRelation: "ads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_assets_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_memory: {
         Row: {
           best_brand_elements: Json | null
@@ -579,9 +640,11 @@ export type Database = {
           reach: number
           revenue: number
           roas: number
+          settings: Json
           spend: number
           start_date: string | null
           status: string
+          target_audience: Json
           updated_at: string
           user_id: string
         }
@@ -601,9 +664,11 @@ export type Database = {
           reach?: number
           revenue?: number
           roas?: number
+          settings?: Json
           spend?: number
           start_date?: string | null
           status?: string
+          target_audience?: Json
           updated_at?: string
           user_id: string
         }
@@ -623,9 +688,11 @@ export type Database = {
           reach?: number
           revenue?: number
           roas?: number
+          settings?: Json
           spend?: number
           start_date?: string | null
           status?: string
+          target_audience?: Json
           updated_at?: string
           user_id?: string
         }
@@ -1919,6 +1986,39 @@ export type Database = {
           day: string
           users: number
         }[]
+      }
+      duplicate_campaign: {
+        Args: { p_campaign_id: string }
+        Returns: {
+          archived: boolean
+          budget: number
+          clicks: number
+          conversions: number
+          created_at: string
+          ctr: number
+          end_date: string | null
+          id: string
+          impressions: number
+          name: string
+          objective: string
+          platform: string | null
+          reach: number
+          revenue: number
+          roas: number
+          settings: Json
+          spend: number
+          start_date: string | null
+          status: string
+          target_audience: Json
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "campaigns"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       has_role: {
         Args: {
