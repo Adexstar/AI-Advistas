@@ -16,6 +16,8 @@ import { CampaignTimeline } from '@/components/campaigns/CampaignTimeline';
 import { CampaignRecommendations } from '@/components/campaigns/CampaignRecommendations';
 import { CampaignVersionsTab } from '@/components/campaigns/CampaignVersionsTab';
 import { CampaignFilesTab } from '@/components/campaigns/CampaignFilesTab';
+import { CampaignCreativesTab } from '@/components/campaigns/CampaignCreativesTab';
+import { useContextOverride } from '@/contexts/AIContext';
 import { CampaignNotesTab } from '@/components/campaigns/CampaignNotesTab';
 import { CampaignAutomationRules } from '@/components/campaigns/CampaignAutomationRules';
 import { CampaignPublishingTab } from '@/components/campaigns/CampaignPublishingTab';
@@ -66,12 +68,14 @@ const CampaignWorkspace = () => {
     queryKey: ['campaign', id],
     enabled: !!id,
     queryFn: async () => {
-      const { data, error } = await supabase.from('campaigns').select('*').eq('id', id!).single();
+      if (!id) throw new Error('Campaign not specified');
+      const { data, error } = await supabase.from('campaigns').select('*').eq('id', id).single();
       if (error) throw error;
       return data as any;
     },
   });
   const campaign = rawCampaign as any;
+  useContextOverride(campaign ? { source: 'campaign', label: campaign.name, patch: { current_campaign_id: campaign.id, current_goal: campaign.objective } } : null);
 
   const health = useMemo(() => {
     if (!campaign) return { overall: 0, creative_quality: 0, audience_match: 0, budget_efficiency: 0, optimization_level: 0 };
@@ -212,11 +216,7 @@ const CampaignWorkspace = () => {
 
           {/* CREATIVES */}
           <TabsContent value="creatives" className="space-y-6 mt-0">
-            <section>
-              <h3 className="text-lg font-bold mb-1">Creatives</h3>
-              <p className="text-sm text-muted-foreground mb-4">Templates, images, and ad variations connected to this campaign.</p>
-              <CampaignFilesTab campaignId={campaign.id} />
-            </section>
+            <CampaignCreativesTab campaignId={campaign.id} />
           </TabsContent>
 
           {/* AUDIENCE */}
