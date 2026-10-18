@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
+import { CampaignService } from '@/services/campaign/CampaignService';
 
 export type CampaignRow = Database['public']['Tables']['campaigns']['Row'];
 export type CampaignInsert = Database['public']['Tables']['campaigns']['Insert'];
@@ -33,10 +34,11 @@ export function useCampaigns(opts?: { includeArchived?: boolean }) {
     queryKey: ['campaigns', userId, opts?.includeArchived ?? false],
     enabled: !!userId,
     queryFn: async () => {
+      if (!userId) throw new Error('Not signed in');
       let q = supabase
         .from('campaigns')
         .select('*')
-        .eq('user_id', userId!)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
       if (!opts?.includeArchived) q = q.eq('archived', false);
       const { data, error } = await q;
@@ -118,13 +120,7 @@ export function useDuplicateCampaign() {
   return useMutation({
     mutationFn: async (campaign: CampaignRow) => {
       if (!user) throw new Error('Not signed in');
-      const { id, created_at, updated_at, impressions, clicks, conversions, revenue, reach, spend, ctr, roas, ...rest } = campaign;
-      const { data, error } = await supabase
-        .from('campaigns')
-        .insert({ ...rest, name: `${campaign.name} (Copy)`, status: 'draft', user_id: user.id })
-        .select()
-        .single();
-      if (error) throw error;
+      const data = await CampaignService.duplicate(user.id, campaign);
       await logActivity(user.id, 'campaign_duplicated', `Duplicated "${campaign.name}"`, data.id);
       return data;
     },
