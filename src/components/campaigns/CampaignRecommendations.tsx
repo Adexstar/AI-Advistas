@@ -34,10 +34,11 @@ export function CampaignRecommendations({ campaignId }: Props) {
 
   const handleApply = async (id: string) => {
     try {
-      await CampaignRecommendationService.apply(id, campaignId, user!.id);
+      if (!user) return;
+      await CampaignRecommendationService.accept(id, campaignId, user.id);
       qc.invalidateQueries({ queryKey: ['campaign-recommendations', campaignId] });
       qc.invalidateQueries({ queryKey: ['campaign-events', campaignId] });
-      toast.success('Recommendation applied');
+      toast.success('Recommendation accepted; your campaign is unchanged');
     } catch {
       toast.error('Failed to apply recommendation');
     }
@@ -121,7 +122,7 @@ function RecommendationCard({
               <X className="h-4 w-4" />
             </Button>
             <Button size="sm" className="h-8 gap-1 rounded-xl" onClick={onApply}>
-              <Check className="h-3.5 w-3.5" /> Apply
+              <Check className="h-3.5 w-3.5" /> Accept
             </Button>
           </div>
         </div>

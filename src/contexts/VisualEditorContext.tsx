@@ -151,47 +151,11 @@ export const VisualEditorProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
-  const loadTemplate = async (template: Template) => {
-    try {
-      // For the ad editor context, we just need to navigate to the editor
-      toast({
-        title: "Template loaded",
-        description: `Successfully loaded ${template.name}`,
-      });
-      
-    } catch (error) {
-      console.error('Error loading template:', error);
-      toast({
-        title: "Error loading template",
-        description: "Could not load the selected template",
-        variant: "destructive",
-      });
-    }
+  const loadTemplate = (template: Template) => {
+    window.location.assign(`/visual-editor?template=${encodeURIComponent(template.id)}`);
   };
-
   const saveProject = () => {
-    try {
-      if (fabricCanvas && mode === 'image') {
-        const canvasData = fabricCanvas.toJSON();
-        const projectToSave = {
-          ...currentProject,
-          data: canvasData,
-          updatedAt: new Date(),
-        };
-        
-        localStorage.setItem('current-visual-project', JSON.stringify(projectToSave));
-        toast({
-          title: "Project saved",
-          description: "Your project has been saved successfully",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Save failed",
-        description: "Could not save your project",
-        variant: "destructive",
-      });
-    }
+    window.dispatchEvent(new CustomEvent('advista:save-creative'));
   };
 
   const exportProject = async (format: string) => {
