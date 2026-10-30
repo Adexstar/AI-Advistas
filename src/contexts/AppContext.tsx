@@ -1,5 +1,12 @@
-import { createContext, useContext, useReducer, ReactNode } from 'react';
-import { toast } from '@/hooks/use-toast';
+// Compatibility facade: canonical campaign/creative data is owned by React Query.
+import { createContext, useContext, useState, type ReactNode } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { useCampaigns, type CampaignRow } from '@/hooks/useCampaigns';
+import { CampaignService } from '@/services/campaign/CampaignService';
+import { CreativeService } from '@/services/creative/CreativeService';
+import type { Json } from '@/integrations/supabase/types';
 
 // Types
 export type BudgetPeriod = 'daily' | 'total';
@@ -91,442 +98,85 @@ export interface AppState {
   timeRange: '7days' | '30days' | '90days';
 }
 
-// Actions
-type AppAction =
-  | { type: 'CREATE_CAMPAIGN'; payload: Omit<Campaign, 'id' | 'createdAt'> }
-  | { type: 'UPDATE_CAMPAIGN'; payload: { id: string; updates: Partial<Campaign> } }
-  | { type: 'BULK_UPDATE_CAMPAIGNS'; payload: { ids: string[]; updates: Partial<Campaign> } }
-  | { type: 'DELETE_CAMPAIGN'; payload: string }
-  | { type: 'BULK_DELETE_CAMPAIGNS'; payload: string[] }
-  | { type: 'DUPLICATE_CAMPAIGNS'; payload: string[] }
-  | { type: 'CREATE_AD'; payload: Omit<Ad, 'id' | 'createdAt'> }
-  | { type: 'UPDATE_AD'; payload: { id: string; updates: Partial<Ad> } }
-  | { type: 'DELETE_AD'; payload: string }
-  | { type: 'SELECT_CAMPAIGN'; payload: Campaign | null }
-  | { type: 'SELECT_AD'; payload: Ad | null }
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_ACTIVE_METRIC'; payload: AppState['activeMetric'] }
-  | { type: 'SET_TIME_RANGE'; payload: AppState['timeRange'] }
-  | { type: 'TOGGLE_CAMPAIGN_STATUS'; payload: string }
-  | { type: 'TOGGLE_AD_STATUS'; payload: string };
 
-// Initial state with mock data
-const initialState: AppState = {
-  campaigns: [
-    {
-      id: '1',
-      name: 'Summer Sale Campaign',
-      status: 'active',
-      platform: ['Facebook', 'Instagram'],
-      budget: 2500,
-      spent: 1850,
-      impressions: 145200,
-      clicks: 4066,
-      ctr: 2.8,
-      startDate: '2024-01-15',
-      endDate: '2024-02-15',
-      createdAt: '2024-01-15T10:00:00Z'
-    },
-    {
-      id: '2',
-      name: 'Product Launch',
-      status: 'paused',
-      platform: ['Google Ads', 'Instagram'],
-      budget: 1800,
-      spent: 1200,
-      impressions: 98700,
-      clicks: 3058,
-      ctr: 3.1,
-      startDate: '2024-01-10',
-      endDate: '2024-01-25',
-      createdAt: '2024-01-10T09:00:00Z'
-    },
-    {
-      id: '3',
-      name: 'Brand Awareness',
-      status: 'draft',
-      platform: ['LinkedIn', 'Twitter'],
-      budget: 3200,
-      spent: 2890,
-      impressions: 267300,
-      clicks: 5077,
-      ctr: 1.9,
-      startDate: '2024-02-01',
-      endDate: '2024-02-28',
-      createdAt: '2024-01-28T14:00:00Z'
-    }
-  ],
-  ads: [
-    {
-      id: '1',
-      name: 'Summer Collection Ad',
-      campaignId: '1',
-      status: 'active',
-      format: 'image',
-      impressions: 12300,
-      clicks: 344,
-      ctr: 2.8,
-      content: {
-        product: 'Summer Collection',
-        details: 'Trending summer styles with 30% off',
-        websiteUrl: 'https://example.com/summer',
-        adType: 'image',
-        platforms: ['Facebook', 'Instagram'],
-        audience: 'Fashion enthusiasts aged 25-45'
-      },
-      createdAt: '2024-01-15T11:00:00Z'
-    },
-    {
-      id: '2',
-      name: 'New Product Showcase',
-      campaignId: '2',
-      status: 'active',
-      format: 'carousel',
-      impressions: 8700,
-      clicks: 270,
-      ctr: 3.1,
-      content: {
-        product: 'New Product Line',
-        details: 'Innovative products launching this month',
-        websiteUrl: 'https://example.com/products',
-        adType: 'carousel',
-        platforms: ['Google Ads', 'Instagram'],
-        audience: 'Tech-savvy consumers 18-35'
-      },
-      createdAt: '2024-01-10T10:00:00Z'
-    }
-  ],
-  selectedCampaign: null,
-  selectedAd: null,
-  isLoading: false,
-  activeMetric: 'impressions',
-  timeRange: '30days'
-};
-
-// Reducer
-function appReducer(state: AppState, action: AppAction): AppState {
-  switch (action.type) {
-    case 'CREATE_CAMPAIGN':
-      const newCampaign: Campaign = {
-        ...action.payload,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString()
-      };
-      return {
-        ...state,
-        campaigns: [...state.campaigns, newCampaign]
-      };
-
-    case 'UPDATE_CAMPAIGN':
-      return {
-        ...state,
-        campaigns: state.campaigns.map(campaign =>
-          campaign.id === action.payload.id
-            ? { ...campaign, ...action.payload.updates }
-            : campaign
-        ),
-        selectedCampaign:
-          state.selectedCampaign?.id === action.payload.id
-            ? { ...state.selectedCampaign, ...action.payload.updates }
-            : state.selectedCampaign
-      };
-
-    case 'BULK_UPDATE_CAMPAIGNS':
-      return {
-        ...state,
-        campaigns: state.campaigns.map(campaign =>
-          action.payload.ids.includes(campaign.id)
-            ? { ...campaign, ...action.payload.updates }
-            : campaign
-        ),
-        selectedCampaign:
-          state.selectedCampaign && action.payload.ids.includes(state.selectedCampaign.id)
-            ? { ...state.selectedCampaign, ...action.payload.updates }
-            : state.selectedCampaign
-      };
-
-    case 'DELETE_CAMPAIGN':
-      return {
-        ...state,
-        campaigns: state.campaigns.filter(campaign => campaign.id !== action.payload),
-        ads: state.ads.filter(ad => ad.campaignId !== action.payload),
-        selectedCampaign: state.selectedCampaign?.id === action.payload ? null : state.selectedCampaign
-      };
-
-    case 'BULK_DELETE_CAMPAIGNS':
-      return {
-        ...state,
-        campaigns: state.campaigns.filter(campaign => !action.payload.includes(campaign.id)),
-        ads: state.ads.filter(ad => !action.payload.includes(ad.campaignId)),
-        selectedCampaign:
-          state.selectedCampaign && action.payload.includes(state.selectedCampaign.id)
-            ? null
-            : state.selectedCampaign
-      };
-
-    case 'DUPLICATE_CAMPAIGNS':
-      return {
-        ...state,
-        campaigns: [
-          ...state.campaigns,
-          ...state.campaigns
-            .filter(campaign => action.payload.includes(campaign.id))
-            .map((campaign, index) => ({
-              ...campaign,
-              id: `${Date.now()}-${index}`,
-              name: `${campaign.name} Copy`,
-              status: 'draft' as const,
-              spent: 0,
-              impressions: 0,
-              clicks: 0,
-              ctr: 0,
-              conversions: 0,
-              cpa: undefined,
-              cpc: undefined,
-              roas: undefined,
-              revenue: undefined,
-              createdAt: new Date().toISOString(),
-            }))
-        ]
-      };
-
-    case 'CREATE_AD':
-      const newAd: Ad = {
-        ...action.payload,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString()
-      };
-      return {
-        ...state,
-        ads: [...state.ads, newAd]
-      };
-
-    case 'UPDATE_AD':
-      return {
-        ...state,
-        ads: state.ads.map(ad =>
-          ad.id === action.payload.id
-            ? { ...ad, ...action.payload.updates }
-            : ad
-        )
-      };
-
-    case 'DELETE_AD':
-      return {
-        ...state,
-        ads: state.ads.filter(ad => ad.id !== action.payload)
-      };
-
-    case 'SELECT_CAMPAIGN':
-      return {
-        ...state,
-        selectedCampaign: action.payload
-      };
-
-    case 'SELECT_AD':
-      return {
-        ...state,
-        selectedAd: action.payload
-      };
-
-    case 'SET_LOADING':
-      return {
-        ...state,
-        isLoading: action.payload
-      };
-
-    case 'SET_ACTIVE_METRIC':
-      return {
-        ...state,
-        activeMetric: action.payload
-      };
-
-    case 'SET_TIME_RANGE':
-      return {
-        ...state,
-        timeRange: action.payload
-      };
-
-    case 'TOGGLE_CAMPAIGN_STATUS':
-      return {
-        ...state,
-        campaigns: state.campaigns.map(campaign =>
-          campaign.id === action.payload
-            ? {
-                ...campaign,
-                status: campaign.status === 'active' ? 'paused' : 'active'
-              }
-            : campaign
-        )
-      };
-
-    case 'TOGGLE_AD_STATUS':
-      return {
-        ...state,
-        ads: state.ads.map(ad =>
-          ad.id === action.payload
-            ? {
-                ...ad,
-                status: ad.status === 'active' ? 'paused' : 'active'
-              }
-            : ad
-        )
-      };
-
-    default:
-      return state;
-  }
+function campaignView(row: CampaignRow): Campaign {
+  return { id: row.id, name: row.name, status: row.status as Campaign['status'], platform: row.platform?.split(',') ?? [],
+    budget: row.budget, spent: row.spend, impressions: row.impressions, clicks: row.clicks, ctr: row.ctr,
+    conversions: row.conversions, revenue: row.revenue, roas: row.roas,
+    startDate: row.start_date ?? '', endDate: row.end_date ?? undefined, createdAt: row.created_at };
 }
-
-// Context
-const AppContext = createContext<{
-  state: AppState;
-  dispatch: React.Dispatch<AppAction>;
-  actions: {
-    createCampaign: (campaign: Omit<Campaign, 'id' | 'createdAt'>) => void;
-    updateCampaign: (id: string, updates: Partial<Campaign>) => void;
-    bulkUpdateCampaigns: (ids: string[], updates: Partial<Campaign>) => void;
-    deleteCampaign: (id: string) => void;
-    bulkDeleteCampaigns: (ids: string[]) => void;
-    duplicateCampaigns: (ids: string[]) => void;
-    createAd: (ad: Omit<Ad, 'id' | 'createdAt'>) => void;
-    updateAd: (id: string, updates: Partial<Ad>) => void;
-    deleteAd: (id: string) => void;
-    selectCampaign: (campaign: Campaign | null) => void;
-    selectAd: (ad: Ad | null) => void;
-    toggleCampaignStatus: (id: string) => void;
-    toggleAdStatus: (id: string) => void;
-    setActiveMetric: (metric: AppState['activeMetric']) => void;
-    setTimeRange: (range: AppState['timeRange']) => void;
+function campaignPayload(input: Partial<Campaign>) {
+  return {
+    ...(input.name !== undefined ? { name: input.name } : {}),
+    ...(input.status !== undefined ? { status: input.status } : {}),
+    ...(input.platform !== undefined ? { platform: input.platform.join(',') } : {}),
+    ...(input.budget !== undefined ? { budget: input.budget } : {}),
+    ...(input.startDate !== undefined ? { start_date: input.startDate || null } : {}),
+    ...(input.endDate !== undefined ? { end_date: input.endDate || null } : {}),
   };
-} | null>(null);
-
-// Provider
-export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [state, dispatch] = useReducer(appReducer, initialState);
-
+}
+const AppContext = createContext<ReturnType<typeof useCanonicalApp> | null>(null);
+function useCanonicalApp() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const campaigns = useCampaigns();
+  const creatives = useQuery({ queryKey: ['creatives', user?.id], enabled: !!user, queryFn: () => {
+    if (!user) throw new Error('Not signed in');
+    return CreativeService.list(user.id);
+  } });
+  const [selectedCampaign, selectCampaign] = useState<Campaign | null>(null);
+  const [selectedAd, selectAd] = useState<Ad | null>(null);
+  const [activeMetric, setActiveMetric] = useState<AppState['activeMetric']>('impressions');
+  const [timeRange, setTimeRange] = useState<AppState['timeRange']>('30days');
+  const refresh = () => { qc.invalidateQueries({ queryKey: ['campaigns'] }); qc.invalidateQueries({ queryKey: ['creatives'] }); };
+  const requireUser = () => { if (!user) throw new Error('Not signed in'); return user.id; };
+  const updateCampaign = async (id: string, updates: Partial<Campaign>) => {
+    const { error } = await supabase.from('campaigns').update(campaignPayload(updates)).eq('id', id).eq('user_id', requireUser());
+    if (error) throw error;
+    refresh();
+  };
+  const deleteCampaign = async (id: string) => {
+    const { error } = await supabase.from('campaigns').delete().eq('id', id).eq('user_id', requireUser());
+    if (error) throw error;
+    refresh();
+  };
+  const state: AppState = {
+    campaigns: (campaigns.data ?? []).map(campaignView),
+    ads: (creatives.data ?? []).map(row => ({ id: row.id, name: row.name, campaignId: row.campaign_id ?? '',
+      status: row.status as Ad['status'], format: 'image', impressions: 0, clicks: 0, ctr: 0,
+      content: row.content as unknown as AdContent, createdAt: row.created_at })),
+    selectedCampaign, selectedAd, activeMetric, timeRange, isLoading: campaigns.isLoading || creatives.isLoading,
+  };
   const actions = {
-    createCampaign: (campaign: Omit<Campaign, 'id' | 'createdAt'>) => {
-      dispatch({ type: 'CREATE_CAMPAIGN', payload: campaign });
-      toast({
-        title: "Campaign Created",
-        description: `${campaign.name} has been created successfully.`,
-      });
+    createCampaign: async (input: Omit<Campaign, 'id' | 'createdAt'>) => {
+      const userId = requireUser();
+      const { data, error } = await supabase.from('campaigns').insert({ ...campaignPayload(input), name: input.name, user_id: userId }).select().single();
+      if (error) throw error;
+      if (input.adContent) await CreativeService.save(userId, { campaign_id: data.id, name: input.name, content: input.adContent as unknown as Json });
+      refresh();
     },
-
-    updateCampaign: (id: string, updates: Partial<Campaign>) => {
-      dispatch({ type: 'UPDATE_CAMPAIGN', payload: { id, updates } });
-      toast({
-        title: "Campaign Updated",
-        description: "Campaign has been updated successfully.",
-      });
+    updateCampaign, deleteCampaign,
+    bulkUpdateCampaigns: async (ids: string[], updates: Partial<Campaign>) => { await Promise.all(ids.map(id => updateCampaign(id, updates))); },
+    bulkDeleteCampaigns: async (ids: string[]) => { await Promise.all(ids.map(deleteCampaign)); },
+    duplicateCampaigns: async (ids: string[]) => {
+      for (const id of ids) { const source = campaigns.data?.find(row => row.id === id); if (source) await CampaignService.duplicate(requireUser(), source); }
+      refresh();
     },
-
-    bulkUpdateCampaigns: (ids: string[], updates: Partial<Campaign>) => {
-      dispatch({ type: 'BULK_UPDATE_CAMPAIGNS', payload: { ids, updates } });
-      toast({
-        title: "Campaigns Updated",
-        description: `${ids.length} campaign${ids.length === 1 ? '' : 's'} updated successfully.`,
-      });
+    createAd: async (input: Omit<Ad, 'id' | 'createdAt'>) => {
+      await CreativeService.save(requireUser(), { name: input.name, campaign_id: input.campaignId || null, content: input.content as unknown as Json, status: input.status }); refresh();
     },
-
-    deleteCampaign: (id: string) => {
-      dispatch({ type: 'DELETE_CAMPAIGN', payload: id });
-      toast({
-        title: "Campaign Deleted",
-        description: "Campaign has been deleted successfully.",
-      });
+    updateAd: async (id: string, updates: Partial<Ad>) => {
+      await CreativeService.save(requireUser(), { ...(updates.name ? { name: updates.name } : {}), ...(updates.status ? { status: updates.status } : {}), ...(updates.content ? { content: updates.content as unknown as Json } : {}) }, id); refresh();
     },
-
-    bulkDeleteCampaigns: (ids: string[]) => {
-      dispatch({ type: 'BULK_DELETE_CAMPAIGNS', payload: ids });
-      toast({
-        title: "Campaigns Deleted",
-        description: `${ids.length} campaign${ids.length === 1 ? '' : 's'} deleted successfully.`,
-      });
-    },
-
-    duplicateCampaigns: (ids: string[]) => {
-      dispatch({ type: 'DUPLICATE_CAMPAIGNS', payload: ids });
-      toast({
-        title: "Campaigns Duplicated",
-        description: `${ids.length} campaign${ids.length === 1 ? '' : 's'} copied as drafts.`,
-      });
-    },
-
-    createAd: (ad: Omit<Ad, 'id' | 'createdAt'>) => {
-      dispatch({ type: 'CREATE_AD', payload: ad });
-      toast({
-        title: "Ad Created",
-        description: `${ad.name} has been created successfully.`,
-      });
-    },
-
-    updateAd: (id: string, updates: Partial<Ad>) => {
-      dispatch({ type: 'UPDATE_AD', payload: { id, updates } });
-      toast({
-        title: "Ad Updated",
-        description: "Ad has been updated successfully.",
-      });
-    },
-
-    deleteAd: (id: string) => {
-      dispatch({ type: 'DELETE_AD', payload: id });
-      toast({
-        title: "Ad Deleted",
-        description: "Ad has been deleted successfully.",
-      });
-    },
-
-    selectCampaign: (campaign: Campaign | null) => {
-      dispatch({ type: 'SELECT_CAMPAIGN', payload: campaign });
-    },
-
-    selectAd: (ad: Ad | null) => {
-      dispatch({ type: 'SELECT_AD', payload: ad });
-    },
-
-    toggleCampaignStatus: (id: string) => {
-      dispatch({ type: 'TOGGLE_CAMPAIGN_STATUS', payload: id });
-      const campaign = state.campaigns.find(c => c.id === id);
-      const newStatus = campaign?.status === 'active' ? 'paused' : 'active';
-      toast({
-        title: "Campaign Status Updated",
-        description: `Campaign is now ${newStatus}.`,
-      });
-    },
-
-    toggleAdStatus: (id: string) => {
-      dispatch({ type: 'TOGGLE_AD_STATUS', payload: id });
-      const ad = state.ads.find(a => a.id === id);
-      const newStatus = ad?.status === 'active' ? 'paused' : 'active';
-      toast({
-        title: "Ad Status Updated",
-        description: `Ad is now ${newStatus}.`,
-      });
-    },
-
-    setActiveMetric: (metric: AppState['activeMetric']) => {
-      dispatch({ type: 'SET_ACTIVE_METRIC', payload: metric });
-    },
-
-    setTimeRange: (range: AppState['timeRange']) => {
-      dispatch({ type: 'SET_TIME_RANGE', payload: range });
-    }
+    deleteAd: async (id: string) => { const { error } = await supabase.from('ads').delete().eq('id', id).eq('user_id', requireUser()); if (error) throw error; refresh(); },
+    selectCampaign, selectAd, setActiveMetric, setTimeRange,
+    toggleCampaignStatus: async (id: string) => updateCampaign(id, { status: state.campaigns.find(c => c.id === id)?.status === 'active' ? 'paused' : 'active' }),
+    toggleAdStatus: async (id: string) => { const row = state.ads.find(a => a.id === id); await CreativeService.save(requireUser(), { status: row?.status === 'active' ? 'paused' : 'active' }, id); refresh(); },
   };
-
-  return (
-    <AppContext.Provider value={{ state, dispatch, actions }}>
-      {children}
-    </AppContext.Provider>
-  );
+  return { state, actions };
+}
+export const AppProvider = ({ children }: { children: ReactNode }) => {
+  const value = useCanonicalApp();
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
-
-// Hook
-export const useApp = () => {
-  const context = useContext(AppContext);
-  if (!context) {
-    throw new Error('useApp must be used within an AppProvider');
-  }
-  return context;
-};
+export const useApp = () => { const value = useContext(AppContext); if (!value) throw new Error('useApp must be used within AppProvider'); return value; };

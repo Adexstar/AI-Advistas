@@ -4,14 +4,11 @@ import type { CampaignEvent, CampaignEventType } from './types';
 
 export const CampaignEventService = {
   async list(campaignId: string, limit = 50) {
-    const { data, error } = await db
-      .from('campaign_events')
-      .select('*')
-      .eq('campaign_id', campaignId)
-      .order('created_at', { ascending: false })
-      .limit(limit);
+    const { data, error } = await supabase.from('activity_logs').select('*').eq('entity_id', campaignId).eq('entity_type', 'campaign').order('created_at', { ascending: false }).limit(limit);
     if (error) throw error;
-    return (data ?? []) as CampaignEvent[];
+    return (data ?? []).map(row => ({ id: row.id, campaign_id: campaignId, user_id: row.user_id, event_type: row.action,
+      event_label: (row.metadata as any)?.label ?? row.action, description: row.description, metadata: row.metadata as Record<string, unknown>,
+      actor: (row.metadata as any)?.actor ?? 'user', created_at: row.created_at })) as CampaignEvent[];
   },
 
   async log(
@@ -23,32 +20,10 @@ export const CampaignEventService = {
     metadata?: Record<string, unknown>,
     actor = 'user',
   ) {
-    const { data, error } = await db.rpc('log_campaign_event', {
-      p_campaign_id: campaignId,
-      p_user_id: userId,
-      p_event_type: eventType,
-      p_event_label: eventLabel ?? null,
-      p_description: description ?? null,
-      p_metadata: (metadata ?? {}) as any,
-      p_actor: actor,
-    });
-    if (error) {
-      const { data: fallback, error: fallbackError } = await db
-        .from('campaign_events')
-        .insert({
-          campaign_id: campaignId,
-          user_id: userId,
-          event_type: eventType,
-          event_label: eventLabel ?? null,
-          description: description ?? null,
-          metadata: (metadata ?? {}) as any,
-          actor,
-        })
-        .select()
-        .single();
-      if (fallbackError) throw fallbackError;
-      return fallback;
-    }
+    const { data, error } = await supabase.from('activity_logs').insert({ user_id: userId, action: eventType,
+      entity_type: 'campaign', entity_id: campaignId, description: description ?? eventLabel ?? null,
+      metadata: { ...metadata, label: eventLabel, actor } }).select().single();
+    if (error) throw error;
     return data;
   },
 

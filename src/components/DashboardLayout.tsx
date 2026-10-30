@@ -66,7 +66,7 @@ const navGroups: NavGroup[] = [
       { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { name: "Campaigns", href: "/campaigns", icon: Megaphone },
       { name: "Create Ad", href: "/create-ad", icon: Plus },
-      { name: "Templates", href: "/template-library", icon: LayoutTemplate },
+      { name: "Templates", href: "/templates", icon: LayoutTemplate },
       { name: "Visual Editor", href: "/visual-editor", icon: PenTool },
       { name: "Brand Kit", href: "/brand-kit", icon: Palette },
       { name: "Media Library", href: "/media-library", icon: ImageIcon },

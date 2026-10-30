@@ -10,6 +10,7 @@ export interface RecordDecisionInput {
   action: string;
   reasoning: string;
   confidence: number;
+  metadata?: Record<string, unknown>;
 }
 
 export const DecisionService = {
@@ -32,7 +33,7 @@ export const DecisionService = {
     return (data ?? []) as Decision[];
   },
 
-  async resolve(id: string, status: "accepted" | "dismissed" | "applied"): Promise<void> {
+  async resolve(id: string, status: "accepted" | "dismissed" | "applied" | "rejected"): Promise<void> {
     const { error } = await sb
       .from("decisions")
       .update({ status, resolved_at: new Date().toISOString() })

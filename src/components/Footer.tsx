@@ -8,7 +8,7 @@ const Footer = () => {
         { name: "Operating Lanes", href: "#features" },
         { name: "Pricing", href: "#pricing" },
         { name: "Workflow", href: "#workflow" },
-        { name: "Template Library", href: "/template-library" },
+        { name: "Template Library", href: "/templates" },
         { name: "Campaign Operations", href: "/campaigns" },
         { name: "Create Flow", href: "/create-ad" }
       ]
@@ -16,9 +16,9 @@ const Footer = () => {
     {
       title: "Launch Tools", 
       links: [
-        { name: "Saved Templates", href: "/template-library" },
+        { name: "Saved Templates", href: "/templates" },
         { name: "Quick Draft", href: "/create-ad" },
-        { name: "Visual Customizer", href: "/template-library" },
+        { name: "Visual Customizer", href: "/templates" },
         { name: "Billing", href: "/billing" },
         { name: "Settings", href: "/settings" },
         { name: "Command Center", href: "/dashboard" }

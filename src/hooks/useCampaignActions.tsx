@@ -8,7 +8,7 @@ export const usePauseCampaign = () => {
   
   return useMutation({
     mutationFn: async (campaignId: string) => {
-      actions.updateCampaign(campaignId, { status: 'paused' });
+      await actions.updateCampaign(campaignId, { status: 'paused' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['next-best-actions'] });
@@ -33,7 +33,7 @@ export const useResumeCampaign = () => {
   
   return useMutation({
     mutationFn: async (campaignId: string) => {
-      actions.updateCampaign(campaignId, { status: 'active' });
+      await actions.updateCampaign(campaignId, { status: 'active' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['next-best-actions'] });
@@ -58,7 +58,7 @@ export const useUpdateBudget = () => {
   
   return useMutation({
     mutationFn: async ({ campaignId, newBudget }: { campaignId: string; newBudget: number }) => {
-      actions.updateCampaign(campaignId, { budget: newBudget });
+      await actions.updateCampaign(campaignId, { budget: newBudget });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['next-best-actions'] });
