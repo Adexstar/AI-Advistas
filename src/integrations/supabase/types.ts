@@ -78,6 +78,8 @@ export type Database = {
           content: Json
           created_at: string
           id: string
+          legacy_id: string | null
+          legacy_source: string | null
           name: string
           preview_url: string | null
           status: string
@@ -91,6 +93,8 @@ export type Database = {
           content?: Json
           created_at?: string
           id?: string
+          legacy_id?: string | null
+          legacy_source?: string | null
           name?: string
           preview_url?: string | null
           status?: string
@@ -104,6 +108,8 @@ export type Database = {
           content?: Json
           created_at?: string
           id?: string
+          legacy_id?: string | null
+          legacy_source?: string | null
           name?: string
           preview_url?: string | null
           status?: string
@@ -807,6 +813,9 @@ export type Database = {
           confidence: number | null
           created_at: string
           id: string
+          legacy_id: string | null
+          legacy_source: string | null
+          metadata: Json
           page: string | null
           reasoning: string | null
           resolved_at: string | null
@@ -822,6 +831,9 @@ export type Database = {
           confidence?: number | null
           created_at?: string
           id?: string
+          legacy_id?: string | null
+          legacy_source?: string | null
+          metadata?: Json
           page?: string | null
           reasoning?: string | null
           resolved_at?: string | null
@@ -837,6 +849,9 @@ export type Database = {
           confidence?: number | null
           created_at?: string
           id?: string
+          legacy_id?: string | null
+          legacy_source?: string | null
+          metadata?: Json
           page?: string | null
           reasoning?: string | null
           resolved_at?: string | null
