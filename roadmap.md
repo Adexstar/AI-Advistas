@@ -7,5 +7,5 @@
 - [x] 5. Consolidate AI context, status and brain state without automatic creative edits.
 - [x] 6. Remove superseded routes/state; migrate existing drafts and recommendations without deleting recovery records. New application functions use owner checks and restricted grants. Existing admin security-definer functions retain required role-checked access.
 - [x] Targeted tests and public/protected-route browser checks passed.
-- [ ] Authenticated editor/campaign save, reopen, duplication and export checks: blocked by external unmanaged Supabase session access.
+- [ ] Authenticated editor/campaign save, reopen, duplication and export checks: blocked by external unmanaged Supabase session access. Self-signup test-account path blocked because the external Supabase requires email confirmation; unblock by turning off "Confirm email" (Authentication → Sign In / Providers → Email) or confirming a shared test address.
 - [ ] Hosted leaked-password protection: requires an external Supabase authentication setting change, unavailable through current tools.
