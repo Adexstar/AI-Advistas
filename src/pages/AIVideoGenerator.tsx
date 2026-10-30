@@ -106,7 +106,7 @@ const AIVideoGenerator: React.FC = () => {
     setLoadingSavedAds(true);
     try {
       const { data, error } = await supabase
-        .from('generated_ads')
+        .from('ads')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(20);
@@ -115,10 +115,10 @@ const AIVideoGenerator: React.FC = () => {
       
       const transformedData = (data || []).map(ad => ({
         id: ad.id,
-        product_name: ad.product_name,
-        content: ad.content as SavedAd['content'],
-        ad_type: ad.ad_type as AdType,
-        platform: ad.platform,
+        product_name: ad.name,
+        content: (ad.content as any)?.generatedContent as SavedAd['content'],
+        ad_type: (ad.content as any)?.adType as AdType,
+        platform: (ad.content as any)?.platform,
         created_at: ad.created_at
       }));
       
@@ -202,7 +202,7 @@ const AIVideoGenerator: React.FC = () => {
   const handleDeleteAd = async (adId: string) => {
     try {
       const { error } = await supabase
-        .from('generated_ads')
+        .from('ads')
         .delete()
         .eq('id', adId);
 
