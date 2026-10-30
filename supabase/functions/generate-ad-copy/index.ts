@@ -115,11 +115,11 @@ serve(async (req) => {
     // Save AI suggestion to database if user is authenticated
     if (userId) {
       await supabase
-        .from('ai_suggestions')
+        .from('decisions')
         .insert({
           user_id: userId,
-          suggestions: adCopy,
-          suggestion_type: 'copy'
+          page: '/visual-editor', trigger_source: 'creative_suggestion', action: 'copy',
+          signal: 'Optional copy suggestion', status: 'pending', metadata: { suggestions: adCopy }
         });
     }
 

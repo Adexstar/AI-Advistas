@@ -137,7 +137,7 @@ export const AIContextProvider = ({ children }: { children: ReactNode }) => {
       setLastResponse(response);
       setStatus('approval');
       return response;
-    } finally { setProcessing(false); }
+    } catch (error) { setStatus('ready'); throw error; } finally { setProcessing(false); }
   }, [user, effectiveContext, statusState.mode, setStatus]);
   const recordFeedback = useCallback((event: LearningEvent) => LearningService.record(event), []);
   const refreshSignals = useCallback(async () => {
