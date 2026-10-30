@@ -99,8 +99,6 @@ const AppContent = () => {
       <BrowserRouter>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
-            {/* TEMPORARY dev-only QA page, removed before finishing */}
-            <Route path="/__qa" element={<QaCampaignWorkspace />} />
             <Route path="/" element={<Index />} />
             <Route path="/index" element={<Navigate to="/" replace />} />
             <Route path="/home" element={<Navigate to="/" replace />} />
