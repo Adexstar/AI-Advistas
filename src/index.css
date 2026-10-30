@@ -585,10 +585,13 @@ p  { line-height: 1.6; }
   }
 
   .tabs-scroll-list {
-    width: max-content;
+    /* !important: these must beat the width/justify utilities on the
+       tablist itself, otherwise a centered list wider than its shell
+       overflows on BOTH sides and the left-most tabs become unreachable. */
+    width: max-content !important;
     min-width: 100%;
-    max-width: none;
-    justify-content: flex-start;
+    max-width: none !important;
+    justify-content: flex-start !important;
   }
 
   /* Keep floating toasts clear of the mobile bottom navigation and its
