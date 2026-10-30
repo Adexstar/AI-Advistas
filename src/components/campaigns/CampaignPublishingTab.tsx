@@ -11,6 +11,8 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { CreativeService } from '@/services/creative/CreativeService';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   PublishingService,
   PublishingValidator,
@@ -57,20 +59,26 @@ export function CampaignPublishingTab({ campaign }: Props) {
   const [selected, setSelected] = useState<string[]>(["facebook", "instagram"]);
   const [when, setWhen] = useState<PublishMode>("now");
   const [scheduledAt, setScheduledAt] = useState<string>("");
+  const [selectedCreativeId, setSelectedCreativeId] = useState('');
+  const creativesQuery = useQuery({ queryKey: ['creatives', user?.id, campaign.id], enabled: !!user,
+    queryFn: () => { if (!user) throw new Error('Not signed in'); return CreativeService.list(user.id, campaign.id); },
+  });
+  const creative = creativesQuery.data?.find(row => row.id === selectedCreativeId) ?? creativesQuery.data?.[0];
+  const creativeCopy = (creative?.content ?? {}) as Record<string, any>;
 
   const asset: MarketingAsset = useMemo(() => ({
-    id: campaign.id,
+    id: creative?.id ?? '',
     userId: user?.id ?? "",
     campaignId: campaign.id,
     category: campaign.category ?? null,
     platform: selected[0] ?? "facebook",
     goal: campaign.objective ?? null,
     status: "draft",
-    mediaUrl: campaign.hero_image_url ?? campaign.media_url ?? undefined,
-    headline: campaign.headline ?? campaign.name,
-    body: campaign.body_copy ?? campaign.description ?? "",
-    cta: campaign.cta ?? campaign.call_to_action ?? "Learn More",
-  }), [campaign, user, selected]);
+    mediaUrl: creativeCopy.mediaUrl || creative?.preview_url || undefined,
+    headline: creativeCopy.headline ?? creative?.name ?? '',
+    body: creativeCopy.primaryText ?? creativeCopy.body ?? '',
+    cta: creativeCopy.cta ?? 'Learn More',
+  }), [campaign, user, selected, creative]);
 
   const validation = useMemo(
     () => PublishingValidator.validateMany(asset, selected),
@@ -131,6 +139,7 @@ export function CampaignPublishingTab({ campaign }: Props) {
   });
 
   const canPublish =
+    !!creative &&
     selected.length > 0 &&
     selected.every((p) => validation[p]?.ok) &&
     (when !== "schedule" || !!scheduledAt);
@@ -142,6 +151,13 @@ export function CampaignPublishingTab({ campaign }: Props) {
     <div className="grid gap-6 lg:grid-cols-3">
       {/* Left: config */}
       <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-2">
+          <Label>Creative</Label>
+          <Select value={creative?.id ?? ''} onValueChange={setSelectedCreativeId}>
+            <SelectTrigger><SelectValue placeholder="Select a saved creative" /></SelectTrigger>
+            <SelectContent>{creativesQuery.data?.map(row => <SelectItem key={row.id} value={row.id}>{row.name}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
         {/* Platforms */}
         <Card className="rounded-2xl">
           <CardContent className="p-6 space-y-4">

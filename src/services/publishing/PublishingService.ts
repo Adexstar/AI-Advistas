@@ -81,6 +81,7 @@ export const PublishingService = {
       status,
       scheduled_at: request.when === "schedule" ? request.scheduledAt ?? null : null,
       payload: {
+        creativeId: request.asset.id,
         headline: request.asset.headline,
         body: request.asset.body,
         cta: request.asset.cta,
