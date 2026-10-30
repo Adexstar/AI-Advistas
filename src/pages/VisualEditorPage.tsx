@@ -2293,14 +2293,14 @@ const EditorInner: React.FC = () => {
             ? {
                 id: brand.id,
                 name: brand.name,
-                logo_url: brand.logos?.[0] ?? undefined,
+                logo_url: brand.logo_url ?? undefined,
                 colors: brand.colors ?? [],
                 voice: (brand as any).voice ?? undefined,
                 locked: true,
               }
             : null,
           category: effectiveContext?.active_category ?? template.category ?? null,
-          goal: (effectiveContext as any)?.active_goal ?? template.objective ?? null,
+          goal: effectiveContext?.current_goal ?? template.objective ?? null,
           platform: template.platform ?? null,
           productName: template.name,
           skipAI: true,

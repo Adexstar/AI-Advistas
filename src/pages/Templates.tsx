@@ -104,6 +104,8 @@ export default function Templates() {
       const { data, error } = await supabase
         .from("templates")
         .select("*")
+        .eq("is_active", true)
+        .eq("review_status", "approved")
         .order("popularity_score", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as Row[];
@@ -112,7 +114,7 @@ export default function Templates() {
   });
 
   const ctxCategory = effectiveContext?.active_category ?? null;
-  const ctxGoal = (effectiveContext as any)?.active_objective ?? (effectiveContext as any)?.current_goal ?? null;
+  const ctxGoal = effectiveContext?.current_goal ?? effectiveContext?.active_objective ?? null;
   const ctxPlatform = (effectiveContext as any)?.active_platform ?? null;
   const ctxActive = !ctxDismissed && Boolean(ctxCategory || ctxGoal);
 

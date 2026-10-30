@@ -31,8 +31,9 @@ export function CampaignFilesTab({ campaignId }: Props) {
   });
 
   const handleRemove = async (asset: CampaignAsset) => {
+    if (!user) return;
     try {
-      await CampaignAssetService.remove(asset.id, campaignId, user!.id);
+      await CampaignAssetService.remove(asset.id, campaignId, user.id);
       qc.invalidateQueries({ queryKey: ['campaign-assets', campaignId] });
       toast.success('Asset removed');
     } catch {

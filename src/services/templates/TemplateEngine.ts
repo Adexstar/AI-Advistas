@@ -23,7 +23,7 @@ export const TemplateEngine = {
 
     const brandVars = BrandEngine.buildVariables(ctx);
     // AI personalization is opt-in; selecting a template must not rewrite its copy.
-    const aiVars = await AIEngine.personalize(template, { ...ctx, skipAI: ctx.skipAI !== false });
+    const aiVars = ctx.skipAI === false ? await AIEngine.personalize(template, ctx) : {};
     const overrides = ctx.variables ?? {};
 
     // Brand Lock: when locked, user/AI overrides cannot mask brand values.
