@@ -591,6 +591,14 @@ p  { line-height: 1.6; }
     justify-content: flex-start;
   }
 
+  /* Keep floating toasts clear of the mobile bottom navigation and its
+     raised Create button so nothing peeks out from behind them. */
+  @media (max-width: 1023px) {
+    [data-sonner-toaster][data-y-position='bottom'] {
+      bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px)) !important;
+    }
+  }
+
   @media (max-width: 768px) {
     .sidebar {
       display: none;
