@@ -22,7 +22,8 @@ export const TemplateEngine = {
       template.template_json ?? (generateDefaultCanvasData(template) as FabricTemplateJSON);
 
     const brandVars = BrandEngine.buildVariables(ctx);
-    const aiVars = await AIEngine.personalize(template, ctx);
+    // AI personalization is opt-in; selecting a template must not rewrite its copy.
+    const aiVars = await AIEngine.personalize(template, { ...ctx, skipAI: ctx.skipAI !== false });
     const overrides = ctx.variables ?? {};
 
     // Brand Lock: when locked, user/AI overrides cannot mask brand values.
@@ -37,7 +38,7 @@ export const TemplateEngine = {
       json,
       resolvedVariables: resolved,
       appliedBrand: Object.keys(brandVars).length > 0,
-      appliedAI: !ctx.skipAI,
+      appliedAI: ctx.skipAI === false,
     };
   },
 };

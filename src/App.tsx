@@ -3,17 +3,19 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { AuthProvider } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import { AppProvider } from "./contexts/AppContext";
-import { AIStatusProvider } from "./contexts/AIStatusContext";
 import { AIContextProvider } from "./contexts/AIContext";
-import { AIBrainProvider } from "./contexts/AIBrainContext";
 
 const queryClient = new QueryClient();
+const TemplateRouteRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={id ? `/visual-editor?template=${encodeURIComponent(id)}` : '/templates'} replace />;
+};
 
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -26,11 +28,8 @@ const CreateAd = lazy(() => import("./pages/CreateAd"));
 const Billing = lazy(() => import("./pages/Billing"));
 const Settings = lazy(() => import("./pages/Settings"));
 const VisualEditorPage = lazy(() => import("./pages/VisualEditorPage"));
-const AdEditor = lazy(() => import("./pages/AdEditor"));
-const TemplateLibrary = lazy(() => import("./pages/TemplateLibrary"));
 const TemplateGenerate = lazy(() => import("./pages/TemplateGenerate"));
 const Templates = lazy(() => import("./pages/Templates"));
-const OriginalTemplateDetail = lazy(() => import("./pages/OriginalTemplateDetail"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminProviders = lazy(() => import("./pages/AdminProviders"));
 const AdminTemplates = lazy(() => import("./pages/AdminTemplates"));
@@ -132,7 +131,7 @@ const AppContent = () => {
                 <DashboardLayout />
               </ProtectedRoute>
             }>
-              <Route index element={<AdEditor />} />
+              <Route index element={<Navigate to="/create-ad" replace />} />
             </Route>
             <Route path="/create-old" element={<Navigate to="/create-ad" replace />} />
             <Route path="/billing" element={
@@ -149,14 +148,8 @@ const AppContent = () => {
             }>
               <Route index element={<Settings />} />
             </Route>
-            <Route path="/template-library" element={
-              <ProtectedRoute>
-                <DashboardLayout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<TemplateLibrary />} />
-              <Route path="generate" element={<TemplateGenerate />} />
-            </Route>
+            <Route path="/template-library" element={<Navigate to="/templates" replace />} />
+            <Route path="/template-library/generate" element={<Navigate to="/templates/generate" replace />} />
             <Route path="/templates" element={
               <ProtectedRoute>
                 <DashboardLayout />
@@ -164,7 +157,7 @@ const AppContent = () => {
             }>
               <Route index element={<Templates />} />
               <Route path="generate" element={<TemplateGenerate />} />
-              <Route path=":id" element={<OriginalTemplateDetail />} />
+              <Route path=":id" element={<TemplateRouteRedirect />} />
 
             </Route>
             <Route path="/originals" element={<Navigate to="/templates" replace />} />
@@ -253,17 +246,13 @@ const AppContent = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <AIStatusProvider>
         <AIContextProvider>
           <AppProvider>
-            <AIBrainProvider>
               <TooltipProvider>
                 <AppContent />
               </TooltipProvider>
-            </AIBrainProvider>
           </AppProvider>
         </AIContextProvider>
-      </AIStatusProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

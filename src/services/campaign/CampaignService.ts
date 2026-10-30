@@ -8,31 +8,6 @@ type CampaignRow = Database['public']['Tables']['campaigns']['Row'];
 type CampaignInsert = Database['public']['Tables']['campaigns']['Insert'];
 type CampaignUpdate = Database['public']['Tables']['campaigns']['Update'];
 
-async function cloneTableRecords(
-  sourceCampaignId: string,
-  targetCampaignId: string,
-  table: string,
-  fkColumn: string,
-  stripColumns: string[] = ['id', 'created_at', 'updated_at'],
-) {
-  const { data: rows, error: fetchError } = await (db as any)
-    .from(table)
-    .select('*')
-    .eq(fkColumn, sourceCampaignId);
-  if (fetchError) throw fetchError;
-  if (!rows || rows.length === 0) return;
-
-  const inserts = rows.map((row: any) => {
-    const copy = { ...row };
-    stripColumns.forEach((col) => { delete copy[col]; });
-    copy[fkColumn] = targetCampaignId;
-    return copy;
-  });
-
-  const { error: insertError } = await (db as any).from(table).insert(inserts);
-  if (insertError) throw insertError;
-}
-
 export const CampaignService = {
   async list(userId: string, opts?: { includeArchived?: boolean; status?: string }) {
     let q = db
@@ -91,27 +66,10 @@ export const CampaignService = {
   },
 
   async duplicate(userId: string, campaign: CampaignRow) {
-    const { id, created_at, updated_at, impressions, clicks, conversions, revenue, reach, spend, ctr, roas, ...rest } = campaign as any;
-    const { data, error } = await db
-      .from('campaigns')
-      .insert({ ...rest, name: `${campaign.name} (Copy)`, status: 'draft', user_id: userId } as any)
-      .select()
-      .single();
+    if (campaign.user_id !== userId) throw new Error('Campaign not found');
+    const { data, error } = await supabase.rpc('duplicate_campaign', { p_campaign_id: campaign.id });
     if (error) throw error;
-    const duped = data as CampaignRow;
-    await CampaignEventService.log(duped.id, userId, 'campaign_created', 'Campaign Duplicated', `Duplicated from "${campaign.name}"`);
-
-    /* Clone all related data tables */
-    await Promise.all([
-      cloneTableRecords(id, duped.id, 'campaign_assets', 'campaign_id'),
-      cloneTableRecords(id, duped.id, 'campaign_versions', 'campaign_id', ['id', 'created_at', 'version_number']),
-      cloneTableRecords(id, duped.id, 'campaign_events', 'campaign_id'),
-      cloneTableRecords(id, duped.id, 'campaign_recommendations', 'campaign_id'),
-      cloneTableRecords(id, duped.id, 'campaign_memory_entries', 'campaign_id'),
-      cloneTableRecords(id, duped.id, 'campaign_automation_queue', 'campaign_id'),
-    ]);
-
-    return duped;
+    return data as CampaignRow;
   },
 
   async delete(id: string) {
