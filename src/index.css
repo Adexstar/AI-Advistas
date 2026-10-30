@@ -560,12 +560,15 @@ p  { line-height: 1.6; }
     min-width: 0;
   }
 
-  /* Deliberate horizontal rails keep dense navigation inside its page. */
+  /* Deliberate horizontal rails keep dense navigation inside its page.
+     Vertical breathing room keeps focus rings and active pills inside the
+     scroll box instead of getting sliced by the overflow clip. */
   .tabs-scroll-shell {
     width: 100%;
     max-width: 100%;
     overflow-x: auto;
     overflow-y: hidden;
+    padding-block: 8px;
     overscroll-behavior-inline: contain;
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--border)) transparent;
