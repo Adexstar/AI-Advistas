@@ -1,31 +1,32 @@
 import { supabase } from '@/integrations/supabase/client';
+import { DecisionService } from '@/services/ai/DecisionService';
 import type { AIRecommendation, UnifiedCampaignAnalytics } from './types';
 import { BudgetOptimizerService } from './BudgetOptimizerService';
 import { BenchmarkService } from './BenchmarkService';
 
-const db = supabase as any;
 
 export const RecommendationService = {
   async list(userId: string, campaignId?: string): Promise<AIRecommendation[]> {
-    let q = db.from('ai_recommendations').select('*').eq('user_id', userId).order('created_at', { ascending: false });
-    if (campaignId) q = q.eq('campaign_id', campaignId);
-    const { data, error } = await q;
+    let query = supabase.from('decisions').select('*').eq('user_id', userId).eq('trigger_source', 'analytics').order('created_at', { ascending: false });
+    if (campaignId) query = query.eq('campaign_id', campaignId);
+    const { data, error } = await query;
     if (error) throw error;
-    return (data ?? []) as AIRecommendation[];
+    return (data ?? []).map(row => {
+      const metadata = row.metadata as Record<string, any>;
+      return { id: row.id, user_id: row.user_id, campaign_id: row.campaign_id, category: row.category ?? 'general',
+        title: metadata.title ?? row.action ?? '', description: metadata.description ?? row.signal ?? '', reasoning: row.reasoning,
+        supporting_data: metadata.supporting_data ?? {}, suggested_action: metadata.suggested_action ?? {},
+        confidence: Number(row.confidence), priority: metadata.priority ?? 'medium', status: row.status, created_at: row.created_at };
+    });
   },
-
   async create(rec: Omit<AIRecommendation, 'id' | 'created_at'>) {
-    const { data, error } = await db.from('ai_recommendations').insert(rec as any).select().single();
-    if (error) throw error;
-    return data as AIRecommendation;
+    return DecisionService.record(rec.user_id, { page: '/analytics', trigger_source: 'analytics', campaign_id: rec.campaign_id,
+      category: rec.category, signal: rec.description, action: rec.title, reasoning: rec.reasoning ?? '', confidence: rec.confidence,
+      metadata: { title: rec.title, description: rec.description, supporting_data: rec.supporting_data, suggested_action: rec.suggested_action, priority: rec.priority } });
   },
-
   async updateStatus(id: string, status: AIRecommendation['status']) {
-    const patch: any = { status };
-    if (status === 'accepted') patch.accepted_at = new Date().toISOString();
-    if (status === 'rejected') patch.rejected_at = new Date().toISOString();
-    const { error } = await db.from('ai_recommendations').update(patch).eq('id', id);
-    if (error) throw error;
+    if (!['accepted', 'dismissed', 'applied', 'rejected'].includes(status)) throw new Error('Invalid decision status');
+    await DecisionService.resolve(id, status as 'accepted' | 'dismissed' | 'applied' | 'rejected');
   },
 
   /** Generate deterministic recommendations from unified analytics; explainable + reversible. */

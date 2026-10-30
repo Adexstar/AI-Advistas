@@ -34,7 +34,7 @@ const groups = [
     heading: "Navigate",
     items: [
       { icon: Megaphone, label: "Campaigns", path: "/campaigns" },
-      { icon: LayoutTemplate, label: "Templates", path: "/template-library" },
+      { icon: LayoutTemplate, label: "Templates", path: "/templates" },
       { icon: ImageIcon, label: "Media Library", path: "/media-library" },
       { icon: Palette, label: "Brand Kits", path: "/brand-kit" },
       { icon: BarChart3, label: "Analytics", path: "/analytics" },

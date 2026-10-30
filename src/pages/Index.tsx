@@ -489,7 +489,7 @@ const Index = () => {
                     {user ? "Go to Dashboard" : "Start Free"}
                     <Rocket className="ml-2 h-4 w-4" />
                   </Button>
-                  <Button size="lg" variant="outline" className="rounded-full border-white/30 text-white hover:bg-white/10" onClick={() => navigate(user ? "/template-library" : "/auth") }>
+                  <Button size="lg" variant="outline" className="rounded-full border-white/30 text-white hover:bg-white/10" onClick={() => navigate(user ? "/templates" : "/auth") }>
                     {user ? "Browse Library" : "See the Workflow"}
                   </Button>
                 </div>

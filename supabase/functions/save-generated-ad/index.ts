@@ -38,14 +38,12 @@ serve(async (req) => {
 
     // Save the generated ad to the database
     const { data, error } = await supabase
-      .from('generated_ads')
+      .from('ads')
       .insert({
         user_id: user.id,
-        product_name: productName,
-        ad_type: adType,
-        platform: platform,
-        content: content,
-        generation_prompt: generationPrompt
+        name: productName,
+        status: 'draft',
+        content: { generatedContent: content, adType, platform, generationPrompt }
       })
       .select()
       .single();
@@ -55,7 +53,7 @@ serve(async (req) => {
       throw new Error('Failed to save ad to database');
     }
 
-    console.log('Saved generated ad:', data);
+    console.log('Generated creative saved');
 
     return new Response(JSON.stringify({ 
       success: true, 
