@@ -629,6 +629,50 @@ export type Database = {
           },
         ]
       }
+      campaign_versions: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          description: string | null
+          id: string
+          label: string | null
+          snapshot: Json
+          updated_at: string
+          user_id: string
+          version_number: number
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          label?: string | null
+          snapshot: Json
+          updated_at?: string
+          user_id: string
+          version_number: number
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          label?: string | null
+          snapshot?: Json
+          updated_at?: string
+          user_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_versions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           archived: boolean
@@ -2002,6 +2046,30 @@ export type Database = {
           users: number
         }[]
       }
+      create_campaign_version: {
+        Args: {
+          p_campaign_id: string
+          p_description?: string
+          p_label?: string
+        }
+        Returns: {
+          campaign_id: string
+          created_at: string
+          description: string | null
+          id: string
+          label: string | null
+          snapshot: Json
+          updated_at: string
+          user_id: string
+          version_number: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "campaign_versions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       duplicate_campaign: {
         Args: { p_campaign_id: string }
         Returns: {
@@ -2044,6 +2112,10 @@ export type Database = {
       }
       increment_template_usage: {
         Args: { template_id: string }
+        Returns: undefined
+      }
+      restore_campaign_version: {
+        Args: { p_campaign_id: string; p_version_id: string }
         Returns: undefined
       }
       search_templates: {
