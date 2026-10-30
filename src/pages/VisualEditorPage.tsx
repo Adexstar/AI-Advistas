@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useBrandKits, useBrandColors, useBrandFonts } from '@/hooks/useBrandKit';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
@@ -35,6 +35,9 @@ import { TemplateEngine } from '@/services/templates/TemplateEngine';
 import { loadTemplateJSONIntoCanvas, retryFailedImages, type ImageLayerStatus } from '@/services/templates/loadIntoCanvas';
 import { supabase } from '@/integrations/supabase/client';
 import { useAIContext } from '@/contexts/AIContext';
+import { useAuth } from '@/hooks/useAuth';
+import { useQueryClient } from '@tanstack/react-query';
+import { CreativeService, creativeDocument } from '@/services/creative/CreativeService';
 import {
   TemplatesPanel as StudioTemplatesPanel,
   MediaPanel as StudioMediaPanel,
@@ -148,7 +151,9 @@ const TopToolbar: React.FC<{
   onPreview: () => void;
   onPublish: () => void;
   artboardLabel: string;
-}> = ({ projectName, setProjectName, zoom, setZoom, onExport, onUndo, onRedo, canUndo, canRedo, onToggleLeft, onToggleRight, isMobile, showGrid, onToggleGrid, onFit, onPreview, onPublish, artboardLabel }) => {
+  onSave: () => void;
+  saveStatus: string;
+}> = ({ projectName, setProjectName, zoom, setZoom, onExport, onUndo, onRedo, canUndo, canRedo, onToggleLeft, onToggleRight, isMobile, showGrid, onToggleGrid, onFit, onPreview, onPublish, artboardLabel, onSave, saveStatus }) => {
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
 
@@ -172,6 +177,7 @@ const TopToolbar: React.FC<{
         </div>
         <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onUndo} disabled={!canUndo} aria-label="Undo"><Undo2 className={`h-4 w-4 ${canUndo ? '' : 'opacity-40'}`} /></Button>
         <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onRedo} disabled={!canRedo} aria-label="Redo"><Redo2 className={`h-4 w-4 ${canRedo ? '' : 'opacity-40'}`} /></Button>
+        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onSave} aria-label="Save creative" title={saveStatus}><Check className="h-4 w-4" /></Button>
         <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onToggleRight} aria-label="Open inspector"><MoreHorizontal className="h-5 w-5" /></Button>
         <Button variant="ghost" size="sm" className="h-9 shrink-0 gap-1 px-2.5 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onExport}>
           <Download className="h-4 w-4" /><span className="text-xs font-semibold">Export</span>
@@ -209,9 +215,7 @@ const TopToolbar: React.FC<{
         <span className="hidden text-[11px] text-primary-foreground/70 xl:inline">{artboardLabel}</span>
       </div>
 
-      <Badge variant="secondary" className="hidden gap-1 rounded-full border-primary-foreground/20 bg-primary-foreground/15 text-inherit sm:inline-flex">
-        <Check className="h-3 w-3" /> Saved
-      </Badge>
+      <Button variant="ghost" size="sm" onClick={onSave} className="hidden gap-1 text-inherit sm:inline-flex" aria-label="Save creative"><Check className="h-3 w-3" />{saveStatus}</Button>
 
       <div className="ml-1 hidden md:flex items-center gap-1">
         <Button variant="ghost" size="icon" className="h-8 w-8 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onUndo} disabled={!canUndo}><Undo2 className={`h-4 w-4 ${canUndo ? '' : 'opacity-30'}`} /></Button>
@@ -1959,13 +1963,26 @@ const RightPanel: React.FC<{
 /* ---------- Main Editor ---------- */
 const EditorInner: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const [creativeId, setCreativeId] = useState<string | null>(searchParams.get('adId'));
+  const [campaignId, setCampaignId] = useState<string | null>(searchParams.get('campaignId'));
+  const creativeIdRef = useRef(creativeId);
+  const campaignIdRef = useRef(campaignId);
+  const templateIdRef = useRef<string | null>(null);
+  const creativeContentRef = useRef<Record<string, any>>({});
+  const saveInFlight = useRef<Promise<string | null> | null>(null);
+  const [saveStatus, setSaveStatus] = useState('Unsaved');
+  const [documentLoaded, setDocumentLoaded] = useState(!searchParams.get('adId'));
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>(() => {
     if (typeof window === 'undefined') return 'templates';
     const saved = window.localStorage.getItem('advista.editor.activeTab');
     return saved && LEFT_TABS.some((t) => t.id === saved) ? saved : 'templates';
   });
   const [activeTool, setActiveTool] = useState<string | null>(null);
-  const [projectName, setProjectName] = useState('Summer Sale Campaign');
+  const [projectName, setProjectName] = useState('Untitled Creative');
   const [zoom, setZoom] = useState(100);
   const [canvas, setCanvas] = useState<FabricCanvas | null>(null);
   const [canvasReady, setCanvasReady] = useState(false);
@@ -2126,22 +2143,69 @@ const EditorInner: React.FC = () => {
     if (canvas) saveSnapshot(canvas);
   }, [artboard, canvas, customArtboard, preset, saveSnapshot]);
 
-  // ---- Auto-save canvas to localStorage ----
+  // Canonical persistence; browser storage is recovery-only, scoped to this creative.
+  const persistCreative = useCallback(async (silent = false): Promise<string | null> => {
+    if (!canvas || !user || !documentLoaded || loadError) return null;
+    if (saveInFlight.current) return saveInFlight.current;
+    const operation = (async () => {
+      setSaveStatus('Saving…');
+      try {
+        const json = (canvas as any).toJSON(SERIALIZED_CANVAS_PROPS);
+        const pageSnapshots = [...pages];
+        if (pageSnapshots.length) pageSnapshots[pageIdx] = json;
+        const document = creativeDocument(json, artboard.width, artboard.height, pageSnapshots);
+        let targetCampaignId = campaignIdRef.current;
+        if (!silent && !targetCampaignId) {
+          const { data, error } = await supabase.from('campaigns').insert({ user_id: user.id, name: projectName, status: 'draft' }).select().single();
+          if (error) throw error;
+          targetCampaignId = data.id;
+          campaignIdRef.current = data.id;
+          setCampaignId(data.id);
+        }
+        const creative = await CreativeService.save(user.id, {
+          campaign_id: targetCampaignId,
+          name: projectName,
+          canvas_data: document,
+          content: { ...creativeContentRef.current, pageIdx, videoUrl },
+          template_id: templateIdRef.current,
+          preview_url: canvas.toDataURL({ format: 'png', multiplier: Math.min(1, 480 / artboard.width) }),
+        }, creativeIdRef.current);
+        creativeIdRef.current = creative.id;
+        setCreativeId(creative.id);
+        setSaveStatus('Saved');
+        const params = new URLSearchParams(window.location.search);
+        params.set('adId', creative.id);
+        if (targetCampaignId) params.set('campaignId', targetCampaignId);
+        setSearchParams(params, { replace: true });
+        qc.invalidateQueries({ queryKey: ['creatives'] });
+        qc.invalidateQueries({ queryKey: ['campaigns'] });
+        if (!silent) toast({ title: 'Creative saved' });
+        return targetCampaignId;
+      } catch (error) {
+        setSaveStatus('Save failed');
+        if (!silent) toast({ title: 'Could not save creative', description: error instanceof Error ? error.message : 'Please retry.', variant: 'destructive' });
+        return null;
+      }
+    })();
+    saveInFlight.current = operation;
+    try { return await operation; } finally { saveInFlight.current = null; }
+  }, [canvas, user, documentLoaded, loadError, pages, pageIdx, artboard.width, artboard.height, projectName, videoUrl, setSearchParams, qc]);
+
   const autoSaveData = useMemo(() => {
-    if (!canvas) return null;
-    try { return { json: (canvas as any).toJSON(SERIALIZED_CANVAS_PROPS), name: projectName, zoom }; }
+    if (!canvas || !documentLoaded || loadError) return null;
+    try { return { json: (canvas as any).toJSON(SERIALIZED_CANVAS_PROPS), name: projectName, width: artboard.width, height: artboard.height }; }
     catch { return null; }
-  }, [canvas, historyIdx, projectName, zoom]);
-
-  const handleAutoSave = useCallback((data: any) => {
+  }, [canvas, documentLoaded, loadError, historyIdx, projectName, artboard.width, artboard.height]);
+  const handleAutoSave = useCallback(async (data: any) => {
     if (!data?.json) return;
-    localStorage.setItem(`editor_recovery_${projectName}`, JSON.stringify(data));
-  }, [projectName]);
-
-  const { restoreFromAutoSave, clearAutoSave } = useAutoSave(autoSaveData, handleAutoSave, {
+    try { localStorage.setItem(`editor_recovery_${user?.id}_${creativeIdRef.current ?? 'new'}`, JSON.stringify(data)); } catch { /* Cloud save remains available. */ }
+    // New blank documents are saved only through the explicit Save command.
+    if (creativeIdRef.current) await persistCreative(true);
+  }, [user?.id, persistCreative]);
+  useAutoSave(autoSaveData, handleAutoSave, {
     delay: 3000,
-    enabled: !!canvas,
-    key: `editor-${projectName}`,
+    enabled: !!canvas && documentLoaded && !loadError,
+    key: `editor-${user?.id}-${creativeId ?? 'new'}`,
   });
 
   // ---- Keyboard shortcuts for canvas operations ----
@@ -2205,7 +2269,7 @@ const EditorInner: React.FC = () => {
 
   // Detect a pending template BEFORE the canvas mounts so we skip default seeds.
   const pendingRef = useRef(peekPendingEditorTemplate());
-  const [hasPending] = useState(() => !!pendingRef.current);
+  const [hasPending] = useState(() => !!pendingRef.current || searchParams.has('adId') || searchParams.has('template'));
   const { effectiveContext, brand } = useAIContext();
   const { data: brandKits } = useBrandKits();
 
@@ -2229,7 +2293,9 @@ const EditorInner: React.FC = () => {
           goal: (effectiveContext as any)?.active_goal ?? template.objective ?? null,
           platform: template.platform ?? null,
           productName: template.name,
+          skipAI: true,
         });
+        templateIdRef.current = template.id;
         const json = inst.json as any;
 
         // Resilient load — unresolved {{image}} placeholders become editable
@@ -2378,7 +2444,49 @@ const EditorInner: React.FC = () => {
 
   // On canvas ready → load a pending template (session handoff) or ?template=<id>.
   useEffect(() => {
-    if (!canvas) return;
+    if (!canvas || !user) return;
+    let cancelled = false;
+    const adId = searchParams.get('adId');
+    if (adId && !documentLoaded) {
+      (async () => {
+        try {
+          const creative = await CreativeService.get(user.id, adId);
+          if (cancelled) return;
+          if (campaignIdRef.current && creative.campaign_id !== campaignIdRef.current) throw new Error('Creative does not belong to this campaign');
+          creativeIdRef.current = creative.id;
+          campaignIdRef.current = creative.campaign_id;
+          setCampaignId(creative.campaign_id);
+          templateIdRef.current = creative.template_id;
+          creativeContentRef.current = (creative.content ?? {}) as Record<string, any>;
+          setProjectName(creative.name);
+          if (creative.canvas_data) {
+            const doc = creative.canvas_data as Record<string, any>;
+            const width = Number(doc.width) || 1080;
+            const height = Number(doc.height) || 1350;
+            isRestoringRef.current = true;
+            await loadTemplateJSONIntoCanvas(canvas, doc, { onImageStatus: upsertImageStatus });
+            if (cancelled) return;
+            setCustomArtboard({ label: `Custom · ${width}×${height}`, width, height });
+            setPreset('custom');
+            canvas.setDimensions({ width, height });
+            setPages(doc.pages ?? []);
+            setPageIdx(creativeContentRef.current.pageIdx ?? 0);
+            isRestoringRef.current = false;
+            saveSnapshot(canvas);
+          }
+          setSaveStatus('Saved');
+          setDocumentLoaded(true);
+          setFitToken(t => t + 1);
+          forceUpdate(n => n + 1);
+        } catch (error) {
+          isRestoringRef.current = false;
+          setLoadError(error instanceof Error ? error.message : 'Could not load creative');
+          toast({ title: 'Could not open creative', description: 'Your saved work has not been changed.', variant: 'destructive' });
+        }
+      })();
+      return () => { cancelled = true; };
+    }
+    if (adId) return;
     const pending = consumePendingEditorTemplate();
     if (pending?.template) {
       loadTemplateRecord(pending.template);
@@ -2395,7 +2503,7 @@ const EditorInner: React.FC = () => {
       loadTemplateRecord(data);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canvas]);
+  }, [canvas, user?.id]);
 
   const activeKit = brandKits?.find((k) => k.is_active) || brandKits?.[0];
   const brandPalette = [activeKit?.primary_color, activeKit?.secondary_color, activeKit?.accent_color].filter(Boolean) as string[];
@@ -2478,17 +2586,12 @@ const EditorInner: React.FC = () => {
     setPreviewUrl(canvas.toDataURL({ format: 'png', quality: 1, multiplier: 2 }));
   }, [canvas]);
 
-  const onPublish = useCallback(() => {
-    if (!canvas) return;
-    try {
-      localStorage.setItem(
-        'advista.editor.publishDraft',
-        JSON.stringify({ name: projectName, json: (canvas as any).toJSON(SERIALIZED_CANVAS_PROPS), preview: canvas.toDataURL({ format: 'png', multiplier: 1 }) }),
-      );
-    } catch { /* preview may exceed quota — publishing still proceeds */ }
-    toast({ title: 'Design ready to publish', description: 'Pick a campaign to attach this creative to.' });
-    navigate('/campaigns');
-  }, [canvas, projectName, navigate]);
+  const onPublish = useCallback(async () => {
+    const id = await persistCreative();
+    if (!id) return;
+    if (searchParams.get('returnTo') === 'create') navigate(`/create-ad?campaignId=${id}`);
+    else navigate(`/campaigns/${id}`);
+  }, [persistCreative, navigate, searchParams]);
 
   const addPage = useCallback(() => {
     if (!canvas) return;
@@ -2669,10 +2772,13 @@ const EditorInner: React.FC = () => {
           onFit={() => setFitToken((t) => t + 1)}
           onPreview={openPreview}
           onPublish={onPublish}
+          onSave={() => void persistCreative()}
+          saveStatus={saveStatus}
           artboardLabel={`${artboard.label} · ${artboard.width}×${artboard.height} px`}
         />
       </div>
 
+      {loadError && <div role="alert" className="border-b border-destructive bg-card p-3 text-destructive">{loadError}<Button variant="outline" className="ml-3" onClick={() => window.location.reload()}>Retry</Button></div>}
       {/* Desktop only: Editor Second Bar */}
       <div className="editor-second-bar flex-shrink-0">
         <CanvasSubToolbar
