@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { CreativeService } from '@/services/creative/CreativeService';
 import { useToast } from '@/hooks/use-toast';
 
 export interface TemplateFile {
@@ -118,11 +120,13 @@ export const useFileBasedTemplates = () => {
 };
 
 export const useUserAds = () => {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ['user_ads'],
+    queryKey: ['creatives', user?.id],
+    enabled: !!user,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('user_ads')
+        .from('ads')
         .select(`
           *,
           templates (
@@ -133,12 +137,13 @@ export const useUserAds = () => {
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
-      return data as (UserAd & { templates?: { name: string; thumbnail_url?: string } })[];
+      return data.map(row => ({ ...row, export_format: (row.content as any)?.export_format ?? 'png' })) as unknown as (UserAd & { templates?: { name: string; thumbnail_url?: string } })[];
     }
   });
 };
 
 export const useSaveUserAd = () => {
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -154,26 +159,15 @@ export const useSaveUserAd = () => {
       templateId?: string; 
       status?: 'draft' | 'completed' | 'exported' 
     }) => {
-      const { data, error } = await supabase
-        .from('user_ads')
-        .insert({
-          name,
-          content,
-          template_id: templateId,
-          status
-        } as any)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      if (!user) throw new Error('Not signed in');
+      return CreativeService.save(user.id, { name, content, template_id: templateId, status });
     },
     onSuccess: () => {
       toast({
         title: "Ad saved successfully",
         description: "Your ad has been saved to My Ads.",
       });
-      queryClient.invalidateQueries({ queryKey: ['user_ads'] });
+      queryClient.invalidateQueries({ queryKey: ['creatives'] });
     },
     onError: (error) => {
       toast({
@@ -186,6 +180,7 @@ export const useSaveUserAd = () => {
 };
 
 export const useUpdateUserAd = () => {
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -197,18 +192,15 @@ export const useUpdateUserAd = () => {
       id: string; 
       updates: Partial<Pick<UserAd, 'name' | 'content' | 'status' | 'export_format'>> 
     }) => {
-      const { data, error } = await supabase
-        .from('user_ads')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      if (!user) throw new Error('Not signed in');
+      const { export_format, ...fields } = updates;
+      const existing = export_format ? await CreativeService.get(user.id, id) : null;
+      return CreativeService.save(user.id, { ...fields,
+        ...(export_format ? { content: { ...((updates.content ?? existing?.content ?? {}) as Record<string, any>), export_format } } : {}),
+      }, id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user_ads'] });
+      queryClient.invalidateQueries({ queryKey: ['creatives'] });
     },
     onError: (error) => {
       toast({
@@ -227,7 +219,7 @@ export const useDeleteUserAd = () => {
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('user_ads')
+        .from('ads')
         .delete()
         .eq('id', id);
 
@@ -238,7 +230,7 @@ export const useDeleteUserAd = () => {
         title: "Ad deleted",
         description: "The ad has been removed from your collection.",
       });
-      queryClient.invalidateQueries({ queryKey: ['user_ads'] });
+      queryClient.invalidateQueries({ queryKey: ['creatives'] });
     },
     onError: (error) => {
       toast({
