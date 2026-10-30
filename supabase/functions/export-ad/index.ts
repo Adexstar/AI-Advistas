@@ -52,6 +52,10 @@ serve(async (req) => {
       });
     }
 
+    const { data: creative, error: creativeError } = await supabaseClient.from('ads').select('id, content').eq('id', adId).eq('user_id', user.id).single();
+    if (creativeError || !creative) return new Response(JSON.stringify({ error: 'Creative not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    if (!['png', 'jpg'].includes(format)) return new Response(JSON.stringify({ error: 'Only raster PNG/JPG exports are supported here' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
     // Convert base64 canvas data to blob
     const base64Data = canvasData.split(',')[1];
     const imageBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
@@ -62,7 +66,7 @@ serve(async (req) => {
 
     // Upload to user_ads bucket
     const { data: uploadData, error: uploadError } = await supabaseClient.storage
-      .from('user_ads')
+      .from('ad_templates')
       .upload(fileName, imageBuffer, {
         contentType: `image/${format}`,
         upsert: true
@@ -76,33 +80,19 @@ serve(async (req) => {
       });
     }
 
-    // Get public URL (this will be a signed URL for private bucket)
-    const { data: urlData } = supabaseClient.storage
-      .from('user_ads')
-      .getPublicUrl(fileName);
-
-    // Update user_ads record with export info
-    const { error: updateError } = await supabaseClient
-      .from('user_ads')
-      .update({
-        file_path: fileName,
-        export_format: format,
-        status: 'exported'
-      })
-      .eq('id', adId)
-      .eq('user_id', user.id);
-
-    if (updateError) {
-      console.error('Update error:', updateError);
-      // Don't fail the export if update fails
-    }
+    const { data: urlData, error: urlError } = await supabaseClient.storage.from('ad_templates').createSignedUrl(fileName, 3600);
+    if (urlError || !urlData) throw new Error('Could not create download link');
+    const { error: updateError } = await supabaseClient.from('ads').update({
+      content: { ...creative.content, file_path: fileName, export_format: format },
+    }).eq('id', adId).eq('user_id', user.id);
+    if (updateError) throw updateError;
 
     console.log('Ad exported successfully:', fileName);
 
     return new Response(JSON.stringify({
       success: true,
       fileName,
-      downloadUrl: urlData.publicUrl,
+      downloadUrl: urlData.signedUrl,
       format,
       size: imageBuffer.length,
       message: 'Ad exported successfully'
@@ -112,7 +102,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in export-ad function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

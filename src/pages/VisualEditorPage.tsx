@@ -1979,6 +1979,7 @@ const EditorInner: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>(() => {
     if (typeof window === 'undefined') return 'templates';
     const saved = window.localStorage.getItem('advista.editor.activeTab');
+    if (searchParams.get('selectTemplate') === '1') return 'templates';
     return saved && LEFT_TABS.some((t) => t.id === saved) ? saved : 'templates';
   });
   const [activeTool, setActiveTool] = useState<string | null>(null);
@@ -2191,6 +2192,12 @@ const EditorInner: React.FC = () => {
     try { return await operation; } finally { saveInFlight.current = null; }
   }, [canvas, user, documentLoaded, loadError, pages, pageIdx, artboard.width, artboard.height, projectName, videoUrl, setSearchParams, qc]);
 
+  useEffect(() => {
+    const save = () => { void persistCreative(); };
+    window.addEventListener('advista:save-creative', save);
+    return () => window.removeEventListener('advista:save-creative', save);
+  }, [persistCreative]);
+
   const autoSaveData = useMemo(() => {
     if (!canvas || !documentLoaded || loadError) return null;
     try { return { json: (canvas as any).toJSON(SERIALIZED_CANVAS_PROPS), name: projectName, width: artboard.width, height: artboard.height }; }
@@ -2200,7 +2207,10 @@ const EditorInner: React.FC = () => {
     if (!data?.json) return;
     try { localStorage.setItem(`editor_recovery_${user?.id}_${creativeIdRef.current ?? 'new'}`, JSON.stringify(data)); } catch { /* Cloud save remains available. */ }
     // New blank documents are saved only through the explicit Save command.
-    if (creativeIdRef.current) await persistCreative(true);
+    if (creativeIdRef.current) {
+      const result = await persistCreative(true);
+      if (!result && campaignIdRef.current) throw new Error('Cloud save failed');
+    }
   }, [user?.id, persistCreative]);
   useAutoSave(autoSaveData, handleAutoSave, {
     delay: 3000,
@@ -2283,14 +2293,14 @@ const EditorInner: React.FC = () => {
             ? {
                 id: brand.id,
                 name: brand.name,
-                logo_url: activeKit?.logo_url ?? undefined,
-                colors: [activeKit?.primary_color, activeKit?.secondary_color, activeKit?.accent_color].filter(Boolean) as string[],
+                logo_url: brand.logo_url ?? undefined,
+                colors: brand.colors ?? [],
                 voice: (brand as any).voice ?? undefined,
-                locked: false,
+                locked: true,
               }
             : null,
           category: effectiveContext?.active_category ?? template.category ?? null,
-          goal: (effectiveContext as any)?.active_goal ?? template.objective ?? null,
+          goal: effectiveContext?.current_goal ?? template.objective ?? null,
           platform: template.platform ?? null,
           productName: template.name,
           skipAI: true,
@@ -2459,6 +2469,12 @@ const EditorInner: React.FC = () => {
           templateIdRef.current = creative.template_id;
           creativeContentRef.current = (creative.content ?? {}) as Record<string, any>;
           setProjectName(creative.name);
+          if (!creative.canvas_data && creativeContentRef.current.mediaUrl) {
+            const img = await FabricImage.fromURL(creativeContentRef.current.mediaUrl, { crossOrigin: 'anonymous' });
+            scaleImageToCover(img, { left: 0, top: 0, width: 1080, height: 1350 });
+            canvas.add(img);
+            saveSnapshot(canvas);
+          }
           if (creative.canvas_data) {
             const doc = creative.canvas_data as Record<string, any>;
             const width = Number(doc.width) || 1080;

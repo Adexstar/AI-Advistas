@@ -9,7 +9,7 @@ interface AutoSaveOptions {
 
 export const useAutoSave = (
   data: any,
-  onSave: (data: any) => void,
+  onSave: (data: any) => void | Promise<void>,
   options: AutoSaveOptions
 ) => {
   const { delay = 2000, enabled = true, key } = options;
@@ -37,21 +37,17 @@ export const useAutoSave = (
     }
 
     // Set new timeout for auto-save
-    timeoutRef.current = setTimeout(() => {
+    timeoutRef.current = setTimeout(async () => {
       try {
         // Save to localStorage as backup
         localStorage.setItem(`autosave_${key}`, currentData);
         
         // Call the provided save function
-        onSave(data);
+        await onSave(data);
         
         lastSavedRef.current = currentData;
         
-        toast({
-          title: "Auto-saved",
-          description: "Your progress has been saved automatically",
-          duration: 2000,
-        });
+
       } catch (error) {
         console.error('Auto-save failed:', error);
         toast({

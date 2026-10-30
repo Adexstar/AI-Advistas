@@ -177,6 +177,8 @@ export default function CreateAd() {
   const [creativeId, setCreativeId] = useState<string | null>(null);
   const draftIdRef = useRef(draftId);
   const creativeIdRef = useRef<string | null>(null);
+  const existingCreativeRef = useRef<Record<string, any>>({});
+  const hasCanvasRef = useRef(false);
   const saveInFlight = useRef<Promise<string | null> | null>(null);
   const [restoring, setRestoring] = useState(searchParams.has('campaignId'));
   const [saving, setSaving] = useState(false);
@@ -213,6 +215,8 @@ export default function CreateAd() {
         if (cancelled || !campaign) return;
         const creative = creatives[0];
         const copy = (creative?.content ?? {}) as Partial<FormValues>;
+        existingCreativeRef.current = copy;
+        hasCanvasRef.current = !!creative?.canvas_data;
         const settings = campaign.settings as Partial<FormValues>;
         const audience = campaign.target_audience as Record<string, any>;
         reset({ ...values, ...settings, ...copy, name: campaign.name, objective: campaign.objective,
@@ -300,10 +304,10 @@ export default function CreateAd() {
       const creative = await CreativeService.save(user.id, {
         campaign_id: id,
         name: values.headline || values.name || 'Untitled Creative',
-        content: { mediaUrl: values.mediaUrl, primaryText: values.primaryText, headline: values.headline,
+        content: { ...existingCreativeRef.current, mediaUrl: values.mediaUrl, primaryText: values.primaryText, headline: values.headline,
           descriptionCopy: values.descriptionCopy, cta: values.cta, websiteUrl: values.websiteUrl } as Json,
         // A rendered canvas preview takes precedence after returning from the editor.
-        ...(creativeIdRef.current ? {} : { preview_url: values.mediaUrl || null }),
+        ...(hasCanvasRef.current ? {} : { preview_url: values.mediaUrl || null }),
       }, creativeIdRef.current);
       creativeIdRef.current = creative.id;
       setCreativeId(creative.id);

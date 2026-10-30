@@ -429,7 +429,7 @@ const DashboardShell = () => {
       (window as any).requestIdleCallback ? (window as any).requestIdleCallback(cb) : setTimeout(cb, 400);
     idle(() => {
       import("@/pages/Campaigns").catch(() => {});
-      import("@/pages/TemplateLibrary").catch(() => {});
+      import("@/pages/Templates").catch(() => {});
       import("@/pages/Dashboard").catch(() => {});
       import("@/pages/CreateAd").catch(() => {});
     });
