@@ -1,6 +1,7 @@
 import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import QaCampaignWorkspace from "@/dev/QaCampaignWorkspace";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
@@ -99,6 +100,8 @@ const AppContent = () => {
       <BrowserRouter>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
+            {/* TEMPORARY dev-only QA page, removed before finishing */}
+            <Route path="/__qa" element={<QaCampaignWorkspace />} />
             <Route path="/" element={<Index />} />
             <Route path="/index" element={<Navigate to="/" replace />} />
             <Route path="/home" element={<Navigate to="/" replace />} />
