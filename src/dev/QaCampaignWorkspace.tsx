@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { MobileBottomNav } from '@/components/MobileBottomNav';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import {
