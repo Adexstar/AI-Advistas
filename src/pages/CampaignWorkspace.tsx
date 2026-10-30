@@ -131,20 +131,20 @@ const CampaignWorkspace = () => {
             <Button variant="ghost" size="icon" onClick={() => navigate('/campaigns')} className="mt-1 h-8 w-8 shrink-0">
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div>
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold tracking-tight lg:text-3xl">{campaign.name}</h1>
+                <h1 className="min-w-0 truncate text-2xl font-bold tracking-tight lg:text-3xl">{campaign.name}</h1>
                 <span
-                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold capitalize"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold capitalize"
                   style={{ background: `${statusColor}18`, color: statusColor }}
                 >
-                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: statusColor }} />
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: statusColor }} />
                   {campaign.status}
                 </span>
               </div>
-              <div className="mt-1 flex items-center gap-4 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1"><Target className="h-3.5 w-3.5" />{campaign.objective || 'No objective'}</span>
-                <span className="flex items-center gap-1"><LayoutTemplate className="h-3.5 w-3.5" />{campaign.platform || 'No platform'}</span>
+              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                <span className="flex min-w-0 items-center gap-1"><Target className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{campaign.objective || 'No objective'}</span></span>
+                <span className="flex min-w-0 items-center gap-1"><LayoutTemplate className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{campaign.platform || 'No platform'}</span></span>
               </div>
             </div>
           </div>
@@ -180,7 +180,7 @@ const CampaignWorkspace = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="min-w-0 space-y-6">
-          <div className="tabs-scroll-shell sticky top-0 z-10 -mx-4 w-[calc(100%+2rem)] bg-[#FAFAFA] px-4 pb-2">
+          <div className="tabs-scroll-shell sticky top-0 z-10 -mx-4 w-[calc(100%+2rem)] bg-[#FAFAFA] px-4">
             <TabsList className="tabs-scroll-list inline-flex h-auto gap-1 rounded-xl border bg-card p-1">
               {CAMPAIGN_TABS.map((tab) => {
                 const Icon = tab.icon;
@@ -188,10 +188,10 @@ const CampaignWorkspace = () => {
                   <TabsTrigger
                     key={tab.id}
                     value={tab.id}
-                    className="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                    className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
                   >
-                    <Icon className="h-3.5 w-3.5" />
-                    <span>{tab.label}</span>
+                    <Icon className="h-3.5 w-3.5 shrink-0" />
+                    <span className="whitespace-nowrap">{tab.label}</span>
                   </TabsTrigger>
                 );
               })}

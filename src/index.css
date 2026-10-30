@@ -560,12 +560,15 @@ p  { line-height: 1.6; }
     min-width: 0;
   }
 
-  /* Deliberate horizontal rails keep dense navigation inside its page. */
+  /* Deliberate horizontal rails keep dense navigation inside its page.
+     Vertical breathing room keeps focus rings and active pills inside the
+     scroll box instead of getting sliced by the overflow clip. */
   .tabs-scroll-shell {
     width: 100%;
     max-width: 100%;
     overflow-x: auto;
     overflow-y: hidden;
+    padding-block: 8px;
     overscroll-behavior-inline: contain;
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--border)) transparent;
@@ -582,10 +585,21 @@ p  { line-height: 1.6; }
   }
 
   .tabs-scroll-list {
-    width: max-content;
+    /* !important: these must beat the width/justify utilities on the
+       tablist itself, otherwise a centered list wider than its shell
+       overflows on BOTH sides and the left-most tabs become unreachable. */
+    width: max-content !important;
     min-width: 100%;
-    max-width: none;
-    justify-content: flex-start;
+    max-width: none !important;
+    justify-content: flex-start !important;
+  }
+
+  /* Keep floating toasts clear of the mobile bottom navigation and its
+     raised Create button so nothing peeks out from behind them. */
+  @media (max-width: 1023px) {
+    [data-sonner-toaster][data-y-position='bottom'] {
+      bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px)) !important;
+    }
   }
 
   @media (max-width: 768px) {
