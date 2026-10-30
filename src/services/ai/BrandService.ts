@@ -14,6 +14,15 @@ export interface BrandIdentity {
   locked?: boolean;
 }
 
+function normalizeBrand(row: any): BrandIdentity {
+  const colors = Array.isArray(row.colors) ? row.colors : Object.values(row.colors ?? {});
+  const fonts = Array.isArray(row.fonts) ? row.fonts : Object.values(row.fonts ?? {});
+  const logos = Array.isArray(row.logos) ? row.logos : Object.values(row.logos ?? {});
+  const logo = logos.find((value: unknown) => typeof value === 'string');
+  return { ...row, colors: colors.filter((value: unknown) => typeof value === 'string'),
+    fonts: fonts.filter((value: unknown) => typeof value === 'string'), logo_url: typeof logo === 'string' ? logo : row.logo_url };
+}
+
 export const BrandService = {
   async listForUser(userId: string): Promise<BrandIdentity[]> {
     const { data, error } = await sb
@@ -21,13 +30,13 @@ export const BrandService = {
       .select("*")
       .eq("user_id", userId);
     if (error) throw error;
-    return (data ?? []) as BrandIdentity[];
+    return (data ?? []).map(normalizeBrand);
   },
 
   async get(id: string): Promise<BrandIdentity | null> {
     const { data, error } = await sb.from("brand_kits").select("*").eq("id", id).maybeSingle();
     if (error) throw error;
-    return (data ?? null) as BrandIdentity | null;
+    return data ? normalizeBrand(data) : null;
   },
 
   // Compact system-prompt fragment describing brand constraints for AI jobs.

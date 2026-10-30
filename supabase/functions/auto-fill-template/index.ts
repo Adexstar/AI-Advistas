@@ -150,12 +150,11 @@ serve(async (req) => {
     // Save AI suggestion to database if user is authenticated
     if (userId) {
       await supabase
-        .from('ai_suggestions')
+        .from('decisions')
         .insert({
           user_id: userId,
-          template_id: templateId,
-          suggestions: autoFillResult,
-          suggestion_type: 'auto-fill'
+          page: '/visual-editor', trigger_source: 'creative_suggestion', action: 'auto-fill',
+          status: 'pending', metadata: { template_id: templateId, suggestions: autoFillResult }
         });
     }
 
@@ -281,11 +280,11 @@ Return a JSON object with content for each layer, plus styling suggestions:
   // Save AI suggestions if user is authenticated
   if (userId) {
     const { error: saveError } = await supabase
-      .from('ai_suggestions')
+      .from('decisions')
       .insert({
         user_id: userId,
-        suggestion_type: 'psd-autofill',
-        suggestions: {
+        page: '/visual-editor', trigger_source: 'creative_suggestion', action: 'psd-autofill', status: 'pending',
+        metadata: {
           filledTemplate,
           aiSuggestions: parsedContent.suggestions,
           originalPrompt: prompt
