@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'sonner';
 import {
   ArrowLeft, ArrowRight, Bell, Check, Eye,
   Facebook, Instagram, Linkedin, Image as ImageIcon, Link, Loader2, MapPin,
-  Save, Send, Sparkles, Target, Upload, Users, Video, X,
+  Save, Send, Sparkles, Target, Upload, Users, Video, X, Edit3,
   Calendar as CalendarIcon, ShoppingCart, Menu,
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -20,6 +20,8 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { signedMediaUrl } from '@/lib/mediaUrl';
 import { useAuth } from '@/hooks/useAuth';
+import { CreativeService } from '@/services/creative/CreativeService';
+import type { Json } from '@/integrations/supabase/types';
 
 /* ------------------------------------------------------------------ */
 /* Types & Constants                                                   */
@@ -169,15 +171,21 @@ function StepSection({ title, subtitle, children }: { title: string; subtitle?: 
 export default function CreateAd() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [step, setStep] = useState(1);
-  const [draftId, setDraftId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const [step, setStep] = useState(searchParams.has('campaignId') ? 2 : 1);
+  const [draftId, setDraftId] = useState<string | null>(searchParams.get('campaignId'));
+  const [creativeId, setCreativeId] = useState<string | null>(null);
+  const draftIdRef = useRef(draftId);
+  const creativeIdRef = useRef<string | null>(null);
+  const saveInFlight = useRef<Promise<string | null> | null>(null);
+  const [restoring, setRestoring] = useState(searchParams.has('campaignId'));
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [previewTab, setPreviewTab] = useState<'mobile' | 'desktop'>('mobile');
   const [previewPlatform, setPreviewPlatform] = useState('facebook_feed');
 
-  const { register, watch, control, handleSubmit, setValue } = useForm<FormValues>({
+  const { register, watch, control, handleSubmit, setValue, reset } = useForm<FormValues>({
     defaultValues: {
       name: '', objective: 'conversions', platforms: ['facebook', 'instagram'],
       mediaUrl: '', primaryText: '', headline: '', descriptionCopy: '', cta: 'Shop Now', websiteUrl: '',
@@ -190,6 +198,42 @@ export default function CreateAd() {
 
   const values = watch();
   const brandName = 'Your Brand';
+
+  useEffect(() => {
+    const id = searchParams.get('campaignId');
+    if (!id || !user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [{ data: campaign, error }, creatives] = await Promise.all([
+          supabase.from('campaigns').select('*').eq('id', id).eq('user_id', user.id).single(),
+          CreativeService.list(user.id, id),
+        ]);
+        if (error) throw error;
+        if (cancelled || !campaign) return;
+        const creative = creatives[0];
+        const copy = (creative?.content ?? {}) as Partial<FormValues>;
+        const settings = campaign.settings as Partial<FormValues>;
+        const audience = campaign.target_audience as Record<string, any>;
+        reset({ ...values, ...settings, ...copy, name: campaign.name, objective: campaign.objective,
+          platforms: campaign.platform?.split(',').filter(Boolean) ?? [], budgetAmount: campaign.budget,
+          startDate: campaign.start_date ? new Date(campaign.start_date) : new Date(),
+          endDate: campaign.end_date ? new Date(campaign.end_date) : null,
+          location: audience.location ?? '', ageMin: audience.age_min ?? 18, ageMax: audience.age_max ?? 55,
+          gender: audience.gender ?? 'All', interests: audience.interests ?? '',
+          mediaUrl: creative?.preview_url ?? copy.mediaUrl ?? '',
+        });
+        setCreativeId(creative?.id ?? null);
+        creativeIdRef.current = creative?.id ?? null;
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Could not restore campaign');
+      } finally { if (!cancelled) setRestoring(false); }
+    })();
+    return () => { cancelled = true; };
+    // Restore once; form changes must not trigger a reload.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, user?.id, reset]);
+
 
   /* ---------- Reach estimation ---------- */
   const reachEstimate = useMemo(() => {
@@ -216,7 +260,9 @@ export default function CreateAd() {
 
   /* ---------- Save draft ---------- */
   const saveDraft = useCallback(async (silent = false): Promise<string | null> => {
-    if (!user) return null;
+    if (!user || restoring) return null;
+    if (saveInFlight.current) return saveInFlight.current;
+    const operation = (async () => {
     setSaving(true);
     try {
       const payload = {
@@ -224,18 +270,11 @@ export default function CreateAd() {
         name: values.name || 'Untitled Campaign',
         objective: values.objective,
         platform: values.platforms.join(','),
-        platforms: values.platforms,
         budget: Number(values.budgetAmount) || 0,
         spend: 0, reach: 0, clicks: 0, impressions: 0, conversions: 0, revenue: 0, ctr: 0, roas: 0,
         start_date: format(values.startDate, 'yyyy-MM-dd'),
         end_date: values.endDate ? format(values.endDate, 'yyyy-MM-dd') : null,
-        /* ad creative fields */
-        headline: values.headline,
-        primary_text: values.primaryText,
-        description: values.descriptionCopy,
-        cta: values.cta,
-        media_url: values.mediaUrl,
-        website_url: values.websiteUrl,
+        settings: { budgetType: values.budgetType, runType: values.runType },
         /* audience fields */
         target_audience: {
           location: values.location,
@@ -247,7 +286,7 @@ export default function CreateAd() {
         status: 'draft' as const,
       };
 
-      let id = draftId;
+      let id = draftIdRef.current;
       if (id) {
         const { error } = await supabase.from('campaigns').update(payload).eq('id', id);
         if (error) throw error;
@@ -255,8 +294,19 @@ export default function CreateAd() {
         const { data, error } = await supabase.from('campaigns').insert(payload).select().single();
         if (error) throw error;
         id = data.id;
+        draftIdRef.current = id;
         setDraftId(id);
       }
+      const creative = await CreativeService.save(user.id, {
+        campaign_id: id,
+        name: values.headline || values.name || 'Untitled Creative',
+        content: { mediaUrl: values.mediaUrl, primaryText: values.primaryText, headline: values.headline,
+          descriptionCopy: values.descriptionCopy, cta: values.cta, websiteUrl: values.websiteUrl } as Json,
+        // A rendered canvas preview takes precedence after returning from the editor.
+        ...(creativeIdRef.current ? {} : { preview_url: values.mediaUrl || null }),
+      }, creativeIdRef.current);
+      creativeIdRef.current = creative.id;
+      setCreativeId(creative.id);
       setLastSavedAt(new Date());
       if (!silent) toast.success('Draft saved');
       return id;
@@ -266,7 +316,16 @@ export default function CreateAd() {
     } finally {
       setSaving(false);
     }
-  }, [user, values, draftId]);
+    })();
+    saveInFlight.current = operation;
+    try { return await operation; } finally { saveInFlight.current = null; }
+  }, [user, values, restoring]);
+
+  const openStudio = async (selectTemplate = false) => {
+    const id = await saveDraft();
+    if (!id) return;
+    navigate(`/visual-editor?campaignId=${id}&adId=${creativeIdRef.current ?? ''}${selectTemplate ? '&selectTemplate=1' : ''}&returnTo=create`);
+  };
 
   /* ---------- Autosave ---------- */
   const autosaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -284,9 +343,7 @@ export default function CreateAd() {
     try {
       const id = await saveDraft(true);
       if (id) {
-        const { error } = await supabase.from('campaigns').update({ status: 'active' }).eq('id', id);
-        if (error) throw error;
-        toast.success('Campaign published successfully!');
+        toast.success('Draft ready for publishing review');
         navigate(`/campaigns/${id}`);
       }
     } catch (e: any) {
@@ -479,6 +536,10 @@ export default function CreateAd() {
     <div className="max-w-[480px] space-y-6">
       <StepSection title="Ad Creative" subtitle="Design the content for your ad.">
         <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" disabled={saving || restoring} onClick={() => void openStudio()}><Edit3 className="mr-2 h-4 w-4" />Open in Visual Editor</Button>
+            <Button variant="outline" disabled={saving || restoring} onClick={() => void openStudio(true)}><ImageIcon className="mr-2 h-4 w-4" />Select Template</Button>
+          </div>
           <Field label="Media">
             <div className="border-2 border-dashed border-[#E5E5E5] rounded-xl p-8 text-center hover:border-[#6C63FF]/40 transition cursor-pointer" onClick={() => fileRef.current?.click()}>
               {values.mediaUrl ? (
