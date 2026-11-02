@@ -43,48 +43,49 @@ All colors MUST be HSL.
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --safe-left: env(safe-area-inset-left, 0px);
 
-    --background: 252 100% 98%;
-    --foreground: 236 31% 13%;
+    /* Obsidian + Orange — AdVista design system */
+    --background: 210 11% 7%;          /* #111315 */
+    --foreground: 0 0% 96%;            /* #F5F5F5 */
 
-    --card: 0 0% 100%;
-    --card-foreground: 236 31% 13%;
+    --card: 213 13% 14%;               /* #1E2227 */
+    --card-foreground: 0 0% 96%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 236 31% 13%;
+    --popover: 213 12% 11%;
+    --popover-foreground: 0 0% 96%;
 
-    --primary: 252 83% 61%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 278 94% 76%;
+    --primary: 22 90% 58%;             /* #F47B35 */
+    --primary-foreground: 210 11% 7%;
+    --primary-glow: 22 100% 67%;       /* #FF9455 */
 
-    --secondary: 252 100% 96%;
-    --secondary-foreground: 236 31% 13%;
+    --secondary: 213 13% 17%;
+    --secondary-foreground: 0 0% 96%;
 
-    --muted: 248 48% 95%;
-    --muted-foreground: 238 16% 44%;
+    --muted: 213 13% 12%;
+    --muted-foreground: 214 8% 60%;    /* #9299A2 */
 
-    --accent: 43 96% 62%;
-    --accent-foreground: 236 31% 13%;
+    --accent: 213 13% 17%;
+    --accent-foreground: 0 0% 96%;
 
-    --success: 142 71% 45%;
+    --success: 142 71% 45%;            /* #22C55E */
     --success-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 84% 60%;          /* #EF4444 */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 252 44% 88%;
-    --input: 252 44% 88%;
-    --ring: 252 83% 61%;
+    --border: 213 10% 21%;             /* #30353B */
+    --input: 213 10% 21%;
+    --ring: 22 90% 58%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(246 79% 58%), hsl(271 88% 66%));
-    --gradient-hero: linear-gradient(135deg, hsl(239 40% 16%) 0%, hsl(251 64% 30%) 38%, hsl(262 84% 63%) 72%, hsl(43 96% 62%) 100%);
-    --gradient-card: linear-gradient(160deg, hsl(0 0% 100%), hsl(252 100% 98%) 46%, hsl(256 100% 96%) 100%);
-    --gradient-glass: linear-gradient(145deg, hsl(0 0% 100% / 0.72), hsl(260 100% 96% / 0.45));
+    /* Gradients — restrained, brand-hued */
+    --gradient-primary: linear-gradient(135deg, hsl(22 90% 58%), hsl(22 100% 67%));
+    --gradient-hero: linear-gradient(135deg, hsl(210 11% 7%) 0%, hsl(213 13% 11%) 45%, hsl(213 13% 14%) 78%, hsl(22 55% 38%) 100%);
+    --gradient-card: linear-gradient(160deg, hsl(213 13% 14%), hsl(213 12% 12%));
+    --gradient-glass: linear-gradient(145deg, hsl(213 13% 14% / 0.85), hsl(213 13% 11% / 0.6));
 
-    /* Shadows */
-    --shadow-soft: 0 22px 60px hsl(247 53% 18% / 0.14);
-    --shadow-card: 0 16px 40px hsl(248 45% 22% / 0.12);
-    --shadow-glow: 0 0 48px hsl(268 94% 70% / 0.28);
+    /* Shadows — subtle, no glow bloom */
+    --shadow-soft: 0 22px 60px hsl(0 0% 0% / 0.45);
+    --shadow-card: 0 16px 40px hsl(0 0% 0% / 0.3);
+    --shadow-glow: 0 0 36px hsl(22 90% 58% / 0.22);
 
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -93,34 +94,34 @@ All colors MUST be HSL.
     --radius: 0.5rem;
 
     /* Custom primary colors for enhanced design */
-    --primary-900: 239 40% 16%;
-    --primary-800: 251 64% 30%;
+    --primary-900: 210 11% 7%;
+    --primary-800: 213 13% 11%;
 
-    --sidebar-background: 245 45% 14%;
+    --sidebar-background: 214 13% 11%;  /* #181B1F */
 
-    --sidebar-foreground: 240 20% 96%;
+    --sidebar-foreground: 0 0% 96%;
 
-    --sidebar-primary: 252 83% 61%;
+    --sidebar-primary: 22 90% 58%;
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-primary-foreground: 210 11% 7%;
 
-    --sidebar-accent: 247 32% 20%;
+    --sidebar-accent: 213 13% 14%;
 
-    --sidebar-accent-foreground: 240 20% 96%;
+    --sidebar-accent-foreground: 0 0% 96%;
 
-    --sidebar-border: 247 26% 24%;
+    --sidebar-border: 213 10% 21%;
 
-    --sidebar-ring: 252 83% 61%;
+    --sidebar-ring: 22 90% 58%;
 
     /* AdVista Studio */
-    --studio-bg: 0 0% 10%;
-    --studio-panel: 0 0% 18%;
-    --studio-panel-raised: 0 0% 24%;
-    --studio-line: 0 0% 27%;
-    --studio-text: 0 0% 100%;
-    --studio-muted: 0 0% 68%;
-    --studio-brand-start: 244 100% 69%;
-    --studio-brand-end: 255 90% 76%;
+    --studio-bg: 210 11% 7%;
+    --studio-panel: 213 13% 14%;
+    --studio-panel-raised: 213 13% 17%;
+    --studio-line: 213 10% 21%;
+    --studio-text: 0 0% 96%;
+    --studio-muted: 214 8% 60%;
+    --studio-brand-start: 22 90% 58%;
+    --studio-brand-end: 22 100% 67%;
     --gradient-studio: linear-gradient(105deg, hsl(var(--studio-brand-start)), hsl(var(--studio-brand-end)));
     --shadow-studio-tray: 0 -18px 45px hsl(0 0% 0% / 0.42);
   }
