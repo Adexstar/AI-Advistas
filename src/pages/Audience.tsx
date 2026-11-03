@@ -30,7 +30,7 @@ const Audience = () => {
   const activeCampaigns = state.campaigns.filter(c => c.status === 'active').length;
   const ageDistribution = [
     { range: "18-24", percentage: 25, color: "bg-blue-500" },
-    { range: "25-34", percentage: 35, color: "bg-purple-500" },
+    { range: "25-34", percentage: 35, color: "bg-primary/100" },
     { range: "35-44", percentage: 22, color: "bg-green-500" },
     { range: "45-54", percentage: 12, color: "bg-yellow-500" },
     { range: "55+", percentage: 6, color: "bg-red-500" }
@@ -229,9 +229,9 @@ const Audience = () => {
               <h4 className="font-medium text-green-900">Focus on 25-34 Age Group</h4>
               <p className="text-sm text-green-700 mt-1">Your highest converting segment. Increase budget allocation for this demographic.</p>
             </div>
-            <div className="p-4 bg-purple-50 rounded-lg border-l-4 border-purple-500 cursor-pointer hover:bg-purple-100 transition-colors" onClick={() => navigate('/create-ad')}>
-              <h4 className="font-medium text-purple-900">Expand to Technology Interest</h4>
-              <p className="text-sm text-purple-700 mt-1">45% show tech interest. Consider tech-focused ad content and platforms.</p>
+            <div className="p-4 bg-primary/10 rounded-lg border-l-4 border-primary cursor-pointer hover:bg-primary/20 transition-colors" onClick={() => navigate('/create-ad')}>
+              <h4 className="font-medium text-foreground">Expand to Technology Interest</h4>
+              <p className="text-sm text-primary mt-1">45% show tech interest. Consider tech-focused ad content and platforms.</p>
             </div>
           </div>
         </CardContent>

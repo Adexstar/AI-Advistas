@@ -69,7 +69,7 @@ const LEFT_TABS = [
 const TEMPLATE_CATEGORIES = ['All', 'Social Media', 'Ads', 'Stories', 'Video'];
 
 const RECOMMENDED = [
-  { id: 1, title: 'SUMMER SALE', bg: 'from-purple-600 via-fuchsia-500 to-pink-500' },
+  { id: 1, title: 'SUMMER SALE', bg: 'from-orange-500 via-amber-400 to-orange-600' },
   { id: 2, title: 'NEW ARRIVAL', bg: 'from-slate-100 to-slate-300', dark: true },
   { id: 3, title: 'Exclusive Collection', bg: 'from-amber-800 via-orange-700 to-red-800' },
   { id: 4, title: 'Big Sale 70% OFF', bg: 'from-orange-500 via-red-500 to-pink-600' },
@@ -80,7 +80,7 @@ const INSTA_POST = [
 ];
 const INSTA_STORY = [
   { id: 7, title: 'New Collection', bg: 'from-neutral-200 to-neutral-400', dark: true },
-  { id: 8, title: 'WEEKEND OFFER 50%', bg: 'from-pink-500 via-fuchsia-600 to-purple-700' },
+  { id: 8, title: 'WEEKEND OFFER 50%', bg: 'from-amber-400 via-orange-500 to-orange-700' },
   { id: 9, title: 'SPECIAL DISCOUNT 40%', bg: 'from-cyan-500 via-blue-600 to-indigo-700' },
 ];
 
@@ -444,7 +444,7 @@ const TextPanel: React.FC<{ onAdd: (text: string, size: number, weight: string) 
           {[
             { name: 'Coffee Break', style: 'text-green-400 italic text-lg' },
             { name: 'FIRE away', style: 'text-orange-400 font-bold text-lg' },
-            { name: 'PIXEL DREAMS', style: 'text-purple-400 font-bold text-lg' },
+            { name: 'PIXEL DREAMS', style: 'text-primary font-bold text-lg' },
             { name: 'Subscribe', style: 'text-blue-400 text-lg' },
           ].map((f) => (
             <button key={f.name}
@@ -2693,7 +2693,7 @@ const EditorInner: React.FC = () => {
             <div className="grid w-full grid-cols-3" style={{ gap: '2.5cqw' }}>
               {[
                 { label: 'Text', icon: Type, action: () => addText('New Text', 32, 'bold'), color: 'from-blue-500 to-blue-600' },
-                { label: 'Shape', icon: Shapes, action: () => addShape('rectangle'), color: 'from-purple-500 to-purple-600' },
+                { label: 'Shape', icon: Shapes, action: () => addShape('rectangle'), color: 'from-primary to-primary-glow' },
                 { label: 'Upload', icon: Upload, action: () => { setActiveTab('uploads'); setSheetExpanded(true); }, color: 'from-emerald-500 to-emerald-600' },
               ].map(({ label, icon: Icon, action, color }) => (
                 <button key={label} onClick={action}

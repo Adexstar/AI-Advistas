@@ -30,7 +30,7 @@ export function AIMemoryViewer({ brandId, className }: Props) {
   if (loading) {
     return (
       <div className={cn('flex items-center justify-center py-8', className)}>
-        <Loader2 className="h-5 w-5 text-purple-500 animate-spin" />
+        <Loader2 className="h-5 w-5 text-primary animate-spin" />
       </div>
     );
   }
@@ -39,9 +39,9 @@ export function AIMemoryViewer({ brandId, className }: Props) {
     <div className={cn('space-y-4', className)}>
       {/* Brand Memory */}
       {brandMemory && (
-        <div className="rounded-xl border border-purple-100 bg-white p-4 space-y-3">
+        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
           <div className="flex items-center gap-2">
-            <Brain className="h-4 w-4 text-purple-600" />
+            <Brain className="h-4 w-4 text-primary" />
             <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider">Brand Memory</h4>
           </div>
 
@@ -76,7 +76,7 @@ export function AIMemoryViewer({ brandId, className }: Props) {
               <p className="text-[10px] font-semibold text-gray-500 mb-1">Best Formats</p>
               <div className="flex flex-wrap gap-1">
                 {brandMemory.bestPerformingFormats.slice(0, 5).map((f, i) => (
-                  <span key={i} className="text-[10px] text-purple-700 bg-purple-50 rounded-full px-2 py-0.5 font-medium">
+                  <span key={i} className="text-[10px] text-primary bg-primary/10 rounded-full px-2 py-0.5 font-medium">
                     {f}
                   </span>
                 ))}
@@ -101,7 +101,7 @@ export function AIMemoryViewer({ brandId, className }: Props) {
 
       {/* Learning Summary */}
       {learningData && learningData.length > 0 && (
-        <div className="rounded-xl border border-purple-100 bg-white p-4 space-y-3">
+        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
           <div className="flex items-center gap-2">
             <Lightbulb className="h-4 w-4 text-amber-500" />
             <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider">AI Learning</h4>

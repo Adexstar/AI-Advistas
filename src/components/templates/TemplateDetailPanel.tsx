@@ -44,7 +44,7 @@ const VARIABLE_DOCS = [
 ];
 
 const OWNER_STYLE: Record<string, string> = {
-  Brand: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
+  Brand: 'bg-primary/100/10 text-primary border-primary/20',
   AI: 'bg-primary/10 text-primary border-primary/20',
   User: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
 };

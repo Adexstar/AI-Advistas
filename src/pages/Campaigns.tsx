@@ -137,7 +137,7 @@ const Campaigns = () => {
       </div>
 
       <div className="metric-cards-grid">
-        <KpiCard icon={TrendingUp} label="Total Campaigns" value={counts.total} iconBg="bg-violet-100 text-violet-600" />
+        <KpiCard icon={TrendingUp} label="Total Campaigns" value={counts.total} iconBg="bg-primary/10 text-primary" />
         <KpiCard icon={ShoppingCart} label="Active" value={counts.active} iconBg="bg-emerald-100 text-emerald-600" />
         <KpiCard icon={Pause} label="Paused" value={counts.paused} iconBg="bg-amber-100 text-amber-600" />
         <KpiCard icon={Target} label="Completed" value={counts.completed} iconBg="bg-blue-100 text-blue-600" />
@@ -175,7 +175,7 @@ const Campaigns = () => {
       ) : filtered.length === 0 ? (
         <Card className="rounded-2xl">
           <CardContent className="p-12 text-center space-y-4">
-            <div className="w-16 h-16 mx-auto rounded-full bg-violet-100 text-violet-600 flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 text-primary flex items-center justify-center">
               <TrendingUp className="w-8 h-8" />
             </div>
             <div>

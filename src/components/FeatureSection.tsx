@@ -20,7 +20,7 @@ const FeatureSection = () => {
       title: "Advanced Analytics",
       description: "Real-time performance metrics with audience response analysis and comprehensive ROI tracking and reporting.",
       icon: BarChart3,
-      color: "text-purple-500"
+      color: "text-primary"
     },
     {
       title: "Audience Targeting",

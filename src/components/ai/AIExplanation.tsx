@@ -37,13 +37,13 @@ export function AIExplanation({
   return (
     <div className={cn(
       'rounded-xl border p-4 space-y-3 transition-all',
-      lowConfidence ? 'border-orange-200 bg-orange-50/30' : 'border-purple-200 bg-purple-50/30',
+      lowConfidence ? 'border-orange-500/40 bg-orange-500/10' : 'border-primary/30 bg-primary/10/30',
       className,
     )}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-purple-600 bg-purple-100 rounded-full px-2 py-0.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-primary bg-primary/10 rounded-full px-2 py-0.5">
               {SPECIALIST_LABELS[specialist] ?? specialist}
             </span>
             {expectedImprovement != null && (
@@ -61,14 +61,14 @@ export function AIExplanation({
 
       {evidence && (
         <div className="flex items-start gap-2 text-xs text-gray-500 bg-white/60 rounded-lg p-2.5">
-          <span className="text-purple-500 font-bold mt-0.5">!</span>
+          <span className="text-primary font-bold mt-0.5">!</span>
           <span>{evidence}</span>
         </div>
       )}
 
       <button
         onClick={() => setExpanded(!expanded)}
-        className="text-xs font-medium text-purple-600 hover:text-purple-700 transition"
+        className="text-xs font-medium text-primary hover:text-primary transition"
       >
         {expanded ? 'Hide reasoning' : 'Show reasoning'}
       </button>
@@ -100,7 +100,7 @@ export function AIExplanation({
           {onApply && (
             <button
               onClick={onApply}
-              className="px-3 py-1.5 text-xs font-semibold text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition"
+              className="px-3 py-1.5 text-xs font-semibold text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition"
             >
               Apply
             </button>

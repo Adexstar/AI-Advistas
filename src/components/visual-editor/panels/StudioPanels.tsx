@@ -807,7 +807,7 @@ export const AIStudioPanel: React.FC<{
                   </button>
                 ))
                 : [1, 2, 3].map((i) => (
-                  <div key={i} className="h-20 min-w-[80px] flex-1 rounded-lg bg-gradient-to-br from-purple-600 to-pink-500" />
+                  <div key={i} className="h-20 min-w-[80px] flex-1 rounded-lg bg-gradient-to-br from-primary to-primary-glow" />
                 ))}
             </div>
           </>

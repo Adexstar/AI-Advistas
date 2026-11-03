@@ -36,7 +36,7 @@ const SocialMediaPreview = ({ formData, device }: SocialMediaPreviewProps) => {
     },
     instagram: {
       name: "Instagram",
-      color: "bg-gradient-to-r from-purple-600 to-pink-600",
+      color: "bg-gradient-to-r from-primary to-primary-glow",
       textColor: "text-pink-600",
       bgColor: "bg-pink-50",
       icon: "📷",

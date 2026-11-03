@@ -280,7 +280,7 @@ const InstagramPlacementPreview = ({ placement, content, device }: any) => {
           {content.imageUrl ? (
             <img src={content.imageUrl} alt="Ad" className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
+            <div className="w-full h-full bg-gradient-to-br from-primary-glow to-primary flex items-center justify-center">
               <span className="text-6xl">🎵</span>
             </div>
           )}
@@ -296,7 +296,7 @@ const InstagramPlacementPreview = ({ placement, content, device }: any) => {
         <div className="bg-white border rounded-lg overflow-hidden">
           <div className="p-4 border-b">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary-glow to-primary flex items-center justify-center text-white font-bold text-sm">
                 {content.title.charAt(0)}
               </div>
               <div>

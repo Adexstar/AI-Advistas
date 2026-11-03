@@ -285,7 +285,7 @@ const AdPreviewSimulator = ({ adContent, isGenerating = false }: AdPreviewSimula
 
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-purple-500" />
+                <DollarSign className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium">Est. CPC</span>
               </div>
               <div className="text-2xl font-bold">${metrics.cpc}</div>
