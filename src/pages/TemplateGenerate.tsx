@@ -100,12 +100,12 @@ const TemplateGenerate = () => {
   }, [effectiveContext]);
 
   const contextRows = useMemo(() => [
-    { icon: Building2, label: 'Workspace', value: workspace, bg: '#EDE9FE', iconColor: '#6C63FF' },
+    { icon: Building2, label: 'Workspace', value: workspace, bg: 'hsl(22 90% 58% / 0.16)', iconColor: '#F47B35' },
     { icon: Diamond, label: 'Category', value: category, bg: '#DBEAFE', iconColor: '#2563EB' },
     { icon: Target, label: 'Goal', value: goal, bg: '#DCFCE7', iconColor: '#16A34A' },
     { icon: Instagram, label: 'Platform', value: platform === 'Instagram' ? 'Instagram Feed (1080×1080)' : platform, bg: '#FCE7F3', iconColor: '#DB2777' },
     { icon: ClipboardList, label: 'Campaign', value: campaignName, bg: '#FEF3C7', iconColor: '#D97706' },
-    { icon: Sparkles, label: 'AI Mode', value: aiMode, bg: '#EDE9FE', iconColor: '#6C63FF' },
+    { icon: Sparkles, label: 'AI Mode', value: aiMode, bg: 'hsl(22 90% 58% / 0.16)', iconColor: '#F47B35' },
   ], [workspace, category, goal, platform, campaignName, aiMode]);
 
   const handleGenerate = async () => {
@@ -215,17 +215,17 @@ const TemplateGenerate = () => {
         <header className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-[28px] font-extrabold" style={{ color: '#111827' }}>
+              <h1 className="text-[28px] font-extrabold" style={{ color: 'hsl(var(--foreground))' }}>
                 AI Template Generator
               </h1>
               <span
                 className="inline-block rounded-md px-2 py-[3px] text-[11px] font-bold leading-none"
-                style={{ background: '#EDE9FE', color: '#6C63FF' }}
+                style={{ background: 'hsl(22 90% 58% / 0.16)', color: '#F47B35' }}
               >
                 Beta
               </span>
             </div>
-            <p className="mt-1 text-sm" style={{ color: '#9CA3AF' }}>
+            <p className="mt-1 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
               Generate unique, high-converting marketing templates in seconds.
             </p>
           </div>
@@ -233,14 +233,14 @@ const TemplateGenerate = () => {
             <Button
               variant="outline"
               className="h-10 gap-2 rounded-xl px-4 text-sm font-medium"
-              style={{ borderColor: '#E5E5E5', color: '#374151', background: 'white' }}
+              style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))', background: 'hsl(var(--card))' }}
             >
               <RotateCcw className="h-4 w-4" /> Generation History
             </Button>
             <Button
               variant="outline"
               className="h-10 gap-2 rounded-xl px-4 text-sm font-medium"
-              style={{ borderColor: '#E5E5E5', color: '#374151', background: 'white' }}
+              style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))', background: 'hsl(var(--card))' }}
             >
               <Bookmark className="h-4 w-4" /> Saved Prompts
             </Button>
@@ -248,7 +248,7 @@ const TemplateGenerate = () => {
               onClick={handleGenerate}
               disabled={generating}
               className="h-10 gap-2 rounded-xl px-5 text-sm font-bold"
-              style={{ background: '#6C63FF', color: 'white', border: 'none' }}
+              style={{ background: '#F47B35', color: 'white', border: 'none' }}
             >
               {generating ? (
                 <><Loader2 className="h-4 w-4 animate-spin" /> Generating…</>
@@ -268,12 +268,12 @@ const TemplateGenerate = () => {
               <section>
                 <div className="mb-3 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <h3 className="text-sm font-bold" style={{ color: '#111827' }}>1. AI Context</h3>
-                    <span className="text-xs" style={{ color: '#9CA3AF' }}>(Auto-filled)</span>
+                    <h3 className="text-sm font-bold" style={{ color: 'hsl(var(--foreground))' }}>1. AI Context</h3>
+                    <span className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>(Auto-filled)</span>
                   </div>
                   <button
                     className="flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs"
-                    style={{ borderColor: '#E5E5E5', color: '#6C63FF', background: 'transparent' }}
+                    style={{ borderColor: 'hsl(var(--border))', color: '#F47B35', background: 'transparent' }}
                   >
                     <Wand2 className="h-3 w-3" /> Edit Context
                   </button>
@@ -293,10 +293,10 @@ const TemplateGenerate = () => {
                         >
                           <Icon className="h-3.5 w-3.5" style={{ color: row.iconColor }} />
                         </div>
-                        <span className="w-[100px] shrink-0 text-xs" style={{ color: '#9CA3AF' }}>
+                        <span className="w-[100px] shrink-0 text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
                           {row.label}
                         </span>
-                        <span className="truncate text-sm font-medium" style={{ color: '#111827' }}>
+                        <span className="truncate text-sm font-medium" style={{ color: 'hsl(var(--foreground))' }}>
                           {row.value}
                         </span>
                       </div>
@@ -307,12 +307,12 @@ const TemplateGenerate = () => {
 
               {/* SECTION 2 — Additional Preferences */}
               <section>
-                <h3 className="mb-4 text-sm font-bold" style={{ color: '#111827' }}>2. Additional Preferences</h3>
+                <h3 className="mb-4 text-sm font-bold" style={{ color: 'hsl(var(--foreground))' }}>2. Additional Preferences</h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="mb-1 block text-xs font-medium" style={{ color: '#9CA3AF' }}>Visual Style</Label>
+                    <Label className="mb-1 block text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Visual Style</Label>
                     <Select value={visualStyle} onValueChange={setVisualStyle}>
-                      <SelectTrigger className="h-10 w-full rounded-lg border px-3 text-sm" style={{ borderColor: '#E5E5E5', color: '#111827', background: 'white' }}>
+                      <SelectTrigger className="h-10 w-full rounded-lg border px-3 text-sm" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))', background: 'hsl(var(--card))' }}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -321,9 +321,9 @@ const TemplateGenerate = () => {
                     </Select>
                   </div>
                   <div>
-                    <Label className="mb-1 block text-xs font-medium" style={{ color: '#9CA3AF' }}>Color Preference</Label>
+                    <Label className="mb-1 block text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Color Preference</Label>
                     <Select value={colorPreference} onValueChange={setColorPreference}>
-                      <SelectTrigger className="h-10 w-full rounded-lg border px-3 text-sm" style={{ borderColor: '#E5E5E5', color: '#111827', background: 'white' }}>
+                      <SelectTrigger className="h-10 w-full rounded-lg border px-3 text-sm" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))', background: 'hsl(var(--card))' }}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -332,8 +332,8 @@ const TemplateGenerate = () => {
                             <span className="flex items-center gap-2">
                               {s === 'Brand Colors' && (
                                 <span className="inline-flex -space-x-1">
-                                  <span className="h-3 w-3 rounded-full border border-white" style={{ background: activeKit?.primary_color || '#6C63FF' }} />
-                                  <span className="h-3 w-3 rounded-full border border-white" style={{ background: activeKit?.secondary_color || '#EDE9FE' }} />
+                                  <span className="h-3 w-3 rounded-full border border-white" style={{ background: activeKit?.primary_color || '#F47B35' }} />
+                                  <span className="h-3 w-3 rounded-full border border-white" style={{ background: activeKit?.secondary_color || 'hsl(22 90% 58% / 0.16)' }} />
                                 </span>
                               )}
                               {s}
@@ -344,9 +344,9 @@ const TemplateGenerate = () => {
                     </Select>
                   </div>
                   <div>
-                    <Label className="mb-1 block text-xs font-medium" style={{ color: '#9CA3AF' }}>Image Preference</Label>
+                    <Label className="mb-1 block text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Image Preference</Label>
                     <Select value={imagePreference} onValueChange={setImagePreference}>
-                      <SelectTrigger className="h-10 w-full rounded-lg border px-3 text-sm" style={{ borderColor: '#E5E5E5', color: '#111827', background: 'white' }}>
+                      <SelectTrigger className="h-10 w-full rounded-lg border px-3 text-sm" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))', background: 'hsl(var(--card))' }}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -355,9 +355,9 @@ const TemplateGenerate = () => {
                     </Select>
                   </div>
                   <div>
-                    <Label className="mb-1 block text-xs font-medium" style={{ color: '#9CA3AF' }}>Tone of Voice</Label>
+                    <Label className="mb-1 block text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Tone of Voice</Label>
                     <Select value={toneOfVoice} onValueChange={setToneOfVoice}>
-                      <SelectTrigger className="h-10 w-full rounded-lg border px-3 text-sm" style={{ borderColor: '#E5E5E5', color: '#111827', background: 'white' }}>
+                      <SelectTrigger className="h-10 w-full rounded-lg border px-3 text-sm" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))', background: 'hsl(var(--card))' }}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -367,7 +367,7 @@ const TemplateGenerate = () => {
                   </div>
                 </div>
                 <div className="mt-4">
-                  <Label className="mb-1 block text-xs font-medium" style={{ color: '#9CA3AF' }}>
+                  <Label className="mb-1 block text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>
                     Special Request (Optional)
                   </Label>
                   <Textarea
@@ -375,7 +375,7 @@ const TemplateGenerate = () => {
                     onChange={(e) => setSpecialRequest(e.target.value)}
                     placeholder="E.g. Include a badge for free shipping"
                     className="w-full resize-none rounded-lg border px-3 py-2.5 text-sm"
-                    style={{ borderColor: '#E5E5E5', color: '#374151', height: 80 }}
+                    style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))', height: 80 }}
                   />
                 </div>
               </section>
@@ -386,7 +386,7 @@ const TemplateGenerate = () => {
                   onClick={handleGenerate}
                   disabled={generating}
                   className="flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-bold"
-                  style={{ background: generating ? '#8B83FF' : '#6C63FF', color: 'white', border: 'none' }}
+                  style={{ background: generating ? '#FF9455' : '#F47B35', color: 'white', border: 'none' }}
                 >
                   {generating ? (
                     <><Loader2 className="h-4 w-4 animate-spin" /> Generating…</>
@@ -394,7 +394,7 @@ const TemplateGenerate = () => {
                     <><Sparkles className="h-4 w-4" /> Generate Template</>
                   )}
                 </Button>
-                <p className="mt-1.5 text-center text-[11px]" style={{ color: '#9CA3AF' }}>
+                <p className="mt-1.5 text-center text-[11px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   Uses 1 AI generation credit
                 </p>
               </div>
@@ -420,7 +420,7 @@ const TemplateGenerate = () => {
                     </div>
                   ))}
                 </div>
-                <p className="animate-pulse text-center text-sm" style={{ color: '#9CA3AF' }}>
+                <p className="animate-pulse text-center text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   ✨ Generating templates for {category} · {goal} · {platformLabel}...
                 </p>
               </div>
@@ -428,12 +428,12 @@ const TemplateGenerate = () => {
               /* EMPTY STATE */
               <div className="flex flex-col items-center justify-center py-20">
                 <Sparkles className="h-16 w-16" style={{ color: '#C4B5FD' }} />
-                <h3 className="mt-4 text-sm font-semibold" style={{ color: '#374151' }}>
+                <h3 className="mt-4 text-sm font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
                   Your templates will appear here
                 </h3>
                 <p
                   className="mt-2 max-w-xs text-center text-sm leading-relaxed"
-                  style={{ color: '#9CA3AF' }}
+                  style={{ color: 'hsl(var(--muted-foreground))' }}
                 >
                   Fill in your preferences and click Generate Template to create unique ad templates
                   tailored to your brand and goals.
@@ -446,15 +446,15 @@ const TemplateGenerate = () => {
                 <section>
                   <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h3 className="text-base font-bold" style={{ color: '#111827' }}>3. Generated Templates</h3>
-                      <p className="text-sm" style={{ color: '#9CA3AF' }}>
+                      <h3 className="text-base font-bold" style={{ color: 'hsl(var(--foreground))' }}>3. Generated Templates</h3>
+                      <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
                         Choose your favorite or customize further in the editor.
                       </p>
                     </div>
                     <Select value={sortBy} onValueChange={setSortBy}>
                       <SelectTrigger
                         className="h-9 w-[160px] rounded-lg border px-3 text-sm"
-                        style={{ borderColor: '#E5E5E5', background: 'white' }}
+                        style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--card))' }}
                       >
                         <SelectValue />
                       </SelectTrigger>
@@ -473,7 +473,7 @@ const TemplateGenerate = () => {
                         {idx === 0 && (
                           <span
                             className="absolute left-3 top-3 z-10 rounded px-2 py-1 text-[10px] font-extrabold tracking-wider"
-                            style={{ background: '#6C63FF', color: 'white' }}
+                            style={{ background: '#F47B35', color: 'white' }}
                           >
                             BEST MATCH
                           </span>
@@ -489,7 +489,7 @@ const TemplateGenerate = () => {
                             <div className="flex h-full w-full items-center justify-center">
                               <div className="text-center">
                                 <LayoutGrid className="mx-auto h-10 w-10" style={{ color: '#C4B5FD' }} />
-                                <p className="mt-2 text-[10px] font-medium" style={{ color: '#9CA3AF' }}>{t.template.name}</p>
+                                <p className="mt-2 text-[10px] font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>{t.template.name}</p>
                               </div>
                             </div>
                           )}
@@ -498,7 +498,7 @@ const TemplateGenerate = () => {
                           <Button
                             variant="outline"
                             className="flex-1 gap-1.5 rounded-lg text-xs font-medium"
-                            style={{ borderColor: '#E5E5E5', color: '#374151', height: 36 }}
+                            style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))', height: 36 }}
                             onClick={() => {
                               setPreviewTemplate(t);
                             }}
@@ -507,7 +507,7 @@ const TemplateGenerate = () => {
                           </Button>
                           <Button
                             className="flex-1 gap-1.5 rounded-lg text-xs font-semibold"
-                            style={{ background: '#6C63FF', color: 'white', height: 36 }}
+                            style={{ background: '#F47B35', color: 'white', height: 36 }}
                             onClick={() => handleUseTemplate(t)}
                           >
                             <CheckCircle className="h-3.5 w-3.5" /> Use This
@@ -515,11 +515,11 @@ const TemplateGenerate = () => {
                           <button
                             onClick={() => toggleFavorite(t.id)}
                             className="flex h-9 w-9 items-center justify-center rounded-lg border"
-                            style={{ borderColor: '#E5E5E5' }}
+                            style={{ borderColor: 'hsl(var(--border))' }}
                           >
                             <Heart
                               className={`h-4 w-4 ${favorites.has(t.id) ? 'fill-red-500' : ''}`}
-                              style={{ color: favorites.has(t.id) ? '#EF4444' : '#9CA3AF' }}
+                              style={{ color: favorites.has(t.id) ? '#EF4444' : 'hsl(var(--muted-foreground))' }}
                             />
                           </button>
                         </div>
@@ -530,8 +530,8 @@ const TemplateGenerate = () => {
 
                 {/* SECTION 4 — Generation Insights */}
                 <section>
-                  <h3 className="text-base font-bold" style={{ color: '#111827' }}>4. Generation Insights</h3>
-                  <p className="mt-0.5 text-sm" style={{ color: '#9CA3AF' }}>
+                  <h3 className="text-base font-bold" style={{ color: 'hsl(var(--foreground))' }}>4. Generation Insights</h3>
+                  <p className="mt-0.5 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
                     Why these templates were recommended
                   </p>
                   <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-start">
@@ -548,10 +548,10 @@ const TemplateGenerate = () => {
                     </div>
                     <div
                       className="w-full rounded-xl border bg-card p-4 text-center sm:w-[160px]"
-                      style={{ borderColor: '#E5E5E5' }}
+                      style={{ borderColor: 'hsl(var(--border))' }}
                     >
-                      <p className="text-[11px] font-medium" style={{ color: '#9CA3AF' }}>Confidence Score</p>
-                      <p className="my-1 text-4xl font-extrabold" style={{ color: '#111827' }}>
+                      <p className="text-[11px] font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Confidence Score</p>
+                      <p className="my-1 text-4xl font-extrabold" style={{ color: 'hsl(var(--foreground))' }}>
                         {Math.round((generatedTemplates[0]?.confidence ?? 0.96) * 100)}%
                       </p>
                       <p className="text-[11px] font-medium" style={{ color: '#22C55E' }}>
@@ -563,7 +563,7 @@ const TemplateGenerate = () => {
 
                 {/* SECTION 5 — Next Steps */}
                 <section>
-                  <h3 className="text-base font-bold" style={{ color: '#111827' }}>5. Next Steps</h3>
+                  <h3 className="text-base font-bold" style={{ color: 'hsl(var(--foreground))' }}>5. Next Steps</h3>
                   <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <NextStepCard
                       icon={CheckCircle}
@@ -623,8 +623,8 @@ const NextStepCard = ({
     <div className="flex h-9 w-9 items-center justify-center rounded-full" style={{ background: bg }}>
       <Icon className="h-4 w-4" style={{ color }} />
     </div>
-    <h4 className="mt-2.5 text-sm font-bold" style={{ color: '#111827' }}>{title}</h4>
-    <p className="mt-1 text-xs leading-relaxed" style={{ color: '#9CA3AF' }}>{description}</p>
+    <h4 className="mt-2.5 text-sm font-bold" style={{ color: 'hsl(var(--foreground))' }}>{title}</h4>
+    <p className="mt-1 text-xs leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>{description}</p>
   </button>
 );
 

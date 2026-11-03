@@ -119,8 +119,8 @@ function StepProgress({ step }: { step: number }) {
               </div>
               <span className={cn(
                 'font-label mt-1',
-                active && 'text-[#6C63FF]',
-                completed && 'text-[#6C63FF]',
+                active && 'text-primary',
+                completed && 'text-primary',
                 !active && !completed && 'text-muted-foreground',
               )}>{s.label}</span>
               <span className="hidden sm:block font-micro text-muted-foreground leading-tight">{s.subtitle}</span>
@@ -128,7 +128,7 @@ function StepProgress({ step }: { step: number }) {
             {i < STEPS.length - 1 && (
               <div className={cn(
                 'flex-1 h-px mx-1.5 sm:mx-3 mt-[-18px] sm:mt-[-20px]',
-                completed ? 'bg-primary' : 'bg-[#E5E5E5]',
+                completed ? 'bg-primary' : 'bg-border',
               )} />
             )}
           </div>
@@ -462,7 +462,7 @@ export default function CreateAd() {
           <div className="flex gap-3 overflow-x-auto pb-2 text-xs">
             {['Facebook Feed', 'Instagram Feed', 'Instagram Story', 'Facebook Story', 'TikTok', 'LinkedIn'].map((p) => (
               <button key={p} onClick={() => setPreviewPlatform(p.toLowerCase().replace(/\s+/g, '_'))}
-                className={cn('pb-1 whitespace-nowrap', previewPlatform === p.toLowerCase().replace(/\s+/g, '_') ? 'text-[#6C63FF] border-b-2 border-primary font-medium' : 'text-muted-foreground')}>{p}</button>
+                className={cn('pb-1 whitespace-nowrap', previewPlatform === p.toLowerCase().replace(/\s+/g, '_') ? 'text-primary border-b-2 border-primary font-medium' : 'text-muted-foreground')}>{p}</button>
             ))}
           </div>
           <div className={cn(
@@ -471,7 +471,7 @@ export default function CreateAd() {
           )}>
             {/* Header: Page info + sponsored */}
             <div className="flex items-center gap-2.5 px-3 py-2.5">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#6C63FF] to-[#A78BFA] shrink-0" />
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary-glow shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-semibold truncate text-[#050505]">{brandName}</p>
                 <p className="text-[11px] text-[#65676B]">Sponsored · <span className="font-medium">Paid for by {brandName}</span></p>
@@ -551,15 +551,15 @@ export default function CreateAd() {
               ) : (
                 <>
                   <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                  <p className="text-xs font-medium text-[#6C63FF] mt-2">Upload Media</p>
+                  <p className="text-xs font-medium text-primary mt-2">Upload Media</p>
                   <p className="text-[11px] text-muted-foreground">or drag and drop</p>
                 </>
               )}
             </div>
             <div className="flex gap-2 mt-2">
-              <button type="button" onClick={() => fileRef.current?.click()} className="text-xs text-[#6C63FF] font-medium hover:underline">Media from Library</button>
-              <span className="text-[#E5E5E5]">|</span>
-              <button type="button" className="text-xs text-[#6C63FF] font-medium hover:underline">AI Generate Image</button>
+              <button type="button" onClick={() => fileRef.current?.click()} className="text-xs text-primary font-medium hover:underline">Media from Library</button>
+              <span className="text-border">|</span>
+              <button type="button" className="text-xs text-primary font-medium hover:underline">AI Generate Image</button>
             </div>
             <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
           </Field>
@@ -569,7 +569,7 @@ export default function CreateAd() {
               className="border-[1.5px] border-border rounded-[10px] text-sm resize-none focus:border-primary" />
           </Field>
           <div className="rounded-lg border border-primary/20 bg-primary/[0.04] p-3">
-            <p className="text-[10px] font-semibold text-[#6C63FF] flex items-center gap-1"><Sparkles className="h-3 w-3" /> AI Suggestions</p>
+            <p className="text-[10px] font-semibold text-primary flex items-center gap-1"><Sparkles className="h-3 w-3" /> AI Suggestions</p>
             <div className="flex flex-wrap gap-1.5 mt-1.5">
               {['Generate Copy', 'Improve Headline', 'Use Brand Voice'].map((a) => (
                 <button key={a} type="button" onClick={() => toast.message(a, { description: 'AI hook ready — will populate once connected.' })}
@@ -632,11 +632,11 @@ export default function CreateAd() {
           <Field label="Age Range">
             <div className="flex items-center gap-3">
               <Controller control={control} name="ageMin" render={({ field }) => (
-                <input type="range" min={13} max={65} step={1} value={field.value} onChange={(e) => field.onChange(Number(e.target.value))} className="w-full accent-[#6C63FF]" />
+                <input type="range" min={13} max={65} step={1} value={field.value} onChange={(e) => field.onChange(Number(e.target.value))} className="w-full accent-primary" />
               )} />
               <span className="text-xs font-medium text-foreground shrink-0 w-16 text-right">{values.ageMin}–{values.ageMax}</span>
               <Controller control={control} name="ageMax" render={({ field }) => (
-                <input type="range" min={13} max={65} step={1} value={field.value} onChange={(e) => field.onChange(Number(e.target.value))} className="w-full accent-[#6C63FF]" />
+                <input type="range" min={13} max={65} step={1} value={field.value} onChange={(e) => field.onChange(Number(e.target.value))} className="w-full accent-primary" />
               )} />
             </div>
           </Field>
@@ -654,7 +654,7 @@ export default function CreateAd() {
           <Field label="Interests">
             <div className="flex flex-wrap gap-1.5 mb-2">
               {interests.map((int) => (
-                <span key={int} className="inline-flex items-center gap-1 px-2 py-1 text-[11px] bg-primary/10 text-[#6C63FF] rounded-md">
+                <span key={int} className="inline-flex items-center gap-1 px-2 py-1 text-[11px] bg-primary/10 text-primary rounded-md">
                   {int}
                   <button type="button" onClick={() => setInterests(interests.filter((i) => i !== int))}><X className="h-3 w-3" /></button>
                 </span>
@@ -664,7 +664,7 @@ export default function CreateAd() {
               <Input value={interestInput} onChange={(e) => setInterestInput(e.target.value)}
                 placeholder="Add interest..." className="h-10 text-sm border-[1.5px] border-border rounded-[10px] focus:border-primary" />
               <button type="button" onClick={() => { if (interestInput.trim()) { setInterests([...interests, interestInput.trim()]); setInterestInput(''); } }}
-                className="px-3 py-2 text-xs font-medium text-[#6C63FF] border border-primary rounded-lg hover:bg-primary/10">+ Add</button>
+                className="px-3 py-2 text-xs font-medium text-primary border border-primary rounded-lg hover:bg-primary/10">+ Add</button>
             </div>
           </Field>
         </div>
@@ -739,7 +739,7 @@ export default function CreateAd() {
             {reachEstimate.low.toLocaleString()} – {reachEstimate.high.toLocaleString()}
           </p>
           <div className="h-1.5 bg-[#E8E8F0] rounded mt-3 overflow-hidden">
-            <div className="h-full rounded bg-gradient-to-r from-[#6C63FF] to-[#A78BFA]" style={{ width: `${reachPercent}%` }} />
+            <div className="h-full rounded bg-gradient-to-r from-primary to-primary-glow" style={{ width: `${reachPercent}%` }} />
           </div>
           <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
             A simple estimate based on budget and selected platforms. Final delivery will adjust after launch.
@@ -757,7 +757,7 @@ export default function CreateAd() {
                 <button className="w-full h-12 flex items-center gap-2.5 px-3.5 border-[1.5px] border-border rounded-[10px] bg-card text-left">
                   <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm text-[#111827] flex-1">{format(field.value, 'dd/MM/yyyy')}</span>
-                  <span className="text-xs text-[#6C63FF]">Change</span>
+                  <span className="text-xs text-primary">Change</span>
                 </button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -810,7 +810,7 @@ export default function CreateAd() {
                               <button className="w-full h-12 flex items-center gap-2.5 px-3.5 border-[1.5px] border-border rounded-[10px] bg-card text-left">
                                 <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                                 <span className="text-sm text-[#111827] flex-1">{endField.value ? format(endField.value, 'dd/MM/yyyy') : 'Select date'}</span>
-                                <span className="text-xs text-[#6C63FF]">Change</span>
+                                <span className="text-xs text-primary">Change</span>
                               </button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
@@ -892,14 +892,14 @@ export default function CreateAd() {
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold truncate">{values.headline || 'No headline'}</p>
             <p className="text-xs text-muted-foreground truncate">{values.primaryText || 'No primary text'}</p>
-            <p className="text-[10px] text-[#6C63FF] mt-0.5">{values.cta}</p>
+            <p className="text-[10px] text-primary mt-0.5">{values.cta}</p>
           </div>
         </div>
 
         <div className="flex items-start gap-2">
           <Controller control={control} name="termsAccepted" render={({ field }) => (
             <input type="checkbox" checked={field.value} onChange={(e) => field.onChange(e.target.checked)}
-              className="mt-0.5 accent-[#6C63FF]" />
+              className="mt-0.5 accent-primary" />
           )} />
           <p className="text-xs text-muted-foreground">I confirm that I have the rights to use all media and content in this ad, and I agree to the platform advertising policies.</p>
         </div>
