@@ -207,9 +207,9 @@ export function useAnalytics(range: AnalyticsRange = 'daily') {
     const videos = mediaRows.filter((m: any) => m.type === 'video').length;
     const total = Math.max(images + videos, 1);
     return [
-      { name: 'Images', value: images || Math.round(total * 0.6), color: '#8b5cf6' },
+      { name: 'Images', value: images || Math.round(total * 0.6), color: '#F47B35' },
       { name: 'Videos', value: videos || Math.round(total * 0.25), color: '#6366f1' },
-      { name: 'Documents', value: Math.round(total * 0.1), color: '#a78bfa' },
+      { name: 'Documents', value: Math.round(total * 0.1), color: '#FF9455' },
       { name: 'Other', value: Math.round(total * 0.05), color: '#f472b6' },
     ];
   }, [mediaRows]);

@@ -99,7 +99,7 @@ const CreateBrandDialog = ({
     website: '',
     description: '',
     primary_color: '#F47B35',
-    secondary_color: '#4B46E5',
+    secondary_color: '#FF9455',
     accent_color: '#10B981',
     logo_url: '',
     cover_image_url: '',
@@ -119,7 +119,7 @@ const CreateBrandDialog = ({
         cover_image_url: existing.cover_image_url || '',
       });
     } else if (open) {
-      setForm({ name: '', industry: '', website: '', description: '', primary_color: '#F47B35', secondary_color: '#4B46E5', accent_color: '#10B981', logo_url: '', cover_image_url: '' });
+      setForm({ name: '', industry: '', website: '', description: '', primary_color: '#F47B35', secondary_color: '#FF9455', accent_color: '#10B981', logo_url: '', cover_image_url: '' });
     }
   }, [existing, open]);
 

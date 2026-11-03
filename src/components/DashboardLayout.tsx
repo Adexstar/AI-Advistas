@@ -206,7 +206,7 @@ const NavItemRow = ({
         <>
           <span className="flex-1 text-truncate">{item.name}</span>
           {item.soon ? (
-            <span className="rounded-[10px] bg-[rgba(108,99,255,0.15)] px-1.5 py-[2px] text-[9px] font-bold tracking-wide text-[#A78BFA]">
+            <span className="rounded-[10px] bg-[rgba(244,123,53,0.15)] px-1.5 py-[2px] text-[9px] font-bold tracking-wide text-[#FF9455]">
               SOON
             </span>
           ) : item.notify ? (

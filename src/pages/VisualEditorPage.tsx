@@ -117,7 +117,7 @@ const IconRail: React.FC<{ active: string; onChange: (id: string) => void }> = (
       })}
     </nav>
     <div className="mx-1 mb-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/10 border border-white/10 p-1.5 text-center">
-      <div className="mx-auto mb-1 flex h-5 w-5 items-center justify-center rounded-lg bg-accent/90 text-[hsl(236,31%,13%)]">
+      <div className="mx-auto mb-1 flex h-5 w-5 items-center justify-center rounded-lg bg-primary/90 text-primary-foreground">
         <Zap className="h-3 w-3" />
       </div>
       <p className="text-[8px] font-semibold text-white leading-tight">Pro</p>
@@ -420,10 +420,10 @@ const TextPanel: React.FC<{ onAdd: (text: string, size: number, weight: string) 
             className="w-full h-10 pl-9 pr-3 rounded-lg text-sm bg-[#3D3D3D] border border-[#555555] text-[#888888] placeholder:text-[#888888] outline-none" />
         </div>
         <button onClick={() => onAdd('Add a heading', 36, 'bold')}
-          className="w-full h-11 rounded-lg bg-[#6C63FF] text-white text-sm font-semibold flex items-center justify-center gap-2 mb-2 hover:bg-[#5B52E0]">
+          className="w-full h-11 rounded-lg bg-[#F47B35] text-white text-sm font-semibold flex items-center justify-center gap-2 mb-2 hover:bg-[#DD6A28]">
           <Type className="h-4 w-4" /> Add a text box
         </button>
-        <button className="w-full h-11 rounded-lg bg-[#2D2D2D] border border-[#555555] text-white text-sm flex items-center justify-center gap-2 mb-4 hover:border-[#6C63FF]">
+        <button className="w-full h-11 rounded-lg bg-[#2D2D2D] border border-[#555555] text-white text-sm flex items-center justify-center gap-2 mb-4 hover:border-[#F47B35]">
           <Sparkles className="h-4 w-4" /> AI Copy
         </button>
         <p className="text-xs font-semibold text-[#888888] uppercase tracking-wider mb-2">Default text styles</p>
@@ -492,7 +492,7 @@ const ElementsPanel: React.FC<{ onAdd: (t: 'rectangle' | 'circle') => void }> = 
           <div key={s.label} className="mb-4">
             <div className="flex items-center justify-between mb-1">
               <p className="text-xs font-semibold text-[#CCCCCC]">{s.label}</p>
-              <span className="text-xs text-[#6C63FF]">See all →</span>
+              <span className="text-xs text-[#F47B35]">See all →</span>
             </div>
             <div className="flex gap-2 overflow-x-auto no-scrollbar">
               {s.items.map((_, i) => (
@@ -952,7 +952,7 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
                   className="pointer-events-none absolute inset-0"
                   style={{
                     backgroundImage:
-                      'linear-gradient(to right, rgba(108,99,255,0.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(108,99,255,0.25) 1px, transparent 1px)',
+                      'linear-gradient(to right, rgba(244,123,53,0.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(244,123,53,0.25) 1px, transparent 1px)',
                     backgroundSize: '20px 20px',
                   }}
                 />
@@ -1030,7 +1030,7 @@ const trackMetaFor = (obj: any) => {
     return { icon: Type, color: '#1B7A6B', label: `✦ ${role} · ${(obj.text || 'Text').toString().slice(0, 18)}` };
   }
   if (t === 'image') return { icon: ImageIcon, color: '#2563A8', label: obj.name || 'Image' };
-  if (t === 'video') return { icon: Video, color: '#8B5CF6', label: obj.name || 'Video' };
+  if (t === 'video') return { icon: Video, color: '#F47B35', label: obj.name || 'Video' };
   if (t === 'audio') return { icon: Music, color: '#B45309', label: obj.name || 'Audio' };
   if (t === 'group') return { icon: LayersIcon, color: '#4B5563', label: obj.name || 'Group' };
   return { icon: Shapes, color: '#B45309', label: obj.name || (t ? t.charAt(0).toUpperCase() + t.slice(1) : 'Shape') };
@@ -1400,9 +1400,9 @@ const ColorToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> =
   return (
     <div className="space-y-3">
       <p className="text-xs font-semibold text-muted-foreground">Brand Colours</p>
-      <div className="flex gap-2">{['#6C63FF','#FF6B6B','#00C9A7'].map(c => <button key={c} onClick={() => update('fill', c)} className="w-8 h-8 rounded-full border border-border" style={{ backgroundColor: c }} />)}</div>
+      <div className="flex gap-2">{['#F47B35','#FF6B6B','#00C9A7'].map(c => <button key={c} onClick={() => update('fill', c)} className="w-8 h-8 rounded-full border border-border" style={{ backgroundColor: c }} />)}</div>
       <p className="text-xs font-semibold text-muted-foreground">Recent</p>
-      <div className="flex gap-2">{['#FFC107','#8b5cf6','#ffffff'].map(c => <button key={c} onClick={() => update('fill', c)} className="w-8 h-8 rounded-full border border-border" style={{ backgroundColor: c }} />)}</div>
+      <div className="flex gap-2">{['#FFC107','#F47B35','#ffffff'].map(c => <button key={c} onClick={() => update('fill', c)} className="w-8 h-8 rounded-full border border-border" style={{ backgroundColor: c }} />)}</div>
       <p className="text-xs font-semibold text-muted-foreground">Palette</p>
       <div className="grid grid-cols-8 gap-1.5">{colors.map(c => <button key={c} onClick={() => update('fill', c)} className="aspect-square rounded-lg border border-border" style={{ backgroundColor: c }} />)}</div>
       <div className="flex items-center gap-2 rounded-xl border px-3 py-2"><input type="color" value={selected?.fill || '#000000'} onChange={(e) => update('fill', e.target.value)} className="h-6 w-6 rounded cursor-pointer border" /><span className="text-xs font-mono uppercase">{selected?.fill || '#000000'}</span></div>
@@ -2537,7 +2537,7 @@ const EditorInner: React.FC = () => {
   const addShape = (t: 'rectangle' | 'circle') => {
     if (!canvas) return;
     const s = t === 'rectangle'
-      ? new Rect({ left: 100, top: 100, width: 120, height: 120, fill: '#8b5cf6' })
+      ? new Rect({ left: 100, top: 100, width: 120, height: 120, fill: '#F47B35' })
       : new FCircle({ left: 100, top: 100, radius: 60, fill: '#FFC107' });
     canvas.add(s); canvas.setActiveObject(s); canvas.renderAll();
     setSelected(s); forceUpdate((n) => n + 1);
@@ -2752,7 +2752,7 @@ const EditorInner: React.FC = () => {
           <button key={i} onClick={() => goToPage(i)}
             className="h-9 min-w-9 rounded-lg px-3 text-xs"
             style={{
-              backgroundColor: i === pageIdx ? '#6C63FF' : '#2D2D2D',
+              backgroundColor: i === pageIdx ? '#F47B35' : '#2D2D2D',
               border: '1px solid #444444',
               color: i === pageIdx ? '#FFFFFF' : '#CCCCCC',
             }}>

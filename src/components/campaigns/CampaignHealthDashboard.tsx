@@ -51,7 +51,7 @@ export function CampaignHealthDashboard({ health }: Props) {
         <HealthMetric label="Creative Quality" value={health.creative_quality} color="#22C55E" />
         <HealthMetric label="Audience Match" value={health.audience_match} color="#3B82F6" />
         <HealthMetric label="Budget Efficiency" value={health.budget_efficiency} color="#F59E0B" />
-        <HealthMetric label="Optimization Level" value={health.optimization_level} color="#8B5CF6" />
+        <HealthMetric label="Optimization Level" value={health.optimization_level} color="#F47B35" />
       </div>
     </section>
   );

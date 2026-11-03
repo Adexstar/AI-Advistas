@@ -567,8 +567,8 @@ const TemplateGenerate = () => {
                   <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <NextStepCard
                       icon={CheckCircle}
-                      bg="#EDE9FE"
-                      color="#6C63FF"
+                      bg="rgba(244,123,53,0.16)"
+                      color="#F47B35"
                       title="Use Template"
                       description="Open in editor and customize to your liking."
                       onClick={() => generatedTemplates[0] && handleUseTemplate(generatedTemplates[0])}
