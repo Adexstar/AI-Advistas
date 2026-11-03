@@ -127,41 +127,44 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Same Obsidian + Orange system — dark is the default theme */
+    --background: 210 11% 7%;
+    --foreground: 0 0% 96%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 213 13% 14%;
+    --card-foreground: 0 0% 96%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 213 12% 11%;
+    --popover-foreground: 0 0% 96%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 22 90% 58%;
+    --primary-foreground: 210 11% 7%;
+    --primary-glow: 22 100% 67%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 213 13% 17%;
+    --secondary-foreground: 0 0% 96%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 213 13% 12%;
+    --muted-foreground: 214 8% 60%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 213 13% 17%;
+    --accent-foreground: 0 0% 96%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 213 10% 21%;
+    --input: 213 10% 21%;
+    --ring: 22 90% 58%;
+    --success: 142 71% 45%;
+    --sidebar-background: 214 13% 11%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 22 90% 58%;
+    --sidebar-primary-foreground: 210 11% 7%;
+    --sidebar-accent: 213 13% 14%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 213 10% 21%;
+    --sidebar-ring: 22 90% 58%;
   }
 }
 
@@ -255,10 +258,8 @@ All colors MUST be HSL.
     line-height: 1.5;
     letter-spacing: -0.01em;
     background-image:
-      radial-gradient(circle at top left, hsl(var(--primary-glow) / 0.24), transparent 24%),
-      radial-gradient(circle at top right, hsl(var(--accent) / 0.18), transparent 20%),
-      radial-gradient(circle at 50% 120%, hsl(var(--primary) / 0.12), transparent 34%),
-      linear-gradient(180deg, hsl(252 100% 99%) 0%, hsl(252 100% 98%) 42%, hsl(247 100% 97%) 100%);
+      radial-gradient(circle at top left, hsl(var(--primary-glow) / 0.05), transparent 24%),
+      linear-gradient(180deg, hsl(210 11% 7%) 0%, hsl(210 11% 7%) 100%);
     background-attachment: fixed;
   }
 
@@ -415,8 +416,8 @@ p  { line-height: 1.6; }
   }
 
   .surface-panel-strong {
-    border: 1px solid hsl(0 0% 100% / 0.2);
-    background: linear-gradient(145deg, hsl(0 0% 100% / 0.16), hsl(var(--primary-glow) / 0.1));
+    border: 1px solid hsl(0 0% 100% / 0.08);
+    background: linear-gradient(145deg, hsl(var(--card) / 0.9), hsl(var(--primary) / 0.08));
     box-shadow: var(--shadow-soft);
     -webkit-backdrop-filter: blur(20px);
     backdrop-filter: blur(20px);
@@ -458,9 +459,9 @@ p  { line-height: 1.6; }
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(circle at 12% 18%, hsl(var(--primary-glow) / 0.16), transparent 22%),
-      radial-gradient(circle at 88% 12%, hsl(var(--accent) / 0.12), transparent 18%),
-      radial-gradient(circle at 50% 100%, hsl(var(--primary) / 0.1), transparent 28%);
+      radial-gradient(circle at 12% 18%, hsl(var(--primary-glow) / 0.06), transparent 22%),
+      radial-gradient(circle at 88% 12%, hsl(var(--primary) / 0.04), transparent 18%),
+      radial-gradient(circle at 50% 100%, hsl(var(--primary) / 0.05), transparent 28%);
     pointer-events: none;
     z-index: -1;
   }
@@ -674,7 +675,7 @@ p  { line-height: 1.6; }
     display: flex;
     flex-direction: column;
     gap: 12px;
-    background: #FFFFFF;
+    background: hsl(var(--card));
     border: 1px solid hsl(var(--border));
     box-shadow: 0 1px 3px rgba(0,0,0,0.06);
   }
@@ -774,14 +775,14 @@ p  { line-height: 1.6; }
     flex-shrink: 0;
   }
 
-  .status-badge.active { background: #DCFCE7; color: #16A34A; }
+  .status-badge.active { background: hsl(142 71% 45% / 0.16); color: hsl(142 69% 58%); }
   .status-badge.active::before { background: #22C55E; }
-  .status-badge.paused { background: #FEF9C3; color: #CA8A04; }
+  .status-badge.paused { background: hsl(45 96% 51% / 0.16); color: hsl(48 96% 60%); }
   .status-badge.paused::before { background: #EAB308; }
-  .status-badge.draft { background: #F3F4F6; color: #6B7280; }
-  .status-badge.draft::before { background: #9CA3AF; }
-  .status-badge.completed { background: #EDE9FE; color: #6C63FF; }
-  .status-badge.completed::before { background: #6C63FF; }
+  .status-badge.draft { background: hsl(214 8% 60% / 0.16); color: hsl(214 8% 72%); }
+  .status-badge.draft::before { background: #9299A2; }
+  .status-badge.completed { background: hsl(22 90% 58% / 0.16); color: hsl(22 100% 67%); }
+  .status-badge.completed::before { background: #F47B35; }
 
   /* ── Input Standard ── */
   .input-field {
