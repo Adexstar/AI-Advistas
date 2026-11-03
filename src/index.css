@@ -1154,7 +1154,7 @@ p  { line-height: 1.6; }
   .template-masonry-label {
     font-size: 12px;
     font-weight: 500;
-    color: #374151;
+    color: hsl(var(--foreground));
     margin: 4px 0 0;
     white-space: nowrap;
     overflow: hidden;
@@ -1163,14 +1163,14 @@ p  { line-height: 1.6; }
 
   .template-masonry-category {
     font-size: 10px;
-    color: #9CA3AF;
+    color: hsl(var(--muted-foreground));
     margin: 0 0 4px;
   }
 
   .template-section-label {
     font-size: 18px;
     font-weight: 700;
-    color: #111827;
+    color: hsl(var(--foreground));
     padding: 20px 16px 12px;
     margin: 0;
   }
