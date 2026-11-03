@@ -527,7 +527,7 @@ const AIVideoGenerator: React.FC = () => {
                         </div>
                         
                         <div className="flex gap-4">
-                          <div className="flex-1 p-4 bg-accent/50 rounded-lg border">
+                          <div className="flex-1 p-4 bg-card/60 rounded-lg border">
                             <div className="flex items-center gap-2 mb-2">
                               <Zap className="w-4 h-4 text-accent-foreground" />
                               <span className="text-sm font-medium">Call to Action</span>

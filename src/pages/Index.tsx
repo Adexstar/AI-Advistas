@@ -143,7 +143,7 @@ const Index = () => {
             <div className="hero-grid absolute inset-x-0 top-0 h-[560px] opacity-40" />
             <div className="absolute left-[-8%] top-10 h-80 w-80 rounded-full bg-primary/20 blur-3xl" />
             <div className="absolute right-[-6%] top-20 h-96 w-96 rounded-full bg-primary-glow/25 blur-3xl" />
-            <div className="absolute bottom-6 left-1/3 h-64 w-64 rounded-full bg-accent/25 blur-3xl" />
+            <div className="absolute bottom-6 left-1/3 h-64 w-64 rounded-full bg-primary/15 blur-3xl" />
           </div>
 
           <div className="page-container relative grid gap-12 px-0 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)] lg:items-center">
@@ -205,7 +205,7 @@ const Index = () => {
                 <div className="space-y-4">
                   <Card className="border-white/10 bg-white/10 shadow-none backdrop-blur">
                     <CardContent className="flex items-start gap-4 p-4">
-                      <div className="rounded-2xl bg-white/12 p-3 text-accent shadow-sm">
+                      <div className="rounded-2xl bg-white/12 p-3 text-primary shadow-sm">
                         <Bot className="h-5 w-5" />
                       </div>
                       <div className="space-y-1">

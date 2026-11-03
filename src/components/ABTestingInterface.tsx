@@ -451,7 +451,7 @@ export const ABTestingInterface = ({
                     <p className="text-sm text-muted-foreground">Avg. Uplift</p>
                     <p className="text-2xl font-bold">+12.8%</p>
                   </div>
-                  <TrendingUp className="h-8 w-8 text-accent" />
+                  <TrendingUp className="h-8 w-8 text-primary" />
                 </div>
               </CardContent>
             </Card>

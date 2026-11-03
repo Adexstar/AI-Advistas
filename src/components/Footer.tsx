@@ -50,7 +50,7 @@ const Footer = () => {
       <div className="absolute inset-0 opacity-40">
         <div className="hero-grid absolute inset-0" />
         <div className="absolute -left-16 top-0 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
-        <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-accent/20 blur-3xl" />
+        <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
       </div>
 
       <div className="page-container relative z-10 py-16">
@@ -92,7 +92,7 @@ const Footer = () => {
                   <li key={linkIndex}>
                     <a 
                       href={link.href}
-                      className="text-white/72 transition-colors hover:text-accent"
+                      className="text-white/72 transition-colors hover:text-primary"
                     >
                       {link.name}
                     </a>
@@ -110,13 +110,13 @@ const Footer = () => {
             </div>
             
             <div className="flex items-center gap-6 text-sm">
-              <a href="#" className="text-white/55 transition-colors hover:text-accent">
+              <a href="#" className="text-white/55 transition-colors hover:text-primary">
                 Privacy Policy
               </a>
-              <a href="#" className="text-white/55 transition-colors hover:text-accent">
+              <a href="#" className="text-white/55 transition-colors hover:text-primary">
                 Terms of Service
               </a>
-              <a href="#" className="text-white/55 transition-colors hover:text-accent">
+              <a href="#" className="text-white/55 transition-colors hover:text-primary">
                 Cookie Policy
               </a>
             </div>
