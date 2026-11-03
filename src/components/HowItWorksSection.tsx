@@ -75,7 +75,7 @@ const HowItWorksSection = () => {
               variants={itemVariants}
               className="relative"
             >
-              <div className="bg-white rounded-2xl p-8 shadow-soft border border-border/50 h-full hover:shadow-glow transition-all duration-300">
+              <div className="bg-card rounded-2xl p-8 shadow-soft border border-border/50 h-full hover:shadow-glow transition-all duration-300">
                 <div className="flex items-center mb-6">
                   <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center text-white font-bold text-xl mr-4">
                     {step.number}

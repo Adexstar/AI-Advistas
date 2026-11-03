@@ -111,9 +111,9 @@ function StepProgress({ step }: { step: number }) {
             <div className="flex flex-col items-center">
               <div className={cn(
                 'flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full text-[10px] sm:text-xs font-bold transition-all shrink-0',
-                active && 'bg-[#6C63FF] text-white shadow-sm',
-                completed && 'bg-[#6C63FF] text-white',
-                !active && !completed && 'bg-white border-2 border-[#E5E5E5] text-[#9CA3AF]',
+                active && 'bg-primary text-white shadow-sm',
+                completed && 'bg-primary text-white',
+                !active && !completed && 'bg-card border-2 border-border text-muted-foreground',
               )}>
                 {completed ? <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> : idx}
               </div>
@@ -121,14 +121,14 @@ function StepProgress({ step }: { step: number }) {
                 'font-label mt-1',
                 active && 'text-[#6C63FF]',
                 completed && 'text-[#6C63FF]',
-                !active && !completed && 'text-[#9CA3AF]',
+                !active && !completed && 'text-muted-foreground',
               )}>{s.label}</span>
-              <span className="hidden sm:block font-micro text-[#9CA3AF] leading-tight">{s.subtitle}</span>
+              <span className="hidden sm:block font-micro text-muted-foreground leading-tight">{s.subtitle}</span>
             </div>
             {i < STEPS.length - 1 && (
               <div className={cn(
                 'flex-1 h-px mx-1.5 sm:mx-3 mt-[-18px] sm:mt-[-20px]',
-                completed ? 'bg-[#6C63FF]' : 'bg-[#E5E5E5]',
+                completed ? 'bg-primary' : 'bg-[#E5E5E5]',
               )} />
             )}
           </div>
@@ -145,11 +145,11 @@ function StepProgress({ step }: { step: number }) {
 function Field({ label, hint, children, required }: { label: string; hint?: string; children: React.ReactNode; required?: boolean }) {
   return (
     <div className="space-y-1.5">
-      <Label className="font-label text-[#374151]">
+      <Label className="font-label text-foreground">
         {label} {required && <span className="text-red-500">*</span>}
       </Label>
       {children}
-      {hint && <p className="font-micro text-[#9CA3AF]">{hint}</p>}
+      {hint && <p className="font-micro text-muted-foreground">{hint}</p>}
     </div>
   );
 }
@@ -158,7 +158,7 @@ function StepSection({ title, subtitle, children }: { title: string; subtitle?: 
   return (
     <div className="mb-6">
       <h3 className="font-section-header text-[#111827]">{title}</h3>
-      {subtitle && <p className="font-label text-[#9CA3AF] mt-0.5 mb-4">{subtitle}</p>}
+      {subtitle && <p className="font-label text-muted-foreground mt-0.5 mb-4">{subtitle}</p>}
       {children}
     </div>
   );
@@ -401,12 +401,12 @@ export default function CreateAd() {
           <div className="space-y-4">
             <Field label="Campaign Name" required>
               <Input placeholder="Summer Sale Campaign" {...register('name', { required: true })}
-                className="h-11 border-[1.5px] border-[#E5E5E5] rounded-[10px] text-sm px-3.5 focus:border-[#6C63FF]" />
+                className="h-11 border-[1.5px] border-border rounded-[10px] text-sm px-3.5 focus:border-primary" />
             </Field>
             <Field label="Objective">
               <Controller control={control} name="objective" render={({ field }) => (
                 <select value={field.value} onChange={(e) => field.onChange(e.target.value)}
-                  className="h-11 w-full border-[1.5px] border-[#E5E5E5] rounded-[10px] text-sm px-3.5 bg-white focus:border-[#6C63FF] focus:outline-none appearance-none">
+                  className="h-11 w-full border-[1.5px] border-border rounded-[10px] text-sm px-3.5 bg-card focus:border-primary focus:outline-none appearance-none">
                   {OBJECTIVES.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
@@ -421,11 +421,11 @@ export default function CreateAd() {
                   return (
                     <button key={p.value} type="button" onClick={() => togglePlatform(p.value)}
                       className={cn(
-                        'relative flex flex-col items-center justify-center h-[72px] rounded-[10px] border-[1.5px] transition text-xs font-medium text-[#374151]',
-                        selected ? 'border-[#6C63FF] bg-[#F5F3FF]' : 'border-[#E5E5E5] bg-white',
+                        'relative flex flex-col items-center justify-center h-[72px] rounded-[10px] border-[1.5px] transition text-xs font-medium text-foreground',
+                        selected ? 'border-primary bg-primary/10' : 'border-border bg-card',
                       )}>
                       {selected && (
-                        <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-[#6C63FF] flex items-center justify-center">
+                        <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
                           <Check className="h-2.5 w-2.5 text-white" />
                         </div>
                       )}
@@ -440,7 +440,7 @@ export default function CreateAd() {
         </StepSection>
 
         <div className="flex justify-end">
-          <button onClick={nextStep} className="bg-[#6C63FF] text-white rounded-[10px] h-11 px-6 text-sm font-semibold flex items-center gap-2 hover:bg-[#5A52E0] transition">
+          <button onClick={nextStep} className="bg-primary text-white rounded-[10px] h-11 px-6 text-sm font-semibold flex items-center gap-2 hover:bg-[#5A52E0] transition">
             Next: Ad Creative <ArrowRight className="h-4 w-4" />
           </button>
         </div>
@@ -451,22 +451,22 @@ export default function CreateAd() {
         <div className="sticky top-24 space-y-4">
           <div>
             <h3 className="font-section-header text-[#111827]">Ad Preview</h3>
-            <p className="font-label text-[#9CA3AF]">See how your ad will look across platforms.</p>
+            <p className="font-label text-muted-foreground">See how your ad will look across platforms.</p>
           </div>
           <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
             <button onClick={() => setPreviewTab('mobile')}
-              className={cn('px-3 py-1.5 text-xs font-medium rounded-md transition', previewTab === 'mobile' ? 'bg-[#6C63FF] text-white' : 'text-[#9CA3AF]')}>Mobile</button>
+              className={cn('px-3 py-1.5 text-xs font-medium rounded-md transition', previewTab === 'mobile' ? 'bg-primary text-white' : 'text-muted-foreground')}>Mobile</button>
             <button onClick={() => setPreviewTab('desktop')}
-              className={cn('px-3 py-1.5 text-xs font-medium rounded-md transition', previewTab === 'desktop' ? 'bg-[#6C63FF] text-white' : 'text-[#9CA3AF]')}>Desktop</button>
+              className={cn('px-3 py-1.5 text-xs font-medium rounded-md transition', previewTab === 'desktop' ? 'bg-primary text-white' : 'text-muted-foreground')}>Desktop</button>
           </div>
           <div className="flex gap-3 overflow-x-auto pb-2 text-xs">
             {['Facebook Feed', 'Instagram Feed', 'Instagram Story', 'Facebook Story', 'TikTok', 'LinkedIn'].map((p) => (
               <button key={p} onClick={() => setPreviewPlatform(p.toLowerCase().replace(/\s+/g, '_'))}
-                className={cn('pb-1 whitespace-nowrap', previewPlatform === p.toLowerCase().replace(/\s+/g, '_') ? 'text-[#6C63FF] border-b-2 border-[#6C63FF] font-medium' : 'text-[#9CA3AF]')}>{p}</button>
+                className={cn('pb-1 whitespace-nowrap', previewPlatform === p.toLowerCase().replace(/\s+/g, '_') ? 'text-[#6C63FF] border-b-2 border-primary font-medium' : 'text-muted-foreground')}>{p}</button>
             ))}
           </div>
           <div className={cn(
-            'bg-white border border-[#E5E5E5] rounded-xl overflow-hidden text-[13px] leading-[1.4] transition-all',
+            'bg-card border border-border rounded-xl overflow-hidden text-[13px] leading-[1.4] transition-all',
             previewTab === 'mobile' ? 'max-w-[340px] mx-auto' : 'w-full',
           )}>
             {/* Header: Page info + sponsored */}
@@ -527,7 +527,7 @@ export default function CreateAd() {
               ))}
             </div>
           </div>
-          <p className="text-[10px] text-[#9CA3AF] italic max-w-[320px]">Preview is an approximation and may differ from the actual ad on each platform.</p>
+          <p className="text-[10px] text-muted-foreground italic max-w-[320px]">Preview is an approximation and may differ from the actual ad on each platform.</p>
         </div>
       </div>
     </div>
@@ -545,14 +545,14 @@ export default function CreateAd() {
             <Button variant="outline" disabled={saving || restoring} onClick={() => void openStudio(true)}><ImageIcon className="mr-2 h-4 w-4" />Select Template</Button>
           </div>
           <Field label="Media">
-            <div className="border-2 border-dashed border-[#E5E5E5] rounded-xl p-8 text-center hover:border-[#6C63FF]/40 transition cursor-pointer" onClick={() => fileRef.current?.click()}>
+            <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/40 transition cursor-pointer" onClick={() => fileRef.current?.click()}>
               {values.mediaUrl ? (
                 <img src={values.mediaUrl} alt="" className="max-h-40 mx-auto rounded-lg" />
               ) : (
                 <>
-                  <Upload className="h-8 w-8 mx-auto text-[#9CA3AF]" />
+                  <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
                   <p className="text-xs font-medium text-[#6C63FF] mt-2">Upload Media</p>
-                  <p className="text-[11px] text-[#9CA3AF]">or drag and drop</p>
+                  <p className="text-[11px] text-muted-foreground">or drag and drop</p>
                 </>
               )}
             </div>
@@ -566,44 +566,44 @@ export default function CreateAd() {
           <Field label="Primary Text" hint={`${values.primaryText.length}/125`}>
             <Textarea rows={2} maxLength={125} placeholder="Write your ad copy..."
               {...register('primaryText')}
-              className="border-[1.5px] border-[#E5E5E5] rounded-[10px] text-sm resize-none focus:border-[#6C63FF]" />
+              className="border-[1.5px] border-border rounded-[10px] text-sm resize-none focus:border-primary" />
           </Field>
-          <div className="rounded-lg border border-[#6C63FF]/20 bg-[#6C63FF]/[0.04] p-3">
+          <div className="rounded-lg border border-primary/20 bg-primary/[0.04] p-3">
             <p className="text-[10px] font-semibold text-[#6C63FF] flex items-center gap-1"><Sparkles className="h-3 w-3" /> AI Suggestions</p>
             <div className="flex flex-wrap gap-1.5 mt-1.5">
               {['Generate Copy', 'Improve Headline', 'Use Brand Voice'].map((a) => (
                 <button key={a} type="button" onClick={() => toast.message(a, { description: 'AI hook ready — will populate once connected.' })}
-                  className="text-[10px] px-2.5 py-1 rounded-full border border-[#E5E5E5] hover:border-[#6C63FF]/40 transition">{a}</button>
+                  className="text-[10px] px-2.5 py-1 rounded-full border border-border hover:border-primary/40 transition">{a}</button>
               ))}
             </div>
           </div>
           <Field label="Headline" hint={`${values.headline.length}/40`}>
             <Input maxLength={40} placeholder="Headline" {...register('headline')}
-              className="h-11 border-[1.5px] border-[#E5E5E5] rounded-[10px] text-sm px-3.5 focus:border-[#6C63FF]" />
+              className="h-11 border-[1.5px] border-border rounded-[10px] text-sm px-3.5 focus:border-primary" />
           </Field>
           <Field label="Description (Optional)" hint={`${values.descriptionCopy.length}/30`}>
             <Input maxLength={30} placeholder="Description" {...register('descriptionCopy')}
-              className="h-11 border-[1.5px] border-[#E5E5E5] rounded-[10px] text-sm px-3.5 focus:border-[#6C63FF]" />
+              className="h-11 border-[1.5px] border-border rounded-[10px] text-sm px-3.5 focus:border-primary" />
           </Field>
           <Field label="Call to Action">
             <Controller control={control} name="cta" render={({ field }) => (
               <select value={field.value} onChange={(e) => field.onChange(e.target.value)}
-                className="h-11 w-full border-[1.5px] border-[#E5E5E5] rounded-[10px] text-sm px-3.5 bg-white focus:border-[#6C63FF] focus:outline-none appearance-none">
+                className="h-11 w-full border-[1.5px] border-border rounded-[10px] text-sm px-3.5 bg-card focus:border-primary focus:outline-none appearance-none">
                 {CTAS.map((c) => (<option key={c} value={c}>{c}</option>))}
               </select>
             )} />
           </Field>
           <Field label="Website URL" hint="Visible in some ad placements">
             <div className="relative">
-              <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
+              <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="https://yourwebsite.com" {...register('websiteUrl')}
-                className="h-11 pl-9 border-[1.5px] border-[#E5E5E5] rounded-[10px] text-sm focus:border-[#6C63FF]" />
+                className="h-11 pl-9 border-[1.5px] border-border rounded-[10px] text-sm focus:border-primary" />
             </div>
           </Field>
         </div>
       </StepSection>
       <div className="flex justify-end">
-        <button onClick={nextStep} className="bg-[#6C63FF] text-white rounded-[10px] h-11 px-6 text-sm font-semibold flex items-center gap-2 hover:bg-[#5A52E0] transition">
+        <button onClick={nextStep} className="bg-primary text-white rounded-[10px] h-11 px-6 text-sm font-semibold flex items-center gap-2 hover:bg-[#5A52E0] transition">
           Next: Audience <ArrowRight className="h-4 w-4" />
         </button>
       </div>
@@ -623,9 +623,9 @@ export default function CreateAd() {
           <Field label="Locations">
             <Controller control={control} name="location" render={({ field }) => (
               <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="United States" {...field}
-                  className="h-11 pl-9 border-[1.5px] border-[#E5E5E5] rounded-[10px] text-sm focus:border-[#6C63FF]" />
+                  className="h-11 pl-9 border-[1.5px] border-border rounded-[10px] text-sm focus:border-primary" />
               </div>
             )} />
           </Field>
@@ -634,7 +634,7 @@ export default function CreateAd() {
               <Controller control={control} name="ageMin" render={({ field }) => (
                 <input type="range" min={13} max={65} step={1} value={field.value} onChange={(e) => field.onChange(Number(e.target.value))} className="w-full accent-[#6C63FF]" />
               )} />
-              <span className="text-xs font-medium text-[#374151] shrink-0 w-16 text-right">{values.ageMin}–{values.ageMax}</span>
+              <span className="text-xs font-medium text-foreground shrink-0 w-16 text-right">{values.ageMin}–{values.ageMax}</span>
               <Controller control={control} name="ageMax" render={({ field }) => (
                 <input type="range" min={13} max={65} step={1} value={field.value} onChange={(e) => field.onChange(Number(e.target.value))} className="w-full accent-[#6C63FF]" />
               )} />
@@ -645,8 +645,8 @@ export default function CreateAd() {
               <div className="flex gap-1.5">
                 {GENDERS.map((g) => (
                   <button key={g} type="button" onClick={() => field.onChange(g)}
-                    className={cn('px-4 py-2 text-xs font-medium rounded-lg border border-[#E5E5E5] transition',
-                      field.value === g ? 'bg-[#6C63FF] text-white border-[#6C63FF]' : 'bg-white text-[#374151] hover:border-[#6C63FF]/40')}>{g}</button>
+                    className={cn('px-4 py-2 text-xs font-medium rounded-lg border border-border transition',
+                      field.value === g ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-foreground hover:border-primary/40')}>{g}</button>
                 ))}
               </div>
             )} />
@@ -654,7 +654,7 @@ export default function CreateAd() {
           <Field label="Interests">
             <div className="flex flex-wrap gap-1.5 mb-2">
               {interests.map((int) => (
-                <span key={int} className="inline-flex items-center gap-1 px-2 py-1 text-[11px] bg-[#F5F3FF] text-[#6C63FF] rounded-md">
+                <span key={int} className="inline-flex items-center gap-1 px-2 py-1 text-[11px] bg-primary/10 text-[#6C63FF] rounded-md">
                   {int}
                   <button type="button" onClick={() => setInterests(interests.filter((i) => i !== int))}><X className="h-3 w-3" /></button>
                 </span>
@@ -662,18 +662,18 @@ export default function CreateAd() {
             </div>
             <div className="flex gap-2">
               <Input value={interestInput} onChange={(e) => setInterestInput(e.target.value)}
-                placeholder="Add interest..." className="h-10 text-sm border-[1.5px] border-[#E5E5E5] rounded-[10px] focus:border-[#6C63FF]" />
+                placeholder="Add interest..." className="h-10 text-sm border-[1.5px] border-border rounded-[10px] focus:border-primary" />
               <button type="button" onClick={() => { if (interestInput.trim()) { setInterests([...interests, interestInput.trim()]); setInterestInput(''); } }}
-                className="px-3 py-2 text-xs font-medium text-[#6C63FF] border border-[#6C63FF] rounded-lg hover:bg-[#F5F3FF]">+ Add</button>
+                className="px-3 py-2 text-xs font-medium text-[#6C63FF] border border-primary rounded-lg hover:bg-primary/10">+ Add</button>
             </div>
           </Field>
         </div>
       </StepSection>
       <div className="flex justify-between">
-        <button onClick={prevStep} className="h-11 px-4 text-sm font-medium text-[#374151] border border-[#E5E5E5] rounded-[10px] hover:bg-muted/50 transition flex items-center gap-1">
+        <button onClick={prevStep} className="h-11 px-4 text-sm font-medium text-foreground border border-border rounded-[10px] hover:bg-muted/50 transition flex items-center gap-1">
           <ArrowLeft className="h-4 w-4" /> Back
         </button>
-        <button onClick={nextStep} className="bg-[#6C63FF] text-white rounded-[10px] h-11 px-6 text-sm font-semibold flex items-center gap-2 hover:bg-[#5A52E0] transition">
+        <button onClick={nextStep} className="bg-primary text-white rounded-[10px] h-11 px-6 text-sm font-semibold flex items-center gap-2 hover:bg-[#5A52E0] transition">
           Next: Budget <ArrowRight className="h-4 w-4" />
         </button>
       </div>
@@ -695,23 +695,23 @@ export default function CreateAd() {
             <>
               <button type="button" onClick={() => field.onChange('daily')}
                 className={cn('rounded-xl border-[1.5px] p-5 text-left transition',
-                  field.value === 'daily' ? 'border-[#6C63FF] bg-[#F5F3FF]' : 'border-[#E5E5E5] bg-white')}>
+                  field.value === 'daily' ? 'border-primary bg-primary/10' : 'border-border bg-card')}>
                 <div className={cn('w-4 h-4 rounded-full border-2 flex items-center justify-center mb-2',
-                  field.value === 'daily' ? 'border-[#6C63FF]' : 'border-[#E5E5E5]')}>
-                  {field.value === 'daily' && <div className="w-2 h-2 rounded-full bg-[#6C63FF]" />}
+                  field.value === 'daily' ? 'border-primary' : 'border-border')}>
+                  {field.value === 'daily' && <div className="w-2 h-2 rounded-full bg-primary" />}
                 </div>
                 <p className="text-sm font-bold text-[#111827]">Daily Budget</p>
-                <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed">Best for always-on campaigns and boost-style delivery.</p>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">Best for always-on campaigns and boost-style delivery.</p>
               </button>
               <button type="button" onClick={() => field.onChange('total')}
                 className={cn('rounded-xl border-[1.5px] p-5 text-left transition',
-                  field.value === 'total' ? 'border-[#6C63FF] bg-[#F5F3FF]' : 'border-[#E5E5E5] bg-white')}>
+                  field.value === 'total' ? 'border-primary bg-primary/10' : 'border-border bg-card')}>
                 <div className={cn('w-4 h-4 rounded-full border-2 flex items-center justify-center mb-2',
-                  field.value === 'total' ? 'border-[#6C63FF]' : 'border-[#E5E5E5]')}>
-                  {field.value === 'total' && <div className="w-2 h-2 rounded-full bg-[#6C63FF]" />}
+                  field.value === 'total' ? 'border-primary' : 'border-border')}>
+                  {field.value === 'total' && <div className="w-2 h-2 rounded-full bg-primary" />}
                 </div>
                 <p className="text-sm font-bold text-[#111827]">Total Budget</p>
-                <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed">Best when you know the full campaign spend upfront.</p>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">Best when you know the full campaign spend upfront.</p>
               </button>
             </>
           )} />
@@ -719,29 +719,29 @@ export default function CreateAd() {
 
         {/* Budget Input */}
         <div className="mb-5">
-          <Label className="font-label text-[#374151] mb-1.5 block">
+          <Label className="font-label text-foreground mb-1.5 block">
             {values.budgetType === 'daily' ? 'Daily Budget' : 'Total Budget'}
           </Label>
           <Controller control={control} name="budgetAmount" render={({ field }) => (
             <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#374151]">$</span>
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-foreground">$</span>
               <input type="number" min={1} value={field.value || ''} onChange={(e) => field.onChange(Number(e.target.value))}
                 placeholder="0.00"
-                className="w-full h-12 pl-7 pr-3.5 text-lg font-semibold border-[1.5px] border-[#E5E5E5] rounded-[10px] focus:border-[#6C63FF] focus:outline-none" />
+                className="w-full h-12 pl-7 pr-3.5 text-lg font-semibold border-[1.5px] border-border rounded-[10px] focus:border-primary focus:outline-none" />
             </div>
           )} />
         </div>
 
         {/* Estimated Reach Card */}
         <div className="bg-[#F8F8FC] border border-[#E8E8F0] rounded-xl p-4 mb-5">
-          <p className="text-xs font-semibold text-[#374151]">{reachEstimate.label}</p>
+          <p className="text-xs font-semibold text-foreground">{reachEstimate.label}</p>
           <p className="text-2xl font-extrabold text-[#111827] mt-1">
             {reachEstimate.low.toLocaleString()} – {reachEstimate.high.toLocaleString()}
           </p>
           <div className="h-1.5 bg-[#E8E8F0] rounded mt-3 overflow-hidden">
             <div className="h-full rounded bg-gradient-to-r from-[#6C63FF] to-[#A78BFA]" style={{ width: `${reachPercent}%` }} />
           </div>
-          <p className="text-[10px] text-[#9CA3AF] mt-2 leading-relaxed">
+          <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
             A simple estimate based on budget and selected platforms. Final delivery will adjust after launch.
           </p>
         </div>
@@ -750,12 +750,12 @@ export default function CreateAd() {
         <div>
           <h4 className="text-base font-bold text-[#111827] mb-4">Schedule</h4>
 
-          <Label className="font-label text-[#374151] mb-1.5 block">Start Date</Label>
+          <Label className="font-label text-foreground mb-1.5 block">Start Date</Label>
           <Controller control={control} name="startDate" render={({ field }) => (
             <Popover open={startOpen} onOpenChange={setStartOpen}>
               <PopoverTrigger asChild>
-                <button className="w-full h-12 flex items-center gap-2.5 px-3.5 border-[1.5px] border-[#E5E5E5] rounded-[10px] bg-white text-left">
-                  <CalendarIcon className="h-4 w-4 text-[#9CA3AF]" />
+                <button className="w-full h-12 flex items-center gap-2.5 px-3.5 border-[1.5px] border-border rounded-[10px] bg-card text-left">
+                  <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm text-[#111827] flex-1">{format(field.value, 'dd/MM/yyyy')}</span>
                   <span className="text-xs text-[#6C63FF]">Change</span>
                 </button>
@@ -768,47 +768,47 @@ export default function CreateAd() {
 
           {/* Run Length */}
           <div className="mt-5">
-            <Label className="font-label text-[#374151] mb-2 block">Run Length</Label>
+            <Label className="font-label text-foreground mb-2 block">Run Length</Label>
             <div className="space-y-2">
               <Controller control={control} name="runType" render={({ field }) => (
                 <>
                   <button type="button" onClick={() => field.onChange('continuous')}
                     className={cn('w-full rounded-xl border-[1.5px] p-4 text-left transition',
-                      field.value === 'continuous' ? 'border-[#6C63FF] bg-[#F5F3FF]' : 'border-[#E5E5E5] bg-white')}>
+                      field.value === 'continuous' ? 'border-primary bg-primary/10' : 'border-border bg-card')}>
                     <div className="flex items-center gap-2">
                       <div className={cn('w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0',
-                        field.value === 'continuous' ? 'border-[#6C63FF]' : 'border-[#E5E5E5]')}>
-                        {field.value === 'continuous' && <div className="w-2 h-2 rounded-full bg-[#6C63FF]" />}
+                        field.value === 'continuous' ? 'border-primary' : 'border-border')}>
+                        {field.value === 'continuous' && <div className="w-2 h-2 rounded-full bg-primary" />}
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-[#111827]">Run Continuously</p>
-                        <p className="text-xs text-[#9CA3AF]">Keep the campaign live until you pause it from Campaigns.</p>
+                        <p className="text-xs text-muted-foreground">Keep the campaign live until you pause it from Campaigns.</p>
                       </div>
                     </div>
                   </button>
                   <button type="button" onClick={() => field.onChange('end_date')}
                     className={cn('w-full rounded-xl border-[1.5px] p-4 text-left transition',
-                      field.value === 'end_date' ? 'border-[#6C63FF] bg-[#F5F3FF]' : 'border-[#E5E5E5] bg-white')}>
+                      field.value === 'end_date' ? 'border-primary bg-primary/10' : 'border-border bg-card')}>
                     <div className="flex items-center gap-2">
                       <div className={cn('w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0',
-                        field.value === 'end_date' ? 'border-[#6C63FF]' : 'border-[#E5E5E5]')}>
-                        {field.value === 'end_date' && <div className="w-2 h-2 rounded-full bg-[#6C63FF]" />}
+                        field.value === 'end_date' ? 'border-primary' : 'border-border')}>
+                        {field.value === 'end_date' && <div className="w-2 h-2 rounded-full bg-primary" />}
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-[#111827]">Choose an End Date</p>
-                        <p className="text-xs text-[#9CA3AF]">Set a clear campaign window when you know the promotion should stop.</p>
+                        <p className="text-xs text-muted-foreground">Set a clear campaign window when you know the promotion should stop.</p>
                       </div>
                     </div>
                   </button>
                   <AnimatePresence>
                     {field.value === 'end_date' && (
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                        <Label className="font-label text-[#374151] mb-1.5 block mt-3">End Date</Label>
+                        <Label className="font-label text-foreground mb-1.5 block mt-3">End Date</Label>
                         <Controller control={control} name="endDate" render={({ field: endField }) => (
                           <Popover open={endOpen} onOpenChange={setEndOpen}>
                             <PopoverTrigger asChild>
-                              <button className="w-full h-12 flex items-center gap-2.5 px-3.5 border-[1.5px] border-[#E5E5E5] rounded-[10px] bg-white text-left">
-                                <CalendarIcon className="h-4 w-4 text-[#9CA3AF]" />
+                              <button className="w-full h-12 flex items-center gap-2.5 px-3.5 border-[1.5px] border-border rounded-[10px] bg-card text-left">
+                                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                                 <span className="text-sm text-[#111827] flex-1">{endField.value ? format(endField.value, 'dd/MM/yyyy') : 'Select date'}</span>
                                 <span className="text-xs text-[#6C63FF]">Change</span>
                               </button>
@@ -846,10 +846,10 @@ export default function CreateAd() {
       </StepSection>
 
       <div className="flex justify-between">
-        <button onClick={prevStep} className="h-11 px-4 text-sm font-medium text-[#374151] border border-[#E5E5E5] rounded-[10px] hover:bg-muted/50 transition flex items-center gap-1">
+        <button onClick={prevStep} className="h-11 px-4 text-sm font-medium text-foreground border border-border rounded-[10px] hover:bg-muted/50 transition flex items-center gap-1">
           <ArrowLeft className="h-4 w-4" /> Back
         </button>
-        <button onClick={nextStep} className="bg-[#6C63FF] text-white rounded-[10px] h-11 px-6 text-sm font-semibold flex items-center gap-2 hover:bg-[#5A52E0] transition">
+        <button onClick={nextStep} className="bg-primary text-white rounded-[10px] h-11 px-6 text-sm font-semibold flex items-center gap-2 hover:bg-[#5A52E0] transition">
           Next: Review <ArrowRight className="h-4 w-4" />
         </button>
       </div>
@@ -885,13 +885,13 @@ export default function CreateAd() {
           ]} />
         </div>
 
-        <div className="bg-white border border-[#E5E5E5] rounded-xl p-4 flex items-center gap-3">
+        <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
           <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted/30 shrink-0">
             {values.mediaUrl ? <img src={values.mediaUrl} alt="" className="w-full h-full object-cover" /> : <ImageIcon className="h-6 w-6 m-5 text-muted-foreground/40" />}
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold truncate">{values.headline || 'No headline'}</p>
-            <p className="text-xs text-[#9CA3AF] truncate">{values.primaryText || 'No primary text'}</p>
+            <p className="text-xs text-muted-foreground truncate">{values.primaryText || 'No primary text'}</p>
             <p className="text-[10px] text-[#6C63FF] mt-0.5">{values.cta}</p>
           </div>
         </div>
@@ -901,18 +901,18 @@ export default function CreateAd() {
             <input type="checkbox" checked={field.value} onChange={(e) => field.onChange(e.target.checked)}
               className="mt-0.5 accent-[#6C63FF]" />
           )} />
-          <p className="text-xs text-[#9CA3AF]">I confirm that I have the rights to use all media and content in this ad, and I agree to the platform advertising policies.</p>
+          <p className="text-xs text-muted-foreground">I confirm that I have the rights to use all media and content in this ad, and I agree to the platform advertising policies.</p>
         </div>
 
         <button onClick={publish} disabled={publishing || !values.termsAccepted}
-          className="w-full h-12 bg-[#6C63FF] text-white rounded-[10px] text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#5A52E0] transition disabled:opacity-50">
+          className="w-full h-12 bg-primary text-white rounded-[10px] text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#5A52E0] transition disabled:opacity-50">
           {publishing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
           Publish Ad
         </button>
       </StepSection>
 
       <div className="flex justify-between">
-        <button onClick={prevStep} className="h-11 px-4 text-sm font-medium text-[#374151] border border-[#E5E5E5] rounded-[10px] hover:bg-muted/50 transition flex items-center gap-1">
+        <button onClick={prevStep} className="h-11 px-4 text-sm font-medium text-foreground border border-border rounded-[10px] hover:bg-muted/50 transition flex items-center gap-1">
           <ArrowLeft className="h-4 w-4" /> Back
         </button>
       </div>
@@ -960,7 +960,7 @@ export default function CreateAd() {
       </div>
 
       {/* Step Progress */}
-      <div className="bg-white border-b border-[#E5E5E5]">
+      <div className="bg-card border-b border-border">
         <StepProgress step={step} />
       </div>
 
@@ -989,7 +989,7 @@ export default function CreateAd() {
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between font-label">
-      <span className="text-[#9CA3AF]">{label}</span>
+      <span className="text-muted-foreground">{label}</span>
       <span className="font-semibold text-[#111827]">{value}</span>
     </div>
   );
@@ -997,12 +997,12 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 
 function ReviewCard({ title, rows }: { title: string; rows: [string, string][] }) {
   return (
-    <div className="rounded-xl border border-[#E5E5E5] p-4">
-      <p className="font-caption-upper text-[#9CA3AF] mb-2">{title}</p>
+    <div className="rounded-xl border border-border p-4">
+      <p className="font-caption-upper text-muted-foreground mb-2">{title}</p>
       <dl className="space-y-1">
         {rows.map(([k, v]) => (
           <div key={k} className="flex justify-between gap-2 font-label">
-            <dt className="text-[#9CA3AF]">{k}</dt>
+            <dt className="text-muted-foreground">{k}</dt>
             <dd className="font-medium text-[#111827] text-right truncate min-w-0 max-w-[140px]">{v}</dd>
           </div>
         ))}

@@ -81,7 +81,7 @@ const TestimonialsSection = () => {
         >
           {testimonials.map((testimonial, index) => (
             <motion.div key={index} variants={itemVariants}>
-              <Card className="bg-white border-border/50 hover:shadow-soft transition-all duration-300 h-full">
+              <Card className="bg-card border-border/50 hover:shadow-soft transition-all duration-300 h-full">
                 <CardContent className="p-6">
                   <div className="flex items-center mb-4">
                     {[...Array(testimonial.rating)].map((_, i) => (
@@ -117,7 +117,7 @@ const TestimonialsSection = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <div className="inline-flex items-center gap-2 bg-white rounded-full px-6 py-3 border border-border/50">
+          <div className="inline-flex items-center gap-2 bg-card rounded-full px-6 py-3 border border-border/50">
             <div className="flex items-center">
               {[...Array(5)].map((_, i) => (
                 <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />

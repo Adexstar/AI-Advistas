@@ -375,8 +375,8 @@ export const ABTestingInterface = ({
       case 'running': return 'bg-green-100 text-green-700';
       case 'paused': return 'bg-yellow-100 text-yellow-700';
       case 'completed': return 'bg-blue-100 text-blue-700';
-      case 'draft': return 'bg-gray-100 text-gray-700';
-      default: return 'bg-gray-100 text-gray-700';
+      case 'draft': return 'bg-muted text-muted-foreground';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -1169,7 +1169,7 @@ export const ABTestingInterface = ({
                                 <span className="text-sm font-medium">Confidence:</span>
                                 <span className="font-bold">{results.confidence}%</span>
                               </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div className="w-full bg-muted rounded-full h-2">
                                 <div 
                                   className="bg-primary h-2 rounded-full transition-all"
                                   style={{ width: `${results.confidence}%` }}

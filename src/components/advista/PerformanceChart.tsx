@@ -26,7 +26,7 @@ const PerformanceChart: React.FC = () => {
   return (
     <div className="bg-white p-6 rounded-lg border border-border">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-bold text-gray-900">Performance Overview</h2>
+        <h2 className="text-lg font-bold text-foreground">Performance Overview</h2>
         <div className="flex gap-2">
           <select className="px-3 py-1 border border-border rounded text-sm hover:border-primary/50 focus:outline-none focus:border-primary">
             <option>Spend</option>
@@ -80,12 +80,12 @@ const PerformanceChart: React.FC = () => {
       </ResponsiveContainer>
       <div className="mt-6 grid grid-cols-2 gap-4 text-sm border-t border-border pt-4">
         <div>
-          <span className="text-gray-600">Spend: </span>
-          <span className="font-semibold text-gray-900">$1,880.60</span>
+          <span className="text-muted-foreground">Spend: </span>
+          <span className="font-semibold text-foreground">$1,880.60</span>
         </div>
         <div>
-          <span className="text-gray-600">Conversions: </span>
-          <span className="font-semibold text-gray-900">186</span>
+          <span className="text-muted-foreground">Conversions: </span>
+          <span className="font-semibold text-foreground">186</span>
         </div>
       </div>
     </div>

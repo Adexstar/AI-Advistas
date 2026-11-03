@@ -467,7 +467,7 @@ const TemplateGenerate = () => {
                     {displayTemplates.slice(0, 3).map((t, idx) => (
                       <div
                         key={t.id}
-                        className="relative overflow-hidden rounded-xl bg-white"
+                        className="relative overflow-hidden rounded-xl bg-card"
                         style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
                       >
                         {idx === 0 && (
@@ -547,7 +547,7 @@ const TemplateGenerate = () => {
                       ))}
                     </div>
                     <div
-                      className="w-full rounded-xl border bg-white p-4 text-center sm:w-[160px]"
+                      className="w-full rounded-xl border bg-card p-4 text-center sm:w-[160px]"
                       style={{ borderColor: '#E5E5E5' }}
                     >
                       <p className="text-[11px] font-medium" style={{ color: '#9CA3AF' }}>Confidence Score</p>

@@ -153,7 +153,7 @@ const Index = () => {
               transition={{ duration: 0.6 }}
               className="space-y-8"
             >
-              <Badge variant="outline" className="rounded-full border-primary/20 bg-white/80 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-primary shadow-sm backdrop-blur">
+              <Badge variant="outline" className="rounded-full border-primary/20 bg-card/80 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-primary shadow-sm backdrop-blur">
                 Ads workspace for launch teams
               </Badge>
 
@@ -215,7 +215,7 @@ const Index = () => {
                     </CardContent>
                   </Card>
 
-                  <Card className="border-white/10 bg-white shadow-none">
+                  <Card className="border-white/10 bg-card shadow-none">
                     <CardContent className="grid gap-3 p-4 sm:grid-cols-2">
                       <div className="rounded-2xl border border-primary/10 bg-secondary/40 p-4">
                         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Creative library</p>

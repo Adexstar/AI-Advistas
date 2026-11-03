@@ -56,7 +56,7 @@ const AdSimulatorPage = () => {
 
       <div className="relative">
         {/* Header */}
-        <div className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-10">
+        <div className="bg-card/80 backdrop-blur-sm border-b sticky top-0 z-10">
           <div className="page-container py-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex min-w-0 flex-wrap items-center gap-4">
