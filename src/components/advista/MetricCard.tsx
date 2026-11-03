@@ -14,13 +14,13 @@ const MetricCard: React.FC<MetricCardProps> = ({ icon, label, value, change, per
   const isPositive = trend === 'up';
 
   return (
-    <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-lg transition duration-200">
+    <div className="bg-white p-6 rounded-lg border border-border hover:shadow-lg transition duration-200">
       <div className="flex items-center justify-between mb-4">
-        <span className="text-gray-600 text-sm font-medium">{label}</span>
-        <div className="text-purple-600">{icon}</div>
+        <span className="text-muted-foreground text-sm font-medium">{label}</span>
+        <div className="text-primary">{icon}</div>
       </div>
       <div className="mb-3">
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
+        <p className="text-2xl font-bold text-foreground">{value}</p>
       </div>
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-1">
@@ -33,7 +33,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ icon, label, value, change, per
             {change}
           </span>
         </div>
-        <span className="text-gray-500 text-xs">{period}</span>
+        <span className="text-muted-foreground text-xs">{period}</span>
       </div>
     </div>
   );

@@ -24,11 +24,11 @@ const PerformanceChart: React.FC = () => {
   const [timeframe, setTimeframe] = useState('Daily');
 
   return (
-    <div className="bg-white p-6 rounded-lg border border-gray-200">
+    <div className="bg-white p-6 rounded-lg border border-border">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-bold text-gray-900">Performance Overview</h2>
+        <h2 className="text-lg font-bold text-foreground">Performance Overview</h2>
         <div className="flex gap-2">
-          <select className="px-3 py-1 border border-gray-200 rounded text-sm hover:border-gray-300 focus:outline-none focus:border-purple-400">
+          <select className="px-3 py-1 border border-border rounded text-sm hover:border-primary/50 focus:outline-none focus:border-primary">
             <option>Spend</option>
             <option>Conversions</option>
             <option>CTR</option>
@@ -36,7 +36,7 @@ const PerformanceChart: React.FC = () => {
           <select
             value={timeframe}
             onChange={(e) => setTimeframe(e.target.value)}
-            className="px-3 py-1 border border-gray-200 rounded text-sm hover:border-gray-300 focus:outline-none focus:border-purple-400"
+            className="px-3 py-1 border border-border rounded text-sm hover:border-primary/50 focus:outline-none focus:border-primary"
           >
             <option>Daily</option>
             <option>Weekly</option>
@@ -62,9 +62,9 @@ const PerformanceChart: React.FC = () => {
             yAxisId="left"
             type="monotone"
             dataKey="spend"
-            stroke="#8B5CF6"
+            stroke="#F47B35"
             strokeWidth={2}
-            dot={{ fill: '#8B5CF6', r: 4 }}
+            dot={{ fill: '#F47B35', r: 4 }}
             activeDot={{ r: 6 }}
           />
           <Line
@@ -78,14 +78,14 @@ const PerformanceChart: React.FC = () => {
           />
         </LineChart>
       </ResponsiveContainer>
-      <div className="mt-6 grid grid-cols-2 gap-4 text-sm border-t border-gray-200 pt-4">
+      <div className="mt-6 grid grid-cols-2 gap-4 text-sm border-t border-border pt-4">
         <div>
-          <span className="text-gray-600">Spend: </span>
-          <span className="font-semibold text-gray-900">$1,880.60</span>
+          <span className="text-muted-foreground">Spend: </span>
+          <span className="font-semibold text-foreground">$1,880.60</span>
         </div>
         <div>
-          <span className="text-gray-600">Conversions: </span>
-          <span className="font-semibold text-gray-900">186</span>
+          <span className="text-muted-foreground">Conversions: </span>
+          <span className="font-semibold text-foreground">186</span>
         </div>
       </div>
     </div>

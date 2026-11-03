@@ -83,7 +83,7 @@ const AIVideoGenerator: React.FC = () => {
   const platforms = [
     { id: 'facebook', name: 'Facebook', icon: Facebook, color: 'bg-blue-500' },
     { id: 'instagram-post', name: 'Instagram Post', icon: Instagram, color: 'bg-pink-500' },
-    { id: 'instagram-story', name: 'Instagram Story', icon: Instagram, color: 'bg-purple-500' },
+    { id: 'instagram-story', name: 'Instagram Story', icon: Instagram, color: 'bg-primary/100' },
     { id: 'tiktok', name: 'TikTok', icon: Video, color: 'bg-black' },
     { id: 'youtube', name: 'YouTube', icon: Youtube, color: 'bg-red-500' },
     { id: 'twitter', name: 'Twitter/X', icon: Twitter, color: 'bg-gray-900' },
@@ -235,7 +235,7 @@ const AIVideoGenerator: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent mb-4">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent mb-4">
             AI Ad Generator
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
@@ -527,7 +527,7 @@ const AIVideoGenerator: React.FC = () => {
                         </div>
                         
                         <div className="flex gap-4">
-                          <div className="flex-1 p-4 bg-accent/50 rounded-lg border">
+                          <div className="flex-1 p-4 bg-card/60 rounded-lg border">
                             <div className="flex items-center gap-2 mb-2">
                               <Zap className="w-4 h-4 text-accent-foreground" />
                               <span className="text-sm font-medium">Call to Action</span>
@@ -617,7 +617,7 @@ const AIVideoGenerator: React.FC = () => {
 
                           {/* Video Placeholder for video type without URL */}
                           {adType === 'video' && !generatedContent.videoUrl && (
-                            <div className="p-4 bg-gradient-to-br from-purple-500/5 to-blue-500/5 rounded-lg border-2 border-dashed border-primary/30">
+                            <div className="p-4 bg-gradient-to-br from-primary/5 to-primary-glow/5 rounded-lg border-2 border-dashed border-primary/30">
                               <div className="flex items-center gap-2 mb-4">
                                 <Video className="w-4 h-4 text-primary" />
                                 <span className="text-sm font-medium">Video Generation</span>

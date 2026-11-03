@@ -8,7 +8,7 @@ const variantMap: Record<NotifyVariant, string> = {
   automation: "bg-amber-500 text-white",
   export:     "bg-sky-500 text-white",
   campaign:   "bg-emerald-500 text-white",
-  billing:    "bg-violet-500 text-white",
+  billing:    "bg-primary text-primary-foreground",
   system:     "bg-slate-500 text-white",
 };
 

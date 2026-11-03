@@ -44,7 +44,7 @@ const layerLabel = (o: any): string => {
 export const SelectedBanner: React.FC<{ selected: any; hint: string }> = ({ selected, hint }) => {
   if (!selected) return null;
   return (
-    <div className="mb-3 rounded-lg border border-[#6C63FF]/40 bg-[#6C63FF]/10 p-2.5">
+    <div className="mb-3 rounded-lg border border-primary/40 bg-primary/10 p-2.5">
       <p className="text-[11px] font-semibold text-white">{layerLabel(selected)}</p>
       <p className="mt-0.5 text-[10px] leading-relaxed text-[#BBBBBB]">{hint}</p>
     </div>
@@ -149,7 +149,7 @@ export const TemplatesPanel: React.FC<{ onUse: (t: StudioTemplate) => void }> = 
       <div className="flex-1 min-h-0 overflow-y-auto p-4">
         <div className="mb-3 rounded-lg border border-[#555555] bg-[#1A1A1A] p-2.5">
           <div className="flex items-center gap-2">
-            <Plus className="h-4 w-4 text-[#A78BFA]" />
+            <Plus className="h-4 w-4 text-[#FF9455]" />
             <span className="text-xs text-[#AAAAAA]">Describe your ideal design</span>
           </div>
         </div>
@@ -160,7 +160,7 @@ export const TemplatesPanel: React.FC<{ onUse: (t: StudioTemplate) => void }> = 
               key={c}
               onClick={() => setCat(c)}
               className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                cat === c ? 'bg-[#6C63FF] text-white' : 'bg-[#3D3D3D] text-[#CCCCCC] hover:bg-[#4D4D4D]'
+                cat === c ? 'bg-primary text-primary-foreground' : 'bg-[#3D3D3D] text-[#CCCCCC] hover:bg-[#4D4D4D]'
               }`}
             >
               {c}
@@ -186,7 +186,7 @@ export const TemplatesPanel: React.FC<{ onUse: (t: StudioTemplate) => void }> = 
               <button
                 key={t.id}
                 onClick={() => onUse(t)}
-                className="group relative aspect-[4/5] w-full overflow-hidden rounded-lg border border-[#3D3D3D] bg-[#1A1A1A] text-left hover:border-[#A78BFA] transition-colors"
+                className="group relative aspect-[4/5] w-full overflow-hidden rounded-lg border border-[#3D3D3D] bg-[#1A1A1A] text-left hover:border-[#FF9455] transition-colors"
               >
                 {src ? (
                   <img src={src} alt={t.name} loading="lazy" className="h-full w-full object-cover" />
@@ -226,7 +226,7 @@ const MediaGrid: React.FC<{ rows: MediaRow[]; canvas: FabricCanvas | null; onCha
             if (selected && selected.type === 'image') { replaceImageSource(canvas, selected, m.file_url, onChanged); return; }
             addImageToCanvas(canvas, m.file_url, onChanged);
           }}
-          className="group relative aspect-square overflow-hidden rounded-lg border border-[#3D3D3D] bg-[#1A1A1A] hover:border-[#6C63FF]"
+          className="group relative aspect-square overflow-hidden rounded-lg border border-[#3D3D3D] bg-[#1A1A1A] hover:border-primary"
           title={m.name}
         >
           {src && m.type === 'image' ? (
@@ -287,7 +287,7 @@ export const MediaPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: () 
             <button
               key={k}
               onClick={() => setKind(k)}
-              className={`rounded-full px-3 py-1 text-[11px] capitalize ${kind === k ? 'bg-[#6C63FF] text-white' : 'bg-[#3D3D3D] text-[#CCCCCC]'}`}
+              className={`rounded-full px-3 py-1 text-[11px] capitalize ${kind === k ? 'bg-primary text-primary-foreground' : 'bg-[#3D3D3D] text-[#CCCCCC]'}`}
             >
               {k === 'all' ? 'All' : `${k}s`}
             </button>
@@ -381,7 +381,7 @@ export const UploadsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: (
     <div className={PANEL}>
       <div className={HEAD}><h2 className={H2}>Uploads</h2></div>
       <div
-        className={`flex-1 min-h-0 overflow-y-auto p-4 ${dragOver ? 'ring-2 ring-inset ring-[#6C63FF]' : ''}`}
+        className={`flex-1 min-h-0 overflow-y-auto p-4 ${dragOver ? 'ring-2 ring-inset ring-[#F47B35]' : ''}`}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={(e) => { e.preventDefault(); setDragOver(false); upload(e.dataTransfer.files); }}
@@ -398,7 +398,7 @@ export const UploadsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: (
         <button
           onClick={() => rollRef.current?.click()}
           disabled={busy}
-          className="mb-2 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#6C63FF] text-sm font-semibold text-white hover:bg-[#5B52E0] disabled:opacity-60"
+          className="mb-2 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#F47B35] text-sm font-semibold text-white hover:bg-[#DD6A28] disabled:opacity-60"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
           {busy ? 'Adding…' : 'Choose from camera roll'}
@@ -431,7 +431,7 @@ export const UploadsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: (
         <div className="mb-3 flex gap-1.5">
           {([['roll', 'Camera roll'], ['all', 'All uploads']] as const).map(([k, label]) => (
             <button key={k} onClick={() => setView(k)}
-              className={`rounded-full px-3 py-1 text-[11px] ${view === k ? 'bg-[#6C63FF] text-white' : 'bg-[#3D3D3D] text-[#CCCCCC]'}`}>
+              className={`rounded-full px-3 py-1 text-[11px] ${view === k ? 'bg-primary text-primary-foreground' : 'bg-[#3D3D3D] text-[#CCCCCC]'}`}>
               {label}
             </button>
           ))}
@@ -462,7 +462,7 @@ export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: 
   canvas, onChanged, brandColors = [], selected,
 }) => {
   const [q, setQ] = useState('');
-  const [fill, setFill] = useState(brandColors[0] || '#6C63FF');
+  const [fill, setFill] = useState(brandColors[0] || '#F47B35');
 
   // Keep the swatch in sync with whatever layer is selected on the canvas.
   useEffect(() => {
@@ -514,7 +514,7 @@ export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: 
     onChanged?.();
   };
 
-  const swatches = [...new Set([...(brandColors || []), '#6C63FF', '#FFFFFF', '#000000', '#EF4444', '#F59E0B', '#10B981'])].slice(0, 8);
+  const swatches = [...new Set([...(brandColors || []), '#F47B35', '#FFFFFF', '#000000', '#EF4444', '#F59E0B', '#10B981'])].slice(0, 8);
 
   return (
     <div className={PANEL}>
@@ -525,7 +525,7 @@ export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: 
           <div className="mb-4 space-y-2 rounded-lg border border-[#3D3D3D] bg-[#1A1A1A] p-3">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-[#888888]">Selected layer</p>
             <div className="flex flex-wrap gap-1.5">
-              {[...new Set([...(brandColors || []), '#6C63FF', '#FFFFFF', '#000000', '#EF4444', '#F59E0B', '#10B981'])].slice(0, 8).map((c) => (
+              {[...new Set([...(brandColors || []), '#F47B35', '#FFFFFF', '#000000', '#EF4444', '#F59E0B', '#10B981'])].slice(0, 8).map((c) => (
                 <button key={`sel-${c}`} onClick={() => { setFill(c); applyToSelected(c); }}
                   className="h-6 w-6 rounded-full border border-white/20" style={{ backgroundColor: c }} title={`Apply ${c}`} />
               ))}
@@ -535,7 +535,7 @@ export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: 
               <input type="range" min={0} max={1} step={0.05}
                 defaultValue={typeof selected.opacity === 'number' ? selected.opacity : 1}
                 onChange={(e) => setOpacity(Number(e.target.value))}
-                className="mt-1 w-full accent-[#6C63FF]" />
+                className="mt-1 w-full accent-primary" />
             </label>
           </div>
         )}
@@ -544,7 +544,7 @@ export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: 
         <div className="mb-4 flex flex-wrap gap-1.5">
           {swatches.map((c) => (
             <button key={c} onClick={() => setFill(c)}
-              className={`h-7 w-7 rounded-full border ${fill === c ? 'ring-2 ring-[#6C63FF]' : 'border-white/20'}`}
+              className={`h-7 w-7 rounded-full border ${fill === c ? 'ring-2 ring-[#F47B35]' : 'border-white/20'}`}
               style={{ backgroundColor: c }} title={c} />
           ))}
         </div>
@@ -620,7 +620,7 @@ export const BackgroundPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?
           <div className="mb-4 grid grid-cols-2 gap-1.5">
             {(['canvas', 'layer'] as const).map((t) => (
               <button key={t} onClick={() => setTarget(t)}
-                className={`rounded-lg px-3 py-2 text-[11px] font-semibold capitalize ${target === t ? 'bg-[#6C63FF] text-white' : 'bg-[#3D3D3D] text-[#CCCCCC]'}`}>
+                className={`rounded-lg px-3 py-2 text-[11px] font-semibold capitalize ${target === t ? 'bg-primary text-primary-foreground' : 'bg-[#3D3D3D] text-[#CCCCCC]'}`}>
                 {t === 'canvas' ? 'Canvas background' : 'Selected layer'}
               </button>
             ))}
@@ -759,7 +759,7 @@ export const AIStudioPanel: React.FC<{
             className={[
               'px-3 py-2 text-[13px] transition-colors',
               activeTab === t.id
-                ? 'font-semibold text-white border-b-2 border-[#6C63FF]'
+                ? 'font-semibold text-white border-b-2 border-[#F47B35]'
                 : 'font-normal text-[#888888] hover:text-white/80',
             ].join(' ')}
           >
@@ -807,7 +807,7 @@ export const AIStudioPanel: React.FC<{
                   </button>
                 ))
                 : [1, 2, 3].map((i) => (
-                  <div key={i} className="h-20 min-w-[80px] flex-1 rounded-lg bg-gradient-to-br from-purple-600 to-pink-500" />
+                  <div key={i} className="h-20 min-w-[80px] flex-1 rounded-lg bg-gradient-to-br from-primary to-primary-glow" />
                 ))}
             </div>
           </>
@@ -832,7 +832,7 @@ export const AIStudioPanel: React.FC<{
                 <button
                   key={url}
                   onClick={() => placeResult(url)}
-                  className="aspect-square overflow-hidden rounded-lg border border-[#3D3D3D] hover:border-[#6C63FF]"
+                  className="aspect-square overflow-hidden rounded-lg border border-[#3D3D3D] hover:border-primary"
                 >
                   {activeTab === 'videos'
                     ? <video src={url} className="h-full w-full object-cover" />
@@ -849,7 +849,7 @@ export const AIStudioPanel: React.FC<{
           onClick={generate}
           disabled={!canGenerate}
           className={`flex h-11 w-full items-center justify-center gap-2 rounded-lg text-[13px] font-semibold transition-colors ${
-            canGenerate ? 'bg-[#6C63FF] text-white hover:bg-[#5B52E0]' : 'bg-[#2D2D2D] text-[#CCCCCC]'
+            canGenerate ? 'bg-primary text-primary-foreground hover:bg-[#DD6A28]' : 'bg-[#2D2D2D] text-[#CCCCCC]'
           }`}
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}

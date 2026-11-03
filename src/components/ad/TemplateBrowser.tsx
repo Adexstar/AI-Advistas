@@ -351,7 +351,7 @@ const TemplateBrowser = ({
       case 'Traffic':
         return 'bg-blue-100 text-blue-600';
       case 'Awareness':
-        return 'bg-purple-100 text-purple-600';
+        return 'bg-primary/10 text-primary';
       default:
         return 'bg-gray-100 text-gray-600';
     }

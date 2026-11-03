@@ -142,7 +142,7 @@ const Analytics = () => {
           </div>
           <div className="mb-2 flex flex-wrap gap-4 text-xs">
             {[
-              { l: "Reach", c: "#8b5cf6" },
+              { l: "Reach", c: "#F47B35" },
               { l: "Clicks", c: "#10b981" },
               { l: "Conversions", c: "#3b82f6" },
               { l: "Revenue", c: "#f43f5e" },
@@ -158,8 +158,8 @@ const Analytics = () => {
               <AreaChart data={performanceSeries} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
                 <defs>
                   <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#F47B35" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="#F47B35" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
@@ -178,7 +178,7 @@ const Analytics = () => {
                 <XAxis dataKey="day" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                 <RTooltip contentStyle={{ borderRadius: 12, border: "1px solid hsl(var(--border))" }} />
-                <Area type="monotone" dataKey="reach" stroke="#8b5cf6" strokeWidth={2} fill="url(#g1)" />
+                <Area type="monotone" dataKey="reach" stroke="#F47B35" strokeWidth={2} fill="url(#g1)" />
                 <Area type="monotone" dataKey="conversions" stroke="#3b82f6" strokeWidth={2} fill="url(#g2)" />
                 <Area type="monotone" dataKey="clicks" stroke="#10b981" strokeWidth={2} fill="url(#g3)" />
                 <Area type="monotone" dataKey="revenue" stroke="#f43f5e" strokeWidth={2} fill="url(#g4)" />

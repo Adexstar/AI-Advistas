@@ -20,7 +20,7 @@ const FeatureSection = () => {
       title: "Advanced Analytics",
       description: "Real-time performance metrics with audience response analysis and comprehensive ROI tracking and reporting.",
       icon: BarChart3,
-      color: "text-purple-500"
+      color: "text-primary"
     },
     {
       title: "Audience Targeting",
@@ -67,7 +67,7 @@ const FeatureSection = () => {
   };
 
   return (
-    <section id="features" className="py-20 bg-white">
+    <section id="features" className="py-20 bg-background">
       <div className="container mx-auto px-4">
         <motion.div 
           className="text-center mb-16"
@@ -96,9 +96,9 @@ const FeatureSection = () => {
             const IconComponent = feature.icon;
             return (
               <motion.div key={index} variants={itemVariants}>
-                <Card className="group hover:shadow-glow transition-all duration-300 hover:-translate-y-2 border-border/50 bg-white/80 backdrop-blur-sm h-full">
+                <Card className="group hover:shadow-glow transition-all duration-300 hover:-translate-y-2 border-border/50 bg-card/80 backdrop-blur-sm h-full">
                   <CardHeader>
-                    <div className={`w-12 h-12 rounded-lg bg-gradient-to-br from-white to-gray-50 border border-border/50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                    <div className={`w-12 h-12 rounded-lg bg-gradient-to-br from-card to-muted border border-border/50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
                       <IconComponent className={`w-6 h-6 ${feature.color}`} />
                     </div>
                     <CardTitle className="text-xl font-semibold">{feature.title}</CardTitle>

@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: '#9CA3AF', planning: '#9CA3AF', creative_ready: '#8B5CF6',
+  draft: '#9CA3AF', planning: '#9CA3AF', creative_ready: '#F47B35',
   publishing: '#3B82F6', running: '#22C55E', optimizing: '#F59E0B',
   completed: '#3B82F6', archived: '#6B7280',
 };

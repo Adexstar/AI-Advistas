@@ -37,13 +37,13 @@ export function AIExplanation({
   return (
     <div className={cn(
       'rounded-xl border p-4 space-y-3 transition-all',
-      lowConfidence ? 'border-orange-200 bg-orange-50/30' : 'border-purple-200 bg-purple-50/30',
+      lowConfidence ? 'border-orange-500/40 bg-orange-500/10' : 'border-primary/30 bg-primary/10/30',
       className,
     )}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-purple-600 bg-purple-100 rounded-full px-2 py-0.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-primary bg-primary/10 rounded-full px-2 py-0.5">
               {SPECIALIST_LABELS[specialist] ?? specialist}
             </span>
             {expectedImprovement != null && (
@@ -52,35 +52,35 @@ export function AIExplanation({
               </span>
             )}
           </div>
-          <h4 className="text-sm font-bold text-gray-900">{title}</h4>
+          <h4 className="text-sm font-bold text-foreground">{title}</h4>
         </div>
         <ConfidenceBadge score={confidence.score} size="md" />
       </div>
 
-      <p className="text-sm text-gray-600 leading-relaxed">{content}</p>
+      <p className="text-sm text-muted-foreground leading-relaxed">{content}</p>
 
       {evidence && (
-        <div className="flex items-start gap-2 text-xs text-gray-500 bg-white/60 rounded-lg p-2.5">
-          <span className="text-purple-500 font-bold mt-0.5">!</span>
+        <div className="flex items-start gap-2 text-xs text-muted-foreground bg-card/60 rounded-lg p-2.5">
+          <span className="text-primary font-bold mt-0.5">!</span>
           <span>{evidence}</span>
         </div>
       )}
 
       <button
         onClick={() => setExpanded(!expanded)}
-        className="text-xs font-medium text-purple-600 hover:text-purple-700 transition"
+        className="text-xs font-medium text-primary hover:text-primary transition"
       >
         {expanded ? 'Hide reasoning' : 'Show reasoning'}
       </button>
 
       {expanded && (
-        <div className="space-y-2 bg-white/70 rounded-lg p-3">
-          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Confidence Factors</p>
+        <div className="space-y-2 bg-card/70 rounded-lg p-3">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Confidence Factors</p>
           {confidence.factors.map((factor, i) => (
             <div key={i} className="flex items-center gap-2">
               <div className="flex-1">
                 <div className="flex justify-between text-xs">
-                  <span className="text-gray-700 font-medium">{factor.name}</span>
+                  <span className="text-foreground/80 font-medium">{factor.name}</span>
                   <span className={cn(
                     'font-semibold',
                     factor.score >= 0.7 ? 'text-emerald-600' : factor.score >= 0.4 ? 'text-amber-600' : 'text-red-600',
@@ -88,7 +88,7 @@ export function AIExplanation({
                     {Math.round(factor.score * 100)}%
                   </span>
                 </div>
-                <p className="text-[10px] text-gray-400">{factor.detail}</p>
+                <p className="text-[10px] text-muted-foreground/70">{factor.detail}</p>
               </div>
             </div>
           ))}
@@ -100,7 +100,7 @@ export function AIExplanation({
           {onApply && (
             <button
               onClick={onApply}
-              className="px-3 py-1.5 text-xs font-semibold text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition"
+              className="px-3 py-1.5 text-xs font-semibold text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition"
             >
               Apply
             </button>
@@ -116,7 +116,7 @@ export function AIExplanation({
           {onReject && (
             <button
               onClick={onReject}
-              className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+              className="px-3 py-1.5 text-xs font-medium text-muted-foreground bg-muted rounded-lg hover:bg-accent transition"
             >
               Reject
             </button>
@@ -124,7 +124,7 @@ export function AIExplanation({
           {onDismiss && (
             <button
               onClick={onDismiss}
-              className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-gray-600 transition"
+              className="px-3 py-1.5 text-xs font-medium text-muted-foreground/70 hover:text-muted-foreground transition"
             >
               Dismiss
             </button>

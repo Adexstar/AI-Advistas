@@ -165,10 +165,10 @@ export const InteractiveDashboard = () => {
               transition={{ duration: 2, repeat: Infinity, delay: 1 }}
             >
               <div className="flex items-center justify-center gap-2 mb-1">
-                <DollarSign className="h-4 w-4 text-purple-600" />
+                <DollarSign className="h-4 w-4 text-primary" />
                 <span className="text-xs text-muted-foreground">Revenue</span>
               </div>
-              <p className="text-xl font-bold text-purple-600">${liveMetrics.revenue.toLocaleString()}</p>
+              <p className="text-xl font-bold text-primary">${liveMetrics.revenue.toLocaleString()}</p>
             </motion.div>
             
             <motion.div 

@@ -114,8 +114,8 @@ const AssetThumb: React.FC<{ asset: MediaAsset }> = ({ asset }) => {
   }
   if (asset.type === 'audio') {
     return (
-      <div className="absolute inset-0 bg-gradient-to-br from-violet-50 to-fuchsia-100 dark:from-violet-950/40 dark:to-fuchsia-950/40 flex items-center justify-center">
-        <MusicIcon className="h-10 w-10 text-violet-500" />
+      <div className="absolute inset-0 bg-gradient-to-br bg-muted/60 flex items-center justify-center">
+        <MusicIcon className="h-10 w-10 text-primary" />
       </div>
     );
   }
@@ -286,7 +286,7 @@ const MediaLibrary: React.FC = () => {
           </Button>
           <Button
             size="sm"
-            className="bg-violet-600 hover:bg-violet-700 text-white"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploadAssets.isPending}
           >
@@ -323,7 +323,7 @@ const MediaLibrary: React.FC = () => {
           label="All Files"
           value={counts.all.toLocaleString()}
           icon={ImageIcon}
-          tint="bg-violet-100 text-violet-600 dark:bg-violet-950/40"
+          tint="bg-primary/10 text-primary"
         />
         <KpiCard
           label="Images"
@@ -385,7 +385,7 @@ const MediaLibrary: React.FC = () => {
               <TabsTrigger
                 key={val as string}
                 value={val as string}
-                className="min-w-0 whitespace-normal rounded-full px-3 data-[state=active]:bg-violet-100 data-[state=active]:text-violet-700 dark:data-[state=active]:bg-violet-950/40"
+                className="min-w-0 whitespace-normal rounded-full px-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
               >
                 <span>{label}</span>
                 <span className="ml-2 text-xs text-muted-foreground">{n as number}</span>
@@ -397,13 +397,13 @@ const MediaLibrary: React.FC = () => {
           <div className="hidden sm:flex border rounded-lg p-0.5">
             <button
               onClick={() => setView('grid')}
-              className={cn('p-1.5 rounded', view === 'grid' ? 'bg-violet-100 text-violet-700' : 'text-muted-foreground')}
+              className={cn('p-1.5 rounded', view === 'grid' ? 'bg-primary/10 text-primary' : 'text-muted-foreground')}
             >
               <LayoutGrid className="h-4 w-4" />
             </button>
             <button
               onClick={() => setView('list')}
-              className={cn('p-1.5 rounded', view === 'list' ? 'bg-violet-100 text-violet-700' : 'text-muted-foreground')}
+              className={cn('p-1.5 rounded', view === 'list' ? 'bg-primary/10 text-primary' : 'text-muted-foreground')}
             >
               <ListIcon className="h-4 w-4" />
             </button>
@@ -452,10 +452,10 @@ const MediaLibrary: React.FC = () => {
           }}
           className={cn(
             'border-2 border-dashed rounded-2xl p-12 text-center transition',
-            dragOver ? 'border-violet-500 bg-violet-50/50' : 'border-border bg-muted/30',
+            dragOver ? 'border-primary bg-primary/5' : 'border-border bg-muted/30',
           )}
         >
-          <div className="mx-auto h-14 w-14 rounded-2xl bg-violet-100 text-violet-600 flex items-center justify-center mb-4">
+          <div className="mx-auto h-14 w-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-4">
             <Upload className="h-6 w-6" />
           </div>
           <h3 className="text-lg font-semibold text-foreground">No assets yet</h3>
@@ -463,7 +463,7 @@ const MediaLibrary: React.FC = () => {
             Drag &amp; drop files here or click to browse.
           </p>
           <div className="flex justify-center gap-2">
-            <Button onClick={() => fileInputRef.current?.click()} className="bg-violet-600 hover:bg-violet-700 text-white">
+            <Button onClick={() => fileInputRef.current?.click()} className="bg-primary hover:bg-primary/90 text-primary-foreground">
               <Upload className="h-4 w-4 mr-2" />
               Upload Assets
             </Button>
@@ -487,19 +487,19 @@ const MediaLibrary: React.FC = () => {
           }}
           className={cn(
             'rounded-2xl transition',
-            dragOver && 'ring-2 ring-violet-400 ring-offset-2 ring-offset-background',
+            dragOver && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
           )}
         >
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {/* Upload tile */}
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="aspect-square rounded-xl border-2 border-dashed border-violet-300 bg-violet-50/60 hover:bg-violet-100/60 dark:bg-violet-950/20 flex flex-col items-center justify-center text-center p-3 transition"
+              className="aspect-square rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 flex flex-col items-center justify-center text-center p-3 transition"
             >
-              <div className="h-10 w-10 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center mb-2">
-                <Upload className="h-5 w-5 text-violet-600" />
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+                <Upload className="h-5 w-5 text-primary" />
               </div>
-              <p className="text-sm font-semibold text-violet-700">Upload Media</p>
+              <p className="text-sm font-semibold text-primary">Upload Media</p>
               <p className="text-[11px] text-muted-foreground mt-1">Drop files or click to browse</p>
               <p className="text-[10px] text-muted-foreground mt-1">JPG, PNG, MP4, MOV, MP3</p>
             </button>
@@ -527,7 +527,7 @@ const MediaLibrary: React.FC = () => {
             </Button>
           </div>
           <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-muted">
-            <div className="bg-violet-500" style={{ width: `${(byType.image / storageUsed) * 100 || 0}%` }} />
+            <div className="bg-primary/100" style={{ width: `${(byType.image / storageUsed) * 100 || 0}%` }} />
             <div className="bg-emerald-500" style={{ width: `${(byType.video / storageUsed) * 100 || 0}%` }} />
             <div className="bg-pink-500" style={{ width: `${(byType.audio / storageUsed) * 100 || 0}%` }} />
             <div className="bg-amber-500" style={{ width: `${(byType.document / storageUsed) * 100 || 0}%` }} />
@@ -538,7 +538,7 @@ const MediaLibrary: React.FC = () => {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
             {[
-              { k: 'Images', v: byType.image, c: 'bg-violet-500', icon: ImageIcon },
+              { k: 'Images', v: byType.image, c: 'bg-primary/100', icon: ImageIcon },
               { k: 'Videos', v: byType.video, c: 'bg-emerald-500', icon: VideoIcon },
               { k: 'Audio', v: byType.audio, c: 'bg-pink-500', icon: MusicIcon },
               { k: 'Others', v: byType.document, c: 'bg-amber-500', icon: FileText },
@@ -602,7 +602,7 @@ const MediaLibrary: React.FC = () => {
       {/* Mobile floating upload */}
       <button
         onClick={() => fileInputRef.current?.click()}
-        className="sm:hidden fixed bottom-6 right-6 z-30 h-14 w-14 rounded-full bg-violet-600 text-white shadow-lg flex items-center justify-center"
+        className="sm:hidden fixed bottom-6 right-6 z-30 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center"
       >
         <Plus className="h-6 w-6" />
       </button>
@@ -723,7 +723,7 @@ const MediaLibrary: React.FC = () => {
                 });
               }}
               disabled={createFolder.isPending}
-              className="bg-violet-600 hover:bg-violet-700 text-white"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               Create
             </Button>

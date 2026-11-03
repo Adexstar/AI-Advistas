@@ -119,7 +119,7 @@ export const AudienceInsights = ({ insights }: AudienceInsightsProps) => {
                 <p className="text-sm text-muted-foreground">Female</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-purple-600">{genderDistribution.nonBinary}%</p>
+                <p className="text-2xl font-bold text-primary">{genderDistribution.nonBinary}%</p>
                 <p className="text-sm text-muted-foreground">Non-binary</p>
               </div>
             </div>

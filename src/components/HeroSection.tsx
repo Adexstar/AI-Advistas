@@ -132,7 +132,7 @@ const HeroSection = () => {
                 <div className="grid grid-cols-3 gap-3">
                   <div className="h-20 bg-blue-100 rounded"></div>
                   <div className="h-20 bg-green-100 rounded"></div>
-                  <div className="h-20 bg-purple-100 rounded"></div>
+                  <div className="h-20 bg-primary/10 rounded"></div>
                 </div>
               </div>
               

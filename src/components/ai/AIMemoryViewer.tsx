@@ -30,7 +30,7 @@ export function AIMemoryViewer({ brandId, className }: Props) {
   if (loading) {
     return (
       <div className={cn('flex items-center justify-center py-8', className)}>
-        <Loader2 className="h-5 w-5 text-purple-500 animate-spin" />
+        <Loader2 className="h-5 w-5 text-primary animate-spin" />
       </div>
     );
   }
@@ -39,15 +39,15 @@ export function AIMemoryViewer({ brandId, className }: Props) {
     <div className={cn('space-y-4', className)}>
       {/* Brand Memory */}
       {brandMemory && (
-        <div className="rounded-xl border border-purple-100 bg-white p-4 space-y-3">
+        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
           <div className="flex items-center gap-2">
-            <Brain className="h-4 w-4 text-purple-600" />
-            <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider">Brand Memory</h4>
+            <Brain className="h-4 w-4 text-primary" />
+            <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Brand Memory</h4>
           </div>
 
           {brandMemory.topHeadlines.length > 0 && (
             <div>
-              <p className="text-[10px] font-semibold text-gray-500 mb-1">Top Performing Headlines</p>
+              <p className="text-[10px] font-semibold text-muted-foreground mb-1">Top Performing Headlines</p>
               <div className="flex flex-wrap gap-1">
                 {brandMemory.topHeadlines.slice(0, 5).map((h, i) => (
                   <span key={i} className="text-[10px] text-emerald-700 bg-emerald-50 rounded-full px-2 py-0.5 font-medium">
@@ -60,7 +60,7 @@ export function AIMemoryViewer({ brandId, className }: Props) {
 
           {brandMemory.topCtasets.length > 0 && (
             <div>
-              <p className="text-[10px] font-semibold text-gray-500 mb-1">Best CTAs</p>
+              <p className="text-[10px] font-semibold text-muted-foreground mb-1">Best CTAs</p>
               <div className="flex flex-wrap gap-1">
                 {brandMemory.topCtasets.slice(0, 5).map((c, i) => (
                   <span key={i} className="text-[10px] text-blue-700 bg-blue-50 rounded-full px-2 py-0.5 font-medium">
@@ -73,10 +73,10 @@ export function AIMemoryViewer({ brandId, className }: Props) {
 
           {brandMemory.bestPerformingFormats.length > 0 && (
             <div>
-              <p className="text-[10px] font-semibold text-gray-500 mb-1">Best Formats</p>
+              <p className="text-[10px] font-semibold text-muted-foreground mb-1">Best Formats</p>
               <div className="flex flex-wrap gap-1">
                 {brandMemory.bestPerformingFormats.slice(0, 5).map((f, i) => (
-                  <span key={i} className="text-[10px] text-purple-700 bg-purple-50 rounded-full px-2 py-0.5 font-medium">
+                  <span key={i} className="text-[10px] text-primary bg-primary/10 rounded-full px-2 py-0.5 font-medium">
                     {f}
                   </span>
                 ))}
@@ -86,7 +86,7 @@ export function AIMemoryViewer({ brandId, className }: Props) {
 
           {brandMemory.failedApproaches.length > 0 && (
             <div>
-              <p className="text-[10px] font-semibold text-gray-500 mb-1">Learnings (What Didn't Work)</p>
+              <p className="text-[10px] font-semibold text-muted-foreground mb-1">Learnings (What Didn't Work)</p>
               <div className="flex flex-wrap gap-1">
                 {brandMemory.failedApproaches.slice(0, 3).map((f, i) => (
                   <span key={i} className="text-[10px] text-red-600 bg-red-50 rounded-full px-2 py-0.5 flex items-center gap-1">
@@ -101,10 +101,10 @@ export function AIMemoryViewer({ brandId, className }: Props) {
 
       {/* Learning Summary */}
       {learningData && learningData.length > 0 && (
-        <div className="rounded-xl border border-purple-100 bg-white p-4 space-y-3">
+        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
           <div className="flex items-center gap-2">
             <Lightbulb className="h-4 w-4 text-amber-500" />
-            <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider">AI Learning</h4>
+            <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">AI Learning</h4>
           </div>
 
           <div className="space-y-2">
@@ -118,12 +118,12 @@ export function AIMemoryViewer({ brandId, className }: Props) {
                     ) : (
                       <TrendingDown className="h-3 w-3 text-red-400 shrink-0" />
                     )}
-                    <span className="text-xs text-gray-700 capitalize truncate">
+                    <span className="text-xs text-foreground/80 capitalize truncate">
                       {item.sourceType.replace(/_/g, ' ')}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-[10px] text-gray-400">{item.totalCount}</span>
+                    <span className="text-[10px] text-muted-foreground/70">{item.totalCount}</span>
                     <span className={cn(
                       'text-[10px] font-semibold',
                       acceptRate >= 0.7 ? 'text-emerald-600' : acceptRate >= 0.4 ? 'text-amber-600' : 'text-red-600',
@@ -140,8 +140,8 @@ export function AIMemoryViewer({ brandId, className }: Props) {
 
       {!brandMemory && (!learningData || learningData.length === 0) && (
         <div className="text-center py-8">
-          <Brain className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-          <p className="text-sm text-gray-400">No AI memory yet. Create campaigns and use AI suggestions to build your profile.</p>
+          <Brain className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground/70">No AI memory yet. Create campaigns and use AI suggestions to build your profile.</p>
         </div>
       )}
     </div>

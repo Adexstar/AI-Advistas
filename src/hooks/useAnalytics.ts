@@ -97,7 +97,7 @@ export function useAnalytics(range: AnalyticsRange = 'daily') {
     const prev = { campaigns: previousPeriod.length, reach: sum(previousPeriod, 'impressions'), clicks: sum(previousPeriod, 'clicks'), conversions: sum(previousPeriod, 'conversions'), revenue: sum(previousPeriod, 'revenue'), roas: sum(previousPeriod, 'spend') > 0 ? sum(previousPeriod, 'revenue') / sum(previousPeriod, 'spend') : 0 };
     const delta = (curVal: number, prevVal: number) => { if (!prevVal) return null; const d = ((curVal - prevVal) / prevVal) * 100; if (Math.round(d) === 0) return null; return `${d >= 0 ? '+' : ''}${Math.round(d)}%`; };
     return [
-      { label: 'Campaigns', value: String(cur.campaigns), delta: delta(cur.campaigns, prev.campaigns), tone: 'bg-violet-50 text-violet-600' },
+      { label: 'Campaigns', value: String(cur.campaigns), delta: delta(cur.campaigns, prev.campaigns), tone: 'bg-primary/10 text-primary' },
       { label: 'Reach', value: cur.reach >= 1000 ? `${(cur.reach / 1000).toFixed(1)}K` : String(cur.reach), delta: delta(cur.reach, prev.reach), tone: 'bg-sky-50 text-sky-600' },
       { label: 'Clicks', value: cur.clicks >= 1000 ? `${(cur.clicks / 1000).toFixed(1)}K` : String(cur.clicks), delta: delta(cur.clicks, prev.clicks), tone: 'bg-emerald-50 text-emerald-600' },
       { label: 'Conversions', value: cur.conversions >= 1000 ? `${(cur.conversions / 1000).toFixed(1)}K` : String(cur.conversions), delta: delta(cur.conversions, prev.conversions), tone: 'bg-amber-50 text-amber-600' },
@@ -207,9 +207,9 @@ export function useAnalytics(range: AnalyticsRange = 'daily') {
     const videos = mediaRows.filter((m: any) => m.type === 'video').length;
     const total = Math.max(images + videos, 1);
     return [
-      { name: 'Images', value: images || Math.round(total * 0.6), color: '#8b5cf6' },
-      { name: 'Videos', value: videos || Math.round(total * 0.25), color: '#6366f1' },
-      { name: 'Documents', value: Math.round(total * 0.1), color: '#a78bfa' },
+      { name: 'Images', value: images || Math.round(total * 0.6), color: '#F47B35' },
+      { name: 'Videos', value: videos || Math.round(total * 0.25), color: '#3b82f6' },
+      { name: 'Documents', value: Math.round(total * 0.1), color: '#9299A2' },
       { name: 'Other', value: Math.round(total * 0.05), color: '#f472b6' },
     ];
   }, [mediaRows]);

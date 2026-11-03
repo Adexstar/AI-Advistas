@@ -97,8 +97,8 @@ const LandingPages = () => {
     switch (status) {
       case "Published": return "bg-green-100 text-green-700";
       case "Draft": return "bg-yellow-100 text-yellow-700";
-      case "Archived": return "bg-gray-100 text-gray-700";
-      default: return "bg-gray-100 text-gray-700";
+      case "Archived": return "bg-muted text-muted-foreground";
+      default: return "bg-muted text-muted-foreground";
     }
   };
 
