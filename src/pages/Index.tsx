@@ -403,7 +403,7 @@ const Index = () => {
                 </CardHeader>
                 <CardContent className="space-y-4 text-sm leading-7 text-foreground/85">
                   <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-                    <p className="font-medium text-primary-foreground">Start from the way the campaign exists today</p>
+                    <p className="font-medium text-foreground">Start from the way the campaign exists today</p>
                     <p className="mt-2">Use AI when you need speed, templates when you need structure, and manual setup when you already know the angle.</p>
                   </div>
                   <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
