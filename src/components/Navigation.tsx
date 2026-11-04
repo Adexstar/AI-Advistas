@@ -78,26 +78,21 @@ const Navigation = () => {
             ) : user ? (
               <>
                 <Button variant="ghost" className="rounded-full text-foreground/75 hover:bg-secondary/70 hover:text-foreground" onClick={handleDashboardNavigation}>Dashboard</Button>
-                <Button onClick={handleDashboardNavigation} className="rounded-full bg-gradient-primary px-5 text-white shadow-glow hover:opacity-95">Open Workspace</Button>
+                <Button onClick={handleDashboardNavigation} className="rounded-full bg-gradient-primary px-5 text-primary-foreground shadow-glow hover:opacity-95">Open Workspace</Button>
               </>
             ) : (
               <>
                 <Button variant="ghost" className="rounded-full text-foreground/75 hover:bg-secondary/70 hover:text-foreground" onClick={handleAuthNavigation}>Sign In</Button>
-                <Button onClick={handleAuthNavigation} className="rounded-full bg-gradient-primary text-white shadow-glow">Get Started</Button>
+                <Button onClick={handleAuthNavigation} className="rounded-full bg-gradient-primary text-primary-foreground shadow-glow">Get Started</Button>
               </>
             )}
           </div>
 
-          <div className="md:hidden">
-            <Button variant="ghost" size="icon" aria-expanded={isOpen} aria-label={isOpen ? 'Close navigation menu' : 'Open navigation menu'} className="rounded-xl border border-border/70 bg-card/60" onClick={() => setIsOpen((current) => !current)}>
-              {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
-          </div>
         </div>
 
         {isOpen && (
           <div className="border-t border-border/70 pb-4 pt-4 md:hidden">
-            <div className="space-y-4 rounded-full border border-border/70 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.1),_transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.94))] p-4 shadow-card">
+            <div className="space-y-4 rounded-2xl border border-border/70 bg-card p-4 shadow-card">
               <div className="rounded-xl border border-border/70 bg-card/85 p-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Public chrome</p>
                 <p className="mt-2 text-lg font-semibold text-foreground">Built for launch teams</p>
