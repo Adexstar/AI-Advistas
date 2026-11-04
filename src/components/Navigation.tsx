@@ -117,12 +117,12 @@ const Navigation = () => {
                 ) : user ? (
                   <>
                     <Button variant="ghost" className="rounded-full border border-border/70 bg-card/60" onClick={handleDashboardNavigation}>Dashboard</Button>
-                    <Button onClick={handleDashboardNavigation} className="rounded-full bg-gradient-primary text-white shadow-glow">Open Workspace</Button>
+                    <Button onClick={handleDashboardNavigation} className="rounded-full bg-gradient-primary text-primary-foreground shadow-glow">Open Workspace</Button>
                   </>
                 ) : (
                   <>
                     <Button variant="ghost" className="rounded-full border border-border/70 bg-card/60" onClick={handleAuthNavigation}>Sign In</Button>
-                    <Button onClick={handleAuthNavigation} className="rounded-full bg-gradient-primary text-white shadow-glow">Get Started</Button>
+                    <Button onClick={handleAuthNavigation} className="rounded-full bg-gradient-primary text-primary-foreground shadow-glow">Get Started</Button>
                   </>
                 )}
               </div>
