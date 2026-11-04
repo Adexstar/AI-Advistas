@@ -44,14 +44,19 @@ const Navigation = () => {
           <div className="flex h-16 items-center justify-between gap-4 md:h-[72px] max-h-[80px]">
             <div className="flex items-center">
               <button type="button" onClick={handleHomeNavigation} className="flex items-center gap-3 text-left">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-primary text-base font-bold text-white shadow-glow md:h-11 md:w-11">
-                  AdVista
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-primary text-lg font-bold text-primary-foreground shadow-glow md:h-11 md:w-11">
+                  A
                 </span>
                 <span className="hidden sm:block">
                   <span className="block text-2xl font-bold tracking-[-0.04em] text-foreground">AdVista</span>
-                  <span className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Campaign Command Workspace</span>
+                <span className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Campaign Command Workspace</span>
                 </span>
               </button>
+              <div className="md:hidden">
+                <Button variant="ghost" size="icon" aria-expanded={isOpen} aria-label={isOpen ? 'Close navigation menu' : 'Open navigation menu'} className="ml-auto rounded-xl border border-border/70 bg-card/60" onClick={() => setIsOpen((current) => !current)}>
+                  {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -73,26 +78,21 @@ const Navigation = () => {
             ) : user ? (
               <>
                 <Button variant="ghost" className="rounded-full text-foreground/75 hover:bg-secondary/70 hover:text-foreground" onClick={handleDashboardNavigation}>Dashboard</Button>
-                <Button onClick={handleDashboardNavigation} className="rounded-full bg-gradient-primary px-5 text-white shadow-glow hover:opacity-95">Open Workspace</Button>
+                <Button onClick={handleDashboardNavigation} className="rounded-full bg-gradient-primary px-5 text-primary-foreground shadow-glow hover:opacity-95">Open Workspace</Button>
               </>
             ) : (
               <>
                 <Button variant="ghost" className="rounded-full text-foreground/75 hover:bg-secondary/70 hover:text-foreground" onClick={handleAuthNavigation}>Sign In</Button>
-                <Button onClick={handleAuthNavigation} className="rounded-full bg-gradient-primary text-white shadow-glow">Get Started</Button>
+                <Button onClick={handleAuthNavigation} className="rounded-full bg-gradient-primary text-primary-foreground shadow-glow">Get Started</Button>
               </>
             )}
           </div>
 
-          <div className="md:hidden">
-            <Button variant="ghost" size="icon" aria-expanded={isOpen} aria-label={isOpen ? 'Close navigation menu' : 'Open navigation menu'} className="rounded-xl border border-border/70 bg-card/60" onClick={() => setIsOpen((current) => !current)}>
-              {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
-          </div>
         </div>
 
         {isOpen && (
           <div className="border-t border-border/70 pb-4 pt-4 md:hidden">
-            <div className="space-y-4 rounded-full border border-border/70 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.1),_transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.94))] p-4 shadow-card">
+            <div className="space-y-4 rounded-2xl border border-border/70 bg-card p-4 shadow-card">
               <div className="rounded-xl border border-border/70 bg-card/85 p-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Public chrome</p>
                 <p className="mt-2 text-lg font-semibold text-foreground">Built for launch teams</p>
@@ -117,12 +117,12 @@ const Navigation = () => {
                 ) : user ? (
                   <>
                     <Button variant="ghost" className="rounded-full border border-border/70 bg-card/60" onClick={handleDashboardNavigation}>Dashboard</Button>
-                    <Button onClick={handleDashboardNavigation} className="rounded-full bg-gradient-primary text-white shadow-glow">Open Workspace</Button>
+                    <Button onClick={handleDashboardNavigation} className="rounded-full bg-gradient-primary text-primary-foreground shadow-glow">Open Workspace</Button>
                   </>
                 ) : (
                   <>
                     <Button variant="ghost" className="rounded-full border border-border/70 bg-card/60" onClick={handleAuthNavigation}>Sign In</Button>
-                    <Button onClick={handleAuthNavigation} className="rounded-full bg-gradient-primary text-white shadow-glow">Get Started</Button>
+                    <Button onClick={handleAuthNavigation} className="rounded-full bg-gradient-primary text-primary-foreground shadow-glow">Get Started</Button>
                   </>
                 )}
               </div>

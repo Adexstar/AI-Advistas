@@ -90,7 +90,7 @@ export const NextBestActionWidget = () => {
 
   if (!actions || actions.length === 0) {
     return (
-      <Card className="surface-outline border-l-4 border-l-primary bg-gradient-to-br from-white to-secondary/45 shadow-card">
+      <Card className="surface-outline border-l-4 border-l-primary bg-gradient-to-br from-card to-secondary/45 shadow-card">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

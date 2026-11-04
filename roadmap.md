@@ -9,3 +9,7 @@
 - [x] Targeted tests and public/protected-route browser checks passed.
 - [x] /dashboard, /campaigns and /create-ad walked signed in at phone (430px) and desktop (1280px) widths: created a real campaign through the create-ad wizard, opened its workspace, and scrolled all 11 tabs — zero content escaping its box. Remaining: visual editor save/reopen/export and campaign duplication end-to-end checks (now unblocked; run them on request).
 - [ ] Hosted leaked-password protection: requires an external Supabase authentication setting change, unavailable through current tools.
+# Obsidian + Orange design system
+
+- [x] Global tokens, shadcn surfaces, all page/component purple removed, dark-on-dark and light-on-light card fixes (landing, auth, pricing, nav, dashboard cards, charts).
+- [ ] Signed-in app pages (dashboard, campaigns, editor) still need a visual pass in the new theme; sandbox cannot sign in to the external Supabase — verify from preview or ask user for screenshots.

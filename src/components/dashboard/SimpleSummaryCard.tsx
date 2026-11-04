@@ -18,9 +18,9 @@ export const SimpleSummaryCard = ({
   variant = 'default' 
 }: SimpleSummaryCardProps) => {
   const variantStyles = {
-    default: 'border-l-primary bg-gradient-to-br from-white via-white to-secondary/45',
-    warning: 'border-l-destructive bg-gradient-to-br from-white via-white to-destructive/5',
-    success: 'border-l-green-500 bg-gradient-to-br from-white via-white to-green-500/5'
+    default: 'border-l-primary bg-gradient-to-br from-card via-card to-secondary/45',
+    warning: 'border-l-destructive bg-gradient-to-br from-card via-card to-destructive/5',
+    success: 'border-l-green-500 bg-gradient-to-br from-card via-card to-green-500/5'
   };
 
   return (

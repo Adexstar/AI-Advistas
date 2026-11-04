@@ -193,7 +193,7 @@ const Index = () => {
               className="relative"
             >
               <div className="surface-outline overflow-hidden rounded-[32px] bg-gradient-hero p-[1px] shadow-soft">
-                <div className="hero-grid rounded-[31px] border border-white/10 bg-[hsl(239_40%_16%/.92)] p-5 text-white backdrop-blur-xl">
+                <div className="hero-grid rounded-[31px] border border-white/10 bg-[hsl(213_13%_11%/.92)] p-5 text-white backdrop-blur-xl">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/55">Command surface</p>
@@ -394,24 +394,24 @@ const Index = () => {
                 </CardContent>
               </Card>
 
-              <Card className="surface-outline rounded-[32px] border-0 bg-gradient-hero text-primary-foreground shadow-soft">
+              <Card className="surface-outline rounded-[32px] border-0 bg-gradient-hero text-foreground shadow-soft">
                 <CardHeader>
                   <CardTitle className="text-2xl tracking-[-0.02em]">What the workspace gives you</CardTitle>
-                  <CardDescription className="text-primary-foreground/75">
+                  <CardDescription className="text-foreground/75">
                     A tighter operating loop for ad creation, creative reuse, and campaign follow-through.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4 text-sm leading-7 text-primary-foreground/85">
+                <CardContent className="space-y-4 text-sm leading-7 text-foreground/85">
                   <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-                    <p className="font-medium text-primary-foreground">Start from the way the campaign exists today</p>
+                    <p className="font-medium text-foreground">Start from the way the campaign exists today</p>
                     <p className="mt-2">Use AI when you need speed, templates when you need structure, and manual setup when you already know the angle.</p>
                   </div>
                   <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-                    <p className="font-medium text-primary-foreground">Reuse what already performs</p>
+                    <p className="font-medium text-foreground">Reuse what already performs</p>
                     <p className="mt-2">Saved templates, recent picks, and campaign duplication make strong creative easier to repeat without redoing the setup work.</p>
                   </div>
                   <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-                    <p className="font-medium text-primary-foreground">Operate with fewer dead ends</p>
+                    <p className="font-medium text-foreground">Operate with fewer dead ends</p>
                     <p className="mt-2">Clearer decisions, stronger grouping, and a tighter flow reduce friction when the team is moving quickly.</p>
                   </div>
                 </CardContent>
@@ -438,7 +438,7 @@ const Index = () => {
               {plans.map((plan) => (
                 <Card
                   key={plan.name}
-                  className={plan.emphasis ? "surface-outline rounded-[30px] border-primary/20 bg-gradient-to-b from-white to-secondary/45 shadow-soft" : "surface-panel surface-outline rounded-[30px]"}
+                  className={plan.emphasis ? "surface-outline rounded-[30px] border-primary/20 bg-gradient-to-b from-card to-secondary/45 shadow-soft" : "surface-panel surface-outline rounded-[30px]"}
                 >
                   <CardHeader className="space-y-4">
                     {plan.emphasis && <Badge className="w-fit rounded-full bg-gradient-primary text-white">Recommended</Badge>}
@@ -472,14 +472,14 @@ const Index = () => {
 
         <section className="px-4 py-20 md:px-6 lg:px-8">
           <div className="page-container px-0">
-            <Card className="surface-outline overflow-hidden rounded-[34px] border-0 bg-gradient-hero text-primary-foreground shadow-soft">
+            <Card className="surface-outline overflow-hidden rounded-[34px] border-0 bg-gradient-hero text-foreground shadow-soft">
               <CardContent className="grid gap-8 p-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:p-10">
                 <div className="space-y-4">
                   <Badge className="rounded-full border border-white/12 bg-white/10 text-white">Ready to move faster</Badge>
                   <h2 className="max-w-3xl text-4xl font-semibold tracking-[-0.03em] md:text-5xl">
                     Give your ad team one place to build, launch, and adjust campaigns.
                   </h2>
-                  <p className="max-w-2xl text-base leading-8 text-primary-foreground/80">
+                  <p className="max-w-2xl text-base leading-8 text-foreground/80">
                     Move from draft to template to campaign action without scattering the workflow across separate tools and disconnected screens.
                   </p>
                 </div>
