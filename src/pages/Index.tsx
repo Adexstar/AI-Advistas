@@ -407,11 +407,11 @@ const Index = () => {
                     <p className="mt-2">Use AI when you need speed, templates when you need structure, and manual setup when you already know the angle.</p>
                   </div>
                   <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-                    <p className="font-medium text-primary-foreground">Reuse what already performs</p>
+                    <p className="font-medium text-foreground">Reuse what already performs</p>
                     <p className="mt-2">Saved templates, recent picks, and campaign duplication make strong creative easier to repeat without redoing the setup work.</p>
                   </div>
                   <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-                    <p className="font-medium text-primary-foreground">Operate with fewer dead ends</p>
+                    <p className="font-medium text-foreground">Operate with fewer dead ends</p>
                     <p className="mt-2">Clearer decisions, stronger grouping, and a tighter flow reduce friction when the team is moving quickly.</p>
                   </div>
                 </CardContent>
