@@ -114,7 +114,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -134,13 +134,13 @@ const Auth = () => {
             <h1 className="text-3xl font-bold text-white mb-2">
               Welcome to AdVista
             </h1>
-            <p className="text-primary-100">
+            <p className="text-muted-foreground">
               Move from brief to launch in one calmer campaign workspace.
             </p>
           </div>
         </div>
 
-        <Card className="backdrop-blur-sm bg-white/95 border-0 shadow-2xl">
+        <Card className="border-border bg-card shadow-2xl">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Open Your Workspace</CardTitle>
             <CardDescription>
