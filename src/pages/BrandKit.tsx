@@ -367,7 +367,7 @@ const BrandWorkspace = ({ brand, allKits, onSelect, onEdit }: { brand: BrandKit;
               variant="outline"
               size="sm"
               onClick={() => {
-                const hex = prompt('Enter HEX color', '#7C3AED');
+                const hex = prompt('Enter HEX color', '#F47B35');
                 if (hex) addColor.mutate({ brand_id: brand.id, hex, name: 'Custom' });
               }}
             >
