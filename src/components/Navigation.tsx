@@ -44,14 +44,19 @@ const Navigation = () => {
           <div className="flex h-16 items-center justify-between gap-4 md:h-[72px] max-h-[80px]">
             <div className="flex items-center">
               <button type="button" onClick={handleHomeNavigation} className="flex items-center gap-3 text-left">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-primary text-base font-bold text-white shadow-glow md:h-11 md:w-11">
-                  AdVista
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-primary text-lg font-bold text-primary-foreground shadow-glow md:h-11 md:w-11">
+                  A
                 </span>
                 <span className="hidden sm:block">
                   <span className="block text-2xl font-bold tracking-[-0.04em] text-foreground">AdVista</span>
-                  <span className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Campaign Command Workspace</span>
+                <span className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Campaign Command Workspace</span>
                 </span>
               </button>
+              <div className="md:hidden">
+                <Button variant="ghost" size="icon" aria-expanded={isOpen} aria-label={isOpen ? 'Close navigation menu' : 'Open navigation menu'} className="ml-auto rounded-xl border border-border/70 bg-card/60" onClick={() => setIsOpen((current) => !current)}>
+                  {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                </Button>
+              </div>
             </div>
           </div>
 
