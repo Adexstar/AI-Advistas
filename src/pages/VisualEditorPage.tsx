@@ -36,7 +36,7 @@ import { isOverlayScrim, loadTemplateJSONIntoCanvas, retryFailedImages, type Ima
 import { supabase } from '@/integrations/supabase/client';
 import { useAIContext } from '@/contexts/AIContext';
 import { useAuth } from '@/hooks/useAuth';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CreativeService, creativeDocument } from '@/services/creative/CreativeService';
 import {
   TemplatesPanel as StudioTemplatesPanel,
@@ -51,8 +51,9 @@ import {
   ARTBOARD_PRESETS, alignObject, deleteObject, duplicateObject, isLocked, moveLayer,
   reorderLayer, setLocked, setVisible,
 } from '@/components/visual-editor/canvasActions';
-import { fitContentToFrame, frameForTemplate, frameFromAspect, measureContentBounds, publishArtboard, replaceImageKeepingFrame, scaleImageToCover } from '@/components/visual-editor/canvasImagePlacement';
+import { fitContentToFrame, frameForTemplate, frameFromAspect, measureContentBounds, placeFittedImage, publishArtboard, replaceImageKeepingFrame, scaleImageToCover } from '@/components/visual-editor/canvasImagePlacement';
 import { selectionToolSet } from '@/components/visual-editor/editorTools';
+import { CREATE_RAIL, EDITOR_TOOLS, FONT_COMBOS, TEXT_STYLES, matchTextStyle, panelForCreateTool } from '@/components/visual-editor/createRail';
 import { applyImageFilters, neutralImageAdjustments, type ImageAdjustments, type ImagePreset } from '@/components/visual-editor/imageAdjustments';
 
 /* ---------- Constants ---------- */
@@ -414,53 +415,70 @@ const BackgroundPanel: React.FC = () => {
 };
 
 /* ---------- Text Panel ---------- */
-const TextPanel: React.FC<{ onAdd: (text: string, size: number, weight: string) => void }> = ({ onAdd }) => {
+const TextPanel: React.FC<{
+  onAdd: (text: string, size: number, weight: string, fontFamily?: string) => void;
+  onMagicWrite: (prompt: string) => Promise<void>;
+}> = ({ onAdd, onMagicWrite }) => {
   const [search, setSearch] = useState('');
+  const [prompt, setPrompt] = useState('');
+  const [writing, setWriting] = useState(false);
+  const styles = TEXT_STYLES.filter((item) => matchTextStyle(search, item));
+  const combos = FONT_COMBOS.filter((item) => matchTextStyle(search, item));
+  const place = (item: (typeof TEXT_STYLES)[number]) => onAdd(item.text, item.size, item.weight, item.fontFamily);
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-[#2D2D2D]">
-      <div className="px-4 py-3 border-b border-[#3D3D3D]">
+      <div className="border-b border-[#3D3D3D] px-4 py-3">
         <h2 className="text-base font-bold text-white">Text</h2>
       </div>
-      <div className="flex-1 min-h-0 overflow-y-auto p-4">
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
         <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#888888]" />
-          <input placeholder="Search fonts and combinations"
-            className="w-full h-10 pl-9 pr-3 rounded-lg text-sm bg-[#3D3D3D] border border-[#555555] text-[#888888] placeholder:text-[#888888] outline-none" />
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#888888]" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search fonts and combinations"
+            className="h-10 w-full rounded-lg border border-[#555555] bg-[#3D3D3D] pl-9 pr-3 text-sm text-white outline-none placeholder:text-[#888888]" />
         </div>
-        <button onClick={() => onAdd('Add a heading', 36, 'bold')}
-          className="w-full h-11 rounded-lg bg-[#F47B35] text-white text-sm font-semibold flex items-center justify-center gap-2 mb-2 hover:bg-[#DD6A28]">
+        <button type="button" onClick={() => place(TEXT_STYLES[0])}
+          className="mb-2 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#7C3AED] text-sm font-semibold text-white hover:bg-[#6D28D9]">
           <Type className="h-4 w-4" /> Add a text box
         </button>
-        <button className="w-full h-11 rounded-lg bg-[#2D2D2D] border border-[#555555] text-white text-sm flex items-center justify-center gap-2 mb-4 hover:border-[#F47B35]">
-          <Sparkles className="h-4 w-4" /> AI Copy
-        </button>
-        <p className="text-xs font-semibold text-[#888888] uppercase tracking-wider mb-2">Default text styles</p>
-        <button onClick={() => onAdd('Add a heading', 36, 'bold')}
-          className="w-full h-[52px] rounded-lg bg-[#2D2D2D] flex items-center px-4 mb-1 hover:bg-[#3D3D3D] hover:border hover:border-[#555555]">
-          <span className="text-2xl font-extrabold text-white">Add a heading</span>
-        </button>
-        <button onClick={() => onAdd('Add a subheading', 24, '600')}
-          className="w-full h-11 rounded-lg bg-[#2D2D2D] flex items-center px-4 mb-1 hover:bg-[#3D3D3D] hover:border hover:border-[#555555]">
-          <span className="text-lg font-semibold text-white">Add a subheading</span>
-        </button>
-        <button onClick={() => onAdd('Add a little bit of body text', 16, 'normal')}
-          className="w-full h-10 rounded-lg bg-[#2D2D2D] flex items-center px-4 hover:bg-[#3D3D3D] hover:border hover:border-[#555555]">
-          <span className="text-sm text-white">Add a little bit of body text</span>
-        </button>
-        <p className="text-xs font-semibold text-[#888888] uppercase tracking-wider mt-5 mb-2">Font combinations</p>
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { name: 'Coffee Break', style: 'text-green-400 italic text-lg' },
-            { name: 'FIRE away', style: 'text-orange-400 font-bold text-lg' },
-            { name: 'PIXEL DREAMS', style: 'text-primary font-bold text-lg' },
-            { name: 'Subscribe', style: 'text-blue-400 text-lg' },
-          ].map((f) => (
-            <button key={f.name}
-              className="h-[100px] rounded-lg bg-[#2D2D2D] flex items-center justify-center hover:bg-[#3D3D3D]">
-              <span className={f.style}>{f.name}</span>
+        <form className="mb-4 flex gap-2" onSubmit={async (event) => {
+          event.preventDefault();
+          const line = prompt.trim();
+          if (!line || writing) return;
+          setWriting(true);
+          try { await onMagicWrite(line); setPrompt(''); }
+          finally { setWriting(false); }
+        }}>
+          <input value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Product or offer"
+            className="h-11 min-w-0 flex-1 rounded-lg border border-[#555555] bg-[#2D2D2D] px-3 text-sm text-white outline-none placeholder:text-[#888888]" />
+          <button type="submit" disabled={writing || prompt.trim().length < 2}
+            className="h-11 shrink-0 rounded-lg border border-[#555555] px-3 text-sm text-white disabled:opacity-50">
+            {writing ? 'Writing…' : 'Magic Write'}
+          </button>
+        </form>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#888888]">Default text styles</p>
+        <div className="space-y-1">
+          {styles.map((item) => (
+            <button key={item.id} type="button" onClick={() => place(item)}
+              className="flex h-12 w-full items-center rounded-lg bg-[#2D2D2D] px-4 text-left text-white hover:bg-[#3D3D3D]"
+              style={{ fontFamily: item.fontFamily, fontWeight: item.weight, fontSize: Math.min(item.size, 24) }}>
+              {item.label}
             </button>
           ))}
         </div>
+        <p className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wider text-[#888888]">Font combinations</p>
+        <div className="grid grid-cols-2 gap-2">
+          {combos.map((item) => (
+            <button key={item.id} type="button" onClick={() => place(item)}
+              className="flex h-[100px] items-center justify-center rounded-lg bg-[#1F1F1F] px-3 text-center hover:bg-[#3D3D3D]"
+              style={{ fontFamily: item.fontFamily, fontWeight: item.weight, color: '#F5F0E6' }}>
+              {item.label}
+            </button>
+          ))}
+        </div>
+        {styles.length === 0 && combos.length === 0 && (
+          <p className="mt-4 text-center text-xs text-[#888888]">No text styles match “{search}”.</p>
+        )}
       </div>
     </div>
   );
@@ -516,45 +534,91 @@ const ElementsPanel: React.FC<{ onAdd: (t: 'rectangle' | 'circle') => void }> = 
   );
 };
 
-const BrandKitPanel: React.FC = () => {
+const BrandKitPanel: React.FC<{
+  onUseColor: (hex: string) => void;
+  onUseFont: (name: string) => void;
+  onUseLogo: (url: string) => void;
+}> = ({ onUseColor, onUseFont, onUseLogo }) => {
   const { data: kits } = useBrandKits();
   const active = kits?.find((k) => k.is_active) || kits?.[0];
   const { data: colors } = useBrandColors(active?.id);
   const { data: fonts } = useBrandFonts(active?.id);
+  const palette = [active?.primary_color, active?.secondary_color, active?.accent_color, ...(colors?.map((c) => c.hex) || [])].filter(Boolean) as string[];
   return (
-    <SimplePanel title="Brand Kit">
+    <SimplePanel title="Brand">
       {!active ? (
-        <p className="text-xs text-muted-foreground">No active brand kit. Create one from Brand Kit page.</p>
+        <p className="text-xs text-muted-foreground">No brand kit yet. Create one on the Brand Kit page, then its colours, logo, and fonts can be placed here.</p>
       ) : (
         <div className="space-y-4">
           <div>
             <p className="mb-2 text-xs font-semibold">Logo</p>
-            <div className="aspect-video rounded-xl border bg-muted/40 flex items-center justify-center overflow-hidden">
+            <button type="button" disabled={!active.logo_url} onClick={() => active.logo_url && onUseLogo(active.logo_url)}
+              className="flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl border bg-muted/40 disabled:cursor-default">
               {active.logo_url ? <img src={active.logo_url} alt="Logo" className="max-h-full max-w-full object-contain" /> : <span className="text-xs text-muted-foreground">No logo</span>}
-            </div>
+            </button>
+            {active.logo_url && <p className="mt-1 text-[11px] text-muted-foreground">Tap the logo to place it on the canvas.</p>}
           </div>
           <div>
-            <p className="mb-2 text-xs font-semibold">Colors</p>
+            <p className="mb-2 text-xs font-semibold">Colours</p>
             <div className="grid grid-cols-6 gap-2">
-              {[active.primary_color, active.secondary_color, active.accent_color, ...(colors?.map((c) => c.hex) || [])].filter(Boolean).map((c, i) => (
-                <div key={i} className="aspect-square rounded-lg border" style={{ background: c }} title={c} />
+              {palette.map((c) => (
+                <button key={c} type="button" onClick={() => onUseColor(c)} className="aspect-square rounded-lg border" style={{ background: c }} title={`Use ${c}`} />
               ))}
             </div>
+            <p className="mt-1 text-[11px] text-muted-foreground">A colour fills the selected layer, or the canvas when nothing is selected.</p>
           </div>
           <div>
             <p className="mb-2 text-xs font-semibold">Fonts</p>
             <div className="space-y-1.5">
               {fonts?.length ? fonts.map((f) => (
-                <div key={f.id} className="rounded-lg border px-3 py-2 text-xs">{f.name}</div>
-              )) : <p className="text-xs text-muted-foreground">No fonts.</p>}
+                <button key={f.id} type="button" onClick={() => onUseFont(f.name)} className="w-full rounded-lg border px-3 py-2 text-left text-xs hover:bg-muted">{f.name}</button>
+              )) : <p className="text-xs text-muted-foreground">No fonts in this kit.</p>}
             </div>
           </div>
-          <Button className="w-full h-9 gap-1.5"><Wand2 className="h-3.5 w-3.5" /> Apply Brand</Button>
         </div>
       )}
     </SimplePanel>
   );
 };
+
+const ProjectsPanel: React.FC = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { data = [], isLoading, error } = useQuery({
+    queryKey: ['editor-projects', user?.id],
+    enabled: !!user?.id,
+    queryFn: () => CreativeService.list(user!.id),
+  });
+  return (
+    <SimplePanel title="Projects">
+      {!user && <p className="text-xs text-muted-foreground">Sign in to open designs you have saved.</p>}
+      {user && isLoading && <p className="text-xs text-muted-foreground">Loading your designs…</p>}
+      {error && <p className="text-xs text-destructive">Could not load saved designs.</p>}
+      {user && !isLoading && data.length === 0 && <p className="text-xs text-muted-foreground">No saved designs yet. Save this canvas and it will appear here.</p>}
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        {data.map((ad) => (
+          <button key={ad.id} type="button" onClick={() => navigate(`/visual-editor?adId=${ad.id}`)}
+            className="overflow-hidden rounded-xl border text-left">
+            {ad.preview_url ? <img src={ad.preview_url} alt="" className="aspect-square w-full object-cover" /> : <div className="aspect-square bg-muted" />}
+            <p className="truncate px-2 py-2 text-xs font-semibold">{ad.name || 'Untitled'}</p>
+          </button>
+        ))}
+      </div>
+    </SimplePanel>
+  );
+};
+
+const ToolsSheet: React.FC<{ onOpen: (id: string) => void }> = ({ onOpen }) => (
+  <div className="grid grid-cols-2 gap-2">
+    {EDITOR_TOOLS.map((tool) => (
+      <button key={tool.id} type="button" onClick={() => onOpen(tool.id)}
+        className="rounded-xl border border-white/10 bg-[#2D2D2D] p-3 text-left hover:bg-[#3D3D3D]">
+        <p className="text-sm font-semibold text-white">{tool.label}</p>
+        <p className="mt-1 text-[11px] leading-snug text-[#AAAAAA]">{tool.hint}</p>
+      </button>
+    ))}
+  </div>
+);
 
 const LayersPanel: React.FC<{
   canvas: FabricCanvas | null;
@@ -1227,17 +1291,21 @@ const Timeline: React.FC<{
 /* ---------- Contextual Toolbar Configs ---------- */
 type ToolItem = { id: string; label: string; icon: React.FC<{ className?: string }> };
 
-const CREATE_TOOLS: ToolItem[] = [
-  { id: 'templates', label: 'Templates', icon: Layout },
-  { id: 'elements', label: 'Elements', icon: Shapes },
-  { id: 'text', label: 'Text', icon: Type },
-  { id: 'uploads', label: 'Uploads', icon: Upload },
-  { id: 'brand', label: 'Brand', icon: Sparkles },
-  { id: 'media', label: 'Media', icon: ImageIcon },
-  { id: 'ai-studio', label: 'AI Studio', icon: Wand2 },
-  { id: 'background', label: 'Bg', icon: Palette },
-  { id: 'layers', label: 'Layers', icon: LayersIcon },
-];
+const CREATE_TOOL_ICONS = {
+  templates: Layout,
+  elements: Shapes,
+  text: Type,
+  camera: ImageIcon,
+  brand: Sparkles,
+  uploads: Upload,
+  tools: Grid3x3,
+} as const;
+
+const CREATE_TOOLS: ToolItem[] = CREATE_RAIL.map((tool) => ({
+  id: tool.id,
+  label: tool.label,
+  icon: CREATE_TOOL_ICONS[tool.id],
+}));
 
 const TEXT_TOOLS: ToolItem[] = [
   { id: 'edit-text', label: 'Edit', icon: Edit3 },
@@ -1374,12 +1442,14 @@ const ContextualToolbar: React.FC<{
       const Icon = t.icon;
       const isActive = active === t.id;
       return (
-        <button key={t.id} onClick={() => onToolTap(t.id)}
-          className={`flex min-w-[58px] shrink-0 flex-col items-center gap-1 rounded-lg px-2 py-1.5 transition-colors ${
-            isActive ? 'bg-primary/20 text-primary-glow' : 'text-inherit hover:bg-studio-panel'
+        <button key={t.id} type="button" onClick={() => onToolTap(t.id)}
+          className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-lg px-0.5 py-1.5 transition-colors ${
+            isActive ? 'text-primary' : 'text-inherit hover:bg-studio-panel'
           }`}>
-          <Icon className="h-5 w-5" />
-          <span className="whitespace-nowrap text-[9px] font-medium">{t.label}</span>
+          <span className={`grid h-8 w-8 place-items-center rounded-lg ${isActive ? 'bg-primary text-primary-foreground' : ''}`}>
+            <Icon className="h-5 w-5" />
+          </span>
+          <span className="w-full text-center text-[9px] font-medium leading-tight">{t.label}</span>
         </button>
       );
     })}
@@ -2220,6 +2290,8 @@ const EditorInner: React.FC = () => {
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(() => searchParams.get('selectTemplate') === '1');
+  const [pendingUploads, setPendingUploads] = useState<File[] | null>(null);
+  const cameraRollRef = useRef<HTMLInputElement>(null);
   const [timelineOpen, setTimelineOpen] = useState(true);
   const [toolbarPos, setToolbarPos] = useState<{ left: number; top: number } | null>(null);
   const [canvasWrapperEl, setCanvasWrapperEl] = useState<HTMLDivElement | null>(null);
@@ -2774,14 +2846,65 @@ const EditorInner: React.FC = () => {
   const brandPalette = [activeKit?.primary_color, activeKit?.secondary_color, activeKit?.accent_color].filter(Boolean) as string[];
 
 
-  const addText = (text: string, size: number, weight: string) => {
+  const clearSelection = () => {
+    canvas?.discardActiveObject();
+    canvas?.requestRenderAll();
+    setSelected(null);
+    setActiveTool(null);
+  };
+
+  const addText = (text: string, size: number, weight: string, fontFamily = 'Outfit') => {
     if (!canvas) return;
     const bgFill = String(canvas.backgroundColor || '#ffffff').toLowerCase();
     const darkBg = !['#ffffff', '#fff', 'white', ''].includes(bgFill);
     const w = Math.min(320, (canvas.getWidth?.() || 360) - 48);
-    const tb = new Textbox(text, { left: 24, top: 60, fontSize: size, fontWeight: weight, fill: darkBg ? '#ffffff' : '#111111', fontFamily: 'Poppins', width: w });
+    const tb = new Textbox(text, { left: 24, top: 60, fontSize: size, fontWeight: weight, fill: darkBg ? '#ffffff' : '#111111', fontFamily, width: w });
     canvas.add(tb); canvas.setActiveObject(tb); canvas.renderAll();
     setSelected(tb); forceUpdate((n) => n + 1);
+  };
+
+  const magicWrite = async (product: string) => {
+    if (!user) {
+      toast({ title: 'Sign in to write ad copy', description: 'Magic Write uses your account to generate a headline.' });
+      return;
+    }
+    const { data, error } = await supabase.functions.invoke('generate-ad-copy', {
+      body: { productName: product, platform: (effectiveContext as any)?.active_platform || 'instagram' },
+    });
+    if (error) {
+      toast({ title: 'Copy was not written', description: error.message, variant: 'destructive' });
+      return;
+    }
+    const copy = data?.copy ?? data;
+    const headline = typeof copy?.headline === 'string' ? copy.headline.trim() : '';
+    if (!headline) {
+      toast({ title: 'No headline came back', description: 'Try a more specific product or offer.', variant: 'destructive' });
+      return;
+    }
+    addText(headline, 36, '700', 'Outfit');
+    if (typeof copy?.subtitle === 'string' && copy.subtitle.trim()) addText(copy.subtitle.trim(), 18, '500', 'Figtree');
+  };
+
+  const useBrandColor = (hex: string) => {
+    if (!canvas) return;
+    if (selected && !isOverlayScrim(selected)) {
+      if (selected.type === 'line') selected.set({ stroke: hex });
+      else selected.set({ fill: hex });
+    } else {
+      canvas.backgroundColor = hex;
+    }
+    canvas.requestRenderAll();
+    markChanged();
+  };
+
+  const useBrandFont = (name: string) => {
+    if (selected && ['textbox', 'text', 'i-text'].includes(String(selected.type))) {
+      selected.set({ fontFamily: name });
+      canvas?.requestRenderAll();
+      markChanged();
+      return;
+    }
+    addText('Brand line', 32, '700', name);
   };
   const addShape = (t: 'rectangle' | 'circle') => {
     if (!canvas) return;
@@ -2926,13 +3049,34 @@ const EditorInner: React.FC = () => {
       );
       case 'background': return <StudioBackgroundPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} brandColors={brandPalette} selected={selected} />;
       case 'ai-studio': return <StudioAIPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} platform={(effectiveContext as any)?.active_platform ?? null} category={effectiveContext?.active_category ?? null} selected={selected} />;
-      case 'text': return <TextPanel onAdd={addText} />;
+      case 'text': return <TextPanel onAdd={addText} onMagicWrite={magicWrite} />;
       case 'elements': return <StudioElementsPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} brandColors={brandPalette} selected={selected} />;
-      case 'brand': return <BrandKitPanel />;
+      case 'brand': return (
+        <BrandKitPanel
+          onUseColor={useBrandColor}
+          onUseFont={useBrandFont}
+          onUseLogo={(url) => { if (!canvas) return; void placeFittedImage(canvas, url).then(() => markChanged()); }}
+        />
+      );
       case 'layers': return <LayersPanel canvas={canvas} version={tick} selected={selected} onSelect={setSelected} onChanged={markChanged} />;
       case 'media': return <StudioMediaPanel embedded={isMobile} canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} selected={selected} />;
-      case 'uploads': return <StudioUploadsPanel embedded={isMobile} canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} selected={selected} />;
-      case 'projects': return <SimplePanel title="Projects"><p className="text-xs text-muted-foreground">Your recent projects.</p></SimplePanel>;
+      case 'uploads':
+      case 'camera': return (
+        <StudioUploadsPanel
+          embedded={isMobile}
+          canvas={canvas}
+          onChanged={() => forceUpdate((n) => n + 1)}
+          selected={selected}
+          pendingFiles={pendingUploads}
+          onPendingConsumed={() => setPendingUploads(null)}
+        />
+      );
+      case 'projects': return <ProjectsPanel />;
+      case 'tools': return (
+        <div className="h-full overflow-y-auto p-4">
+          <ToolsSheet onOpen={(id) => { setActiveTab(id); setActiveTool(null); setSheetExpanded(true); }} />
+        </div>
+      );
 
       default: return null;
     }
@@ -3051,6 +3195,22 @@ const EditorInner: React.FC = () => {
 
   return (
     <div className="visual-editor flex h-[100dvh] w-full flex-col overflow-hidden bg-studio-bg">
+      <input
+        ref={cameraRollRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={(event) => {
+          const files = event.target.files ? Array.from(event.target.files) : [];
+          event.target.value = '';
+          if (files.length) {
+            setPendingUploads(files);
+            setActiveTab('camera');
+            setSheetExpanded(true);
+          }
+        }}
+      />
       {/* Editor Top Bar */}
       <div className="editor-top-bar flex-shrink-0">
         <TopToolbar
@@ -3113,7 +3273,7 @@ const EditorInner: React.FC = () => {
               fill={!activeTool && (activeTab === 'uploads' || activeTab === 'media')}
               padded={!!activeTool}
               onClose={() => { setSheetExpanded(false); setActiveTool(null); }}
-              label={activeTool ? (currentTools.find(t => t.id === activeTool)?.label || activeTool) : (LEFT_TABS.find(t => t.id === activeTab)?.label || 'Create')}
+              label={activeTool ? (currentTools.find(t => t.id === activeTool)?.label || activeTool) : (CREATE_TOOLS.find(t => t.id === activeTab)?.label || EDITOR_TOOLS.find(t => t.id === activeTab)?.label || LEFT_TABS.find(t => t.id === activeTab)?.label || 'Create')}
             >
               {activeTool && selected
                 ? renderToolSheet(activeTool, selected, canvas)
@@ -3122,17 +3282,43 @@ const EditorInner: React.FC = () => {
           </div>
 
           {/* Contextual Toolbar — auto-switches based on selection */}
+          {selected && currentTools !== CREATE_TOOLS && (
+            <div className="studio-tool-rail flex shrink-0 items-center gap-1 overflow-x-auto border-t px-2 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <button type="button" onClick={clearSelection}
+                className="shrink-0 rounded-full bg-studio-panel px-3 py-1.5 text-[11px] font-semibold text-studio-text">
+                Done
+              </button>
+              {currentTools.map((tool) => {
+                const Icon = tool.icon;
+                const on = activeTool === tool.id;
+                return (
+                  <button key={tool.id} type="button" onClick={() => { setActiveTool(tool.id); setSheetExpanded(true); }}
+                    className={`flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-medium ${on ? 'bg-primary text-primary-foreground' : 'text-inherit'}`}>
+                    <Icon className="h-3.5 w-3.5" />
+                    {tool.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           <ContextualToolbar
-            tools={currentTools}
-            active={selected ? activeTool : activeTab}
+            tools={CREATE_TOOLS}
+            active={activeTool ? null : activeTab === 'uploads' ? 'uploads' : activeTab}
             onToolTap={(id) => {
-              const isCreateTool = !selected || CREATE_TOOLS.some((t) => t.id === id);
-              if (isCreateTool) {
-                setActiveTab(id);
+              if (id === 'camera') {
+                cameraRollRef.current?.click();
+                setActiveTab('camera');
                 setActiveTool(null);
-              } else {
-                setActiveTool(id);
+                setSheetExpanded(true);
+                return;
               }
+              const panel = panelForCreateTool(id);
+              if (activeTab === panel && sheetExpanded && !activeTool) {
+                setSheetExpanded(false);
+                return;
+              }
+              setActiveTab(panel);
+              setActiveTool(null);
               setSheetExpanded(true);
             }}
           />
