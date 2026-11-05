@@ -1,9 +1,7 @@
-import ComingSoonState from "@/components/ComingSoonState";
-import { Plug } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Circle, Activity } from "lucide-react";
+import { toast } from "sonner";
 
 type Integration = {
   name: string;
@@ -42,7 +40,7 @@ const categories: { title: string; items: Integration[] }[] = [
   {
     title: "Backend",
     items: [
-      { name: "Supabase", connected: true, lastSync: "Just now", health: "healthy" },
+      { name: "Supabase", connected: true, health: "healthy" },
     ],
   },
   {
@@ -62,46 +60,51 @@ const healthClass = {
 
 const IntegrationsHub = () => {
   return (
-    <div className="page-container space-y-6 py-4 md:py-6">
+    <div className="page-container min-w-0 space-y-6 py-4 md:py-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Integrations Hub</h1>
-        <p className="text-muted-foreground">Connect the platforms and storage your team uses every day.</p>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Integrations Hub</h1>
+        <p className="text-muted-foreground">These channels are not linked. Connect does not start OAuth, because that flow is not configured.</p>
       </div>
 
       {categories.map((cat) => (
-        <Card key={cat.title}>
+        <Card key={cat.title} className="min-w-0">
           <CardHeader>
             <CardTitle className="text-lg">{cat.title}</CardTitle>
             <CardDescription>{cat.items.length} integrations</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {cat.items.map((it) => (
-              <div key={it.name} className="rounded-2xl border border-border bg-card p-4">
-                <div className="mb-3 flex items-start justify-between">
-                  <div>
+              <div key={it.name} className="min-w-0 rounded-2xl border border-border bg-card p-4">
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
                     <p className="font-semibold">{it.name}</p>
                     <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                       {it.connected ? (
-                        <><CheckCircle2 className="h-3 w-3 text-emerald-500" /> Connected</>
+                        <><CheckCircle2 className="h-3 w-3 shrink-0 text-emerald-500" /> App backend</>
                       ) : (
-                        <><Circle className="h-3 w-3" /> Not Connected</>
+                        <><Circle className="h-3 w-3 shrink-0" /> Not connected</>
                       )}
                     </p>
                   </div>
                   {it.health && (
-                    <span className={`flex items-center gap-1 text-xs ${healthClass[it.health]}`}>
+                    <span className={`flex shrink-0 items-center gap-1 text-xs ${healthClass[it.health]}`}>
                       <Activity className="h-3 w-3" /> {it.health}
                     </span>
                   )}
                 </div>
-                <div className="mb-3 text-xs text-muted-foreground">
-                  Last sync: <span className="text-foreground">{it.lastSync ?? "—"}</span>
+                <div className="mb-3 break-words text-xs text-muted-foreground">
+                  {it.connected ? "Used by this app for data." : "No account link is stored."}
                 </div>
-                {it.connected ? (
-                  <Button variant="outline" size="sm" className="w-full">Disconnect</Button>
-                ) : (
-                  <Button size="sm" className="w-full">Connect</Button>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => toast.info(it.connected
+                    ? "Supabase is the app database. This screen cannot disconnect it."
+                    : `${it.name} stays disconnected. OAuth is not configured.`)}
+                >
+                  {it.connected ? "In use" : "Connect"}
+                </Button>
               </div>
             ))}
           </CardContent>
@@ -111,8 +114,4 @@ const IntegrationsHub = () => {
   );
 };
 
-const IntegrationsHubComingSoon = () => (
-  <ComingSoonState icon={Plug} title="Integrations Hub" description="Connect Meta, TikTok, Google, Canva, Cloudinary and more in one place." />
-);
-
-export default IntegrationsHubComingSoon;
+export default IntegrationsHub;

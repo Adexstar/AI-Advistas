@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,39 +25,130 @@ import {
 } from "lucide-react";
 import AIPreferences from "@/components/settings/AIPreferences";
 import AIBrainSettings from "@/components/settings/AIBrainSettings";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { PlatformConnectionService, type PlatformConnection } from "@/services/publishing/PlatformConnectionService";
+
+const NOTIFICATION_KEY = "advista:notification-prefs";
+const SETTINGS_PLATFORMS = [
+  { id: "facebook", label: "Facebook" },
+  { id: "instagram", label: "Instagram" },
+  { id: "google", label: "Google Ads" },
+  { id: "linkedin", label: "LinkedIn" },
+  { id: "tiktok", label: "TikTok" },
+];
+
+const defaultNotifications = {
+  emailCampaigns: true,
+  emailBilling: true,
+  emailFeatures: false,
+  emailTips: true,
+  pushCampaigns: true,
+  pushBilling: false,
+};
+
 const Settings = () => {
-  const [profile, setProfile] = useState({
-    firstName: "Alex",
-    lastName: "Morgan",
-    email: "alex.morgan@example.com",
-    company: "Northstar Studio",
-    bio: "Campaign operator focused on moving briefs, creative, and launch decisions through one clear workflow.",
-    phone: "+1 (555) 123-4567"
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const [displayName, setDisplayName] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [passwords, setPasswords] = useState({ next: "", confirm: "" });
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      const saved = localStorage.getItem(NOTIFICATION_KEY);
+      return saved ? { ...defaultNotifications, ...JSON.parse(saved) } : defaultNotifications;
+    } catch {
+      return defaultNotifications;
+    }
   });
 
-  const [notifications, setNotifications] = useState({
-    emailCampaigns: true,
-    emailBilling: true,
-    emailFeatures: false,
-    emailTips: true,
-    pushCampaigns: true,
-    pushBilling: false
+  const profileQuery = useQuery({
+    queryKey: ["profile", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("display_name, email")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
   });
 
-  const [connectedAccounts] = useState([
-    { platform: "Facebook", connected: true, status: "Active" },
-    { platform: "Instagram", connected: true, status: "Active" },
-    { platform: "Google Ads", connected: false, status: "Not Connected" },
-    { platform: "LinkedIn", connected: true, status: "Active" },
-    { platform: "TikTok", connected: false, status: "Not Connected" }
-  ]);
+  const connectionsQuery = useQuery({
+    queryKey: ["platform-connections", user?.id],
+    enabled: !!user?.id,
+    queryFn: () => PlatformConnectionService.list(),
+  });
 
-  const handleProfileChange = (field: string, value: string) => {
-    setProfile(prev => ({ ...prev, [field]: value }));
-  };
+  useEffect(() => {
+    const stored = profileQuery.data?.display_name;
+    const fallback = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "";
+    setDisplayName(stored || fallback);
+  }, [profileQuery.data, user]);
 
   const handleNotificationChange = (field: string, value: boolean) => {
     setNotifications(prev => ({ ...prev, [field]: value }));
+  };
+
+  const saveProfile = async () => {
+    if (!user) return;
+    setSavingProfile(true);
+    const name = displayName.trim();
+    const payload = { user_id: user.id, display_name: name, email: user.email };
+    const { error } = profileQuery.data
+      ? await supabase.from("profiles").update({ display_name: name, email: user.email }).eq("user_id", user.id)
+      : await supabase.from("profiles").insert(payload);
+    setSavingProfile(false);
+    if (error) {
+      toast({ title: "Profile was not saved", description: error.message, variant: "destructive" });
+      return;
+    }
+    await supabase.auth.updateUser({ data: { display_name: name } });
+    qc.invalidateQueries({ queryKey: ["profile", user.id] });
+    toast({ title: "Display name saved", description: "Company, phone, and bio are not stored on the account." });
+  };
+
+  const saveNotifications = () => {
+    localStorage.setItem(NOTIFICATION_KEY, JSON.stringify(notifications));
+    toast({ title: "Notification preferences saved on this device" });
+  };
+
+  const updatePassword = async () => {
+    if (passwords.next.length < 6) {
+      toast({ title: "Password is too short", description: "Use at least 6 characters.", variant: "destructive" });
+      return;
+    }
+    if (passwords.next !== passwords.confirm) {
+      toast({ title: "Passwords do not match", variant: "destructive" });
+      return;
+    }
+    setUpdatingPassword(true);
+    const { error } = await supabase.auth.updateUser({ password: passwords.next });
+    setUpdatingPassword(false);
+    if (error) {
+      toast({ title: "Password was not updated", description: error.message, variant: "destructive" });
+      return;
+    }
+    setPasswords({ next: "", confirm: "" });
+    toast({ title: "Password updated" });
+  };
+
+  const activeConnection = (platformId: string): PlatformConnection | undefined =>
+    (connectionsQuery.data ?? []).find((row) => row.platform === platformId && row.is_active);
+
+  const disconnectPlatform = async (row: PlatformConnection) => {
+    try {
+      await PlatformConnectionService.disconnect(row.id);
+      qc.invalidateQueries({ queryKey: ["platform-connections", user?.id] });
+      toast({ title: `${row.platform} disconnected` });
+    } catch (error: any) {
+      toast({ title: "Could not disconnect", description: error.message, variant: "destructive" });
+    }
   };
 
   return (
@@ -137,66 +228,27 @@ const Settings = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input
-                    id="firstName"
-                    value={profile.firstName}
-                    onChange={(e) => handleProfileChange("firstName", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input
-                    id="lastName"
-                    value={profile.lastName}
-                    onChange={(e) => handleProfileChange("lastName", e.target.value)}
-                  />
-                </div>
-              </div>
-
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="displayName">Display name</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  value={profile.email}
-                  onChange={(e) => handleProfileChange("email", e.target.value)}
+                  id="displayName"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Your name"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="company">Company</Label>
-                <Input
-                  id="company"
-                  value={profile.company}
-                  onChange={(e) => handleProfileChange("company", e.target.value)}
-                />
+                <Label htmlFor="email">Email address</Label>
+                <Input id="email" type="email" value={user?.email ?? ""} readOnly />
+                <p className="text-xs text-muted-foreground">Email changes go through the sign-in provider and are not edited here.</p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  value={profile.phone}
-                  onChange={(e) => handleProfileChange("phone", e.target.value)}
-                />
-              </div>
+              <p className="text-sm text-muted-foreground">Company, phone, and bio are not columns on the account profile, so this form does not collect them.</p>
 
-              <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  rows={4}
-                  value={profile.bio}
-                  onChange={(e) => handleProfileChange("bio", e.target.value)}
-                />
-              </div>
-
-              <Button className="bg-primary hover:bg-primary/90">
+              <Button className="bg-primary hover:bg-primary/90" onClick={saveProfile} disabled={!user || savingProfile}>
                 <Save className="mr-2 h-4 w-4" />
-                Save Changes
+                {savingProfile ? "Saving..." : "Save display name"}
               </Button>
             </CardContent>
           </Card>
@@ -220,42 +272,46 @@ const Settings = () => {
                   Email Notifications
                 </h3>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
                       <p className="font-medium">Campaign Updates</p>
                       <p className="text-sm text-muted-foreground">Know when campaign status, performance, or readiness changes need attention.</p>
                     </div>
                     <Switch
+                      className="shrink-0"
                       checked={notifications.emailCampaigns}
                       onCheckedChange={(value) => handleNotificationChange("emailCampaigns", value)}
                     />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
                       <p className="font-medium">Billing & Payments</p>
                       <p className="text-sm text-muted-foreground">Receive invoices, checkout confirmations, and renewal reminders.</p>
                     </div>
                     <Switch
+                      className="shrink-0"
                       checked={notifications.emailBilling}
                       onCheckedChange={(value) => handleNotificationChange("emailBilling", value)}
                     />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
                       <p className="font-medium">Feature Updates</p>
                       <p className="text-sm text-muted-foreground">Hear about meaningful workspace improvements, not every minor release.</p>
                     </div>
                     <Switch
+                      className="shrink-0"
                       checked={notifications.emailFeatures}
                       onCheckedChange={(value) => handleNotificationChange("emailFeatures", value)}
                     />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
                       <p className="font-medium">Tips & Tutorials</p>
                       <p className="text-sm text-muted-foreground">Get practical guidance for briefs, templates, and campaign operations.</p>
                     </div>
                     <Switch
+                      className="shrink-0"
                       checked={notifications.emailTips}
                       onCheckedChange={(value) => handleNotificationChange("emailTips", value)}
                     />
@@ -271,22 +327,24 @@ const Settings = () => {
                   Push Notifications
                 </h3>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
                       <p className="font-medium">Campaign Alerts</p>
                       <p className="text-sm text-muted-foreground">Receive real-time nudges when launch-critical events need action.</p>
                     </div>
                     <Switch
+                      className="shrink-0"
                       checked={notifications.pushCampaigns}
                       onCheckedChange={(value) => handleNotificationChange("pushCampaigns", value)}
                     />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
                       <p className="font-medium">Billing Reminders</p>
                       <p className="text-sm text-muted-foreground">Stay ahead of low credits, renewals, and payment follow-up.</p>
                     </div>
                     <Switch
+                      className="shrink-0"
                       checked={notifications.pushBilling}
                       onCheckedChange={(value) => handleNotificationChange("pushBilling", value)}
                     />
@@ -294,7 +352,7 @@ const Settings = () => {
                 </div>
               </div>
 
-              <Button className="bg-primary hover:bg-primary/90">
+              <Button className="bg-primary hover:bg-primary/90" onClick={saveNotifications}>
                 <Save className="mr-2 h-4 w-4" />
                 Save Preferences
               </Button>
@@ -321,18 +379,16 @@ const Settings = () => {
                 </h3>
                 <div className="space-y-4 max-w-md">
                   <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Current Password</Label>
-                    <Input id="currentPassword" type="password" />
-                  </div>
-                  <div className="space-y-2">
                     <Label htmlFor="newPassword">New Password</Label>
-                    <Input id="newPassword" type="password" />
+                    <Input id="newPassword" type="password" value={passwords.next} onChange={(e) => setPasswords((prev) => ({ ...prev, next: e.target.value }))} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                    <Input id="confirmPassword" type="password" />
+                    <Input id="confirmPassword" type="password" value={passwords.confirm} onChange={(e) => setPasswords((prev) => ({ ...prev, confirm: e.target.value }))} />
                   </div>
-                  <Button variant="outline">Update Password</Button>
+                  <Button variant="outline" onClick={updatePassword} disabled={updatingPassword || !user}>
+                    {updatingPassword ? "Updating..." : "Update Password"}
+                  </Button>
                 </div>
               </div>
 
@@ -340,12 +396,12 @@ const Settings = () => {
 
               <div>
                 <h3 className="text-lg font-medium mb-4">Two-Factor Authentication</h3>
-                <div className="flex items-center justify-between max-w-md">
+                <div className="flex max-w-md flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="font-medium">Enable 2FA</p>
                     <p className="text-sm text-muted-foreground">Add a second layer of protection before anyone can access the workspace.</p>
                   </div>
-                  <Button variant="outline">Setup 2FA</Button>
+                  <Button variant="outline" onClick={() => toast({ title: "Two-factor authentication is not available", description: "This workspace has no authenticator setup, so nothing was enabled." })}>Setup 2FA</Button>
                 </div>
               </div>
 
@@ -354,19 +410,12 @@ const Settings = () => {
               <div>
                 <h3 className="text-lg font-medium mb-4">Active Sessions</h3>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <p className="font-medium">Current Session</p>
-                      <p className="text-sm text-muted-foreground">Chrome on MacOS • Last active now</p>
+                  <div className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="font-medium">This browser</p>
+                      <p className="text-sm text-muted-foreground">Signed in with the current Supabase session. Other devices are not listed because session inventory is not connected.</p>
                     </div>
                     <span className="text-sm text-green-600">Current</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <p className="font-medium">Mobile Session</p>
-                      <p className="text-sm text-muted-foreground">Safari on iPhone • Last active 2 hours ago</p>
-                    </div>
-                    <Button variant="outline" size="sm">Revoke</Button>
                   </div>
                 </div>
               </div>
@@ -386,20 +435,33 @@ const Settings = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {connectionsQuery.isError && (
+                <p className="mb-4 text-sm text-destructive">Could not load platform connections. Nothing below is marked active.</p>
+              )}
               <div className="space-y-4">
-                {connectedAccounts.map((account, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium">{account.platform}</p>
-                      <p className="text-sm text-muted-foreground">{account.status}</p>
+                {SETTINGS_PLATFORMS.map((platform) => {
+                  const connection = activeConnection(platform.id);
+                  return (
+                    <div key={platform.id} className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="font-medium">{platform.label}</p>
+                        <p className="break-words text-sm text-muted-foreground">
+                          {connection
+                            ? `Connected${connection.account_name ? ` as ${connection.account_name}` : ""}`
+                            : "Not connected. There is no OAuth setup, so this button does not create a connection."}
+                        </p>
+                      </div>
+                      {connection ? (
+                        <Button variant="outline" className="w-full sm:w-auto" onClick={() => disconnectPlatform(connection)}>Disconnect</Button>
+                      ) : (
+                        <Button className="w-full sm:w-auto" variant="outline" onClick={() => toast({
+                          title: `${platform.label} stays disconnected`,
+                          description: "AdVista does not have an OAuth flow for this platform yet.",
+                        })}>Connect</Button>
+                      )}
                     </div>
-                    <Button 
-                      variant={account.connected ? "outline" : "default"}
-                    >
-                      {account.connected ? "Disconnect" : "Connect"}
-                    </Button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -417,9 +479,9 @@ const Settings = () => {
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="apiKey">API Key</Label>
-                <div className="flex gap-2 mt-2">
-                  <Input id="apiKey" value="av_api_xxxxxxxxxxxxxxxxxxxx" readOnly />
-                  <Button variant="outline">Regenerate</Button>
+                <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                  <Input id="apiKey" value="" placeholder="No API key has been issued" readOnly />
+                  <Button variant="outline" onClick={() => toast({ title: "API keys are not issued here", description: "Regenerate does not create a key." })}>Regenerate</Button>
                 </div>
               </div>
               <div>
@@ -430,7 +492,7 @@ const Settings = () => {
                   className="mt-2"
                 />
               </div>
-              <Button variant="outline">Test Webhook</Button>
+              <Button variant="outline" onClick={() => toast({ title: "Webhook delivery is not connected", description: "The URL is not sent anywhere from this screen." })}>Test Webhook</Button>
             </CardContent>
           </Card>
         </TabsContent>
