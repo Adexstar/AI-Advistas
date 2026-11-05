@@ -76,7 +76,12 @@ const MobileBottomNav = () => {
 
   return (
     <>
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/60 bg-background/95 backdrop-blur-xl lg:hidden">
+      <nav className={cn(
+        "fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur-xl lg:hidden",
+        pathname === "/templates"
+          ? "border-[#E6E8EE] bg-white"
+          : "border-border/60 bg-background/95"
+      )}>
         <div className="mx-auto flex max-w-md items-end justify-between px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2">
           {primary.map((item) => {
             const Icon = item.icon;
@@ -86,7 +91,7 @@ const MobileBottomNav = () => {
                 <NavLink
                   key={item.name}
                   to={item.href}
-                  className="grid h-12 w-12 -translate-y-3 place-items-center rounded-full bg-gradient-to-br from-primary to-[hsl(243_82%_62%)] text-white shadow-lg"
+                  className="grid h-12 w-12 -translate-y-3 place-items-center rounded-full bg-primary text-white shadow-[0_8px_18px_rgba(110,86,245,0.28)]"
                   aria-label="Create"
                 >
                   <Icon className="h-5 w-5" />

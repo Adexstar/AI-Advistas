@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { usePlaybooks, useSavePlaybook } from '@/hooks/admin/useAdminData';
 
 const asList = (value: any): string[] => {
@@ -16,21 +17,29 @@ const asList = (value: any): string[] => {
 };
 
 export default function AdminPlaybooks() {
-  const { data: playbooks = [], isLoading } = usePlaybooks();
+  const { data: playbooks = [], isLoading, isError } = usePlaybooks();
   const save = useSavePlaybook();
   const [editing, setEditing] = useState<any | null>(null);
 
   if (isLoading) {
     return (
-      <div className="space-y-4 p-6">
+      <div className="space-y-4">
         {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)}
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
-      {playbooks.length === 0 && (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Category prompts used when the product writes ads. Hooks, headlines, and calls to action are the patterns the writer is asked to follow.
+      </p>
+      {isError && (
+        <p className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+          Playbooks couldn’t be loaded.
+        </p>
+      )}
+      {playbooks.length === 0 && !isError && (
         <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">No category playbooks yet.</CardContent></Card>
       )}
 
@@ -83,30 +92,61 @@ export default function AdminPlaybooks() {
       </Button>
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editing?.id ? 'Edit playbook' : 'New playbook'}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <Input
-              placeholder="Category"
-              value={editing?.category ?? ''}
-              onChange={(e) => setEditing({ ...editing, category: e.target.value })}
-            />
-            <Textarea
-              placeholder="Tone guidance"
-              rows={4}
-              value={editing?.tone_guidance ?? ''}
-              onChange={(e) => setEditing({ ...editing, tone_guidance: e.target.value })}
-            />
-            <Input
-              placeholder="Focus areas (comma separated)"
-              value={asList(editing?.focus_areas).join(', ')}
-              onChange={(e) =>
-                setEditing({
-                  ...editing,
-                  focus_areas: e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
-                })
-              }
-            />
+            <div className="space-y-1.5">
+              <Label htmlFor="playbook-category">Category</Label>
+              <Input
+                id="playbook-category"
+                value={editing?.category ?? ''}
+                onChange={(e) => setEditing({ ...editing, category: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="playbook-tone">Tone guidance</Label>
+              <Textarea
+                id="playbook-tone"
+                rows={4}
+                value={editing?.tone_guidance ?? ''}
+                onChange={(e) => setEditing({ ...editing, tone_guidance: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="playbook-focus">Focus areas</Label>
+              <Input
+                id="playbook-focus"
+                placeholder="Comma separated"
+                value={asList(editing?.focus_areas).join(', ')}
+                onChange={(e) =>
+                  setEditing({
+                    ...editing,
+                    focus_areas: e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
+                  })
+                }
+              />
+            </div>
+            {([
+              ['winning_hooks', 'Winning hooks', 'One pattern per line'],
+              ['headline_patterns', 'Headline patterns', 'One pattern per line'],
+              ['cta_patterns', 'Calls to action', 'One pattern per line'],
+            ] as const).map(([key, label, placeholder]) => (
+              <div key={key} className="space-y-1.5">
+                <Label htmlFor={`playbook-${key}`}>{label}</Label>
+                <Textarea
+                  id={`playbook-${key}`}
+                  placeholder={placeholder}
+                  rows={3}
+                  value={asList(editing?.[key]).join('\n')}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      [key]: e.target.value.split('\n').map((s) => s.trim()).filter(Boolean),
+                    })
+                  }
+                />
+              </div>
+            ))}
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
@@ -119,6 +159,9 @@ export default function AdminPlaybooks() {
                     category: editing.category,
                     tone_guidance: editing.tone_guidance,
                     focus_areas: editing.focus_areas,
+                    winning_hooks: asList(editing.winning_hooks),
+                    headline_patterns: asList(editing.headline_patterns),
+                    cta_patterns: asList(editing.cta_patterns),
                   },
                   { onSuccess: () => setEditing(null) }
                 )

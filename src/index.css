@@ -43,7 +43,7 @@ All colors MUST be HSL.
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --safe-left: env(safe-area-inset-left, 0px);
 
-    /* Obsidian + Orange — AdVista design system */
+    /* Navy + violet — AdVista design system */
     --background: 210 11% 7%;          /* #111315 */
     --foreground: 0 0% 96%;            /* #F5F5F5 */
 
@@ -53,9 +53,9 @@ All colors MUST be HSL.
     --popover: 213 12% 11%;
     --popover-foreground: 0 0% 96%;
 
-    --primary: 22 90% 58%;             /* #F47B35 */
-    --primary-foreground: 210 11% 7%;
-    --primary-glow: 22 100% 67%;       /* #FF9455 */
+    --primary: 250 89% 65%;            /* #6E56F5 */
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 252 100% 76%;
 
     --secondary: 213 13% 17%;
     --secondary-foreground: 0 0% 96%;
@@ -74,18 +74,18 @@ All colors MUST be HSL.
 
     --border: 213 10% 21%;             /* #30353B */
     --input: 213 10% 21%;
-    --ring: 22 90% 58%;
+    --ring: 250 89% 65%;
 
-    /* Gradients — restrained, brand-hued */
-    --gradient-primary: linear-gradient(135deg, hsl(22 90% 58%), hsl(22 100% 67%));
-    --gradient-hero: linear-gradient(135deg, hsl(210 11% 7%) 0%, hsl(213 13% 11%) 45%, hsl(213 13% 14%) 78%, hsl(22 55% 38%) 100%);
+    /* Gradients — flat brand, no orange bloom */
+    --gradient-primary: linear-gradient(135deg, hsl(250 89% 65%), hsl(255 78% 60%));
+    --gradient-hero: linear-gradient(135deg, hsl(228 33% 8%) 0%, hsl(228 24% 12%) 55%, hsl(250 40% 22%) 100%);
     --gradient-card: linear-gradient(160deg, hsl(213 13% 14%), hsl(213 12% 12%));
     --gradient-glass: linear-gradient(145deg, hsl(213 13% 14% / 0.85), hsl(213 13% 11% / 0.6));
 
     /* Shadows — subtle, no glow bloom */
     --shadow-soft: 0 22px 60px hsl(0 0% 0% / 0.45);
     --shadow-card: 0 16px 40px hsl(0 0% 0% / 0.3);
-    --shadow-glow: 0 0 36px hsl(22 90% 58% / 0.22);
+    --shadow-glow: 0 8px 18px hsl(250 89% 65% / 0.16);
 
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -97,37 +97,37 @@ All colors MUST be HSL.
     --primary-900: 210 11% 7%;
     --primary-800: 213 13% 11%;
 
-    --sidebar-background: 214 13% 11%;  /* #181B1F */
+    --sidebar-background: 228 33% 8%;   /* #0E1220 */
 
     --sidebar-foreground: 0 0% 96%;
 
-    --sidebar-primary: 22 90% 58%;
+    --sidebar-primary: 250 89% 65%;
 
-    --sidebar-primary-foreground: 210 11% 7%;
+    --sidebar-primary-foreground: 0 0% 100%;
 
-    --sidebar-accent: 213 13% 14%;
+    --sidebar-accent: 228 22% 14%;
 
     --sidebar-accent-foreground: 0 0% 96%;
 
-    --sidebar-border: 213 10% 21%;
+    --sidebar-border: 228 16% 16%;
 
-    --sidebar-ring: 22 90% 58%;
+    --sidebar-ring: 250 89% 65%;
 
     /* AdVista Studio */
-    --studio-bg: 210 11% 7%;
-    --studio-panel: 213 13% 14%;
-    --studio-panel-raised: 213 13% 17%;
-    --studio-line: 213 10% 21%;
+    --studio-bg: 228 28% 7%;
+    --studio-panel: 228 22% 11%;
+    --studio-panel-raised: 228 18% 14%;
+    --studio-line: 228 14% 18%;
     --studio-text: 0 0% 96%;
-    --studio-muted: 214 8% 60%;
-    --studio-brand-start: 22 90% 58%;
-    --studio-brand-end: 22 100% 67%;
+    --studio-muted: 220 10% 68%;
+    --studio-brand-start: 250 89% 65%;
+    --studio-brand-end: 255 78% 68%;
     --gradient-studio: linear-gradient(105deg, hsl(var(--studio-brand-start)), hsl(var(--studio-brand-end)));
     --shadow-studio-tray: 0 -18px 45px hsl(0 0% 0% / 0.42);
   }
 
   .dark {
-    /* Same Obsidian + Orange system — dark is the default theme */
+    /* Same navy + violet system — dark is the default theme */
     --background: 210 11% 7%;
     --foreground: 0 0% 96%;
 
@@ -137,9 +137,9 @@ All colors MUST be HSL.
     --popover: 213 12% 11%;
     --popover-foreground: 0 0% 96%;
 
-    --primary: 22 90% 58%;
-    --primary-foreground: 210 11% 7%;
-    --primary-glow: 22 100% 67%;
+    --primary: 250 89% 65%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 252 100% 76%;
 
     --secondary: 213 13% 17%;
     --secondary-foreground: 0 0% 96%;
@@ -155,16 +155,16 @@ All colors MUST be HSL.
 
     --border: 213 10% 21%;
     --input: 213 10% 21%;
-    --ring: 22 90% 58%;
+    --ring: 250 89% 65%;
     --success: 142 71% 45%;
-    --sidebar-background: 214 13% 11%;
+    --sidebar-background: 228 33% 8%;
     --sidebar-foreground: 0 0% 96%;
-    --sidebar-primary: 22 90% 58%;
-    --sidebar-primary-foreground: 210 11% 7%;
-    --sidebar-accent: 213 13% 14%;
+    --sidebar-primary: 250 89% 65%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 228 22% 14%;
     --sidebar-accent-foreground: 0 0% 96%;
-    --sidebar-border: 213 10% 21%;
-    --sidebar-ring: 22 90% 58%;
+    --sidebar-border: 228 16% 16%;
+    --sidebar-ring: 250 89% 65%;
   }
 }
 
@@ -636,6 +636,81 @@ p  { line-height: 1.6; }
     }
   }
 
+  /* Templates library sits on a light canvas. The shared shell stays dark
+     everywhere else, so this route drops the duplicate title bar and the
+     dark page padding. */
+  body.admin-surface,
+  .app-shell.admin-surface {
+    --background: 220 20% 97%;
+    --foreground: 228 24% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 228 24% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 228 24% 11%;
+    --muted: 220 16% 94%;
+    --muted-foreground: 220 8% 42%;
+    --secondary: 250 45% 96%;
+    --secondary-foreground: 250 35% 32%;
+    --accent: 250 45% 96%;
+    --accent-foreground: 250 35% 32%;
+    --border: 220 14% 90%;
+    --input: 220 14% 90%;
+    background: #F5F6FA;
+    color: #161A23;
+  }
+
+  .app-shell.admin-surface .page-content {
+    background: #F5F6FA;
+  }
+
+  .app-shell.admin-surface .top-bar,
+  .app-shell.admin-surface .context-bar {
+    background: #F5F6FA;
+    color: #161A23;
+    border-color: #E6E8EE;
+  }
+
+  .template-library .chip-row {
+    scrollbar-width: none;
+  }
+
+  .template-library .chip-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .app-shell.library-surface {
+    background: #F5F6FA;
+  }
+
+  .app-shell.library-surface .page-content {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    background: #F5F6FA;
+  }
+
+  .app-shell.library-surface .context-bar {
+    display: none;
+  }
+
+  .app-shell.library-surface .top-bar {
+    display: none;
+  }
+
+  @media (max-width: 1023px) {
+    .app-shell.library-surface .top-bar {
+      display: block;
+      background: #F5F6FA;
+      color: #161A23;
+      border-color: #E6E8EE;
+    }
+
+    .app-shell.library-surface .top-bar .text-foreground,
+    .app-shell.library-surface .top-bar button {
+      color: #161A23;
+    }
+  }
+
   .mobile-sticky-actions {
     position: sticky;
     bottom: calc(var(--safe-bottom) + var(--space-4));
@@ -792,8 +867,8 @@ p  { line-height: 1.6; }
   .status-badge.paused::before { background: #EAB308; }
   .status-badge.draft { background: hsl(214 8% 60% / 0.16); color: hsl(214 8% 72%); }
   .status-badge.draft::before { background: #9299A2; }
-  .status-badge.completed { background: hsl(22 90% 58% / 0.16); color: hsl(22 100% 67%); }
-  .status-badge.completed::before { background: #F47B35; }
+  .status-badge.completed { background: hsl(250 89% 65% / 0.16); color: hsl(252 100% 80%); }
+  .status-badge.completed::before { background: #6E56F5; }
 
   /* ── Input Standard ── */
   .input-field {

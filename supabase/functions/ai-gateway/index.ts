@@ -129,7 +129,7 @@ async function callOpenAI(system: string, user: string, model: string, temperatu
     }),
   });
   const data = await res.json();
-  return data.choices?.[0]?.message?.content ?? "No response generated";
+  return chatText(res, data);
 }
 
 async function callGroq(system: string, user: string, model: string, temperature = 0.7, maxTokens = 500): Promise<string> {
@@ -150,12 +150,12 @@ async function callGroq(system: string, user: string, model: string, temperature
     }),
   });
   const data = await res.json();
-  return data.choices?.[0]?.message?.content ?? "No response generated";
+  return chatText(res, data);
 }
 
 async function callGemini(system: string, user: string, model: string, temperature = 0.7, maxTokens = 500): Promise<string> {
-  const apiKey = Deno.env.get("GEMINI_API_KEY");
-  if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
+  const apiKey = Deno.env.get("GOOGLE_GEMINI_API_KEY") || Deno.env.get("GEMINI_API_KEY");
+  if (!apiKey) throw new Error("GOOGLE_GEMINI_API_KEY not configured");
 
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
@@ -169,7 +169,10 @@ async function callGemini(system: string, user: string, model: string, temperatu
     },
   );
   const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "No response generated";
+  if (!res.ok) throw providerError(res, data);
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("The provider returned an empty reply");
+  return text;
 }
 
 async function callClaude(system: string, user: string, model: string, temperature = 0.7, maxTokens = 500): Promise<string> {
@@ -192,5 +195,20 @@ async function callClaude(system: string, user: string, model: string, temperatu
     }),
   });
   const data = await res.json();
-  return data.content?.[0]?.text ?? "No response generated";
+  if (!res.ok) throw providerError(res, data);
+  const text = data.content?.[0]?.text;
+  if (!text) throw new Error("The provider returned an empty reply");
+  return text;
+}
+
+function providerError(res: Response, data: any): Error {
+  const message = data?.error?.message || data?.error || `HTTP ${res.status}`;
+  return new Error(typeof message === "string" ? message : JSON.stringify(message));
+}
+
+function chatText(res: Response, data: any): string {
+  if (!res.ok) throw providerError(res, data);
+  const text = data.choices?.[0]?.message?.content;
+  if (!text) throw new Error("The provider returned an empty reply");
+  return text;
 }

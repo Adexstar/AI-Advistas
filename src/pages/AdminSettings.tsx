@@ -6,11 +6,10 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from 'sonner';
 import { useSystemSettings, useUpdateSystemSettings, type SystemSettings } from '@/hooks/admin/useAdminData';
 
 export default function AdminSettings() {
-  const { data, isLoading } = useSystemSettings();
+  const { data, isLoading, isError } = useSystemSettings();
   const update = useUpdateSystemSettings();
   const [form, setForm] = useState<SystemSettings | null>(null);
 
@@ -18,19 +17,34 @@ export default function AdminSettings() {
     if (data) setForm(data);
   }, [data]);
 
-  if (isLoading || !form) {
+  if (isError) {
     return (
-      <div className="space-y-4 p-6">
+      <p className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+        Settings couldn’t be loaded.
+      </p>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
         {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-44 rounded-xl" />)}
       </div>
     );
   }
 
+  if (!form) {
+    return (
+      <p className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+        No system settings are stored yet.
+      </p>
+    );
+  }
+
   const set = (patch: Partial<SystemSettings>) => setForm({ ...form, ...patch } as SystemSettings);
-  const notAvailable = () => toast.info('This maintenance action is not enabled yet.');
 
   return (
-    <div className="space-y-5 p-4 md:p-6">
+    <div className="space-y-5">
       <Card>
         <CardHeader className="pb-3"><CardTitle className="text-base">General</CardTitle></CardHeader>
         <CardContent className="space-y-4">
@@ -119,21 +133,6 @@ export default function AdminSettings() {
         </CardContent>
       </Card>
 
-      <Card className="border-destructive/40">
-        <CardHeader className="pb-3"><CardTitle className="text-base text-destructive">Danger zone</CardTitle></CardHeader>
-        <CardContent className="grid gap-2 sm:grid-cols-2">
-          {[
-            'Reset all AI decision logs',
-            'Purge inactive users (90+ days)',
-            'Reset campaign memory (all categories)',
-            'Export full database backup',
-          ].map((label) => (
-            <Button key={label} variant="outline" className="justify-start border-destructive/40 text-destructive" onClick={notAvailable}>
-              {label}
-            </Button>
-          ))}
-        </CardContent>
-      </Card>
     </div>
   );
 }

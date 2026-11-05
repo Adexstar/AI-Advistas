@@ -29,7 +29,7 @@ export default function AdminDecisions() {
   const [page, setPage] = useState(1);
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  const { data: rows = [], isLoading } = useAdminDecisions({
+  const { data: rows = [], isLoading, isError } = useAdminDecisions({
     search,
     status: status === 'all' ? null : status,
     since: rangeToDate(range),
@@ -41,9 +41,9 @@ export default function AdminDecisions() {
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-[220px] flex-1">
+        <div className="relative min-w-0 flex-[1_1_220px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
@@ -53,7 +53,7 @@ export default function AdminDecisions() {
           />
         </div>
         <Select value={status} onValueChange={(v) => { setStatus(v); setPage(1); }}>
-          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[150px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All status</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
@@ -62,7 +62,7 @@ export default function AdminDecisions() {
           </SelectContent>
         </Select>
         <Select value={range} onValueChange={(v) => { setRange(v); setPage(1); }}>
-          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[150px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="7">Last 7 days</SelectItem>
             <SelectItem value="30">Last 30 days</SelectItem>
@@ -74,7 +74,9 @@ export default function AdminDecisions() {
 
       <Card>
         <CardContent className="p-0">
-          {isLoading ? (
+          {isError ? (
+            <p className="p-8 text-center text-sm text-muted-foreground">Decisions couldn’t be loaded.</p>
+          ) : isLoading ? (
             <div className="space-y-2 p-4">
               {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}
             </div>
@@ -124,6 +126,7 @@ export default function AdminDecisions() {
         </CardContent>
       </Card>
 
+      {!isLoading && !isError && (
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span>{total.toLocaleString()} decisions</span>
         <div className="flex gap-2">
@@ -132,6 +135,7 @@ export default function AdminDecisions() {
           <Button size="sm" variant="outline" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>Next</Button>
         </div>
       </div>
+      )}
     </div>
   );
 }

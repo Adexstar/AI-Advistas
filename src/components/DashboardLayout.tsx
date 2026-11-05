@@ -99,15 +99,15 @@ const navGroups: NavGroup[] = [
 ];
 
 const adminNavItems: NavItem[] = [
-  { name: "Admin Dashboard", href: "/admin", icon: Shield },
+  { name: "Overview", href: "/admin", icon: Shield },
   { name: "Users", href: "/admin/users", icon: Users },
-  { name: "Templates", href: "/admin/templates", icon: LayoutTemplate },
-  { name: "Template Gallery", href: "/admin/templates/gallery", icon: LayoutGrid },
-  { name: "AI Decisions Log", href: "/admin/decisions", icon: Brain },
-  { name: "System Analytics", href: "/admin/analytics", icon: BarChart3 },
-  { name: "API & Providers", href: "/admin/providers", icon: Plug },
-  { name: "Category Playbooks", href: "/admin/playbooks", icon: Target },
-  { name: "System Settings", href: "/admin/settings", icon: SlidersHorizontal },
+  { name: "Template review", href: "/admin/templates", icon: LayoutTemplate },
+  { name: "Imports", href: "/admin/templates/gallery", icon: LayoutGrid },
+  { name: "Decisions", href: "/admin/decisions", icon: Brain },
+  { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+  { name: "Playbooks", href: "/admin/playbooks", icon: Target },
+  { name: "Providers", href: "/admin/providers", icon: Plug },
+  { name: "Settings", href: "/admin/settings", icon: SlidersHorizontal },
 ];
 
 
@@ -129,14 +129,14 @@ const pageMeta: { match: (p: string) => boolean; title: string; description: str
   { match: (p) => p.startsWith("/developer"), title: "Developer Center", description: "API keys, webhooks and SDKs." },
   { match: (p) => p.startsWith("/system"), title: "System Monitor", description: "Admin-only infrastructure health." },
   { match: (p) => p.startsWith("/admin/users"), title: "Users", description: "Every account, plan and usage in one place." },
-  { match: (p) => p.startsWith("/admin/templates/gallery"), title: "Template Gallery", description: "Browse, preview and approve imported templates." },
-  { match: (p) => p.startsWith("/admin/templates"), title: "Template Curation", description: "Review, approve and manage the template library." },
-  { match: (p) => p.startsWith("/admin/decisions"), title: "AI Decisions Log", description: "Every AI action, filterable and explainable." },
-  { match: (p) => p.startsWith("/admin/analytics"), title: "System Analytics", description: "Growth, usage patterns and category trends." },
-  { match: (p) => p.startsWith("/admin/providers"), title: "API & Providers", description: "Provider health, quotas and key management." },
-  { match: (p) => p.startsWith("/admin/playbooks"), title: "Category Playbooks", description: "Tune AI behaviour per industry." },
-  { match: (p) => p.startsWith("/admin/settings"), title: "System Settings", description: "Global configuration and danger zone." },
-  { match: (p) => p.startsWith("/admin"), title: "Admin Dashboard", description: "System health, revenue and things that need attention." },
+  { match: (p) => p.startsWith("/admin/templates/gallery"), title: "Imports", description: "Bring templates in. They stay pending until you approve them." },
+  { match: (p) => p.startsWith("/admin/templates"), title: "Template review", description: "Approve templates to publish them on the library." },
+  { match: (p) => p.startsWith("/admin/decisions"), title: "Decisions", description: "Every AI action, filterable and explainable." },
+  { match: (p) => p.startsWith("/admin/analytics"), title: "Analytics", description: "Growth, usage patterns and category trends." },
+  { match: (p) => p.startsWith("/admin/providers"), title: "Providers", description: "Provider health, quotas and key management." },
+  { match: (p) => p.startsWith("/admin/playbooks"), title: "Playbooks", description: "Tune AI behaviour per industry." },
+  { match: (p) => p.startsWith("/admin/settings"), title: "Settings", description: "Global configuration." },
+  { match: (p) => p.startsWith("/admin"), title: "Overview", description: "System health and the review queue." },
 
 ];
 
@@ -165,7 +165,7 @@ const NavItemRow = ({
           <>
             <span className="flex-1 text-truncate">{item.name}</span>
             {item.badge && (
-              <Badge className="h-5 rounded-full bg-primary/20 px-2 text-[10px] font-semibold text-primary-foreground hover:bg-primary/20">
+              <Badge className="h-5 rounded-full bg-primary/20 px-2 text-[10px] font-semibold text-primary hover:bg-primary/20">
                 {item.badge}
               </Badge>
             )}
@@ -186,7 +186,7 @@ const NavItemRow = ({
     <NavLink
       to={item.href}
       onClick={onNavigate}
-      end={item.href === "/dashboard"}
+      end={item.href === "/dashboard" || item.href === "/admin"}
       aria-disabled={item.soon || undefined}
       tabIndex={item.soon ? -1 : undefined}
       className={({ isActive }) =>
@@ -205,7 +205,7 @@ const NavItemRow = ({
         <>
           <span className="flex-1 text-truncate">{item.name}</span>
           {item.soon ? (
-            <span className="rounded-[10px] bg-[rgba(244,123,53,0.15)] px-1.5 py-[2px] text-[9px] font-bold tracking-wide text-[#FF9455]">
+            <span className="rounded-[10px] bg-primary/15 px-1.5 py-[2px] text-[9px] font-bold tracking-wide text-primary">
               SOON
             </span>
           ) : item.notify ? (
@@ -259,7 +259,7 @@ const SidebarBody = ({
         <div className="sidebar-top">
           <div className={cn("flex h-14 items-center px-3", collapsed && "justify-center")}>
             <NavLink to="/dashboard" onClick={close} className="flex min-w-0 items-center gap-3">
-              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary to-[hsl(243_82%_62%)] shadow-lg">
+              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary">
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
               {!collapsed && (
@@ -292,19 +292,19 @@ const SidebarBody = ({
             {collapsed ? (
               <Tooltip delayDuration={100}>
                 <TooltipTrigger asChild>
-                  <Button asChild size="icon" className="h-10 w-full rounded-lg bg-gradient-to-br from-primary to-[hsl(243_82%_62%)] shadow-lg hover:opacity-90">
-                    <NavLink to="/create" onClick={close} aria-label="Create Ad">
+                  <Button asChild size="icon" className="h-10 w-full rounded-lg bg-primary text-white shadow-none hover:bg-primary/90">
+                    <NavLink to="/create" onClick={close} aria-label="Create New">
                       <Plus className="h-5 w-5" />
                     </NavLink>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="right">Create Ad</TooltipContent>
+                <TooltipContent side="right">Create New</TooltipContent>
               </Tooltip>
             ) : (
-              <Button asChild className="h-10 w-full justify-center gap-2 rounded-lg bg-gradient-to-br from-primary to-[hsl(243_82%_62%)] text-sm font-semibold shadow-lg hover:opacity-90">
+              <Button asChild className="h-10 w-full justify-center gap-2 rounded-lg bg-primary text-sm font-semibold text-white shadow-none hover:bg-primary/90">
                 <NavLink to="/create" onClick={close}>
                   <Plus className="h-4 w-4" />
-                  Create Ad
+                  Create New
                 </NavLink>
               </Button>
             )}
@@ -341,13 +341,11 @@ const SidebarBody = ({
           {!collapsed && (
             <div className="mx-3 mt-4 rounded-2xl border border-white/10 bg-white/5 p-3">
               <div className="mb-2 flex items-center justify-between">
-                <p className="font-micro font-semibold text-white">Usage this month</p>
-                <Badge className="h-5 rounded-full bg-primary/20 px-2 text-[10px] text-primary-foreground hover:bg-primary/20">{planLabel}</Badge>
+                <p className="font-micro font-semibold text-white">Plan</p>
+                <Badge className="h-5 rounded-full bg-primary/20 px-2 text-[10px] text-primary hover:bg-primary/20">{planLabel}</Badge>
               </div>
-              <div className="space-y-2">
-                <p className="text-[11px] leading-relaxed text-white/60">Storage and campaign quotas are not connected to billing yet, so this panel does not show a usage number.</p>
-              </div>
-              <Button asChild size="sm" className="mt-3 h-8 w-full rounded-lg bg-white text-primary hover:bg-white/90">
+              <p className="text-[11px] leading-relaxed text-white/55">Campaign quotas are not connected to billing yet.</p>
+              <Button asChild size="sm" className="mt-3 h-8 w-full rounded-lg bg-primary text-white shadow-none hover:bg-primary/90">
                 <NavLink to="/billing" onClick={close}>Upgrade Plan</NavLink>
               </Button>
             </div>
@@ -371,7 +369,7 @@ const SidebarBody = ({
             </Tooltip>
           ) : (
             <div className="flex items-center gap-3 rounded-lg bg-white/5 p-2">
-              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-[hsl(243_82%_62%)] text-[11px] font-bold text-white">
+              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary text-[11px] font-bold text-white">
                 {displayName.charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
@@ -407,6 +405,13 @@ const DashboardShell = () => {
   const { isAdmin } = useAdmin();
 
   const activePage = pageMeta.find((item) => item.match(location.pathname)) || pageMeta[0];
+  const library = location.pathname === "/templates";
+  const admin = location.pathname === "/admin" || location.pathname.startsWith("/admin/");
+
+  useEffect(() => {
+    document.body.classList.toggle("admin-surface", admin);
+    return () => document.body.classList.remove("admin-surface");
+  }, [admin]);
   const openSearch = () => setSearchOpen(true);
 
   // Prefetch adjacent routes in the background so navigation is instant.
@@ -423,7 +428,7 @@ const DashboardShell = () => {
 
 
   return (
-    <div className="app-shell bg-background">
+    <div className={cn("app-shell bg-background", library && "library-surface", admin && "admin-surface")}>
       <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
 
       {/* Top Bar — never scrolls, always visible */}
@@ -434,12 +439,18 @@ const DashboardShell = () => {
             <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)} className="h-8 w-8">
               <Menu className="h-5 w-5" />
             </Button>
+            {library ? (
+              <span className="text-base font-semibold text-[#161A23]">Templates</span>
+            ) : admin ? (
+              <span className="text-base font-semibold">{activePage.title}</span>
+            ) : (
             <NavLink to="/dashboard" className="flex items-center gap-2">
-              <div className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-primary to-[hsl(243_82%_62%)]">
+              <div className="grid h-7 w-7 place-items-center rounded-lg bg-primary">
                 <Sparkles className="h-3.5 w-3.5 text-white" />
               </div>
               <span className="text-sm font-bold text-foreground">AdVista</span>
             </NavLink>
+            )}
           </div>
           <div className="flex items-center gap-1">
             <Button asChild variant="ghost" size="icon" className="relative h-8 w-8">
@@ -479,9 +490,11 @@ const DashboardShell = () => {
         </div>
 
         {/* Mobile context bar (below header on mobile) */}
+        {!library && (
         <div className="flex border-t border-border/40 bg-background/80 px-4 py-2 lg:hidden">
           <AIContextBar />
         </div>
+        )}
       </header>
 
       {/* Desktop Context Bar — separate row, never scrolls */}
@@ -495,7 +508,7 @@ const DashboardShell = () => {
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetContent
             side="left"
-            className="w-[min(20rem,calc(100vw-3rem))] border-r-0 bg-[hsl(240_15%_8%)] p-0 shadow-2xl [&>button]:hidden lg:hidden"
+            className="w-[min(20rem,calc(100vw-3rem))] border-r-0 bg-[hsl(var(--sidebar-background))] p-0 shadow-2xl [&>button]:hidden lg:hidden"
           >
             <VisuallyHidden.Root>
               <SheetTitle>Navigation</SheetTitle>
@@ -516,7 +529,7 @@ const DashboardShell = () => {
         {/* Desktop sidebar — scrolls independently */}
         <aside
           className={cn(
-            "sidebar border-r border-white/5 bg-[hsl(240_15%_8%)] text-white transition-[width] duration-300",
+            "sidebar border-r border-white/5 bg-[hsl(var(--sidebar-background))] text-white transition-[width] duration-300",
             collapsed && "collapsed"
           )}
         >

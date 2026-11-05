@@ -99,7 +99,7 @@ const Analytics = () => {
               <SelectItem value="monthly">Monthly</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={exportReport} className="h-10 w-full gap-2 rounded-xl bg-gradient-to-br from-primary to-[hsl(243_82%_62%)] shadow-md hover:opacity-90 sm:w-auto">
+          <Button onClick={exportReport} className="h-10 w-full gap-2 rounded-xl bg-primary shadow-none hover:bg-primary/90 sm:w-auto">
             <Download className="h-4 w-4" />
             Export Report
           </Button>
@@ -166,7 +166,7 @@ const Analytics = () => {
           </div>
           <div className="mb-2 flex flex-wrap gap-4 text-xs">
             {[
-              { l: "Reach", c: "#F47B35" },
+              { l: "Reach", c: "#6E56F5" },
               { l: "Clicks", c: "#10b981" },
               { l: "Conversions", c: "#3b82f6" },
               { l: "Revenue", c: "#f43f5e" },
@@ -182,8 +182,8 @@ const Analytics = () => {
               <AreaChart data={performanceSeries} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
                 <defs>
                   <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#F47B35" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#F47B35" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#6E56F5" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="#6E56F5" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
@@ -202,7 +202,7 @@ const Analytics = () => {
                 <XAxis dataKey="day" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                 <RTooltip contentStyle={{ borderRadius: 12, border: "1px solid hsl(var(--border))" }} />
-                <Area type="monotone" dataKey="reach" stroke="#F47B35" strokeWidth={2} fill="url(#g1)" />
+                <Area type="monotone" dataKey="reach" stroke="#6E56F5" strokeWidth={2} fill="url(#g1)" />
                 <Area type="monotone" dataKey="conversions" stroke="#3b82f6" strokeWidth={2} fill="url(#g2)" />
                 <Area type="monotone" dataKey="clicks" stroke="#10b981" strokeWidth={2} fill="url(#g3)" />
                 <Area type="monotone" dataKey="revenue" stroke="#f43f5e" strokeWidth={2} fill="url(#g4)" />

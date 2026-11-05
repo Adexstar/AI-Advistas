@@ -233,12 +233,27 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: false, error: "Missing env vars", missing }), { headers: jsonHeaders });
     }
 
+    if (p.category === "publishing") {
+      return new Response(JSON.stringify({
+        ok: true,
+        note: "Credentials are set. This check does not publish an ad.",
+      }), { headers: jsonHeaders });
+    }
+
     const fn = action === "playground" ? (p.playgroundFn ?? p.testFn) : (p.testFn ?? p.playgroundFn);
     if (!fn) {
       return new Response(JSON.stringify({ ok: true, note: "Configured. No adapter wired." }), { headers: jsonHeaders });
     }
 
-    const payload = action === "playground" ? (body.input ?? {}) : (p.testBody ?? {});
+    const payload: Record<string, unknown> = action === "playground"
+      ? { ...(body.input ?? {}) }
+      : { ...(p.testBody ?? {}) };
+    for (const key of ["temperature", "maxTokens", "width", "height"]) {
+      if (payload[key] != null && payload[key] !== "") payload[key] = Number(payload[key]);
+    }
+    if (p.category === "ai" && ["openai", "groq", "gemini", "claude"].includes(p.id)) {
+      payload.preferredProvider = p.id;
+    }
     try {
       const r = await invokeFn(fn, payload, authHeader);
       const results = Array.isArray(r.json?.results) ? r.json.results : undefined;

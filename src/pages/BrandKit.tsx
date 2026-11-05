@@ -99,8 +99,8 @@ const CreateBrandDialog = ({
     industry: '',
     website: '',
     description: '',
-    primary_color: '#F47B35',
-    secondary_color: '#FF9455',
+    primary_color: '#6E56F5',
+    secondary_color: '#8B74F8',
     accent_color: '#10B981',
     logo_url: '',
     cover_image_url: '',
@@ -120,7 +120,7 @@ const CreateBrandDialog = ({
         cover_image_url: existing.cover_image_url || '',
       });
     } else if (open) {
-      setForm({ name: '', industry: '', website: '', description: '', primary_color: '#F47B35', secondary_color: '#FF9455', accent_color: '#10B981', logo_url: '', cover_image_url: '' });
+      setForm({ name: '', industry: '', website: '', description: '', primary_color: '#6E56F5', secondary_color: '#8B74F8', accent_color: '#10B981', logo_url: '', cover_image_url: '' });
     }
   }, [existing, open]);
 
@@ -368,7 +368,7 @@ const BrandWorkspace = ({ brand, allKits, onSelect, onEdit }: { brand: BrandKit;
               variant="outline"
               size="sm"
               onClick={() => {
-                const hex = prompt('Enter HEX color', '#F47B35');
+                const hex = prompt('Enter HEX color', '#6E56F5');
                 if (hex) addColor.mutate({ brand_id: brand.id, hex, name: 'Custom' });
               }}
             >

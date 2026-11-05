@@ -282,6 +282,7 @@ export const useReviewTemplate = () => {
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ['admin-pending-templates'] });
       qc.invalidateQueries({ queryKey: ['admin-templates'] });
+      qc.invalidateQueries({ queryKey: ['templates-library'] });
       qc.invalidateQueries({ queryKey: ['admin-overview'] });
       toast.success(vars.status === 'approved' ? 'Template approved' : 'Template rejected');
     },

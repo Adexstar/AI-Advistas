@@ -62,9 +62,9 @@ const PerformanceChart: React.FC = () => {
             yAxisId="left"
             type="monotone"
             dataKey="spend"
-            stroke="#F47B35"
+            stroke="#6E56F5"
             strokeWidth={2}
-            dot={{ fill: '#F47B35', r: 4 }}
+            dot={{ fill: '#6E56F5', r: 4 }}
             activeDot={{ r: 6 }}
           />
           <Line
