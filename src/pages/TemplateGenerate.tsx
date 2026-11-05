@@ -209,7 +209,7 @@ const TemplateGenerate = () => {
   const platformLabel = platform?.charAt(0).toUpperCase() + platform?.slice(1) || 'Instagram';
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
+    <div className="min-h-full bg-background text-foreground">
       <div className="page-container py-6 lg:py-8">
         {/* PAGE HEADER */}
         <header className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -278,14 +278,13 @@ const TemplateGenerate = () => {
                     <Wand2 className="h-3 w-3" /> Edit Context
                   </button>
                 </div>
-                <div className="rounded-xl border" style={{ borderColor: '#F3F4F6' }}>
+                <div className="overflow-hidden rounded-xl border border-border bg-card">
                   {contextRows.map((row) => {
                     const Icon = row.icon;
                     return (
                       <div
                         key={row.label}
-                        className="flex items-center gap-3 px-4 py-2.5"
-                        style={{ borderBottom: '1px solid #F3F4F6' }}
+                        className="flex items-center gap-3 border-b border-border px-4 py-2.5 last:border-b-0"
                       >
                         <div
                           className="flex h-7 w-7 items-center justify-center rounded-full shrink-0"
@@ -617,8 +616,7 @@ const NextStepCard = ({
 }) => (
   <button
     onClick={onClick}
-    className="w-full rounded-xl border p-4 text-left transition hover:shadow-md"
-    style={{ background: '#F9F9FB', borderColor: '#F0F0F5' }}
+    className="w-full rounded-xl border border-border bg-card p-4 text-left transition hover:shadow-md"
   >
     <div className="flex h-9 w-9 items-center justify-center rounded-full" style={{ background: bg }}>
       <Icon className="h-4 w-4" style={{ color }} />

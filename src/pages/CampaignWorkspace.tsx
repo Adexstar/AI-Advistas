@@ -123,7 +123,7 @@ const CampaignWorkspace = () => {
   const budgetUtilization = campaign.budget > 0 ? Math.round((campaign.spend / campaign.budget) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
+    <div className="min-h-full bg-background text-foreground">
       <div className="page-container py-6 lg:py-8 space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -180,7 +180,7 @@ const CampaignWorkspace = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="min-w-0 space-y-6">
-          <div className="tabs-scroll-shell sticky top-0 z-10 -mx-4 w-[calc(100%+2rem)] bg-[#FAFAFA] px-4">
+          <div className="tabs-scroll-shell sticky top-0 z-10 -mx-4 w-[calc(100%+2rem)] bg-background px-4">
             <TabsList className="tabs-scroll-list inline-flex h-auto gap-1 rounded-xl border bg-card p-1">
               {CAMPAIGN_TABS.map((tab) => {
                 const Icon = tab.icon;

@@ -234,11 +234,22 @@ All colors MUST be HSL.
   }
 
   html, body, #root {
-    height: 100%;
     width: 100%;
-    overflow: hidden;
     margin: 0;
     padding: 0;
+  }
+
+  html {
+    height: 100%;
+    overflow-x: clip;
+    overflow-y: auto;
+  }
+
+  body,
+  #root {
+    min-height: 100%;
+    height: auto;
+    overflow: visible;
   }
 
   html {
@@ -480,7 +491,7 @@ p  { line-height: 1.6; }
     display: flex;
     flex-direction: column;
     height: 100vh;
-    width: 100vw;
+    width: 100%;
     overflow: hidden;
   }
 

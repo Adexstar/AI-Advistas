@@ -153,12 +153,12 @@ const Index = () => {
               transition={{ duration: 0.6 }}
               className="space-y-8"
             >
-              <Badge variant="outline" className="rounded-full border-primary/20 bg-card/80 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-primary shadow-sm backdrop-blur">
+              <Badge variant="outline" className="max-w-full whitespace-normal rounded-full border-primary/20 bg-card/80 px-4 py-2 text-center text-[11px] uppercase tracking-[0.18em] text-primary shadow-sm backdrop-blur sm:tracking-[0.24em]">
                 Ads workspace for launch teams
               </Badge>
 
               <div className="space-y-5">
-                <h1 className="max-w-4xl text-5xl font-semibold leading-[1.02] tracking-[-0.04em] text-foreground md:text-6xl lg:text-7xl">
+                <h1 className="max-w-4xl text-[clamp(2rem,1.4rem+4vw,4.5rem)] font-semibold leading-[1.02] tracking-[-0.04em] text-foreground">
                   Create, customize, and operate campaigns from one calmer command system.
                 </h1>
                 <p className="max-w-2xl text-lg leading-8 text-muted-foreground">
@@ -205,10 +205,10 @@ const Index = () => {
                 <div className="space-y-4">
                   <Card className="border-white/10 bg-white/10 shadow-none backdrop-blur">
                     <CardContent className="flex items-start gap-4 p-4">
-                      <div className="rounded-2xl bg-white/12 p-3 text-primary shadow-sm">
+                      <div className="shrink-0 rounded-2xl bg-white/12 p-3 text-primary shadow-sm">
                         <Bot className="h-5 w-5" />
                       </div>
-                      <div className="space-y-1">
+                      <div className="min-w-0 space-y-1">
                         <p className="font-medium text-white">Campaign brief, already moving</p>
                         <p className="text-sm leading-6 text-white/68">Offer, audience, and message angle are prefilled so the team starts with momentum instead of a blank form.</p>
                       </div>

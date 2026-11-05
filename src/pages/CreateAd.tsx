@@ -20,7 +20,9 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { signedMediaUrl } from '@/lib/mediaUrl';
 import { useAuth } from '@/hooks/useAuth';
-import { CreativeService } from '@/services/creative/CreativeService';
+import { CreativeService, creativeDocument } from '@/services/creative/CreativeService';
+import { TemplateEngine } from '@/services/templates/TemplateEngine';
+import { CreateAdTemplatePicker, type PickerTemplate } from '@/components/ad/CreateAdTemplatePicker';
 import type { Json } from '@/integrations/supabase/types';
 
 /* ------------------------------------------------------------------ */
@@ -172,7 +174,8 @@ export default function CreateAd() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
-  const [step, setStep] = useState(searchParams.has('campaignId') ? 2 : 1);
+  const requestedStep = Number(searchParams.get('step'));
+  const [step, setStep] = useState(requestedStep >= 1 && requestedStep <= 5 ? requestedStep : searchParams.has('campaignId') ? 2 : 1);
   const [draftId, setDraftId] = useState<string | null>(searchParams.get('campaignId'));
   const [creativeId, setCreativeId] = useState<string | null>(null);
   const draftIdRef = useRef(draftId);
@@ -186,6 +189,9 @@ export default function CreateAd() {
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [previewTab, setPreviewTab] = useState<'mobile' | 'desktop'>('mobile');
   const [previewPlatform, setPreviewPlatform] = useState('facebook_feed');
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
+  const [applyingTemplate, setApplyingTemplate] = useState(false);
+  const [designName, setDesignName] = useState<string | null>(null);
 
   const { register, watch, control, handleSubmit, setValue, reset } = useForm<FormValues>({
     defaultValues: {
@@ -214,7 +220,8 @@ export default function CreateAd() {
         if (error) throw error;
         if (cancelled || !campaign) return;
         const creative = creatives[0];
-        const copy = (creative?.content ?? {}) as Partial<FormValues>;
+        const content = (creative?.content ?? {}) as Partial<FormValues> & { templateName?: string };
+        const copy = content;
         existingCreativeRef.current = copy;
         hasCanvasRef.current = !!creative?.canvas_data;
         const settings = campaign.settings as Partial<FormValues>;
@@ -229,6 +236,7 @@ export default function CreateAd() {
         });
         setCreativeId(creative?.id ?? null);
         creativeIdRef.current = creative?.id ?? null;
+        setDesignName(typeof content.templateName === 'string' ? content.templateName : null);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : 'Could not restore campaign');
       } finally { if (!cancelled) setRestoring(false); }
@@ -325,10 +333,58 @@ export default function CreateAd() {
     try { return await operation; } finally { saveInFlight.current = null; }
   }, [user, values, restoring]);
 
-  const openStudio = async (selectTemplate = false) => {
-    const id = await saveDraft();
+  const openStudio = async () => {
+    const id = await saveDraft(true);
     if (!id) return;
-    navigate(`/visual-editor?campaignId=${id}&adId=${creativeIdRef.current ?? ''}${selectTemplate ? '&selectTemplate=1' : ''}&returnTo=create`);
+    navigate(`/visual-editor?campaignId=${id}&adId=${creativeIdRef.current ?? ''}&returnTo=create`);
+  };
+
+  const applyTemplate = async (template: PickerTemplate) => {
+    if (!user) return;
+    setApplyingTemplate(true);
+    try {
+      const id = await saveDraft(true);
+      if (!id) return;
+      const inst = await TemplateEngine.instantiate(template as any, {
+        productName: values.headline || values.name || template.name,
+        skipAI: true,
+      });
+      const json = (inst.json ?? {}) as Record<string, unknown>;
+      const width = Number(template.width) || Number(json.width) || 1080;
+      const height = Number(template.height) || Number(json.height) || 1080;
+      const preview = template.preview_url || template.thumbnail_url || null;
+      const content = {
+        ...existingCreativeRef.current,
+        mediaUrl: preview,
+        primaryText: values.primaryText,
+        headline: values.headline || template.name.slice(0, 40),
+        descriptionCopy: values.descriptionCopy,
+        cta: values.cta,
+        websiteUrl: values.websiteUrl,
+        templateName: template.name,
+      };
+      const creative = await CreativeService.save(user.id, {
+        campaign_id: id,
+        name: values.headline || values.name || template.name,
+        template_id: template.id,
+        canvas_data: creativeDocument(json, width, height),
+        preview_url: preview,
+        content: content as Json,
+      }, creativeIdRef.current);
+      creativeIdRef.current = creative.id;
+      setCreativeId(creative.id);
+      existingCreativeRef.current = content;
+      hasCanvasRef.current = true;
+      setDesignName(template.name);
+      if (!values.headline) setValue('headline', template.name.slice(0, 40));
+      if (preview) setValue('mediaUrl', preview);
+      setTemplatePickerOpen(false);
+      toast.success('Template added. Continue, or edit the design.');
+    } catch (error: any) {
+      toast.error(error?.message || 'Could not add that template');
+    } finally {
+      setApplyingTemplate(false);
+    }
   };
 
   /* ---------- Autosave ---------- */
@@ -541,9 +597,13 @@ export default function CreateAd() {
       <StepSection title="Ad Creative" subtitle="Design the content for your ad.">
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" disabled={saving || restoring} onClick={() => void openStudio()}><Edit3 className="mr-2 h-4 w-4" />Open in Visual Editor</Button>
-            <Button variant="outline" disabled={saving || restoring} onClick={() => void openStudio(true)}><ImageIcon className="mr-2 h-4 w-4" />Select Template</Button>
+            <Button variant="outline" disabled={saving || restoring || applyingTemplate} onClick={() => void openStudio()}><Edit3 className="mr-2 h-4 w-4" />{values.mediaUrl || designName ? 'Edit design' : 'Open in Visual Editor'}</Button>
+            <Button variant="outline" disabled={saving || restoring || applyingTemplate} onClick={() => setTemplatePickerOpen(true)}><ImageIcon className="mr-2 h-4 w-4" />Select Template</Button>
           </div>
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            {designName ? `Using “${designName}”. ` : ''}
+            A template is added on this step. Saving in the editor brings you back here to continue.
+          </p>
           <Field label="Media">
             <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/40 transition cursor-pointer" onClick={() => fileRef.current?.click()}>
               {values.mediaUrl ? (
@@ -926,6 +986,12 @@ export default function CreateAd() {
   /* ------------------------------------------------------------------ */
   return (
     <div className="min-h-screen bg-background">
+      <CreateAdTemplatePicker
+        open={templatePickerOpen}
+        onOpenChange={setTemplatePickerOpen}
+        onSelect={(template) => void applyTemplate(template)}
+        busy={applyingTemplate}
+      />
       {/* Sticky Header */}
       <div className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 h-14 sm:h-16">
@@ -946,10 +1012,12 @@ export default function CreateAd() {
             <button className="h-9 w-9 sm:w-auto sm:px-3 text-xs font-medium text-foreground border border-border rounded-lg hover:bg-muted/50 transition grid place-items-center sm:flex sm:items-center sm:gap-1.5">
               <Eye className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Preview</span>
             </button>
-            <button onClick={publish} disabled={publishing}
+            <button
+              onClick={() => { if (step < 5) nextStep(); else void publish(); }}
+              disabled={publishing}
               className="h-9 w-9 sm:w-auto sm:px-4 text-xs font-bold text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition grid place-items-center sm:flex sm:items-center sm:gap-1.5">
-              {publishing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">Publish</span>
+              {publishing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : step < 5 ? <ArrowRight className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
+              <span className="hidden sm:inline">{step < 5 ? 'Next' : 'Publish'}</span>
             </button>
             <div className="relative shrink-0 hidden sm:block">
               <Bell className="h-5 w-5 text-muted-foreground" />

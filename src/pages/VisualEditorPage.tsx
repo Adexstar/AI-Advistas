@@ -32,7 +32,7 @@ import { AIActionsMenu } from '@/components/visual-editor/ai/AIActionsMenu';
 import { AIQuickActionsMenu } from '@/components/visual-editor/ai/AIQuickActionsMenu';
 import { consumePendingEditorTemplate, peekPendingEditorTemplate } from '@/lib/templateEditorSession';
 import { TemplateEngine } from '@/services/templates/TemplateEngine';
-import { loadTemplateJSONIntoCanvas, retryFailedImages, type ImageLayerStatus } from '@/services/templates/loadIntoCanvas';
+import { isOverlayScrim, loadTemplateJSONIntoCanvas, retryFailedImages, type ImageLayerStatus } from '@/services/templates/loadIntoCanvas';
 import { supabase } from '@/integrations/supabase/client';
 import { useAIContext } from '@/contexts/AIContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -51,7 +51,7 @@ import {
   ARTBOARD_PRESETS, alignObject, deleteObject, duplicateObject, isLocked, moveLayer,
   reorderLayer, setLocked, setVisible,
 } from '@/components/visual-editor/canvasActions';
-import { replaceImageKeepingFrame, scaleImageToCover } from '@/components/visual-editor/canvasImagePlacement';
+import { fitContentToFrame, frameForTemplate, frameFromAspect, measureContentBounds, publishArtboard, replaceImageKeepingFrame, scaleImageToCover } from '@/components/visual-editor/canvasImagePlacement';
 
 /* ---------- Constants ---------- */
 const LEFT_TABS = [
@@ -153,34 +153,40 @@ const TopToolbar: React.FC<{
   artboardLabel: string;
   onSave: () => void;
   saveStatus: string;
-}> = ({ projectName, setProjectName, zoom, setZoom, onExport, onUndo, onRedo, canUndo, canRedo, onToggleLeft, onToggleRight, isMobile, showGrid, onToggleGrid, onFit, onPreview, onPublish, artboardLabel, onSave, saveStatus }) => {
+  returnToCreate?: boolean;
+  onBack?: () => void;
+}> = ({ projectName, setProjectName, zoom, setZoom, onExport, onUndo, onRedo, canUndo, canRedo, onToggleLeft, onToggleRight, isMobile, showGrid, onToggleGrid, onFit, onPreview, onPublish, artboardLabel, onSave, saveStatus, returnToCreate = false, onBack }) => {
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
 
   if (isMobile) {
     return (
-      <header className="studio-command-bar flex h-[60px] shrink-0 items-center gap-1 px-2 shadow-lg">
-        <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onToggleLeft} aria-label="Back to dashboard">
-          <ChevronLeft className="h-5 w-5" />
+      <header className="flex h-12 shrink-0 items-center gap-0.5 border-b border-black/10 bg-white px-1.5 text-neutral-900">
+        <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0 text-neutral-900 hover:bg-black/5 hover:text-neutral-900" onClick={returnToCreate ? onBack : onToggleLeft} aria-label={returnToCreate ? 'Back to create ad' : 'Back to dashboard'}>
+          {returnToCreate ? <ChevronLeft className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
         <div className="min-w-0 flex-1 px-1">
-          <p className="editor-heading truncate text-[15px] font-semibold leading-tight">AdVista Studio</p>
           {editing ? (
             <Input autoFocus value={projectName} onChange={(e) => setProjectName(e.target.value)}
               onBlur={() => setEditing(false)} onKeyDown={(e) => e.key === 'Enter' && setEditing(false)}
-              className="mt-0.5 h-5 border-primary-foreground/30 bg-primary-foreground/10 px-1.5 text-[10px] text-inherit" />
+              className="h-8 border-neutral-300 bg-white px-2 text-sm font-semibold text-neutral-900" />
           ) : (
-            <button onClick={() => setEditing(true)} className="block max-w-full truncate text-left text-[10px] text-primary-foreground/75">
-              {projectName}
+            <button onClick={() => setEditing(true)} className="block w-full truncate text-left text-[15px] font-semibold leading-tight text-neutral-900">
+              {projectName || 'Untitled creative'}
             </button>
           )}
         </div>
-        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onUndo} disabled={!canUndo} aria-label="Undo"><Undo2 className={`h-4 w-4 ${canUndo ? '' : 'opacity-40'}`} /></Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onRedo} disabled={!canRedo} aria-label="Redo"><Redo2 className={`h-4 w-4 ${canRedo ? '' : 'opacity-40'}`} /></Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onSave} aria-label="Save creative" title={saveStatus}><Check className="h-4 w-4" /></Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onToggleRight} aria-label="Open inspector"><MoreHorizontal className="h-5 w-5" /></Button>
-        <Button variant="ghost" size="sm" className="h-9 shrink-0 gap-1 px-2.5 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onExport}>
-          <Download className="h-4 w-4" /><span className="text-xs font-semibold">Export</span>
+        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-neutral-800 hover:bg-black/5 hover:text-neutral-900" onClick={onUndo} disabled={!canUndo} aria-label="Undo"><Undo2 className={`h-4 w-4 ${canUndo ? '' : 'opacity-30'}`} /></Button>
+        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-neutral-800 hover:bg-black/5 hover:text-neutral-900" onClick={onRedo} disabled={!canRedo} aria-label="Redo"><Redo2 className={`h-4 w-4 ${canRedo ? '' : 'opacity-30'}`} /></Button>
+        {returnToCreate ? (
+          <Button size="sm" className="h-9 shrink-0 rounded-lg bg-primary px-3 text-primary-foreground hover:bg-primary/90" onClick={onSave}>
+            {saveStatus === 'Saving…' ? 'Saving…' : 'Done'}
+          </Button>
+        ) : (
+          <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-neutral-800 hover:bg-black/5 hover:text-neutral-900" onClick={onSave} aria-label="Save creative" title={saveStatus}><Check className="h-4 w-4" /></Button>
+        )}
+        <Button size="icon" className="ml-0.5 h-9 w-9 shrink-0 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90" onClick={onExport} aria-label="Download">
+          <Download className="h-4 w-4" />
         </Button>
       </header>
     );
@@ -188,7 +194,7 @@ const TopToolbar: React.FC<{
 
   return (
     <header className="studio-command-bar flex h-[60px] shrink-0 items-center gap-2 px-2 shadow-lg sm:px-4">
-      <Button variant="ghost" size="icon" className="hidden h-9 w-9 text-inherit hover:bg-primary-foreground/10 hover:text-inherit md:inline-flex" onClick={() => navigate('/dashboard')}>
+      <Button variant="ghost" size="icon" className="hidden h-9 w-9 text-inherit hover:bg-primary-foreground/10 hover:text-inherit md:inline-flex" onClick={() => (onBack ? onBack() : navigate('/dashboard'))} aria-label={returnToCreate ? 'Back to create ad' : 'Back to dashboard'}>
         <ChevronLeft className="h-4 w-4" />
       </Button>
       <div className="flex min-w-0 items-center gap-2">
@@ -215,7 +221,7 @@ const TopToolbar: React.FC<{
         <span className="hidden text-[11px] text-primary-foreground/70 xl:inline">{artboardLabel}</span>
       </div>
 
-      <Button variant="ghost" size="sm" onClick={onSave} className="hidden gap-1 text-inherit sm:inline-flex" aria-label="Save creative"><Check className="h-3 w-3" />{saveStatus}</Button>
+      <Button variant="ghost" size="sm" onClick={onSave} className="hidden gap-1 text-inherit sm:inline-flex" aria-label={returnToCreate ? 'Save and continue' : 'Save creative'}><Check className="h-3 w-3" />{returnToCreate ? (saveStatus === 'Saving…' ? 'Saving…' : 'Save & continue') : saveStatus}</Button>
 
       <div className="ml-1 hidden md:flex items-center gap-1">
         <Button variant="ghost" size="icon" className="h-8 w-8 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onUndo} disabled={!canUndo}><Undo2 className={`h-4 w-4 ${canUndo ? '' : 'opacity-30'}`} /></Button>
@@ -245,7 +251,7 @@ const TopToolbar: React.FC<{
         <Download className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Export</span>
       </Button>
       <Button size="sm" variant="secondary" className="hidden h-9 gap-1.5 border-primary-foreground/20 bg-primary-foreground text-primary sm:inline-flex" onClick={onPublish}>
-        <Send className="h-3.5 w-3.5" /> Publish
+        <Send className="h-3.5 w-3.5" /> {returnToCreate ? 'Continue' : 'Publish'}
       </Button>
 
       <Button variant="ghost" size="icon" className="hidden md:inline-flex h-9 w-9 relative">
@@ -594,7 +600,7 @@ const LayersPanel: React.FC<{
           Layers will appear here as you add elements.
         </div>
       ) : (
-        <div className="space-y-2 overflow-y-auto pb-2">
+        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 pb-2">
           {[...objs].reverse().map((o: any, i) => {
             const realIdx = objs.length - 1 - i;
             const locked = isLocked(o);
@@ -724,10 +730,10 @@ const GUTTER_DESKTOP = 24;
 // Bottom band reserved for page dots + zoom pill so they never cover the artboard.
 const CONTROL_BAND = 52;
 
-const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: number, w: number, h: number): number => {
+const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: number, w: number, h: number, controlBand = CONTROL_BAND): number => {
   const margin = isMobile ? GUTTER_MOBILE : GUTTER_DESKTOP;
   const availW = Math.max(40, containerWidth - margin * 2);
-  const availH = Math.max(40, containerHeight - margin - CONTROL_BAND);
+  const availH = Math.max(40, containerHeight - margin - controlBand);
   const z = Math.min(availW / w, availH / h) * 100;
   return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
 };
@@ -744,11 +750,12 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
   artboard: { width: number; height: number };
   showGrid: boolean;
   fitToken: number;
+  controlBand?: number;
   imageStatuses?: ImageLayerStatus[];
   onRetryImages?: () => void;
   retryingImages?: boolean;
   emptyOverlay?: React.ReactNode;
-}> = ({ onCanvasReady, onSelection, zoom, onZoomChange, seedDefault, onCanvasWrapperRef, isMobile, artboard, showGrid, fitToken, imageStatuses = [], onRetryImages, retryingImages, emptyOverlay }) => {
+}> = ({ onCanvasReady, onSelection, zoom, onZoomChange, seedDefault, onCanvasWrapperRef, isMobile, artboard, showGrid, fitToken, controlBand = CONTROL_BAND, imageStatuses = [], onRetryImages, retryingImages, emptyOverlay }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -769,10 +776,10 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
     if (!el) return;
     const rect = el.getBoundingClientRect();
     if (rect.width < 20 || rect.height < 20) return;
-    const z = fitZoom(isMobile, rect.width, rect.height, artboard.width, artboard.height);
+    const z = fitZoom(isMobile, rect.width, rect.height, artboard.width, artboard.height, controlBand);
     // Floor so rounding can never push the scaled artboard past the viewport.
     onZoomChange(Math.max(5, Math.floor(z)));
-  }, [isMobile, artboard.width, artboard.height, onZoomChange]);
+  }, [isMobile, artboard.width, artboard.height, onZoomChange, controlBand]);
 
   useEffect(() => {
     applyFit();
@@ -798,15 +805,13 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
   }, [applyFit]);
 
 
-  // Keep the Fabric surface in sync with the selected artboard preset
+  // Keep the Fabric surface the same size as the artboard. Object fitting happens
+  // where the image or template is applied, so a later size sync cannot pull layers apart.
   useEffect(() => {
     const c = canvasRef.current;
     if (!c) return;
+    if (c.getWidth() === artboard.width && c.getHeight() === artboard.height) return;
     c.setDimensions({ width: artboard.width, height: artboard.height });
-    c.getObjects().forEach((object: any) => {
-      if (object.type !== 'image' || object.mediaFit !== 'cover') return;
-      scaleImageToCover(object, { left: 0, top: 0, width: artboard.width, height: artboard.height });
-    });
     c.requestRenderAll();
   }, [artboard.width, artboard.height]);
 
@@ -920,7 +925,7 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
       <div className="absolute inset-0 overflow-auto">
         {/* Centering shell: grid + margin:auto centers the scaled footprint and,
             unlike place-items-center, never clips the top/left when it overflows. */}
-        <div className="grid min-h-full min-w-full" style={{ padding: isMobile ? GUTTER_MOBILE : GUTTER_DESKTOP, paddingBottom: CONTROL_BAND }}>
+        <div className="grid min-h-full min-w-full">
           {/* Outer box carries the *scaled* footprint so layout/centering is correct at any zoom. */}
           <div
             className="relative shrink-0"
@@ -1394,8 +1399,11 @@ const FontToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = 
   );
 };
 
+const hexColor = (value: unknown, fallback = '#000000') =>
+  typeof value === 'string' && /^#(?:[0-9a-f]{6})$/i.test(value) ? value : fallback;
+
 const ColorToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => {
-  const update = (prop: string, val: any) => { if (!selected || !canvas) return; selected.set(prop, val); canvas.renderAll(); };
+  const update = (prop: string, val: any) => { if (!selected || !canvas || isOverlayScrim(selected)) return; selected.set(prop, val); canvas.renderAll(); };
   const colors = ['#FF0000','#FF6B6B','#FF69B4','#800080','#008080','#0000FF','#FFA500','#FFD700','#00FF00','#008000','#000000','#555555','#888888','#BBBBBB','#DDDDDD','#FFFFFF'];
   return (
     <div className="space-y-3">
@@ -1405,7 +1413,7 @@ const ColorToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> =
       <div className="flex gap-2">{['#FFC107','#F47B35','#ffffff'].map(c => <button key={c} onClick={() => update('fill', c)} className="w-8 h-8 rounded-full border border-border" style={{ backgroundColor: c }} />)}</div>
       <p className="text-xs font-semibold text-muted-foreground">Palette</p>
       <div className="grid grid-cols-8 gap-1.5">{colors.map(c => <button key={c} onClick={() => update('fill', c)} className="aspect-square rounded-lg border border-border" style={{ backgroundColor: c }} />)}</div>
-      <div className="flex items-center gap-2 rounded-xl border px-3 py-2"><input type="color" value={selected?.fill || '#000000'} onChange={(e) => update('fill', e.target.value)} className="h-6 w-6 rounded cursor-pointer border" /><span className="text-xs font-mono uppercase">{selected?.fill || '#000000'}</span></div>
+      <div className="flex items-center gap-2 rounded-xl border px-3 py-2"><input type="color" value={hexColor(selected?.fill)} onChange={(e) => update('fill', e.target.value)} className="h-6 w-6 rounded cursor-pointer border" /><span className="text-xs font-mono uppercase">{typeof selected?.fill === 'string' ? selected.fill : '#000000'}</span></div>
     </div>
   );
 };
@@ -1547,57 +1555,56 @@ const renderToolSheet = (toolId: string, selected: any, canvas: FabricCanvas | n
 /* ---------- Bottom Sheet (mobile, slide-up) ---------- */
 const MobileBottomSheet: React.FC<{
   open: boolean;
+  fill?: boolean;
+  padded?: boolean;
   onClose: () => void;
   children: React.ReactNode;
   label: string;
-}> = ({ open, onClose, children, label }) => {
-  const [visible, setVisible] = useState(false);
+}> = ({ open, fill = false, padded = false, onClose, children, label }) => {
   const [full, setFull] = useState(false);
-  const panelRef = useRef<HTMLElement>(null);
   const startY = useRef(0);
 
-  useEffect(() => {
-    if (open) { setVisible(true); setFull(false); return; }
-    const timer = setTimeout(() => setVisible(false), 300);
-    return () => clearTimeout(timer);
-  }, [open]);
+  useEffect(() => { if (open) setFull(false); }, [open]);
 
   const handleTouchStart = (e: React.TouchEvent) => { startY.current = e.touches[0].clientY; };
   const handleTouchEnd = (e: React.TouchEvent) => {
     const delta = startY.current - e.changedTouches[0].clientY;
     if (delta < -80) {
-      if (full) setFull(false);
+      if (full && !fill) setFull(false);
       else onClose();
     }
     if (delta > 80) setFull(true);
   };
 
-  if (!visible && !open) return null;
+  const expanded = open && (fill || full);
 
   return (
     <section
-      ref={panelRef}
-      className={`studio-panel absolute inset-x-0 bottom-0 z-30 shrink-0 overflow-y-auto rounded-t-2xl border-t shadow-[var(--shadow-studio-tray)] transition-all duration-300 ease-out ${
-        open ? `translate-y-0 ${full ? 'max-h-[68vh]' : 'max-h-[46vh]'}` : 'translate-y-full max-h-0'
+      className={`studio-panel flex min-h-0 flex-col overflow-hidden border-t shadow-[var(--shadow-studio-tray)] transition-[flex-grow,height] duration-300 ease-out ${
+        open
+          ? 'min-h-0 flex-1 rounded-t-2xl'
+          : 'h-0 flex-none border-transparent'
       }`}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
+      onTouchStart={open ? handleTouchStart : undefined}
+      onTouchEnd={open ? handleTouchEnd : undefined}
+      aria-hidden={!open}
     >
-      {/* Drag handle */}
-      <button type="button" className="sticky top-0 z-10 flex w-full items-center justify-center bg-studio-panel py-2" onClick={() => setFull((value) => !value)} aria-label={full ? 'Collapse panel' : 'Expand panel'}>
-        <span className="h-1 w-10 rounded-full bg-studio-muted/50" />
-      </button>
-      {/* Header with close */}
-      <div className="flex items-center justify-between px-4 pb-2">
-        <span className="editor-heading text-sm font-semibold text-studio-text">{label}</span>
-        <button onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-lg text-studio-muted hover:bg-studio-panel-raised hover:text-studio-text">
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-      {/* Content */}
-      <div className="px-4 pb-4">
-        {children}
-      </div>
+      {open && (
+        <>
+          <button type="button" className="flex w-full shrink-0 items-center justify-center bg-studio-panel py-2" onClick={() => (fill ? onClose() : setFull((value) => !value))} aria-label={expanded ? 'Collapse panel' : 'Expand panel'}>
+            <span className="h-1 w-10 rounded-full bg-studio-muted/50" />
+          </button>
+          <div className="flex shrink-0 items-center justify-between px-4 pb-2">
+            <span className="editor-heading text-sm font-semibold text-studio-text">{label}</span>
+            <button onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-lg text-studio-muted hover:bg-studio-panel-raised hover:text-studio-text" aria-label="Close panel">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className={`min-h-0 flex-1 ${padded ? 'overflow-y-auto px-4 pb-4' : 'overflow-hidden'}`}>
+            {children}
+          </div>
+        </>
+      )}
     </section>
   );
 };
@@ -1630,6 +1637,7 @@ const RightPanel: React.FC<{
 
   const update = (prop: string, val: any) => {
     if (!selected || !canvas) return;
+    if (isOverlayScrim(selected) && (prop === 'fill' || prop === 'stroke')) return;
     selected.set(prop, val);
     selected.setCoords?.();
     canvas.requestRenderAll();
@@ -1818,7 +1826,7 @@ const RightPanel: React.FC<{
                 <div>
                   <p className="mb-2 text-xs font-semibold text-muted-foreground">Color</p>
                   <div className="flex items-center gap-2 rounded-xl border px-3 py-2">
-                    <input type="color" value={typeof selected.fill === 'string' ? selected.fill : '#ffffff'} onChange={(e) => update('fill', e.target.value)} className="h-6 w-6 rounded cursor-pointer border" />
+                    <input type="color" value={hexColor(selected.fill, '#ffffff')} onChange={(e) => update('fill', e.target.value)} className="h-6 w-6 rounded cursor-pointer border" />
                     <Input value={typeof selected.fill === 'string' ? selected.fill : ''} onChange={(e) => update('fill', e.target.value)} className="h-7 border-0 shadow-none px-2 text-xs font-mono uppercase" />
                   </div>
                 </div>
@@ -1828,7 +1836,7 @@ const RightPanel: React.FC<{
                 <p className="mb-2 text-xs font-semibold text-muted-foreground">Border</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex items-center gap-2 rounded-lg border px-2 py-1.5">
-                    <input type="color" value={typeof selected.stroke === 'string' ? selected.stroke : '#000000'} onChange={(e) => update('stroke', e.target.value)} className="h-5 w-5 rounded cursor-pointer border" />
+                    <input type="color" value={hexColor(selected.stroke)} onChange={(e) => update('stroke', e.target.value)} className="h-5 w-5 rounded cursor-pointer border" />
                     <span className="text-[10px] text-muted-foreground">Stroke</span>
                   </div>
                   <div>
@@ -1991,7 +1999,7 @@ const EditorInner: React.FC = () => {
   const [tick, forceUpdate] = useState(0);
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
-  const [sheetExpanded, setSheetExpanded] = useState(false);
+  const [sheetExpanded, setSheetExpanded] = useState(() => searchParams.get('selectTemplate') === '1');
   const [timelineOpen, setTimelineOpen] = useState(true);
   const [toolbarPos, setToolbarPos] = useState<{ left: number; top: number } | null>(null);
   const [canvasWrapperEl, setCanvasWrapperEl] = useState<HTMLDivElement | null>(null);
@@ -2042,7 +2050,6 @@ const EditorInner: React.FC = () => {
   }, [videoUrl]);
 
   const currentTools = getToolsForSelection(selected);
-  const aiActions = getAiActions(selected);
   const selectionType = !selected ? null : (selected.type === 'textbox' || selected.type === 'text' || selected.type === 'i-text' ? 'text' : selected.type === 'image' ? 'image' : selected.type === 'video' ? 'video' : 'other');
 
   // ---- Undo / Redo history ----
@@ -2116,6 +2123,20 @@ const EditorInner: React.FC = () => {
     forceUpdate(n => n + 1);
   }, [canvas, saveSnapshot]);
 
+  useEffect(() => {
+    if (!canvas) return;
+    const onFrame = (frame: { width?: number; height?: number }) => {
+      const width = Math.round(Number(frame?.width) || 0);
+      const height = Math.round(Number(frame?.height) || 0);
+      if (width < 2 || height < 2) return;
+      setCustomArtboard({ label: `Custom · ${width}×${height}`, width, height });
+      setPreset('custom');
+      setFitToken((token) => token + 1);
+    };
+    canvas.on('advista:artboard' as any, onFrame);
+    return () => { canvas.off('advista:artboard' as any, onFrame); };
+  }, [canvas]);
+
   const changeArtboardPreset = useCallback((nextPreset: string) => {
     if (nextPreset === preset) return;
     const next = nextPreset === 'custom' ? customArtboard : ARTBOARD_PRESETS[nextPreset];
@@ -2155,6 +2176,10 @@ const EditorInner: React.FC = () => {
         const pageSnapshots = [...pages];
         if (pageSnapshots.length) pageSnapshots[pageIdx] = json;
         const document = creativeDocument(json, artboard.width, artboard.height, pageSnapshots);
+        if (!campaignIdRef.current) {
+          const fromUrl = new URLSearchParams(window.location.search).get('campaignId');
+          if (fromUrl) campaignIdRef.current = fromUrl;
+        }
         let targetCampaignId = campaignIdRef.current;
         if (!silent && !targetCampaignId) {
           const { data, error } = await supabase.from('campaigns').insert({ user_id: user.id, name: projectName, status: 'draft' }).select().single();
@@ -2180,7 +2205,13 @@ const EditorInner: React.FC = () => {
         setSearchParams(params, { replace: true });
         qc.invalidateQueries({ queryKey: ['creatives'] });
         qc.invalidateQueries({ queryKey: ['campaigns'] });
-        if (!silent) toast({ title: 'Creative saved' });
+        if (!silent) {
+          const returning = new URLSearchParams(window.location.search).get('returnTo') === 'create';
+          toast({
+            title: returning ? 'Design saved' : 'Creative saved',
+            description: returning ? 'Back to Create Ad to continue.' : undefined,
+          });
+        }
         return targetCampaignId;
       } catch (error) {
         setSaveStatus('Save failed');
@@ -2193,10 +2224,20 @@ const EditorInner: React.FC = () => {
   }, [canvas, user, documentLoaded, loadError, pages, pageIdx, artboard.width, artboard.height, projectName, videoUrl, setSearchParams, qc]);
 
   useEffect(() => {
-    const save = () => { void persistCreative(); };
+    const save = () => {
+      const returning = new URLSearchParams(window.location.search).get('returnTo') === 'create';
+      if (!returning) {
+        void persistCreative();
+        return;
+      }
+      void (async () => {
+        const id = await persistCreative();
+        if (id) navigate(`/create-ad?campaignId=${id}&step=2`);
+      })();
+    };
     window.addEventListener('advista:save-creative', save);
     return () => window.removeEventListener('advista:save-creative', save);
-  }, [persistCreative]);
+  }, [persistCreative, navigate]);
 
   const autoSaveData = useMemo(() => {
     if (!canvas || !documentLoaded || loadError) return null;
@@ -2320,64 +2361,47 @@ const EditorInner: React.FC = () => {
 
         if (json?.background) canvas.backgroundColor = json.background as string;
 
-        // The artboard adopts the template's own frame so the design renders
-        // at its authored size and proportions — nothing is squeezed or cropped.
-        // Never fall back to the *current* canvas size: that leaves the Fabric
-        // surface and the artboard frame out of sync and crops the design.
-        const objectsBounds = () => {
-          const objs = canvas.getObjects();
-          if (!objs.length) return null;
-          let w = 0;
-          let h = 0;
-          objs.forEach((o: any) => {
-            const r = o.getBoundingRect?.();
-            if (!r) return;
-            w = Math.max(w, r.left + r.width);
-            h = Math.max(h, r.top + r.height);
-          });
-          return w > 1 && h > 1 ? { w: Math.round(w), h: Math.round(h) } : null;
-        };
-        const bounds = objectsBounds();
-        const tw = Math.round(Number(template.width) || Number(json?.width) || bounds?.w || 1080);
-        const th = Math.round(Number(template.height) || Number(json?.height) || bounds?.h || 1080);
-        if (tw > 1 && th > 1) {
-          setCustomArtboard({ label: `Custom · ${tw}×${th}`, width: tw, height: th });
-          setPreset('custom');
-          canvas.setDimensions({ width: tw, height: th });
-        }
-
+        // The artboard follows the template. When the stored frame is a different
+        // shape from the artwork, the canvas follows the artwork and every layer
+        // is scaled to fill that frame without distortion.
         const loadedObjects = canvas.getObjects() as any[];
-        if (loadedObjects.length === 1 && loadedObjects[0]?.type === 'image') {
-          scaleImageToCover(loadedObjects[0], { left: 0, top: 0, width: tw, height: th });
-          loadedObjects[0].set({ name: loadedObjects[0].name || 'Template artwork', mediaFit: 'cover' });
+        const content = measureContentBounds(canvas);
+        const soleImage = loadedObjects.length === 1 && loadedObjects[0]?.type === 'image' ? loadedObjects[0] : null;
+        const frame = frameForTemplate(
+          { width: Number(template.width) || Number(json?.width), height: Number(template.height) || Number(json?.height) },
+          soleImage
+            ? { width: Number(soleImage.width) || content?.width || 1080, height: Number(soleImage.height) || content?.height || 1080 }
+            : content,
+        );
+        publishArtboard(canvas, frame);
+        if (soleImage) {
+          scaleImageToCover(soleImage, { left: 0, top: 0, width: frame.width, height: frame.height });
+          soleImage.set({ name: soleImage.name || 'Template artwork', mediaFit: 'cover' });
+        } else {
+          fitContentToFrame(canvas, frame);
         }
-
-        // If the design was authored on a different frame, scale every layer
-        // into the artboard so nothing sits half outside it.
-        const aw = Number(json?.width) || 0;
-        const ah = Number(json?.height) || 0;
-        if (aw > 1 && ah > 1 && (Math.abs(aw - tw) > 1 || Math.abs(ah - th) > 1)) {
-          const k = Math.min(tw / aw, th / ah);
-          const offsetX = (tw - aw * k) / 2;
-          const offsetY = (th - ah * k) / 2;
-          canvas.getObjects().forEach((o: any) => {
-            if (o.type === 'image' && o.mediaFit === 'cover') return;
-            o.set({
-              left: offsetX + (o.left || 0) * k,
-              top: offsetY + (o.top || 0) * k,
-              scaleX: (o.scaleX || 1) * k,
-              scaleY: (o.scaleY || 1) * k,
-            });
-            o.setCoords();
-          });
-        }
+        setCustomArtboard({ label: `Custom · ${frame.width}×${frame.height}`, width: frame.width, height: frame.height });
+        setPreset('custom');
 
 
         const srcObjects: any[] = Array.isArray(json?.objects) ? json.objects : [];
 
         canvas.getObjects().forEach((obj: any, i) => {
           const src = srcObjects[i] ?? {};
-          // Everything stays fully editable — templates are a starting point, not a lock.
+          // The contrast scrim is a translucent tint behind the type. It must not
+          // become a solid plate, and it must not steal taps from the photo or text.
+          if (isOverlayScrim(obj) || isOverlayScrim(src)) {
+            const authored = typeof src.fill === 'string' ? src.fill : 'rgba(8,8,14,0.62)';
+            obj.set({
+              fill: authored,
+              selectable: false,
+              evented: false,
+              hoverCursor: 'default',
+            });
+            obj.setCoords?.();
+            return;
+          }
+          // Everything else stays fully editable — templates are a starting point, not a lock.
           obj.set({
             selectable: true,
             evented: true,
@@ -2471,8 +2495,13 @@ const EditorInner: React.FC = () => {
           setProjectName(creative.name);
           if (!creative.canvas_data && creativeContentRef.current.mediaUrl) {
             const img = await FabricImage.fromURL(creativeContentRef.current.mediaUrl, { crossOrigin: 'anonymous' });
-            scaleImageToCover(img, { left: 0, top: 0, width: 1080, height: 1350 });
+            const frame = frameFromAspect(Number(img.width) || 1080, Number(img.height) || 1080);
+            publishArtboard(canvas, frame);
+            scaleImageToCover(img, { left: 0, top: 0, width: frame.width, height: frame.height });
+            img.set({ mediaFit: 'cover', name: 'Full-bleed image' });
             canvas.add(img);
+            setCustomArtboard({ label: `Custom · ${frame.width}×${frame.height}`, width: frame.width, height: frame.height });
+            setPreset('custom');
             saveSnapshot(canvas);
           }
           if (creative.canvas_data) {
@@ -2602,12 +2631,33 @@ const EditorInner: React.FC = () => {
     setPreviewUrl(canvas.toDataURL({ format: 'png', quality: 1, multiplier: 2 }));
   }, [canvas]);
 
+  const returnToCreateAd = searchParams.get('returnTo') === 'create';
+
+  const saveAndReturn = useCallback(async () => {
+    const id = await persistCreative();
+    if (!returnToCreateAd || !id) return;
+    navigate(`/create-ad?campaignId=${id}&step=2`);
+  }, [persistCreative, navigate, returnToCreateAd]);
+
+  const backToCreateAd = useCallback(async () => {
+    const id = await persistCreative(true);
+    const campaignId = id || campaignIdRef.current || searchParams.get('campaignId');
+    if (!campaignId) {
+      navigate('/create-ad');
+      return;
+    }
+    navigate(`/create-ad?campaignId=${campaignId}&step=2`);
+  }, [persistCreative, navigate, searchParams]);
+
   const onPublish = useCallback(async () => {
+    if (returnToCreateAd) {
+      await saveAndReturn();
+      return;
+    }
     const id = await persistCreative();
     if (!id) return;
-    if (searchParams.get('returnTo') === 'create') navigate(`/create-ad?campaignId=${id}`);
-    else navigate(`/campaigns/${id}`);
-  }, [persistCreative, navigate, searchParams]);
+    navigate(`/campaigns/${id}`);
+  }, [persistCreative, navigate, returnToCreateAd, saveAndReturn]);
 
   const addPage = useCallback(() => {
     if (!canvas) return;
@@ -2643,15 +2693,25 @@ const EditorInner: React.FC = () => {
 
   const renderLeftPanel = () => {
     switch (activeTab) {
-      case 'templates': return <StudioTemplatesPanel onUse={(t: StudioTemplate) => loadTemplateRecord(t)} />;
+      case 'templates': return (
+        <StudioTemplatesPanel
+          embedded={isMobile}
+          canvas={canvas}
+          platform={(effectiveContext as any)?.active_platform ?? null}
+          onUse={(t: StudioTemplate) => loadTemplateRecord(t)}
+          onChanged={() => forceUpdate((n) => n + 1)}
+          onAttach={() => { setActiveTab('uploads'); setSheetExpanded(true); }}
+          onWriteCopy={(text) => addText(text, 28, '600')}
+        />
+      );
       case 'background': return <StudioBackgroundPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} brandColors={brandPalette} selected={selected} />;
       case 'ai-studio': return <StudioAIPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} platform={(effectiveContext as any)?.active_platform ?? null} category={effectiveContext?.active_category ?? null} selected={selected} />;
       case 'text': return <TextPanel onAdd={addText} />;
       case 'elements': return <StudioElementsPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} brandColors={brandPalette} selected={selected} />;
       case 'brand': return <BrandKitPanel />;
       case 'layers': return <LayersPanel canvas={canvas} version={tick} selected={selected} onSelect={setSelected} onChanged={markChanged} />;
-      case 'media': return <StudioMediaPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} selected={selected} />;
-      case 'uploads': return <StudioUploadsPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} selected={selected} />;
+      case 'media': return <StudioMediaPanel embedded={isMobile} canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} selected={selected} />;
+      case 'uploads': return <StudioUploadsPanel embedded={isMobile} canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} selected={selected} />;
       case 'projects': return <SimplePanel title="Projects"><p className="text-xs text-muted-foreground">Your recent projects.</p></SimplePanel>;
 
       default: return null;
@@ -2673,6 +2733,7 @@ const EditorInner: React.FC = () => {
         artboard={artboard}
         showGrid={showGrid}
         fitToken={fitToken + (sheetExpanded ? 1000 : 0)}
+        controlBand={isMobile && sheetExpanded ? 12 : CONTROL_BAND}
         imageStatuses={imageStatuses}
         onRetryImages={handleRetryImages}
         retryingImages={retryingImages}
@@ -2746,8 +2807,9 @@ const EditorInner: React.FC = () => {
         </div>
       )}
 
-      {/* Bottom bar — pages */}
-      <div className="flex shrink-0 items-center justify-center gap-2 border-t border-studio-line bg-studio-bg py-2">
+      {/* Pages sit under the artboard. Hidden on mobile while a sheet is open so the design stays fully visible above the tools. */}
+      {!(isMobile && sheetExpanded) && (
+      <div className={`flex shrink-0 items-center justify-center gap-2 py-2 ${isMobile ? 'bg-transparent' : 'border-t border-studio-line bg-studio-bg'}`}>
         {pages.length > 1 && pages.map((_, i) => (
           <button key={i} onClick={() => goToPage(i)}
             className="h-9 min-w-9 rounded-lg px-3 text-xs"
@@ -2759,10 +2821,11 @@ const EditorInner: React.FC = () => {
             {i + 1}
           </button>
         ))}
-        <button onClick={addPage} className="flex items-center gap-2 h-9 rounded-lg px-4 text-xs" style={{ backgroundColor: '#2D2D2D', border: '1px solid #444444', color: '#CCCCCC' }}>
+        <button onClick={addPage} className="flex items-center gap-2 h-9 rounded-full px-4 text-xs" style={{ backgroundColor: '#2D2D2D', border: '1px solid #444444', color: '#CCCCCC' }}>
           <Plus className="h-3.5 w-3.5" /> Add page
         </button>
       </div>
+      )}
     </>
   );
 
@@ -2788,7 +2851,9 @@ const EditorInner: React.FC = () => {
           onFit={() => setFitToken((t) => t + 1)}
           onPreview={openPreview}
           onPublish={onPublish}
-          onSave={() => void persistCreative()}
+          onSave={() => void (returnToCreateAd ? saveAndReturn() : persistCreative())}
+          returnToCreate={returnToCreateAd}
+          onBack={returnToCreateAd ? () => void backToCreateAd() : undefined}
           saveStatus={saveStatus}
           artboardLabel={`${artboard.label} · ${artboard.width}×${artboard.height} px`}
         />
@@ -2812,33 +2877,27 @@ const EditorInner: React.FC = () => {
       {/* Mobile layout: Top Bar → Canvas → Bottom Sheet → Contextual Toolbar */}
       {isMobile ? (
         <>
-          {/* Canvas and work tray share one stage so opening tools never distorts the artboard. */}
+          {/* The artboard keeps a real slice of the stage. Sheets sit under it instead of covering it. */}
           <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-            <div className="editor-canvas-area relative flex flex-1 min-w-0 flex-col overflow-hidden">
+            <div className={`editor-canvas-area relative min-w-0 overflow-hidden ${
+              sheetExpanded && !activeTool && (activeTab === 'uploads' || activeTab === 'media')
+                ? 'hidden'
+                : sheetExpanded
+                  ? 'flex h-[min(46vh,420px)] w-full shrink-0 flex-col'
+                  : 'flex min-h-0 w-full flex-1 flex-col'
+            }`}>
               {renderCanvas()}
             </div>
-            {/* Slide-Up Panel — contextual tool sheet or creation panel */}
-            <MobileBottomSheet open={sheetExpanded} onClose={() => { setSheetExpanded(false); setActiveTool(null); }}
-              label={activeTool ? (currentTools.find(t => t.id === activeTool)?.label || activeTool) : (LEFT_TABS.find(t => t.id === activeTab)?.label || 'Create')}>
-              {/* AI prompt bar — contextual based on selection */}
-              <div className="mb-3 flex items-center gap-2 overflow-x-auto [scrollbar-width:none]">
-                <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-primary/20 px-3 py-1.5">
-                  <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary-glow" />
-                  <span className="whitespace-nowrap text-xs text-studio-text">Ask AI</span>
-                </div>
-                {aiActions.slice(0, 4).map(a => (
-                  <button key={a.id} className="shrink-0 whitespace-nowrap rounded-full border border-studio-line px-3 py-1.5 text-xs text-studio-muted transition hover:bg-studio-panel-raised hover:text-studio-text">
-                    {a.label}
-                  </button>
-                ))}
-              </div>
-              <div className="mb-3 h-px bg-studio-line" />
-              {/* Tool sheet content or creation panels */}
+            <MobileBottomSheet
+              open={sheetExpanded}
+              fill={!activeTool && (activeTab === 'uploads' || activeTab === 'media')}
+              padded={!!activeTool}
+              onClose={() => { setSheetExpanded(false); setActiveTool(null); }}
+              label={activeTool ? (currentTools.find(t => t.id === activeTool)?.label || activeTool) : (LEFT_TABS.find(t => t.id === activeTab)?.label || 'Create')}
+            >
               {activeTool && selected
                 ? renderToolSheet(activeTool, selected, canvas)
-                : selected && activeTab !== 'layers'
-                  ? <div className="-mx-4 -mb-4 h-[52vh]"><RightPanel selected={selected} canvas={canvas} preset={preset} customArtboard={customArtboard} onPresetChange={changeArtboardPreset} /></div>
-                  : renderLeftPanel()}
+                : renderLeftPanel()}
             </MobileBottomSheet>
           </div>
 

@@ -2,16 +2,18 @@
 // Visual language matches the existing dark editor chrome — only the
 // content is now real (Supabase templates, media library, live canvas ops).
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Canvas as FabricCanvas, Rect, Circle as FCircle, Triangle, Line, Polygon, FabricImage } from 'fabric';
+import { Canvas as FabricCanvas, Rect, Circle as FCircle, Triangle, Line, Polygon } from 'fabric';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { signedMediaUrl } from '@/lib/mediaUrl';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { addImageCoveringCanvas, replaceImageKeepingFrame } from '@/components/visual-editor/canvasImagePlacement';
+import { placeFittedImage, replaceImageKeepingFrame } from '@/components/visual-editor/canvasImagePlacement';
+import { isOverlayScrim } from '@/services/templates/loadIntoCanvas';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Search, Upload, Loader2, ImageIcon, Video, Music, FileText, Pipette, Plus, X, Info,
+  Sparkles, Mic, ChevronDown, Heart,
 } from 'lucide-react';
 
 const PANEL = 'studio-panel flex h-full min-h-0 flex-col';
@@ -54,27 +56,7 @@ export const SelectedBanner: React.FC<{ selected: any; hint: string }> = ({ sele
 async function addImageToCanvas(canvas: FabricCanvas | null, url: string, onChanged?: () => void) {
   if (!canvas) return;
   try {
-    if (canvas.getObjects().length === 0) {
-      await addImageCoveringCanvas(canvas, url);
-    } else {
-      const img = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
-      const canvasWidth = canvas.getWidth() || 1080;
-      const canvasHeight = canvas.getHeight() || 1350;
-      const sourceWidth = Math.max(1, Number(img.width) || 1);
-      const sourceHeight = Math.max(1, Number(img.height) || 1);
-      const scale = Math.min((canvasWidth * 0.72) / sourceWidth, (canvasHeight * 0.72) / sourceHeight);
-      img.set({
-        left: (canvasWidth - sourceWidth * scale) / 2,
-        top: (canvasHeight - sourceHeight * scale) / 2,
-        scaleX: scale,
-        scaleY: scale,
-        name: 'Image layer',
-        mediaFit: 'contain',
-      });
-      canvas.add(img);
-      canvas.setActiveObject(img);
-      canvas.requestRenderAll();
-    }
+    await placeFittedImage(canvas, url);
     onChanged?.();
   } catch {
     toast({ title: 'Could not load image', description: 'The asset could not be added to the canvas.', variant: 'destructive' });
@@ -107,9 +89,36 @@ export type StudioTemplate = {
   popularity_score?: number | null;
 };
 
-export const TemplatesPanel: React.FC<{ onUse: (t: StudioTemplate) => void }> = ({ onUse }) => {
+const RECENT_KEY = 'advista.editor.recentTemplateIds';
+
+const readIds = (key: string): string[] => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(key) || '[]');
+    return Array.isArray(parsed) ? parsed.filter((id) => typeof id === 'string') : [];
+  } catch {
+    return [];
+  }
+};
+
+export const TemplatesPanel: React.FC<{
+  onUse: (t: StudioTemplate) => void;
+  embedded?: boolean;
+  canvas?: FabricCanvas | null;
+  onChanged?: () => void;
+  platform?: string | null;
+  onAttach?: () => void;
+  onWriteCopy?: (text: string) => void;
+}> = ({ onUse, embedded = false, canvas, onChanged, platform, onAttach, onWriteCopy }) => {
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('All');
+  const [prompt, setPrompt] = useState('');
+  const [needPrompt, setNeedPrompt] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [genOpen, setGenOpen] = useState(false);
+  const [genMode, setGenMode] = useState<'design' | 'copy'>('design');
+  const [seeAllRecent, setSeeAllRecent] = useState(false);
+  const [recentIds, setRecentIds] = useState<string[]>(() => readIds(RECENT_KEY));
+  const promptRef = useRef<HTMLInputElement>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['editor-templates'],
@@ -140,26 +149,205 @@ export const TemplatesPanel: React.FC<{ onUse: (t: StudioTemplate) => void }> = 
     });
   }, [data, q, cat]);
 
-  return (
-    <div className={PANEL}>
-      <div className={HEAD}>
-        <h2 className={H2}>Templates</h2>
-        <p className="mt-0.5 text-[11px] text-[#AAAAAA]">Start from a design, then make every layer yours.</p>
-      </div>
-      <div className="flex-1 min-h-0 overflow-y-auto p-4">
-        <div className="mb-3 rounded-lg border border-[#555555] bg-[#1A1A1A] p-2.5">
-          <div className="flex items-center gap-2">
-            <Plus className="h-4 w-4 text-[#FF9455]" />
-            <span className="text-xs text-[#AAAAAA]">Describe your ideal design</span>
+  const recent = useMemo(() => {
+    const byId = new Map((filtered ?? []).map((t) => [t.id, t]));
+    return recentIds.map((id) => byId.get(id)).filter(Boolean) as StudioTemplate[];
+  }, [filtered, recentIds]);
+
+  const shownRecent = seeAllRecent ? recent : recent.slice(0, 2);
+  const recentShown = new Set(shownRecent.map((t) => t.id));
+  const more = filtered.filter((t) => !recentShown.has(t.id));
+
+  const requireBrief = () => {
+    if (prompt.trim()) {
+      setNeedPrompt(false);
+      return true;
+    }
+    setNeedPrompt(true);
+    promptRef.current?.focus();
+    return false;
+  };
+
+  const remember = (t: StudioTemplate) => {
+    setRecentIds((prev) => {
+      const next = [t.id, ...prev.filter((id) => id !== t.id)].slice(0, 12);
+      try { localStorage.setItem(RECENT_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+    onUse(t);
+  };
+
+  const listen = () => {
+    const Ctor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!Ctor) {
+      toast({ title: 'Voice input isn’t available here', description: 'Type a description instead.' });
+      return;
+    }
+    try {
+      const rec = new Ctor();
+      rec.lang = 'en-US';
+      rec.onresult = (event: any) => {
+        const text = String(event.results?.[0]?.[0]?.transcript ?? '');
+        if (!text) return;
+        setPrompt(text);
+        setNeedPrompt(false);
+      };
+      rec.start();
+    } catch {
+      toast({ title: 'Couldn’t start the microphone', variant: 'destructive' });
+    }
+  };
+
+  const onSearch = () => {
+    if (!requireBrief()) return;
+    setQ(prompt.trim());
+    setCat('All');
+  };
+
+  const onGenerate = async () => {
+    if (!requireBrief()) return;
+    setGenOpen(false);
+    setQ(prompt.trim());
+    setCat('All');
+    if (genMode === 'copy') {
+      onWriteCopy?.(prompt.trim());
+      toast({ title: 'Copy added', description: 'The description is now a text layer on the canvas.' });
+      return;
+    }
+    if (prompt.trim().length < 5) {
+      setNeedPrompt(true);
+      return;
+    }
+    setBusy(true);
+    try {
+      const { data: generated, error: genError } = await supabase.functions.invoke('generate-ad-image', {
+        body: {
+          product: prompt.trim(),
+          platform: (platform || 'instagram').toLowerCase(),
+          adContent: { headline: prompt.trim() },
+        },
+      });
+      if (genError) throw genError;
+      const url = generated?.imageUrl || generated?.url || generated?.image || generated?.data?.[0]?.url;
+      if (!url) throw new Error('No image returned');
+      await addImageToCanvas(canvas ?? null, url, onChanged);
+      toast({ title: 'Design generated', description: 'It’s on the canvas. Matching templates are below if you want a different start.' });
+    } catch (e: any) {
+      toast({
+        title: 'Showing matching templates',
+        description: e?.message ? 'Generation didn’t return an image, so the catalog is filtered to your description.' : 'Filtered the catalog to your description.',
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const renderCard = (t: StudioTemplate) => {
+    const src = t.preview_url || t.thumbnail_url;
+    return (
+      <button
+        key={t.id}
+        onClick={() => remember(t)}
+        className="group relative aspect-[4/5] w-full overflow-hidden rounded-xl border border-[#3D3D3D] bg-[#1A1A1A] text-left hover:border-[#FF9455] transition-colors"
+      >
+        {src ? (
+          <img src={src} alt={t.name} loading="lazy" className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#3D3D3D] to-[#1A1A1A] px-2 text-center text-[10px] font-semibold text-white">
+            {t.name}
           </div>
+        )}
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-2 py-1.5">
+          <span className="block truncate text-[10px] font-medium text-white">{t.name}</span>
         </div>
-        <SearchField value={q} onChange={setQ} placeholder="Search templates" />
-        <div className="flex flex-wrap gap-1.5 mb-4">
+      </button>
+    );
+  };
+
+  return (
+    <div className={embedded ? 'flex h-full min-h-0 flex-col' : PANEL}>
+      {!embedded && (
+        <div className={HEAD}>
+          <h2 className={H2}>Templates</h2>
+          <p className="mt-0.5 text-[11px] text-[#AAAAAA]">Start from a design, then make every layer yours.</p>
+        </div>
+      )}
+      <div className="flex-1 min-h-0 overflow-y-auto p-4">
+        <div className="mb-3 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {[
+            { id: 'ask', label: 'Ask AI', run: () => promptRef.current?.focus() },
+            { id: 'generate', label: 'Generate Design', run: () => { setGenMode('design'); void onGenerate(); } },
+            { id: 'replace', label: 'Replace Image', run: () => onAttach?.() },
+            { id: 'copy', label: 'Write Copy', run: () => { setGenMode('copy'); if (prompt.trim()) onWriteCopy?.(prompt.trim()); else { setNeedPrompt(true); promptRef.current?.focus(); } } },
+          ].map((chip, index) => (
+            <button
+              key={chip.id}
+              onClick={chip.run}
+              className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-xs ${
+                index === 0 ? 'bg-primary/20 text-white' : 'border border-[#555555] text-[#CCCCCC] hover:bg-[#3D3D3D]'
+              }`}
+            >
+              {index === 0 && <Sparkles className="mr-1 inline h-3.5 w-3.5 text-[#FF9455]" />}
+              {chip.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="mb-3 flex h-11 items-center gap-2 rounded-full border border-[#555555] bg-[#2A2A2A] px-3">
+          <button type="button" onClick={() => onAttach?.()} aria-label="Add a reference image" className="text-[#CCCCCC] hover:text-white">
+            <Plus className="h-4 w-4" />
+          </button>
+          <input
+            ref={promptRef}
+            value={prompt}
+            onChange={(e) => { setPrompt(e.target.value); if (e.target.value.trim()) setNeedPrompt(false); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') onSearch(); }}
+            placeholder="Describe your ideal design"
+            className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-[#888888]"
+          />
+          <button type="button" onClick={listen} aria-label="Describe your design by voice" className="text-[#CCCCCC] hover:text-white">
+            <Mic className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mb-2 flex gap-2">
+          <div className="relative flex h-11 min-w-0 flex-1 overflow-visible rounded-xl border border-[#555555]">
+            <button type="button" onClick={() => void onGenerate()} disabled={busy} className="flex min-w-0 flex-1 items-center justify-center gap-1.5 text-sm font-medium text-white disabled:opacity-60">
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-[#FF9455]" />}
+              Generate
+            </button>
+            <button type="button" aria-label="Generation options" aria-expanded={genOpen} onClick={() => setGenOpen((v) => !v)} className="flex w-9 items-center justify-center border-l border-[#555555] text-[#CCCCCC]">
+              <ChevronDown className="h-4 w-4" />
+            </button>
+            {genOpen && (
+              <div className="absolute left-0 top-12 z-20 w-full overflow-hidden rounded-xl border border-[#555555] bg-[#1E2227] shadow-lg">
+                {([
+                  ['design', 'Generate design'],
+                  ['copy', 'Write copy'],
+                ] as const).map(([id, label]) => (
+                  <button
+                    key={id}
+                    onClick={() => { setGenMode(id); setGenOpen(false); }}
+                    className={`block w-full px-3 py-2 text-left text-xs ${genMode === id ? 'bg-primary/20 text-white' : 'text-[#CCCCCC] hover:bg-[#2A2A2A]'}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <button type="button" onClick={onSearch} className="h-11 min-w-0 flex-1 rounded-xl bg-primary text-sm font-semibold text-primary-foreground hover:bg-[#DD6A28]">
+            Search
+          </button>
+        </div>
+        {needPrompt && <p className="mb-3 text-xs font-medium text-red-400">Describe what you are after to get started</p>}
+
+        <div className="mb-4 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {categories.map((c) => (
             <button
               key={c}
               onClick={() => setCat(c)}
-              className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
+              className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
                 cat === c ? 'bg-primary text-primary-foreground' : 'bg-[#3D3D3D] text-[#CCCCCC] hover:bg-[#4D4D4D]'
               }`}
             >
@@ -170,7 +358,7 @@ export const TemplatesPanel: React.FC<{ onUse: (t: StudioTemplate) => void }> = 
 
         {isLoading && (
           <div className="grid grid-cols-2 gap-2">
-            {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="aspect-square rounded-lg bg-[#3D3D3D]" />)}
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="aspect-[4/5] rounded-xl bg-[#3D3D3D]" />)}
           </div>
         )}
         {error && <EmptyState>Couldn’t load templates. Check your connection and try again.</EmptyState>}
@@ -178,31 +366,22 @@ export const TemplatesPanel: React.FC<{ onUse: (t: StudioTemplate) => void }> = 
           <EmptyState>No templates match “{q || cat}”. Try another search or category.</EmptyState>
         )}
 
-        {filtered.length > 0 && <div className="mb-2 flex items-center justify-between"><p className="text-xs font-semibold text-white">Recently used</p><span className="text-[10px] text-[#AAAAAA]">See all</span></div>}
-        <div className="grid grid-cols-2 gap-3">
-          {filtered.map((t) => {
-            const src = t.preview_url || t.thumbnail_url;
-            return (
-              <button
-                key={t.id}
-                onClick={() => onUse(t)}
-                className="group relative aspect-[4/5] w-full overflow-hidden rounded-lg border border-[#3D3D3D] bg-[#1A1A1A] text-left hover:border-[#FF9455] transition-colors"
-              >
-                {src ? (
-                  <img src={src} alt={t.name} loading="lazy" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#3D3D3D] to-[#1A1A1A] px-2 text-center text-[10px] font-semibold text-white">
-                    {t.name}
-                  </div>
-                )}
-                <div className="absolute inset-x-0 bottom-0 bg-black/60 px-1.5 py-1">
-                  <span className="block truncate text-[10px] font-medium text-white">{t.name}</span>
-                  {t.category && <span className="block truncate text-[9px] text-[#AAAAAA]">{t.category}</span>}
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        {shownRecent.length > 0 && (
+          <section className="mb-4">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-sm font-semibold text-white">Recently used</p>
+              <button type="button" onClick={() => setSeeAllRecent((v) => !v)} className="text-[11px] text-[#AAAAAA]">{seeAllRecent ? 'Show less' : 'See all'}</button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">{shownRecent.map(renderCard)}</div>
+          </section>
+        )}
+
+        {more.length > 0 && (
+          <section>
+            <p className="mb-2 text-sm font-semibold text-white">{shownRecent.length > 0 ? 'More templates for you' : 'Templates for you'}</p>
+            <div className="grid grid-cols-2 gap-3">{more.map(renderCard)}</div>
+          </section>
+        )}
       </div>
     </div>
   );
@@ -213,31 +392,49 @@ type MediaRow = {
   id: string; name: string; type: string; file_url: string | null; thumbnail_url: string | null; created_at: string;
 };
 
-const MediaGrid: React.FC<{ rows: MediaRow[]; canvas: FabricCanvas | null; onChanged?: () => void; selected?: any }> = ({ rows, canvas, onChanged, selected }) => (
-  <div className="grid grid-cols-3 gap-2">
+const MediaGrid: React.FC<{
+  rows: MediaRow[];
+  canvas: FabricCanvas | null;
+  onChanged?: () => void;
+  selected?: any;
+  marked?: Set<string>;
+  onToggleMark?: (id: string) => void;
+}> = ({ rows, canvas, onChanged, selected, marked, onToggleMark }) => (
+  <div className="grid grid-cols-3 gap-1.5">
     {rows.map((m) => {
       const src = m.thumbnail_url || m.file_url;
       const Icon = m.type === 'video' ? Video : m.type === 'audio' ? Music : m.type === 'document' ? FileText : ImageIcon;
       return (
-        <button
-          key={m.id}
-          onClick={() => {
-            if (!m.file_url || m.type !== 'image') { toast({ title: m.name, description: `${m.type} assets can be placed from the timeline.` }); return; }
-            if (selected && selected.type === 'image') { replaceImageSource(canvas, selected, m.file_url, onChanged); return; }
-            addImageToCanvas(canvas, m.file_url, onChanged);
-          }}
-          className="group relative aspect-square overflow-hidden rounded-lg border border-[#3D3D3D] bg-[#1A1A1A] hover:border-primary"
-          title={m.name}
-        >
-          {src && m.type === 'image' ? (
-            <img src={src} alt={m.name} loading="lazy" className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-[#888888]">
-              <Icon className="h-4 w-4" />
-              <span className="px-1 text-[9px] truncate w-full text-center">{m.name}</span>
-            </div>
+        <div key={m.id} className="relative">
+          <button
+            onClick={() => {
+              if (!m.file_url || m.type !== 'image') { toast({ title: m.name, description: `${m.type} assets can be placed from the timeline.` }); return; }
+              if (selected && selected.type === 'image') { replaceImageSource(canvas, selected, m.file_url, onChanged); return; }
+              addImageToCanvas(canvas, m.file_url, onChanged);
+            }}
+            className="group relative aspect-square w-full overflow-hidden rounded-md bg-[#1A1A1A] hover:ring-2 hover:ring-primary"
+            title={m.name}
+          >
+            {src && m.type === 'image' ? (
+              <img src={src} alt={m.name} loading="lazy" className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-[#888888]">
+                <Icon className="h-4 w-4" />
+                <span className="w-full truncate px-1 text-center text-[9px]">{m.name}</span>
+              </div>
+            )}
+          </button>
+          {onToggleMark && (
+            <button
+              type="button"
+              aria-label={marked?.has(m.id) ? 'Remove from album' : 'Save to album'}
+              onClick={() => onToggleMark(m.id)}
+              className="absolute bottom-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/50 text-white"
+            >
+              <Heart className={`h-3 w-3 ${marked?.has(m.id) ? 'fill-white' : ''}`} />
+            </button>
           )}
-        </button>
+        </div>
       );
     })}
   </div>
@@ -263,7 +460,7 @@ const useMediaRows = (kinds?: string[]) => {
   });
 };
 
-export const MediaPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: () => void; selected?: any }> = ({ canvas, onChanged, selected }) => {
+export const MediaPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: () => void; selected?: any; embedded?: boolean }> = ({ canvas, onChanged, selected, embedded = false }) => {
   const [q, setQ] = useState('');
   const [kind, setKind] = useState<'all' | 'image' | 'video' | 'audio'>('all');
   const { data, isLoading, error } = useMediaRows();
@@ -272,9 +469,9 @@ export const MediaPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: () 
   );
 
   return (
-    <div className={PANEL}>
-      <div className={HEAD}><h2 className={H2}>Media</h2></div>
-      <div className="flex-1 min-h-0 overflow-y-auto p-4">
+    <div className={embedded ? 'flex h-full min-h-0 flex-col' : PANEL}>
+      {!embedded && <div className={HEAD}><h2 className={H2}>Media</h2></div>}
+      <div className="flex-1 min-h-0 overflow-y-auto p-3">
         <SelectedBanner
           selected={selected}
           hint={selected?.type === 'image'
@@ -310,7 +507,21 @@ const readAsDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
   r.readAsDataURL(file);
 });
 
-export const UploadsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: () => void; selected?: any }> = ({ canvas, onChanged, selected }) => {
+type Album = { id: string; name: string; assetIds: string[] };
+const ALBUM_KEY = 'advista.editor.albums';
+const FAVORITE_KEY = 'advista.editor.favoriteMedia';
+
+const readAlbums = (): Album[] => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(ALBUM_KEY) || '[]');
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((a) => a && typeof a.id === 'string' && typeof a.name === 'string' && Array.isArray(a.assetIds));
+  } catch {
+    return [];
+  }
+};
+
+export const UploadsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: () => void; selected?: any; embedded?: boolean }> = ({ canvas, onChanged, selected, embedded = false }) => {
   const { user } = useAuth();
   const qc = useQueryClient();
   const rollRef = useRef<HTMLInputElement>(null);
@@ -322,9 +533,48 @@ export const UploadsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: (
   const [dragOver, setDragOver] = useState(false);
   // Images picked this session — shown instantly, even before the cloud upload finishes.
   const [session, setSession] = useState<{ id: string; name: string; src: string; status: 'uploading' | 'saved' | 'local' }[]>([]);
+  const [albums, setAlbums] = useState<Album[]>(readAlbums);
+  const [activeAlbumId, setActiveAlbumId] = useState<string | null>(null);
+  const [albumOpen, setAlbumOpen] = useState(false);
+  const [albumName, setAlbumName] = useState('');
+  const [favorites, setFavorites] = useState<string[]>(() => readIds(FAVORITE_KEY));
   const { data, isLoading } = useMediaRows();
   const all = (data ?? []).filter((m) => m.name.toLowerCase().includes(q.trim().toLowerCase()));
   const rows = view === 'roll' ? all.filter((m) => m.type === 'image') : all;
+  const activeAlbum = albums.find((a) => a.id === activeAlbumId) ?? null;
+  const visibleRows = activeAlbum ? rows.filter((row) => activeAlbum.assetIds.includes(row.id)) : rows;
+  const marked = new Set(activeAlbum ? activeAlbum.assetIds : favorites);
+
+  const persistAlbums = (next: Album[]) => {
+    setAlbums(next);
+    try { localStorage.setItem(ALBUM_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+  };
+
+  const toggleMark = (id: string) => {
+    if (activeAlbum) {
+      persistAlbums(albums.map((album) => (
+        album.id === activeAlbum.id
+          ? { ...album, assetIds: album.assetIds.includes(id) ? album.assetIds.filter((x) => x !== id) : [...album.assetIds, id] }
+          : album
+      )));
+      return;
+    }
+    setFavorites((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      try { localStorage.setItem(FAVORITE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  };
+
+  const saveAlbum = () => {
+    const name = albumName.trim();
+    if (!name) return;
+    const album: Album = { id: `album-${Date.now()}`, name, assetIds: [] };
+    persistAlbums([album, ...albums]);
+    setActiveAlbumId(album.id);
+    setAlbumOpen(false);
+    setAlbumName('');
+  };
 
   const place = async (src: string) => {
     if (selected && selected.type === 'image') await replaceImageSource(canvas, selected, src, onChanged);
@@ -378,10 +628,10 @@ export const UploadsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: (
   const tile = 'flex flex-col items-center justify-center gap-1.5 rounded-lg bg-[#3D3D3D] py-3 text-[11px] font-medium text-[#CCCCCC] hover:bg-[#474747] disabled:opacity-60';
 
   return (
-    <div className={PANEL}>
-      <div className={HEAD}><h2 className={H2}>Uploads</h2></div>
+    <div className={`relative ${embedded ? 'flex h-full min-h-0 flex-col' : PANEL}`}>
+      {!embedded && <div className={HEAD}><h2 className={H2}>Uploads</h2></div>}
       <div
-        className={`flex-1 min-h-0 overflow-y-auto p-4 ${dragOver ? 'ring-2 ring-inset ring-[#F47B35]' : ''}`}
+        className={`flex-1 min-h-0 overflow-y-auto p-3 ${dragOver ? 'ring-2 ring-inset ring-[#F47B35]' : ''}`}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={(e) => { e.preventDefault(); setDragOver(false); upload(e.dataTransfer.files); }}
@@ -395,14 +645,23 @@ export const UploadsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: (
             ? 'Picking a photo will replace this image layer.'
             : 'Photos you pick are added to the canvas as new layers.'}
         />
-        <button
-          onClick={() => rollRef.current?.click()}
-          disabled={busy}
-          className="mb-2 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#F47B35] text-sm font-semibold text-white hover:bg-[#DD6A28] disabled:opacity-60"
-        >
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
-          {busy ? 'Adding…' : 'Choose from camera roll'}
-        </button>
+        <div className="mb-3 grid grid-cols-2 gap-2">
+          <button
+            onClick={() => rollRef.current?.click()}
+            disabled={busy}
+            className="flex h-10 items-center justify-center gap-2 rounded-lg bg-[#F47B35] text-xs font-semibold text-white hover:bg-[#DD6A28] disabled:opacity-60"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+            {busy ? 'Adding…' : 'Camera roll'}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setAlbumName(''); setAlbumOpen(true); }}
+            className="flex h-10 items-center justify-center gap-2 rounded-lg bg-[#3D3D3D] text-xs font-semibold text-white hover:bg-[#474747]"
+          >
+            <Plus className="h-4 w-4" /> New album
+          </button>
+        </div>
         <div className="mb-4 grid grid-cols-2 gap-2">
           <button className={tile} disabled={busy} onClick={() => cameraRef.current?.click()}>
             <Plus className="h-4 w-4" /> Take photo
@@ -428,20 +687,53 @@ export const UploadsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: (
           </div>
         )}
 
-        <div className="mb-3 flex gap-1.5">
+        <div className="mb-3 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {([['roll', 'Camera roll'], ['all', 'All uploads']] as const).map(([k, label]) => (
-            <button key={k} onClick={() => setView(k)}
-              className={`rounded-full px-3 py-1 text-[11px] ${view === k ? 'bg-primary text-primary-foreground' : 'bg-[#3D3D3D] text-[#CCCCCC]'}`}>
+            <button key={k} onClick={() => { setView(k); setActiveAlbumId(null); }}
+              className={`shrink-0 rounded-full px-3 py-1 text-[11px] ${!activeAlbum && view === k ? 'bg-primary text-primary-foreground' : 'bg-[#3D3D3D] text-[#CCCCCC]'}`}>
               {label}
+            </button>
+          ))}
+          {albums.map((album) => (
+            <button key={album.id} onClick={() => setActiveAlbumId(album.id)}
+              className={`shrink-0 rounded-full px-3 py-1 text-[11px] ${activeAlbumId === album.id ? 'bg-primary text-primary-foreground' : 'bg-[#3D3D3D] text-[#CCCCCC]'}`}>
+              {album.name}
             </button>
           ))}
         </div>
         <SearchField value={q} onChange={setQ} placeholder="Search uploads" />
         {!user && <EmptyState>Sign in to keep your photos in your camera roll across sessions.</EmptyState>}
         {user && isLoading && <div className="grid grid-cols-3 gap-2">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="aspect-square rounded-lg bg-[#3D3D3D]" />)}</div>}
-        {user && !isLoading && rows.length === 0 && <EmptyState>No photos yet. Pick some from your camera roll or drop them here.</EmptyState>}
-        <MediaGrid rows={rows} canvas={canvas} onChanged={onChanged} selected={selected} />
+        {user && !isLoading && visibleRows.length === 0 && (
+          <EmptyState>
+            {activeAlbum
+              ? `No photos in “${activeAlbum.name}” yet. Open Camera roll and tap a heart to add one.`
+              : 'No photos yet. Pick some from your camera roll or drop them here.'}
+          </EmptyState>
+        )}
+        <MediaGrid rows={visibleRows} canvas={canvas} onChanged={onChanged} selected={selected} marked={marked} onToggleMark={toggleMark} />
       </div>
+      {albumOpen && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/55 p-6" role="dialog" aria-modal="true" aria-labelledby="new-album-title">
+          <div className="w-full max-w-[280px] overflow-hidden rounded-2xl bg-white text-neutral-900 shadow-2xl">
+            <div className="px-4 pb-4 pt-5 text-center">
+              <h2 id="new-album-title" className="text-base font-semibold">New Album</h2>
+              <p className="mt-1 text-xs text-neutral-500">Enter a name for this album.</p>
+              <input
+                autoFocus
+                value={albumName}
+                onChange={(e) => setAlbumName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') saveAlbum(); }}
+                className="mt-3 h-10 w-full rounded-lg border border-neutral-300 px-3 text-sm text-neutral-900 outline-none focus:border-[#F47B35]"
+              />
+            </div>
+            <div className="grid grid-cols-2 border-t border-neutral-200">
+              <button type="button" onClick={() => setAlbumOpen(false)} className="h-11 text-sm font-medium text-[#F47B35]">Cancel</button>
+              <button type="button" onClick={saveAlbum} className="h-11 border-l border-neutral-200 text-sm font-semibold text-[#F47B35]">Save</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -471,7 +763,7 @@ export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: 
   }, [selected]);
 
   const applyToSelected = (c: string) => {
-    if (!canvas || !selected) return;
+    if (!canvas || !selected || isOverlayScrim(selected)) return;
     if (selected.type === 'line') selected.set({ stroke: c });
     else selected.set({ fill: c });
     canvas.requestRenderAll();
@@ -521,7 +813,7 @@ export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: 
       <div className={HEAD}><h2 className={H2}>Elements</h2></div>
       <div className="flex-1 min-h-0 overflow-y-auto p-4">
         <SelectedBanner selected={selected} hint="Colour and opacity below apply to this layer instantly." />
-        {selected && (
+        {selected && !isOverlayScrim(selected) && (
           <div className="mb-4 space-y-2 rounded-lg border border-[#3D3D3D] bg-[#1A1A1A] p-3">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-[#888888]">Selected layer</p>
             <div className="flex flex-wrap gap-1.5">
@@ -588,7 +880,7 @@ export const BackgroundPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?
 
   const apply = (c: string) => {
     if (!canvas) return;
-    if (target === 'layer' && selected) {
+    if (target === 'layer' && selected && !isOverlayScrim(selected)) {
       if (selected.type === 'line') selected.set({ stroke: c });
       else selected.set({ fill: c });
       canvas.requestRenderAll();
@@ -616,7 +908,7 @@ export const BackgroundPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?
       <div className={HEAD}><h2 className={H2}>Background</h2></div>
       <div className="flex-1 min-h-0 overflow-y-auto p-4">
         <SelectedBanner selected={selected} hint="Choose whether colours below fill the canvas or this layer." />
-        {selected && (
+        {selected && !isOverlayScrim(selected) && (
           <div className="mb-4 grid grid-cols-2 gap-1.5">
             {(['canvas', 'layer'] as const).map((t) => (
               <button key={t} onClick={() => setTarget(t)}
