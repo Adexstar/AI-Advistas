@@ -639,6 +639,37 @@ p  { line-height: 1.6; }
   /* Templates library sits on a light canvas. The shared shell stays dark
      everywhere else, so this route drops the duplicate title bar and the
      dark page padding. */
+  body.admin-surface,
+  .app-shell.admin-surface {
+    --background: 220 20% 97%;
+    --foreground: 228 24% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 228 24% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 228 24% 11%;
+    --muted: 220 16% 94%;
+    --muted-foreground: 220 8% 42%;
+    --secondary: 250 45% 96%;
+    --secondary-foreground: 250 35% 32%;
+    --accent: 250 45% 96%;
+    --accent-foreground: 250 35% 32%;
+    --border: 220 14% 90%;
+    --input: 220 14% 90%;
+    background: #F5F6FA;
+    color: #161A23;
+  }
+
+  .app-shell.admin-surface .page-content {
+    background: #F5F6FA;
+  }
+
+  .app-shell.admin-surface .top-bar,
+  .app-shell.admin-surface .context-bar {
+    background: #F5F6FA;
+    color: #161A23;
+    border-color: #E6E8EE;
+  }
+
   .template-library .chip-row {
     scrollbar-width: none;
   }

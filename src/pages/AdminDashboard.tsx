@@ -60,7 +60,7 @@ const Kpi = ({
 
 export default function AdminDashboard() {
   const [range, setRange] = useState(30);
-  const { data: stats, isLoading } = useAdminOverview();
+  const { data: stats, isLoading, isError } = useAdminOverview();
   const { data: growth = [] } = useAdminUserGrowth(range);
   const { data: plans = [] } = useAdminPlanDistribution();
   const { data: top = [] } = useAdminTopTemplates();
@@ -91,15 +91,31 @@ export default function AdminDashboard() {
     },
   ].filter(Boolean) as { tone: 'destructive' | 'warning'; text: string; action: { label: string; to: string } }[];
 
+  const sections = (
+    <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {[
+        ['/admin/templates', 'Template review', 'Approve pending templates so they appear in the library.'],
+        ['/admin/templates/gallery', 'Imports', 'Search stock sources. New imports stay pending.'],
+        ['/admin/users', 'Users', 'Accounts, plans, and usage.'],
+        ['/admin/providers', 'Providers', 'Keys, health, and playgrounds.'],
+      ].map(([to, title, copy]) => (
+        <Link key={to} to={to} className="rounded-xl border border-border bg-card p-4 transition hover:border-primary">
+          <p className="text-sm font-semibold">{title}</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{copy}</p>
+        </Link>
+      ))}
+    </section>
+  );
+
   if (isLoading) {
     return (
       <div className="space-y-4 p-6">
+        {sections}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-28 rounded-xl" />
           ))}
         </div>
-        <Skeleton className="h-72 rounded-xl" />
       </div>
     );
   }
@@ -129,9 +145,16 @@ export default function AdminDashboard() {
             value={`$${Number(stats?.revenue_30d ?? 0).toLocaleString()}`}
             change={pctChange(Number(stats?.revenue_30d ?? 0), Number(stats?.revenue_prev_30d ?? 0))}
           />
-          <Kpi icon={Sparkles} label="Active templates" value={(stats?.templates_active ?? 0).toLocaleString()} />
+          <Kpi icon={Sparkles} label="Published templates" value={(stats?.templates_active ?? 0).toLocaleString()} />
         </div>
       </section>
+
+      {sections}
+      {isError && (
+        <p className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+          System stats couldn’t be loaded. The review, import, user, and provider pages are still available above.
+        </p>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>

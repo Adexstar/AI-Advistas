@@ -12,11 +12,13 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Power, PowerOff, Search, Image as ImageIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Plus, Pencil, Search, Image as ImageIcon, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  useAdminTemplates, useSaveTemplate, useToggleTemplateActive, type AdminTemplate,
+  useAdminTemplates, useReviewTemplates, useSaveTemplate, useToggleTemplateActive, type AdminTemplate,
 } from '@/hooks/useAdminTemplates';
+import { isPublishedTemplate, reviewQueue } from '@/services/templates/review';
 import { validateStructure } from '@/services/templates/qa';
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -89,12 +91,13 @@ const prettyDate = (v: string | null) => {
 export default function AdminTemplates() {
   const { data: templates = [], isLoading } = useAdminTemplates();
   const save = useSaveTemplate();
+  const review = useReviewTemplates();
   const toggle = useToggleTemplateActive();
 
   const [query, setQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('review');
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
 
@@ -113,8 +116,7 @@ export default function AdminTemplates() {
       if (q && !`${t.name} ${t.description ?? ''} ${(t.ai_tags ?? []).join(' ')}`.toLowerCase().includes(q)) return false;
       if (categoryFilter !== 'all' && t.category !== categoryFilter) return false;
       if (sourceFilter !== 'all' && t.source !== sourceFilter) return false;
-      if (statusFilter === 'active' && !t.is_active) return false;
-      if (statusFilter === 'inactive' && t.is_active) return false;
+      if (statusFilter !== 'all' && reviewQueue(t) !== statusFilter) return false;
       return true;
     });
   }, [templates, query, categoryFilter, sourceFilter, statusFilter]);
@@ -176,18 +178,40 @@ export default function AdminTemplates() {
     );
   };
 
+  const counts = {
+    review: templates.filter((t) => reviewQueue(t) === 'review').length,
+    published: templates.filter((t) => reviewQueue(t) === 'published').length,
+    rejected: templates.filter((t) => reviewQueue(t) === 'rejected').length,
+  };
+
   return (
     <div className="container mx-auto max-w-full space-y-6 p-4 md:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Template Library — Admin View</h1>
-          <p className="text-muted-foreground mt-1">
-            Create, edit and deactivate templates. Source and licensing details are admin-only.
-          </p>
-        </div>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" /> New Template
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button asChild variant="outline">
+          <Link to="/admin/templates/gallery">Imports</Link>
         </Button>
+        <Button onClick={openCreate}>
+          <Plus className="h-4 w-4 mr-2" /> New template
+        </Button>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        {[
+          ['review', 'Needs review', counts.review],
+          ['published', 'Published', counts.published],
+          ['rejected', 'Rejected', counts.rejected],
+        ].map(([id, label, count]) => (
+          <button
+            key={id}
+            type="button"
+            data-queue={id}
+            onClick={() => setStatusFilter(String(id))}
+            className={`rounded-xl border px-4 py-3 text-left ${statusFilter === id ? 'border-primary bg-primary/5' : 'border-border bg-card'}`}
+          >
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className="mt-1 text-2xl font-semibold">{count}</p>
+          </button>
+        ))}
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -212,9 +236,10 @@ export default function AdminTemplates() {
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-full sm:w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
+            <SelectItem value="review">Needs review</SelectItem>
+            <SelectItem value="published">Published</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
             <SelectItem value="all">All</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -228,7 +253,7 @@ export default function AdminTemplates() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {filtered.map((t) => (
-            <Card key={t.id} className={t.is_active ? '' : 'opacity-60'}>
+            <Card key={t.id}>
               <CardContent className="p-4 flex gap-4">
                 <div className="h-24 w-24 shrink-0 rounded-md bg-muted overflow-hidden flex items-center justify-center">
                   {t.thumbnail_url || t.preview_url ? (
@@ -240,7 +265,9 @@ export default function AdminTemplates() {
                 <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold truncate">{t.name}</h3>
-                    <Badge variant={t.is_active ? 'secondary' : 'outline'}>{t.is_active ? 'Active' : 'Inactive'}</Badge>
+                    <Badge variant={isPublishedTemplate(t) ? 'secondary' : 'outline'}>
+                      {reviewQueue(t) === 'published' ? 'Published' : reviewQueue(t) === 'rejected' ? 'Rejected' : 'Needs review'}
+                    </Badge>
                     {t.premium && <Badge variant="outline">Premium</Badge>}
                   </div>
                   <p className="text-sm text-muted-foreground">
@@ -268,15 +295,34 @@ export default function AdminTemplates() {
                     <Button size="sm" variant="outline" onClick={() => openEdit(t)}>
                       <Pencil className="h-3.5 w-3.5 mr-1.5" /> Edit
                     </Button>
-                    <Button
-                      size="sm"
-                      variant={t.is_active ? 'ghost' : 'secondary'}
-                      onClick={() => toggle.mutate({ id: t.id, is_active: !t.is_active })}
-                      disabled={toggle.isPending}
-                    >
-                      {t.is_active ? <PowerOff className="h-3.5 w-3.5 mr-1.5" /> : <Power className="h-3.5 w-3.5 mr-1.5" />}
-                      {t.is_active ? 'Deactivate' : 'Activate'}
-                    </Button>
+                    {isPublishedTemplate(t) ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => toggle.mutate({ id: t.id, is_active: false })}
+                        disabled={toggle.isPending}
+                      >
+                        Unpublish
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => review.mutate({ ids: [t.id], decision: 'approved' })}
+                        disabled={review.isPending}
+                      >
+                        <Check className="h-3.5 w-3.5 mr-1.5" /> Approve
+                      </Button>
+                    )}
+                    {reviewQueue(t) !== 'rejected' && !isPublishedTemplate(t) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => review.mutate({ ids: [t.id], decision: 'rejected' })}
+                        disabled={review.isPending}
+                      >
+                        <X className="h-3.5 w-3.5 mr-1.5" /> Reject
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>

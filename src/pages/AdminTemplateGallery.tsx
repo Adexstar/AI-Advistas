@@ -73,8 +73,11 @@ export default function AdminTemplateGallery() {
   const [results, setResults] = useState<StockItem[]>([]);
   const [picked, setPicked] = useState<Set<string>>(new Set());
 
-  const pending = useMemo(() => templates.filter((t) => !t.is_active), [templates]);
-  const approved = useMemo(() => templates.filter((t) => t.is_active), [templates]);
+  const pending = useMemo(() => templates.filter((t) => t.review_status === 'pending'), [templates]);
+  const approved = useMemo(
+    () => templates.filter((t) => t.review_status === 'approved' && t.is_active),
+    [templates],
+  );
 
   const list = useMemo(() => {
     const base = tab === 'pending' ? pending : approved;
@@ -144,7 +147,7 @@ export default function AdminTemplateGallery() {
             <div>
               <h2 className="text-base font-semibold">Import from providers</h2>
               <p className="text-sm text-muted-foreground">
-                Search Pexels, Unsplash, and Pixabay. Imports land as pending until you approve them.
+                Search Pexels, Unsplash, and Pixabay. Imports stay pending until you approve them here. Approved templates show on the library.
               </p>
             </div>
             <Button

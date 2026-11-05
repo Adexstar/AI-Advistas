@@ -99,15 +99,15 @@ const navGroups: NavGroup[] = [
 ];
 
 const adminNavItems: NavItem[] = [
-  { name: "Admin Dashboard", href: "/admin", icon: Shield },
+  { name: "Overview", href: "/admin", icon: Shield },
   { name: "Users", href: "/admin/users", icon: Users },
-  { name: "Templates", href: "/admin/templates", icon: LayoutTemplate },
-  { name: "Template Gallery", href: "/admin/templates/gallery", icon: LayoutGrid },
-  { name: "AI Decisions Log", href: "/admin/decisions", icon: Brain },
-  { name: "System Analytics", href: "/admin/analytics", icon: BarChart3 },
-  { name: "API & Providers", href: "/admin/providers", icon: Plug },
-  { name: "Category Playbooks", href: "/admin/playbooks", icon: Target },
-  { name: "System Settings", href: "/admin/settings", icon: SlidersHorizontal },
+  { name: "Template review", href: "/admin/templates", icon: LayoutTemplate },
+  { name: "Imports", href: "/admin/templates/gallery", icon: LayoutGrid },
+  { name: "Decisions", href: "/admin/decisions", icon: Brain },
+  { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+  { name: "Playbooks", href: "/admin/playbooks", icon: Target },
+  { name: "Providers", href: "/admin/providers", icon: Plug },
+  { name: "Settings", href: "/admin/settings", icon: SlidersHorizontal },
 ];
 
 
@@ -129,14 +129,14 @@ const pageMeta: { match: (p: string) => boolean; title: string; description: str
   { match: (p) => p.startsWith("/developer"), title: "Developer Center", description: "API keys, webhooks and SDKs." },
   { match: (p) => p.startsWith("/system"), title: "System Monitor", description: "Admin-only infrastructure health." },
   { match: (p) => p.startsWith("/admin/users"), title: "Users", description: "Every account, plan and usage in one place." },
-  { match: (p) => p.startsWith("/admin/templates/gallery"), title: "Template Gallery", description: "Browse, preview and approve imported templates." },
-  { match: (p) => p.startsWith("/admin/templates"), title: "Template Curation", description: "Review, approve and manage the template library." },
-  { match: (p) => p.startsWith("/admin/decisions"), title: "AI Decisions Log", description: "Every AI action, filterable and explainable." },
-  { match: (p) => p.startsWith("/admin/analytics"), title: "System Analytics", description: "Growth, usage patterns and category trends." },
-  { match: (p) => p.startsWith("/admin/providers"), title: "API & Providers", description: "Provider health, quotas and key management." },
-  { match: (p) => p.startsWith("/admin/playbooks"), title: "Category Playbooks", description: "Tune AI behaviour per industry." },
-  { match: (p) => p.startsWith("/admin/settings"), title: "System Settings", description: "Global configuration and danger zone." },
-  { match: (p) => p.startsWith("/admin"), title: "Admin Dashboard", description: "System health, revenue and things that need attention." },
+  { match: (p) => p.startsWith("/admin/templates/gallery"), title: "Imports", description: "Bring templates in. They stay pending until you approve them." },
+  { match: (p) => p.startsWith("/admin/templates"), title: "Template review", description: "Approve templates to publish them on the library." },
+  { match: (p) => p.startsWith("/admin/decisions"), title: "Decisions", description: "Every AI action, filterable and explainable." },
+  { match: (p) => p.startsWith("/admin/analytics"), title: "Analytics", description: "Growth, usage patterns and category trends." },
+  { match: (p) => p.startsWith("/admin/providers"), title: "Providers", description: "Provider health, quotas and key management." },
+  { match: (p) => p.startsWith("/admin/playbooks"), title: "Playbooks", description: "Tune AI behaviour per industry." },
+  { match: (p) => p.startsWith("/admin/settings"), title: "Settings", description: "Global configuration." },
+  { match: (p) => p.startsWith("/admin"), title: "Overview", description: "System health and the review queue." },
 
 ];
 
@@ -186,7 +186,7 @@ const NavItemRow = ({
     <NavLink
       to={item.href}
       onClick={onNavigate}
-      end={item.href === "/dashboard"}
+      end={item.href === "/dashboard" || item.href === "/admin"}
       aria-disabled={item.soon || undefined}
       tabIndex={item.soon ? -1 : undefined}
       className={({ isActive }) =>
@@ -406,6 +406,12 @@ const DashboardShell = () => {
 
   const activePage = pageMeta.find((item) => item.match(location.pathname)) || pageMeta[0];
   const library = location.pathname === "/templates";
+  const admin = location.pathname === "/admin" || location.pathname.startsWith("/admin/");
+
+  useEffect(() => {
+    document.body.classList.toggle("admin-surface", admin);
+    return () => document.body.classList.remove("admin-surface");
+  }, [admin]);
   const openSearch = () => setSearchOpen(true);
 
   // Prefetch adjacent routes in the background so navigation is instant.
@@ -422,7 +428,7 @@ const DashboardShell = () => {
 
 
   return (
-    <div className={cn("app-shell bg-background", library && "library-surface")}>
+    <div className={cn("app-shell bg-background", library && "library-surface", admin && "admin-surface")}>
       <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
 
       {/* Top Bar — never scrolls, always visible */}
@@ -435,6 +441,8 @@ const DashboardShell = () => {
             </Button>
             {library ? (
               <span className="text-base font-semibold text-[#161A23]">Templates</span>
+            ) : admin ? (
+              <span className="text-base font-semibold">{activePage.title}</span>
             ) : (
             <NavLink to="/dashboard" className="flex items-center gap-2">
               <div className="grid h-7 w-7 place-items-center rounded-lg bg-primary">

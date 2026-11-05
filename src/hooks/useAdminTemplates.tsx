@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { reviewPatch, type ReviewDecision } from '@/services/templates/review';
 
 export interface AdminTemplate {
   id: string;
@@ -88,7 +89,8 @@ export const useToggleTemplateActive = () => {
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ['admin-templates'] });
       qc.invalidateQueries({ queryKey: ['ad-templates'] });
-      toast.success(vars.is_active ? 'Template activated' : 'Template deactivated');
+      qc.invalidateQueries({ queryKey: ['templates-library'] });
+      toast.success(vars.is_active ? 'Template published' : 'Template unpublished');
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -99,19 +101,20 @@ export const useToggleTemplateActive = () => {
 export const useReviewTemplates = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ ids, decision, note }: { ids: string[]; decision: 'approved' | 'rejected'; note?: string }) => {
-      const patch =
-        decision === 'approved'
-          ? { is_active: true, review_status: 'approved', reviewed_at: new Date().toISOString(), review_note: note ?? null }
-          : { is_active: false, review_status: 'rejected', reviewed_at: new Date().toISOString(), review_note: note ?? null };
+    mutationFn: async ({ ids, decision, note }: { ids: string[]; decision: ReviewDecision; note?: string }) => {
+      const patch = reviewPatch(decision, note);
       const { error } = await supabase.from('templates').update(patch as any).in('id', ids);
       if (error) throw new Error(error.message);
       return ids.length;
     },
     onSuccess: (count, vars) => {
       qc.invalidateQueries({ queryKey: ['admin-templates'] });
+      qc.invalidateQueries({ queryKey: ['admin-pending-templates'] });
       qc.invalidateQueries({ queryKey: ['templates'] });
-      toast.success(`${count} template${count === 1 ? '' : 's'} ${vars.decision}`);
+      qc.invalidateQueries({ queryKey: ['templates-library'] });
+      toast.success(vars.decision === 'approved'
+        ? `${count} template${count === 1 ? '' : 's'} approved and published`
+        : `${count} template${count === 1 ? '' : 's'} rejected`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
