@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Area,
   AreaChart,
@@ -12,10 +13,7 @@ import {
   YAxis,
 } from "recharts";
 import {
-  ArrowUpRight,
-  CalendarDays,
   Download,
-  Filter,
   Eye,
   TrendingUp,
   Sparkles,
@@ -44,6 +42,7 @@ import { useAnalytics, type AnalyticsRange } from "@/hooks/useAnalytics";
 
 // ---------- Page ----------
 const Analytics = () => {
+  const navigate = useNavigate();
   const [range, setRange] = useState<AnalyticsRange>("daily");
   const {
     loading, kpis, performanceSeries, topCampaigns, campaignRows,
@@ -52,6 +51,26 @@ const Analytics = () => {
   } = useAnalytics(range);
 
   const totalExports = useMemo(() => exportStats.reduce((a, b) => a + b.value, 0), [exportStats]);
+
+  const exportReport = () => {
+    const lines = [
+      ["Metric", "Value", "Change"],
+      ...kpis.map((k) => [k.label, k.value, k.delta ?? ""]),
+      [],
+      ["Campaign", "Status", "Reach", "CTR", "Conversions", "ROAS"],
+      ...campaignRows.map((r) => [r.name, r.status, r.reach, r.ctr, r.conv, r.roas]),
+    ];
+    const csv = lines
+      .map((row) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "advista-analytics.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-6">
@@ -65,17 +84,18 @@ const Analytics = () => {
             Track performance, analyze results, and grow your advertising impact.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" className="h-10 gap-2 rounded-xl border-border bg-card">
-            <CalendarDays className="h-4 w-4" />
-            <span className="hidden capitalize sm:inline">{range} view</span>
-            <span className="sm:hidden">Range</span>
-          </Button>
-          <Button variant="outline" className="h-10 gap-2 rounded-xl border-border bg-card">
-            <Filter className="h-4 w-4" />
-            Filters
-          </Button>
-          <Button className="h-10 gap-2 rounded-xl bg-gradient-to-br from-primary to-[hsl(243_82%_62%)] shadow-md hover:opacity-90">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+          <Select value={range} onValueChange={(v) => setRange(v as AnalyticsRange)}>
+            <SelectTrigger className="h-10 w-full rounded-xl border-border bg-card text-sm sm:w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="daily">Daily</SelectItem>
+              <SelectItem value="weekly">Weekly</SelectItem>
+              <SelectItem value="monthly">Monthly</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={exportReport} className="h-10 w-full gap-2 rounded-xl bg-gradient-to-br from-primary to-[hsl(243_82%_62%)] shadow-md hover:opacity-90 sm:w-auto">
             <Download className="h-4 w-4" />
             Export Report
           </Button>
@@ -189,14 +209,14 @@ const Analytics = () => {
 
         {/* Top Campaigns */}
         <Card className="rounded-2xl border-border p-5 shadow-sm xl:col-span-3">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-base font-semibold text-foreground">Top Campaigns</h3>
-            <button className="text-xs font-medium text-primary hover:underline">View all</button>
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <h3 className="min-w-0 text-base font-semibold text-foreground">Top Campaigns</h3>
+            <button type="button" onClick={() => navigate("/campaigns")} className="shrink-0 text-xs font-medium text-primary hover:underline">View all</button>
           </div>
           <div className="space-y-3">
             {topCampaigns.map((c) => (
               <div key={c.name} className="flex items-center gap-3">
-                <img src={c.img} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+                {c.img ? <img src={c.img} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" /> : <div className="h-12 w-12 shrink-0 rounded-lg bg-muted" />}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-foreground">{c.name}</p>
                   <div className="mt-0.5 flex items-center gap-2">
@@ -217,7 +237,7 @@ const Analytics = () => {
         <div className="space-y-4 xl:col-span-3">
           <Card className="rounded-2xl border-border p-5 shadow-sm">
             <h3 className="mb-3 text-base font-semibold text-foreground">Export Statistics</h3>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center">
               <div className="relative h-[140px] w-[140px] shrink-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -235,13 +255,13 @@ const Analytics = () => {
                   </div>
                 </div>
               </div>
-              <div className="flex-1 space-y-1.5 text-xs">
+              <div className="min-w-0 flex-1 space-y-1.5 text-xs">
                 {exportStats.map((e) => (
                   <div key={e.name} className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full" style={{ background: e.color }} />
                     <span className="text-foreground">{e.name}</span>
-                    <span className="ml-auto text-muted-foreground">
-                      {e.value.toLocaleString()} ({Math.round((e.value / totalExports) * 100)}%)
+                    <span className="ml-auto shrink-0 text-muted-foreground">
+                      {e.value.toLocaleString()} ({totalExports > 0 ? Math.round((e.value / totalExports) * 100) : 0}%)
                     </span>
                   </div>
                 ))}
@@ -252,7 +272,7 @@ const Analytics = () => {
           <Card className="rounded-2xl border-border p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-base font-semibold text-foreground">Platform Integrations</h3>
-              <button className="text-xs font-medium text-primary hover:underline">View all</button>
+              <button type="button" onClick={() => navigate("/integrations")} className="shrink-0 text-xs font-medium text-primary hover:underline">View all</button>
             </div>
             <div className="space-y-3">
               {integrations.map((i) => (
@@ -276,14 +296,14 @@ const Analytics = () => {
       {/* Templates + Campaign Table + Media Asset Usage */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Card className="rounded-2xl border-border p-5 shadow-sm xl:col-span-3">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-base font-semibold text-foreground">Best Performing Templates</h3>
-            <button className="text-xs font-medium text-primary hover:underline">View all</button>
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <h3 className="min-w-0 text-base font-semibold text-foreground">Best Performing Templates</h3>
+            <button type="button" onClick={() => navigate("/templates")} className="shrink-0 text-xs font-medium text-primary hover:underline">View all</button>
           </div>
           <div className="space-y-3">
             {bestTemplates.map((t) => (
               <div key={t.name} className="flex items-center gap-3">
-                <img src={t.img} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" />
+                {t.img ? <img src={t.img} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" /> : <div className="h-11 w-11 shrink-0 rounded-lg bg-muted" />}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-foreground">{t.name}</p>
                   <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
@@ -298,9 +318,9 @@ const Analytics = () => {
         </Card>
 
         <Card className="rounded-2xl border-border p-5 shadow-sm xl:col-span-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-base font-semibold text-foreground">Campaign Performance</h3>
-            <button className="text-xs font-medium text-primary hover:underline">View all</button>
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <h3 className="min-w-0 text-base font-semibold text-foreground">Campaign Performance</h3>
+            <button type="button" onClick={() => navigate("/campaigns")} className="shrink-0 text-xs font-medium text-primary hover:underline">View all</button>
           </div>
           <div className="-mx-2 overflow-x-auto">
             <table className="data-table">
@@ -387,9 +407,9 @@ const Analytics = () => {
         </Card>
 
         <Card className="rounded-2xl border-border p-5 shadow-sm xl:col-span-5">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-base font-semibold text-foreground">Recent Activity</h3>
-            <button className="text-xs font-medium text-primary hover:underline">View all</button>
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <h3 className="min-w-0 text-base font-semibold text-foreground">Recent Activity</h3>
+            <button type="button" onClick={() => navigate("/notifications")} className="shrink-0 text-xs font-medium text-primary hover:underline">View all</button>
           </div>
           <div className="space-y-3">
             {activityItems.map((a, i) => (
@@ -411,14 +431,16 @@ const Analytics = () => {
             <h3 className="mb-4 text-base font-semibold text-foreground">Insights</h3>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {insights.length > 0 ? insights.map((ins: any, i: number) => {
-                const colors = ins.type === 'Growth' ? { bg: 'bg-emerald-50', title: 'text-emerald-700', desc: 'text-emerald-800/80', value: 'text-emerald-700', sub: 'text-emerald-700/70' }
-                  : ins.type === 'Top Performer' ? { bg: 'bg-teal-50', title: 'text-teal-700', desc: 'text-teal-800/80', value: 'text-teal-700', sub: 'text-teal-700/70' }
-                  : { bg: 'bg-rose-50', title: 'text-rose-700', desc: 'text-rose-800/80', value: 'text-rose-700', sub: 'text-rose-700/70' };
+                const colors = ins.type === 'Growth'
+                  ? { bg: 'bg-emerald-500/10', title: 'text-emerald-700 dark:text-emerald-300', desc: 'text-emerald-800/80 dark:text-emerald-200/80' }
+                  : ins.type === 'Top Performer'
+                    ? { bg: 'bg-teal-500/10', title: 'text-teal-700 dark:text-teal-300', desc: 'text-teal-800/80 dark:text-teal-200/80' }
+                    : { bg: 'bg-rose-500/10', title: 'text-rose-700 dark:text-rose-300', desc: 'text-rose-800/80 dark:text-rose-200/80' };
                 return (
-                  <div key={i} className={`rounded-xl ${colors.bg} p-3`}>
+                  <div key={i} className={`min-w-0 rounded-xl ${colors.bg} p-3`}>
                     <p className={`text-xs font-semibold ${colors.title}`}>{ins.type}</p>
-                    <p className={`mt-1 text-[11px] ${colors.desc}`}>{ins.title}</p>
-                    <p className={`mt-1 text-xs font-bold ${colors.value}`}>{ins.description}</p>
+                    <p className={`mt-1 break-words text-[11px] ${colors.desc}`}>{ins.title}</p>
+                    <p className={`mt-1 break-words text-xs font-bold ${colors.title}`}>{ins.description}</p>
                   </div>
                 );
               }) : (

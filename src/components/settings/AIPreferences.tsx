@@ -5,10 +5,12 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useAIStatus } from "@/contexts/AIStatusContext";
+import type { AIMode } from "@/services/ai/types";
 
-type Mode = "manual" | "assisted" | "smart" | "growth";
+const PREFS_KEY = "advista:ai-preferences";
 
-const modes: { id: Mode; label: string; desc: string; beta?: boolean }[] = [
+const modes: { id: AIMode; label: string; desc: string; beta?: boolean }[] = [
   { id: "manual", label: "Manual", desc: "AI stays out of the way. You drive everything." },
   { id: "assisted", label: "Assisted", desc: "AI suggests; you approve every change." },
   { id: "smart", label: "Smart", desc: "AI auto-applies low-risk optimizations." },
@@ -72,15 +74,33 @@ const defaults: Record<string, boolean> = {
 };
 
 const AIPreferences = () => {
-  const [mode, setMode] = useState<Mode>("assisted");
-  const [prefs, setPrefs] = useState<Record<string, boolean>>(defaults);
+  const { mode, setMode } = useAIStatus();
+  const [prefs, setPrefs] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem(PREFS_KEY);
+      return saved ? { ...defaults, ...JSON.parse(saved) } : defaults;
+    } catch {
+      return defaults;
+    }
+  });
+  const [saved, setSaved] = useState(false);
+
+  const save = () => {
+    try {
+      localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+    } catch {
+      /* ignore quota errors */
+    }
+    setMode(mode);
+    setSaved(true);
+  };
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>AI Mode</CardTitle>
-          <CardDescription>Set how much autonomy AdVista AI has in your workspace.</CardDescription>
+          <CardDescription>The selected mode applies to this session. The switches below are saved on this device and are not enforced by generation yet.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {modes.map((m) => (
@@ -109,12 +129,12 @@ const AIPreferences = () => {
           </CardHeader>
           <CardContent className="divide-y">
             {g.items.map((it) => (
-              <div key={it.key} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
-                <Label htmlFor={it.key} className="text-sm font-medium">{it.label}</Label>
+              <div key={it.key} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                <Label htmlFor={it.key} className="min-w-0 text-sm font-medium">{it.label}</Label>
                 <Switch
                   id={it.key}
                   checked={prefs[it.key] ?? false}
-                  onCheckedChange={(v) => setPrefs((p) => ({ ...p, [it.key]: v }))}
+                  onCheckedChange={(v) => { setSaved(false); setPrefs((p) => ({ ...p, [it.key]: v })); }}
                 />
               </div>
             ))}
@@ -123,7 +143,7 @@ const AIPreferences = () => {
       ))}
 
       <div className="flex justify-end">
-        <Button>Save AI Preferences</Button>
+        <Button onClick={save}>{saved ? "Saved on this device" : "Save AI Preferences"}</Button>
       </div>
     </div>
   );

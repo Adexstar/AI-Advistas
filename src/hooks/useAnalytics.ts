@@ -133,7 +133,7 @@ export function useAnalytics(range: AnalyticsRange = 'daily') {
       reach: c.reach ? `${c.reach >= 1000 ? `${(c.reach / 1000).toFixed(0)}K` : c.reach}` : '0',
       ctr: c.ctr ? `${Number(c.ctr).toFixed(1)}%` : '0%',
       pct: Math.min(Math.round((Number(c.roas || 0) / 6) * 100), 100),
-      img: c.thumbnail_url || 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=200&h=200&fit=crop',
+      img: c.thumbnail_url || '',
     })), [campaigns]);
 
   const campaignRows = useMemo(() =>
@@ -150,15 +150,15 @@ export function useAnalytics(range: AnalyticsRange = 'daily') {
       name: t.name,
       usage: t.usage_count ? `${t.usage_count >= 1000 ? `${(t.usage_count / 1000).toFixed(1)}K` : t.usage_count}` : '—',
       ctr: t.ctr ? `${Number(t.ctr).toFixed(1)}%` : '—',
-      pct: Math.min(t.usage_count ? Math.round((t.usage_count / 10) * 100) : 50, 100),
-      img: t.thumbnail_url || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=200&h=200&fit=crop',
+      pct: t.usage_count ? Math.min(Math.round((t.usage_count / 10) * 100), 100) : 0,
+      img: t.thumbnail_url || '',
     })), [templates]);
 
   const mediaAssets = useMemo(() =>
     mediaRows.slice(0, 4).map((m: any) => ({
       name: m.name,
-      usage: `Used in ${m.usage_count || Math.floor(Math.random() * 60)} ads`,
-      pct: m.usage_count ? Math.min(Math.round((m.usage_count / 60) * 100), 100) : Math.floor(Math.random() * 60),
+      usage: m.usage_count ? `Used in ${m.usage_count} ads` : 'Usage not tracked',
+      pct: m.usage_count ? Math.min(Math.round((m.usage_count / 60) * 100), 100) : 0,
       icon: m.type === 'video' ? 'Video' : 'Image',
     })), [mediaRows]);
 
@@ -205,12 +205,11 @@ export function useAnalytics(range: AnalyticsRange = 'daily') {
   const exportStats = useMemo(() => {
     const images = mediaRows.filter((m: any) => m.type === 'image' || !m.type).length;
     const videos = mediaRows.filter((m: any) => m.type === 'video').length;
-    const total = Math.max(images + videos, 1);
+    const other = mediaRows.filter((m: any) => m.type && m.type !== 'image' && m.type !== 'video').length;
     return [
-      { name: 'Images', value: images || Math.round(total * 0.6), color: '#F47B35' },
-      { name: 'Videos', value: videos || Math.round(total * 0.25), color: '#3b82f6' },
-      { name: 'Documents', value: Math.round(total * 0.1), color: '#9299A2' },
-      { name: 'Other', value: Math.round(total * 0.05), color: '#f472b6' },
+      { name: 'Images', value: images, color: '#F47B35' },
+      { name: 'Videos', value: videos, color: '#3b82f6' },
+      { name: 'Other', value: other, color: '#9299A2' },
     ];
   }, [mediaRows]);
 
