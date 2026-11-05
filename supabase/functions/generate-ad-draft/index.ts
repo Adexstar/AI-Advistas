@@ -11,7 +11,19 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, goal, platform } = await req.json();
+    const body = await req.json();
+    const platformList = Array.isArray(body.platform)
+      ? body.platform
+      : typeof body.platform === "string" && body.platform
+        ? [body.platform]
+        : [];
+    const prompt = body.prompt || [
+      body.productName && `Product: ${body.productName}`,
+      body.templateType && `Format: ${body.templateType}`,
+      body.targetAudience && `Audience: ${body.targetAudience}`,
+    ].filter(Boolean).join(". ");
+    const goal = body.goal;
+    const platform = platformList;
 
     if (!prompt || prompt.length < 20) {
       return new Response(
@@ -76,7 +88,7 @@ Available platform placements:
 
     const userPrompt = `User's ad description: "${prompt}"
 ${goal ? `Goal: ${goal}` : ''}
-${platform && platform.length > 0 ? `Preferred platforms: ${platform.join(', ')}` : ''}
+${platform.length > 0 ? `Preferred platforms: ${platform.join(', ')}` : ''}
 
 Generate a complete ad draft based on this information.`;
 

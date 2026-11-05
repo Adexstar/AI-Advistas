@@ -247,34 +247,29 @@ export default function AdminProviders() {
     (acc[p.category] ||= []).push(p);
     return acc;
   }, {});
+  const categoryOrder = ["search", "generate-image", "generate-video", "ai", "media", "brand", "publishing"];
+  const categories = [
+    ...categoryOrder.filter((id) => grouped[id]),
+    ...Object.keys(grouped).filter((id) => !categoryOrder.includes(id)),
+  ];
 
   return (
-    <div className="container mx-auto p-6 space-y-6 max-w-6xl">
+    <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">External Providers</h1>
-          <p className="text-muted-foreground mt-2">
-            Configure, smoke-test, and interactively try every adapter behind AdVista.
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} /> Refresh
-        </Button>
-      </div>
-
-      <Alert>
-        <AlertDescription>
-          API keys are stored as Supabase Edge Function secrets.{" "}
+        <p className="text-sm text-muted-foreground">
+          Keys live in Edge Function secrets.{" "}
           <a
             href="https://supabase.com/dashboard/project/mvfmasacpbjnyfakdwfp/settings/functions"
             target="_blank" rel="noreferrer" className="underline"
           >
-            Manage keys here
+            Manage keys
           </a>
-          . <span className="font-medium">Test</span> runs a fixed smoke call.{" "}
-          <span className="font-medium">Try it</span> opens a playground where you can send custom input and see the real response.
-        </AlertDescription>
-      </Alert>
+          . A prompt test sends a short request. Image and video checks run a real generation when the key is set. Publishing checks only confirm the secrets are present. Try it sends the prompt you type, and AI tests name the provider.
+        </p>
+        <Button variant="outline" size="sm" onClick={load} disabled={loading} className="shrink-0">
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} /> Refresh
+        </Button>
+      </div>
 
       {loadError && (
         <Alert variant="destructive">
@@ -286,7 +281,9 @@ export default function AdminProviders() {
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
       )}
 
-      {Object.entries(grouped).map(([cat, list]) => (
+      {categories.map((cat) => {
+        const list = grouped[cat];
+        return (
         <div key={cat} className="space-y-3">
           <h2 className="text-lg font-semibold text-muted-foreground">{CATEGORY_LABEL[cat] ?? cat}</h2>
           <div className="grid gap-4 md:grid-cols-2">
@@ -312,8 +309,8 @@ export default function AdminProviders() {
                   <CardContent className="space-y-3">
                     <div className="space-y-1">
                       {p.envStatus.map((e) => (
-                        <div key={e.name} className="flex items-center justify-between text-xs font-mono">
-                          <span>{e.name}</span>
+                        <div key={e.name} className="flex items-center justify-between gap-3 text-xs font-mono">
+                          <span className="min-w-0 break-all">{e.name}</span>
                           {e.present ? (
                             <span className="text-green-500">set</span>
                           ) : (
@@ -328,7 +325,7 @@ export default function AdminProviders() {
                         disabled={testing[p.id]}
                       >
                         {testing[p.id] ? <Loader2 className="h-3 w-3 mr-2 animate-spin" /> : null}
-                        Test API Key
+                        {p.category === "publishing" ? "Check credentials" : p.category === "ai" ? "Test prompt" : p.category.startsWith("generate") ? "Run smoke prompt" : "Test search"}
                       </Button>
                       {p.playgroundFn && (
                         <Button
@@ -373,7 +370,8 @@ export default function AdminProviders() {
             })}
           </div>
         </div>
-      ))}
+        );
+      })}
 
       <PlaygroundDialog
         provider={playgroundFor}
@@ -402,8 +400,13 @@ function PlaygroundDialog({ provider, onClose }: { provider: Provider | null; on
     if (!provider) return;
     setBusy(true);
     setResult(null);
+    const input: Record<string, unknown> = { ...values };
+    for (const key of ["temperature", "maxTokens", "width", "height"]) {
+      if (typeof input[key] === "string" && input[key] !== "") input[key] = Number(input[key]);
+    }
+    if (provider.category === "ai") input.preferredProvider = provider.id;
     const { data, error } = await supabase.functions.invoke("provider-status", {
-      body: { action: "playground", id: provider.id, input: values },
+      body: { action: "playground", id: provider.id, input },
     });
     const r: TestResult = error ? { ok: false, error: error.message } : data;
     setResult(r);

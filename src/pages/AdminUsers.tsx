@@ -1,15 +1,14 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Settings2 } from 'lucide-react';
 import { formatBytes, useAdminUserDetail, useAdminUsers, type AdminUserRow } from '@/hooks/admin/useAdminData';
-import { toast } from 'sonner';
 
 const PAGE_SIZE = 25;
 
@@ -20,7 +19,7 @@ export default function AdminUsers() {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<AdminUserRow | null>(null);
 
-  const { data: rows = [], isLoading } = useAdminUsers({
+  const { data: rows = [], isLoading, isError } = useAdminUsers({
     search,
     plan: plan === 'all' ? null : plan,
     status: status === 'all' ? null : status,
@@ -33,10 +32,8 @@ export default function AdminUsers() {
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const start = useMemo(() => (total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1), [page, total]);
 
-  const notAvailable = () => toast.info('This action is not wired up yet.');
-
   return (
-    <div className="space-y-4 p-4 md:p-6">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-0 flex-[1_1_220px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -73,7 +70,9 @@ export default function AdminUsers() {
 
       <Card>
         <CardContent className="p-0">
-          {isLoading ? (
+          {isError ? (
+            <p className="p-8 text-center text-sm text-muted-foreground">Accounts couldn’t be loaded.</p>
+          ) : isLoading ? (
             <div className="space-y-2 p-4">
               {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-lg" />)}
             </div>
@@ -101,13 +100,12 @@ export default function AdminUsers() {
                   <div className="text-xs">
                     <p className="text-muted-foreground">Storage</p>
                     <p className="font-medium">{formatBytes(Number(u.storage_bytes))}</p>
-                    <Progress value={Math.min(100, Number(u.storage_bytes) / (5 * 1024 ** 3) * 100)} className="mt-1 h-1.5" />
                   </div>
                   <div className="text-xs">
                     <p className="text-muted-foreground">AI usage</p>
                     <p className="font-medium">{Number(u.ai_credits)}</p>
                   </div>
-                  <Button variant="ghost" size="icon" aria-label="User actions" onClick={() => setSelected(u)}>
+                  <Button variant="ghost" size="icon" aria-label="Account details" onClick={() => setSelected(u)}>
                     <Settings2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -136,19 +134,9 @@ export default function AdminUsers() {
           </SheetHeader>
 
           <div className="mt-6 space-y-6">
-            <section>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actions</p>
-              <div className="grid gap-2">
-                {['View Workspace', 'View Campaigns', 'View Decision Log', 'Reset AI Credits', 'Add Storage', 'Change Plan'].map((a) => (
-                  <Button key={a} variant="outline" size="sm" className="justify-start" onClick={notAvailable}>
-                    {a}
-                  </Button>
-                ))}
-                <Button variant="destructive" size="sm" className="justify-start" onClick={notAvailable}>
-                  Suspend Account
-                </Button>
-              </div>
-            </section>
+            <Button asChild variant="outline" size="sm" className="w-full justify-start">
+              <Link to="/admin/decisions">Open decision log</Link>
+            </Button>
 
             <section>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Details</p>

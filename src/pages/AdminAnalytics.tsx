@@ -26,7 +26,7 @@ const Stat = ({ label, value, change }: { label: string; value: string; change?:
 );
 
 export default function AdminAnalytics() {
-  const { data: stats, isLoading } = useAdminOverview();
+  const { data: stats, isLoading, isError } = useAdminOverview();
   const { data: decisions } = useAdminDecisionStats();
   const { data: trends } = useAdminActionTrends();
 
@@ -51,16 +51,24 @@ export default function AdminAnalytics() {
     URL.revokeObjectURL(url);
   };
 
+  if (isError) {
+    return (
+      <p className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+        Analytics couldn’t be loaded. Sign in as an admin and try again.
+      </p>
+    );
+  }
+
   if (isLoading) {
     return (
-      <div className="grid gap-4 p-6 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
       </div>
     );
   }
 
   return (
-    <div className="space-y-5 p-4 md:p-6">
+    <div className="space-y-5">
       <div className="flex justify-end">
         <Button variant="outline" size="sm" onClick={exportCsv}>
           <Download className="mr-2 h-4 w-4" /> Export CSV
@@ -71,7 +79,6 @@ export default function AdminAnalytics() {
         <Stat
           label="New users (30d)"
           value={Number(stats?.users_new_30d ?? 0).toLocaleString()}
-          change={pctChange(stats?.users_total ?? 0, stats?.users_prev ?? 0)}
         />
         <Stat
           label="Campaigns (30d)"

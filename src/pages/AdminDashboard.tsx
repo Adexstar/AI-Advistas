@@ -84,11 +84,6 @@ export default function AdminDashboard() {
           action: { label: 'View log', to: '/admin/decisions' },
         }
       : null,
-    {
-      tone: 'warning' as const,
-      text: 'Check provider quotas and API health',
-      action: { label: 'View details', to: '/admin/providers' },
-    },
   ].filter(Boolean) as { tone: 'destructive' | 'warning'; text: string; action: { label: string; to: string } }[];
 
   const sections = (
@@ -107,9 +102,20 @@ export default function AdminDashboard() {
     </section>
   );
 
+  if (isError) {
+    return (
+      <div className="space-y-5">
+        {sections}
+        <p className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+          System stats couldn’t be loaded. Template review, imports, users, and providers are still available above.
+        </p>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
-      <div className="space-y-4 p-6">
+      <div className="space-y-4">
         {sections}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -121,7 +127,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-5 p-4 md:p-6">
+    <div className="space-y-5">
       <section>
         <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           System overview — last 30 days
@@ -150,11 +156,6 @@ export default function AdminDashboard() {
       </section>
 
       {sections}
-      {isError && (
-        <p className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
-          System stats couldn’t be loaded. The review, import, user, and provider pages are still available above.
-        </p>
-      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
@@ -164,6 +165,11 @@ export default function AdminDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {alerts.length === 0 && (
+              <div className="flex items-center gap-2 rounded-lg border border-border/60 p-3 text-sm text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Nothing in the review queue.
+              </div>
+            )}
             {alerts.map((a, i) => (
               <div key={i} className="flex items-center justify-between gap-3 rounded-lg border border-border/60 p-3">
                 <div className="flex items-center gap-2">
@@ -177,9 +183,6 @@ export default function AdminDashboard() {
                 </Button>
               </div>
             ))}
-            <div className="flex items-center gap-2 rounded-lg border border-border/60 p-3 text-sm text-muted-foreground">
-              <CheckCircle2 className="h-4 w-4 text-emerald-500" /> All other systems operational
-            </div>
           </CardContent>
         </Card>
 

@@ -185,7 +185,7 @@ export default function AdminTemplates() {
   };
 
   return (
-    <div className="container mx-auto max-w-full space-y-6 p-4 md:p-6">
+    <div className="space-y-6">
       <div className="flex flex-wrap justify-end gap-2">
         <Button asChild variant="outline">
           <Link to="/admin/templates/gallery">Imports</Link>
