@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   BarChart3,
@@ -77,7 +76,7 @@ const navGroups: NavGroup[] = [
     title: "Operations",
     items: [
       { name: "Export Center", href: "/exports", icon: Download, soon: true },
-      { name: "Integrations Hub", href: "/integrations", icon: Plug, soon: true },
+      { name: "Integrations Hub", href: "/integrations", icon: Plug },
       { name: "Notifications", href: "/notifications", icon: Bell, soon: true },
       { name: "Automation Center", href: "/automation", icon: Zap, soon: true },
       { name: "Team Workspace", href: "/team", icon: Users, soon: true },
@@ -250,7 +249,7 @@ const SidebarBody = ({
   onOpenSearch: () => void;
 }) => {
   const close = () => onClose?.();
-  const planLabel = "Pro Plan";
+  const planLabel = "Workspace";
   const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Welcome";
 
   return (
@@ -346,20 +345,7 @@ const SidebarBody = ({
                 <Badge className="h-5 rounded-full bg-primary/20 px-2 text-[10px] text-primary-foreground hover:bg-primary/20">{planLabel}</Badge>
               </div>
               <div className="space-y-2">
-                <div>
-                  <div className="mb-0.5 flex items-center justify-between text-[10px] text-white/60">
-                    <span>Storage</span>
-                    <span>3.2 / 10 GB</span>
-                  </div>
-                  <Progress value={32} className="h-1.5 bg-white/10" />
-                </div>
-                <div>
-                  <div className="mb-0.5 flex items-center justify-between text-[10px] text-white/60">
-                    <span>Campaigns</span>
-                    <span>12 / ∞</span>
-                  </div>
-                  <Progress value={60} className="h-1.5 bg-white/10" />
-                </div>
+                <p className="text-[11px] leading-relaxed text-white/60">Storage and campaign quotas are not connected to billing yet, so this panel does not show a usage number.</p>
               </div>
               <Button asChild size="sm" className="mt-3 h-8 w-full rounded-lg bg-white text-primary hover:bg-white/90">
                 <NavLink to="/billing" onClick={close}>Upgrade Plan</NavLink>
@@ -484,7 +470,6 @@ const DashboardShell = () => {
             <Button asChild variant="outline" size="icon" className="relative h-9 w-9 rounded-lg">
               <NavLink to="/notifications" aria-label="Notifications">
                 <Bell className="h-4 w-4" />
-                <span className="absolute -right-1 -top-1"><NotifyBadge count={4} variant="unread" /></span>
               </NavLink>
             </Button>
             <Button variant="outline" size="icon" className="h-9 w-9 rounded-lg">

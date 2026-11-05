@@ -118,56 +118,54 @@ export function CampaignAnalyticsTab({ campaignId, campaign }: Props) {
   const roasBench = BenchmarkService.compare(campaign.campaign_category, 'roas', unified.totals.roas);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" /> Campaign Intelligence
+    <div className="min-w-0 space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h3 className="flex items-center gap-2 text-base font-semibold sm:text-lg">
+            <Sparkles className="h-4 w-4 shrink-0 text-primary" /> Campaign Intelligence
           </h3>
           <p className="text-sm text-muted-foreground">Unified analytics across every connected platform.</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => sync.mutate()} disabled={sync.isPending}>
+        <div className="flex flex-col gap-2 min-[420px]:flex-row">
+          <Button variant="outline" size="sm" className="w-full min-[420px]:w-auto" onClick={() => sync.mutate()} disabled={sync.isPending}>
             <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${sync.isPending ? 'animate-spin' : ''}`} />
             Sync platforms
           </Button>
-          <Button size="sm" onClick={() => generateRecs.mutate()} disabled={generateRecs.isPending || !unified.totals.impressions}>
+          <Button size="sm" className="w-full min-[420px]:w-auto" onClick={() => generateRecs.mutate()} disabled={generateRecs.isPending || !unified.totals.impressions}>
             <Sparkles className="h-3.5 w-3.5 mr-1.5" />
             Generate AI insights
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {kpis.map((k) => (
-          <Card key={k.label}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{k.label}</span>
-                <k.icon className="h-3.5 w-3.5 text-muted-foreground" />
+          <Card key={k.label} className="min-w-0">
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="min-w-0 truncate text-xs text-muted-foreground">{k.label}</span>
+                <k.icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               </div>
-              <div className="text-xl font-bold mt-1 tabular-nums">{k.value}</div>
+              <div className="mt-1 truncate text-base font-bold tabular-nums sm:text-xl">{k.value}</div>
             </CardContent>
           </Card>
         ))}
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <div className="tabs-scroll-shell">
-          <TabsList className="tabs-scroll-list">
-            <TabsTrigger value="overview" className="shrink-0">Overview</TabsTrigger>
-            <TabsTrigger value="platforms" className="shrink-0">Platforms</TabsTrigger>
-            <TabsTrigger value="creatives" className="shrink-0">Creatives</TabsTrigger>
-            <TabsTrigger value="audience" className="shrink-0">Audience</TabsTrigger>
-            <TabsTrigger value="insights" className="shrink-0">AI Insights</TabsTrigger>
-          </TabsList>
-        </div>
+        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
+          <TabsTrigger value="overview" className="shrink-0">Overview</TabsTrigger>
+          <TabsTrigger value="platforms" className="shrink-0">Platforms</TabsTrigger>
+          <TabsTrigger value="creatives" className="shrink-0">Creatives</TabsTrigger>
+          <TabsTrigger value="audience" className="shrink-0">Audience</TabsTrigger>
+          <TabsTrigger value="insights" className="shrink-0">AI Insights</TabsTrigger>
+        </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          <Card>
+          <Card className="min-w-0">
             <CardContent className="p-4">
               <div className="text-sm font-medium mb-3">Performance timeline</div>
-              <div className="h-64">
+              <div className="h-64 min-w-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={unified.timeline}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
@@ -212,7 +210,7 @@ export function CampaignAnalyticsTab({ campaignId, campaign }: Props) {
           <Card>
             <CardContent className="p-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="h-64">
+                <div className="h-64 min-w-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={unified.byPlatform} dataKey="revenue" nameKey="platform" innerRadius={40} outerRadius={80}>
@@ -227,12 +225,12 @@ export function CampaignAnalyticsTab({ campaignId, campaign }: Props) {
                 </div>
                 <div className="space-y-2">
                   {unified.byPlatform.map((p) => (
-                    <div key={p.platform} className="flex items-center justify-between rounded-lg border p-3">
-                      <div>
-                        <div className="text-sm font-medium capitalize">{p.platform}</div>
+                    <div key={p.platform} className="flex min-w-0 items-center justify-between gap-3 rounded-lg border p-3">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-medium capitalize">{p.platform}</div>
                         <div className="text-xs text-muted-foreground">CTR {p.ctr.toFixed(2)}% • ROAS {p.roas.toFixed(2)}x</div>
                       </div>
-                      <Badge variant={p.roas >= 3 ? 'default' : 'secondary'}>${p.revenue.toFixed(0)}</Badge>
+                      <Badge className="shrink-0" variant={p.roas >= 3 ? 'default' : 'secondary'}>${p.revenue.toFixed(0)}</Badge>
                     </div>
                   ))}
                   {!unified.byPlatform.length && <p className="text-sm text-muted-foreground">No platform data yet. Sync to populate.</p>}
@@ -264,7 +262,7 @@ export function CampaignAnalyticsTab({ campaignId, campaign }: Props) {
           <Card>
             <CardContent className="p-4">
               {audienceQ.data?.length ? (
-                <div className="h-64">
+                <div className="h-64 min-w-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={audienceQ.data.map((a) => ({ name: a.segment_value, revenue: Number(a.revenue), ctr: Number(a.ctr) }))}>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
@@ -301,7 +299,7 @@ export function CampaignAnalyticsTab({ campaignId, campaign }: Props) {
           {(recsQ.data ?? []).map((r) => (
             <Card key={r.id}>
               <CardContent className="p-4 space-y-3">
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <Badge variant={r.priority === 'high' ? 'default' : 'secondary'} className="text-[10px] capitalize">{r.priority}</Badge>
@@ -311,14 +309,14 @@ export function CampaignAnalyticsTab({ campaignId, campaign }: Props) {
                     <p className="text-sm text-muted-foreground mt-1">{r.description}</p>
                     {r.reasoning && <p className="text-xs text-muted-foreground mt-2 italic">Why: {r.reasoning}</p>}
                   </div>
-                  <div className="text-right shrink-0">
+                  <div className="shrink-0 sm:text-right">
                     <div className="text-xs text-muted-foreground">Confidence</div>
                     <div className="text-sm font-semibold">{r.confidence}%</div>
                     <Progress value={r.confidence} className="h-1 w-16 mt-1" />
                   </div>
                 </div>
                 {r.status === 'pending' && (
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button size="sm" onClick={() => respond.mutate({ id: r.id, status: 'accepted' })}>
                       <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> Accept
                     </Button>
@@ -349,12 +347,12 @@ export function CampaignAnalyticsTab({ campaignId, campaign }: Props) {
 
 function BenchRow({ label, value, bench, better, diff }: { label: string; value: string; bench: string; better: boolean; diff: number }) {
   return (
-    <div className="flex items-center justify-between text-sm">
-      <div>
+    <div className="flex items-start justify-between gap-3 text-sm">
+      <div className="min-w-0">
         <div className="text-muted-foreground text-xs">{label}</div>
-        <div className="font-semibold">{value}</div>
+        <div className="font-semibold tabular-nums">{value}</div>
       </div>
-      <div className="text-right">
+      <div className="shrink-0 text-right">
         <div className="text-muted-foreground text-xs">Benchmark {bench}</div>
         <div className={`text-xs flex items-center gap-1 justify-end ${better ? 'text-emerald-600' : 'text-red-600'}`}>
           {better ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
@@ -367,9 +365,9 @@ function BenchRow({ label, value, bench, better, diff }: { label: string; value:
 
 function ForecastRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-muted/40 p-2">
+    <div className="min-w-0 rounded-lg bg-muted/40 p-2">
       <div className="text-[11px] text-muted-foreground">{label}</div>
-      <div className="font-semibold text-sm tabular-nums">{value}</div>
+      <div className="truncate font-semibold text-sm tabular-nums">{value}</div>
     </div>
   );
 }

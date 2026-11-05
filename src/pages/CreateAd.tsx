@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'sonner';
 import {
-  ArrowLeft, ArrowRight, Bell, Check, Eye,
+  ArrowLeft, ArrowRight, Check, Eye,
   Facebook, Instagram, Linkedin, Image as ImageIcon, Link, Loader2, MapPin,
   Save, Send, Sparkles, Target, Upload, Users, Video, X, Edit3,
   Calendar as CalendarIcon, ShoppingCart, Menu,
@@ -159,7 +159,7 @@ function Field({ label, hint, children, required }: { label: string; hint?: stri
 function StepSection({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
     <div className="mb-6">
-      <h3 className="font-section-header text-[#111827]">{title}</h3>
+      <h3 className="font-section-header text-foreground">{title}</h3>
       {subtitle && <p className="font-label text-muted-foreground mt-0.5 mb-4">{subtitle}</p>}
       {children}
     </div>
@@ -189,6 +189,7 @@ export default function CreateAd() {
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [previewTab, setPreviewTab] = useState<'mobile' | 'desktop'>('mobile');
   const [previewPlatform, setPreviewPlatform] = useState('facebook_feed');
+  const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [applyingTemplate, setApplyingTemplate] = useState(false);
   const [designName, setDesignName] = useState<string | null>(null);
@@ -503,10 +504,10 @@ export default function CreateAd() {
       </div>
 
       {/* Right Preview Panel */}
-      <div className="hidden lg:block flex-1 max-w-[420px]">
+      <div id="ad-preview" className={cn(showMobilePreview ? "block" : "hidden", "w-full flex-1 lg:block lg:max-w-[420px]")}>
         <div className="sticky top-24 space-y-4">
           <div>
-            <h3 className="font-section-header text-[#111827]">Ad Preview</h3>
+            <h3 className="font-section-header text-foreground">Ad Preview</h3>
             <p className="font-label text-muted-foreground">See how your ad will look across platforms.</p>
           </div>
           <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
@@ -760,7 +761,7 @@ export default function CreateAd() {
                   field.value === 'daily' ? 'border-primary' : 'border-border')}>
                   {field.value === 'daily' && <div className="w-2 h-2 rounded-full bg-primary" />}
                 </div>
-                <p className="text-sm font-bold text-[#111827]">Daily Budget</p>
+                <p className="text-sm font-bold text-foreground">Daily Budget</p>
                 <p className="text-xs text-muted-foreground mt-1 leading-relaxed">Best for always-on campaigns and boost-style delivery.</p>
               </button>
               <button type="button" onClick={() => field.onChange('total')}
@@ -770,7 +771,7 @@ export default function CreateAd() {
                   field.value === 'total' ? 'border-primary' : 'border-border')}>
                   {field.value === 'total' && <div className="w-2 h-2 rounded-full bg-primary" />}
                 </div>
-                <p className="text-sm font-bold text-[#111827]">Total Budget</p>
+                <p className="text-sm font-bold text-foreground">Total Budget</p>
                 <p className="text-xs text-muted-foreground mt-1 leading-relaxed">Best when you know the full campaign spend upfront.</p>
               </button>
             </>
@@ -795,7 +796,7 @@ export default function CreateAd() {
         {/* Estimated Reach Card */}
         <div className="bg-[#F8F8FC] border border-[#E8E8F0] rounded-xl p-4 mb-5">
           <p className="text-xs font-semibold text-foreground">{reachEstimate.label}</p>
-          <p className="text-2xl font-extrabold text-[#111827] mt-1">
+          <p className="text-2xl font-extrabold text-foreground mt-1">
             {reachEstimate.low.toLocaleString()} – {reachEstimate.high.toLocaleString()}
           </p>
           <div className="h-1.5 bg-[#E8E8F0] rounded mt-3 overflow-hidden">
@@ -808,7 +809,7 @@ export default function CreateAd() {
 
         {/* Schedule Section */}
         <div>
-          <h4 className="text-base font-bold text-[#111827] mb-4">Schedule</h4>
+          <h4 className="text-base font-bold text-foreground mb-4">Schedule</h4>
 
           <Label className="font-label text-foreground mb-1.5 block">Start Date</Label>
           <Controller control={control} name="startDate" render={({ field }) => (
@@ -816,7 +817,7 @@ export default function CreateAd() {
               <PopoverTrigger asChild>
                 <button className="w-full h-12 flex items-center gap-2.5 px-3.5 border-[1.5px] border-border rounded-[10px] bg-card text-left">
                   <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-[#111827] flex-1">{format(field.value, 'dd/MM/yyyy')}</span>
+                  <span className="text-sm text-foreground flex-1">{format(field.value, 'dd/MM/yyyy')}</span>
                   <span className="text-xs text-primary">Change</span>
                 </button>
               </PopoverTrigger>
@@ -841,7 +842,7 @@ export default function CreateAd() {
                         {field.value === 'continuous' && <div className="w-2 h-2 rounded-full bg-primary" />}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-[#111827]">Run Continuously</p>
+                        <p className="text-sm font-semibold text-foreground">Run Continuously</p>
                         <p className="text-xs text-muted-foreground">Keep the campaign live until you pause it from Campaigns.</p>
                       </div>
                     </div>
@@ -855,7 +856,7 @@ export default function CreateAd() {
                         {field.value === 'end_date' && <div className="w-2 h-2 rounded-full bg-primary" />}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-[#111827]">Choose an End Date</p>
+                        <p className="text-sm font-semibold text-foreground">Choose an End Date</p>
                         <p className="text-xs text-muted-foreground">Set a clear campaign window when you know the promotion should stop.</p>
                       </div>
                     </div>
@@ -869,7 +870,7 @@ export default function CreateAd() {
                             <PopoverTrigger asChild>
                               <button className="w-full h-12 flex items-center gap-2.5 px-3.5 border-[1.5px] border-border rounded-[10px] bg-card text-left">
                                 <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm text-[#111827] flex-1">{endField.value ? format(endField.value, 'dd/MM/yyyy') : 'Select date'}</span>
+                                <span className="text-sm text-foreground flex-1">{endField.value ? format(endField.value, 'dd/MM/yyyy') : 'Select date'}</span>
                                 <span className="text-xs text-primary">Change</span>
                               </button>
                             </PopoverTrigger>
@@ -892,7 +893,7 @@ export default function CreateAd() {
 
         {/* Campaign Summary Card */}
         <div className="bg-[#F8F8FC] border border-[#E8E8F0] rounded-xl p-4 mt-5">
-          <p className="text-xs font-bold text-[#111827] mb-3">Campaign Summary</p>
+          <p className="text-xs font-bold text-foreground mb-3">Campaign Summary</p>
           <div className="space-y-2">
             <SummaryRow label={`${values.budgetType === 'daily' ? 'Daily' : 'Total'} Budget`} value={`$${values.budgetAmount.toFixed(2)}`} />
             <SummaryRow label={reachEstimate.label} value={`${reachEstimate.low.toLocaleString()} – ${reachEstimate.high.toLocaleString()} people`} />
@@ -1009,7 +1010,14 @@ export default function CreateAd() {
               className="h-9 w-9 sm:w-auto sm:px-3 text-xs font-medium text-foreground border border-border rounded-lg hover:bg-muted/50 transition grid place-items-center sm:flex sm:items-center sm:gap-1.5">
               <Save className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Save Draft</span>
             </button>
-            <button className="h-9 w-9 sm:w-auto sm:px-3 text-xs font-medium text-foreground border border-border rounded-lg hover:bg-muted/50 transition grid place-items-center sm:flex sm:items-center sm:gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                if (step !== 1) setStep(1);
+                setShowMobilePreview(true);
+                window.setTimeout(() => document.getElementById("ad-preview")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+              }}
+              className="h-9 w-9 sm:w-auto sm:px-3 text-xs font-medium text-foreground border border-border rounded-lg hover:bg-muted/50 transition grid place-items-center sm:flex sm:items-center sm:gap-1.5">
               <Eye className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Preview</span>
             </button>
             <button
@@ -1019,10 +1027,6 @@ export default function CreateAd() {
               {publishing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : step < 5 ? <ArrowRight className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
               <span className="hidden sm:inline">{step < 5 ? 'Next' : 'Publish'}</span>
             </button>
-            <div className="relative shrink-0 hidden sm:block">
-              <Bell className="h-5 w-5 text-muted-foreground" />
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
-            </div>
           </div>
         </div>
       </div>
@@ -1058,7 +1062,7 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between font-label">
       <span className="text-muted-foreground">{label}</span>
-      <span className="font-semibold text-[#111827]">{value}</span>
+      <span className="font-semibold text-foreground">{value}</span>
     </div>
   );
 }
@@ -1071,7 +1075,7 @@ function ReviewCard({ title, rows }: { title: string; rows: [string, string][] }
         {rows.map(([k, v]) => (
           <div key={k} className="flex justify-between gap-2 font-label">
             <dt className="text-muted-foreground">{k}</dt>
-            <dd className="font-medium text-[#111827] text-right truncate min-w-0 max-w-[140px]">{v}</dd>
+            <dd className="font-medium text-foreground text-right truncate min-w-0 max-w-[140px]">{v}</dd>
           </div>
         ))}
       </dl>

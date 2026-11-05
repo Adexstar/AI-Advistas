@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Megaphone, DollarSign, ShoppingCart, TrendingUp, Calendar, Settings2,
+  Megaphone, DollarSign, ShoppingCart, TrendingUp,
   MoreHorizontal, ChevronRight,
 } from "lucide-react";
 import {
@@ -141,11 +141,11 @@ const Dashboard = () => {
 
   const perfSeries = useMemo(() => {
     // Ensure clicks + conversions + spend visible in chart
-    return performanceSeries.map((p, i) => ({
+    return performanceSeries.map((p) => ({
       name: p.name,
       Clicks: p.clicks,
       Conversions: p.conversions,
-      Spend: Math.round((p as any).revenue / 2) || 0, // proxy for spend if no field
+      Revenue: Number(p.revenue) || 0,
     }));
   }, [performanceSeries]);
 
@@ -160,22 +160,21 @@ const Dashboard = () => {
             Here's what's happening with your campaigns today.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="h-9 rounded-xl">
-            <Calendar className="h-3.5 w-3.5" /> Last 7 days
-          </Button>
-          <Button variant="outline" size="sm" className="h-9 rounded-xl">
-            <Settings2 className="h-3.5 w-3.5" /> Customize
-          </Button>
-        </div>
+        <Tabs value={range} onValueChange={(v) => setRange(v as Range)}>
+          <TabsList className="h-9 w-full rounded-xl bg-muted sm:w-auto">
+            <TabsTrigger value="daily" className="rounded-lg text-xs">7 days</TabsTrigger>
+            <TabsTrigger value="weekly" className="rounded-lg text-xs">30 days</TabsTrigger>
+            <TabsTrigger value="monthly" className="rounded-lg text-xs">90 days</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {/* 2. KPI cards — metric-cards-grid handles all breakpoints */}
       <div className="metric-cards-grid">
-        <KpiCard icon={Megaphone} label="Total Campaigns" value={compact(totals.campaigns)} delta={12} positive spark={spark("clicks")} color="hsl(252 83% 61%)" loading={loading} />
-        <KpiCard icon={DollarSign} label="Total Spend" value={money(totalSpend)} delta={8} positive={false} spark={spark("revenue")} color="hsl(320 78% 58%)" loading={loading} />
-        <KpiCard icon={ShoppingCart} label="Conversions" value={compact(totals.conversions)} delta={16} positive spark={spark("conversions")} color="hsl(142 71% 45%)" loading={loading} />
-        <KpiCard icon={TrendingUp} label="ROAS" value={`${totals.roas.toFixed(2)}x`} delta={12} positive spark={spark("revenue")} color="hsl(30 95% 55%)" loading={loading} />
+        <KpiCard icon={Megaphone} label="Total Campaigns" value={compact(totals.campaigns)} delta={null} spark={spark("clicks")} color="hsl(252 83% 61%)" loading={loading} />
+        <KpiCard icon={DollarSign} label="Total Spend" value={money(totalSpend)} delta={null} spark={spark("revenue")} color="hsl(320 78% 58%)" loading={loading} />
+        <KpiCard icon={ShoppingCart} label="Conversions" value={compact(totals.conversions)} delta={null} spark={spark("conversions")} color="hsl(142 71% 45%)" loading={loading} />
+        <KpiCard icon={TrendingUp} label="ROAS" value={`${totals.roas.toFixed(2)}x`} delta={null} spark={spark("revenue")} color="hsl(30 95% 55%)" loading={loading} />
       </div>
 
       {/* 3 + 4 + right column */}
@@ -189,7 +188,7 @@ const Dashboard = () => {
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-semibold">Performance Overview</p>
-                    <p className="text-[11px] text-muted-foreground">Clicks · Conversions · Spend</p>
+                    <p className="text-[11px] text-muted-foreground">Clicks · Conversions · Revenue</p>
                   </div>
                   <Tabs value={range} onValueChange={(v) => setRange(v as Range)}>
                     <TabsList className="h-8 rounded-lg bg-muted">
@@ -230,7 +229,7 @@ const Dashboard = () => {
                         <Legend wrapperStyle={{ fontSize: 11 }} iconType="circle" />
                         <Area type="monotone" dataKey="Clicks" stroke="hsl(252 83% 61%)" strokeWidth={2} fill="url(#gClicks)" />
                         <Area type="monotone" dataKey="Conversions" stroke="hsl(142 71% 45%)" strokeWidth={2} fill="url(#gConv)" />
-                        <Area type="monotone" dataKey="Spend" stroke="hsl(30 95% 55%)" strokeWidth={2} fill="url(#gSpend)" />
+                        <Area type="monotone" dataKey="Revenue" stroke="hsl(30 95% 55%)" strokeWidth={2} fill="url(#gSpend)" />
                       </AreaChart>
                     </ResponsiveContainer>
                   )}
@@ -320,7 +319,7 @@ const Dashboard = () => {
                       </TableHeader>
                       <TableBody>
                         {campaigns.slice(0, 6).map((c) => (
-                          <TableRow key={c.id} className="cursor-pointer" onClick={() => navigate("/campaigns")}>
+                          <TableRow key={c.id} className="cursor-pointer" onClick={() => navigate(`/campaigns/${c.id}`)}>
                             <TableCell className="font-medium">{c.name}</TableCell>
                             <TableCell>
                               <Badge className={cn("rounded-full px-2 py-0 text-[10px]", statusColor(c.status))}>{c.status}</Badge>
@@ -350,7 +349,7 @@ const Dashboard = () => {
                     {campaigns.slice(0, 6).map((c) => (
                       <button
                         key={c.id}
-                        onClick={() => navigate("/campaigns")}
+                        onClick={() => navigate(`/campaigns/${c.id}`)}
                         className="w-full rounded-xl border border-border/60 p-3 text-left transition hover:bg-muted/50"
                       >
                         <div className="flex items-center justify-between gap-2">

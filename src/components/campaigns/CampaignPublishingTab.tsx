@@ -161,14 +161,14 @@ export function CampaignPublishingTab({ campaign }: Props) {
         {/* Platforms */}
         <Card className="rounded-2xl">
           <CardContent className="p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
                 <h3 className="text-base font-bold">Platforms</h3>
                 <p className="text-xs text-muted-foreground">Choose where to publish this campaign.</p>
               </div>
-              <Badge variant="secondary">{selected.length} selected</Badge>
+              <Badge variant="secondary" className="w-fit">{selected.length} selected</Badge>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 sm:grid-cols-4">
               {PLATFORMS.map((p) => {
                 const v = validation[p.id];
                 const isSel = selected.includes(p.id);
@@ -176,15 +176,15 @@ export function CampaignPublishingTab({ campaign }: Props) {
                   <button
                     key={p.id}
                     onClick={() => toggle(p.id)}
-                    className={`flex items-start gap-2 rounded-xl border p-3 text-left transition ${isSel ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+                    className={`flex h-full min-w-0 items-start gap-2 rounded-xl border p-3 text-left transition ${isSel ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
                   >
-                    <Checkbox checked={isSel} className="mt-0.5" />
+                    <Checkbox checked={isSel} className="mt-0.5 shrink-0" />
                     <div className="min-w-0">
                       <p className="text-sm font-semibold">{p.label}</p>
                       <p className="text-[11px] text-muted-foreground capitalize">{p.mode}</p>
                       {isSel && v && !v.ok && (
-                        <p className="mt-1 text-[10px] text-red-600 flex items-center gap-1">
-                          <AlertTriangle className="h-3 w-3" /> {v.issues[0].message}
+                        <p className="mt-1 flex items-start gap-1 break-words text-[10px] leading-snug text-red-600">
+                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" /> {v.issues[0].message}
                         </p>
                       )}
                     </div>

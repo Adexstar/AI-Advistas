@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Activity, Archive, Copy, Edit3, Eye, Filter, MoreVertical, Pause,
+  Activity, Archive, Copy, Edit3, Eye, MoreVertical, Pause,
   Play, Plus, Search, ShoppingCart, Target, Trash2, TrendingUp, Sparkles,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -124,9 +124,6 @@ const Campaigns = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input placeholder="Search campaigns..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
-          <Button variant="outline" size="icon" className="hidden sm:inline-flex" aria-label="Filter">
-            <Filter className="w-4 h-4" />
-          </Button>
           <Button onClick={openCreate} variant="secondary" className="gap-2">
             <Sparkles className="w-4 h-4" /> Create Ad
           </Button>

@@ -127,13 +127,13 @@ const CampaignWorkspace = () => {
       <div className="page-container py-6 lg:py-8 space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex items-start gap-3">
+          <div className="flex min-w-0 items-start gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate('/campaigns')} className="mt-1 h-8 w-8 shrink-0">
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-3">
-                <h1 className="min-w-0 truncate text-2xl font-bold tracking-tight lg:text-3xl">{campaign.name}</h1>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="min-w-0 text-xl font-bold tracking-tight sm:text-2xl lg:text-3xl">{campaign.name}</h1>
                 <span
                   className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold capitalize"
                   style={{ background: `${statusColor}18`, color: statusColor }}
@@ -175,12 +175,12 @@ const CampaignWorkspace = () => {
           <MetricCard icon={Eye} label="CTR" value={`${(campaign.ctr || 0).toFixed(1)}%`} />
           <MetricCard icon={BarChart3} label="ROAS" value={`${(campaign.roas || 0).toFixed(1)}x`} />
           <MetricCard icon={Target} label="Conversions" value={(campaign.conversions || 0).toLocaleString()} />
-          <MetricCard icon={Sparkles} label="Health" value={`${health.overall}%`} sub="AI-powered" />
+          <MetricCard icon={Sparkles} label="Health" value={`${health.overall}%`} sub="From campaign health" />
         </div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="min-w-0 space-y-6">
-          <div className="tabs-scroll-shell sticky top-0 z-10 -mx-4 w-[calc(100%+2rem)] bg-background px-4">
+          <div className="tabs-scroll-shell sticky top-0 z-10 -mx-4 w-[calc(100%+2rem)] bg-background/95 px-4 py-2 shadow-sm backdrop-blur">
             <TabsList className="tabs-scroll-list inline-flex h-auto gap-1 rounded-xl border bg-card p-1">
               {CAMPAIGN_TABS.map((tab) => {
                 const Icon = tab.icon;
@@ -203,10 +203,10 @@ const CampaignWorkspace = () => {
             <CampaignHealthDashboard health={health} />
             <CampaignAIBrain campaign={campaign} />
             <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <QuickMetric label="Reach" value={(campaign.reach || 0).toLocaleString()} change="+12%" positive />
-              <QuickMetric label="Impressions" value={(campaign.impressions || 0).toLocaleString()} change="+8%" positive />
-              <QuickMetric label="Clicks" value={(campaign.clicks || 0).toLocaleString()} change="+15%" positive />
-              <QuickMetric label="Revenue" value={`$${(campaign.revenue || 0).toLocaleString()}`} change="+22%" positive />
+              <QuickMetric label="Reach" value={(campaign.reach || 0).toLocaleString()} />
+              <QuickMetric label="Impressions" value={(campaign.impressions || 0).toLocaleString()} />
+              <QuickMetric label="Clicks" value={(campaign.clicks || 0).toLocaleString()} />
+              <QuickMetric label="Revenue" value={`$${(campaign.revenue || 0).toLocaleString()}`} />
             </section>
             <section>
               <h3 className="text-lg font-bold mb-4">Campaign Timeline</h3>
@@ -332,21 +332,20 @@ const CampaignWorkspace = () => {
 };
 
 const MetricCard = ({ icon: Icon, label, value, sub }: { icon: React.ElementType; label: string; value: string; sub?: string }) => (
-  <Card className="rounded-2xl border border-border/60">
-    <CardContent className="p-4">
-      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1"><Icon className="h-3.5 w-3.5" />{label}</div>
-      <p className="text-xl font-bold">{value}</p>
-      {sub && <p className="text-[11px] text-muted-foreground mt-0.5">{sub}</p>}
+  <Card className="min-w-0 rounded-2xl border border-border/60">
+    <CardContent className="p-3 sm:p-4">
+      <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground"><Icon className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{label}</span></div>
+      <p className="break-words text-base font-bold tabular-nums sm:text-xl">{value}</p>
+      {sub && <p className="mt-0.5 text-[11px] text-muted-foreground">{sub}</p>}
     </CardContent>
   </Card>
 );
 
-const QuickMetric = ({ label, value, change, positive }: { label: string; value: string; change: string; positive: boolean }) => (
-  <Card className="rounded-2xl border border-border/60">
-    <CardContent className="p-4">
+const QuickMetric = ({ label, value }: { label: string; value: string }) => (
+  <Card className="min-w-0 rounded-2xl border border-border/60">
+    <CardContent className="p-3 sm:p-4">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 text-xl font-bold">{value}</p>
-      <span className={`text-xs font-medium ${positive ? 'text-emerald-600' : 'text-red-500'}`}>{change}</span>
+      <p className="mt-1 break-words text-base font-bold tabular-nums sm:text-xl">{value}</p>
     </CardContent>
   </Card>
 );
