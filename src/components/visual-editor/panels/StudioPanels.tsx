@@ -2,7 +2,7 @@
 // Visual language matches the existing dark editor chrome — only the
 // content is now real (Supabase templates, media library, live canvas ops).
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Canvas as FabricCanvas, Rect, Circle as FCircle, Triangle, Line, Polygon } from 'fabric';
+import { Canvas as FabricCanvas, Rect, Circle as FCircle, Triangle, Line, Polygon, Group } from 'fabric';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { signedMediaUrl } from '@/lib/mediaUrl';
@@ -11,9 +11,10 @@ import { toast } from '@/hooks/use-toast';
 import { placeFittedImage, replaceImageKeepingFrame } from '@/components/visual-editor/canvasImagePlacement';
 import { isOverlayScrim } from '@/services/templates/loadIntoCanvas';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ELEMENT_CATEGORIES, ELEMENT_LABELS } from '@/components/visual-editor/createRail';
 import {
   Search, Upload, Loader2, ImageIcon, Video, Music, FileText, Pipette, Plus, X, Info,
-  Sparkles, Mic, ChevronDown, Heart,
+  Sparkles, Mic, ChevronDown, Heart, ChevronLeft,
 } from 'lucide-react';
 
 const PANEL = 'studio-panel flex h-full min-h-0 flex-col';
@@ -521,7 +522,14 @@ const readAlbums = (): Album[] => {
   }
 };
 
-export const UploadsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: () => void; selected?: any; embedded?: boolean }> = ({ canvas, onChanged, selected, embedded = false }) => {
+export const UploadsPanel: React.FC<{
+  canvas: FabricCanvas | null;
+  onChanged?: () => void;
+  selected?: any;
+  embedded?: boolean;
+  pendingFiles?: FileList | File[] | null;
+  onPendingConsumed?: () => void;
+}> = ({ canvas, onChanged, selected, embedded = false, pendingFiles = null, onPendingConsumed }) => {
   const { user } = useAuth();
   const qc = useQueryClient();
   const rollRef = useRef<HTMLInputElement>(null);
@@ -581,7 +589,7 @@ export const UploadsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: (
     else await addImageToCanvas(canvas, src, onChanged);
   };
 
-  const upload = async (files: FileList | null) => {
+  const upload = async (files: FileList | File[] | null) => {
     if (!files?.length) return;
     setBusy(true);
     let failed = 0;
@@ -624,6 +632,13 @@ export const UploadsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: (
       [rollRef, cameraRef, filesRef].forEach((r) => { if (r.current) r.current.value = ''; });
     }
   };
+
+  const consumed = useRef<FileList | File[] | null>(null);
+  useEffect(() => {
+    if (!pendingFiles?.length || pendingFiles === consumed.current) return;
+    consumed.current = pendingFiles;
+    void upload(pendingFiles).finally(() => onPendingConsumed?.());
+  }, [pendingFiles]);
 
   const tile = 'flex flex-col items-center justify-center gap-1.5 rounded-lg bg-[#3D3D3D] py-3 text-[11px] font-medium text-[#CCCCCC] hover:bg-[#474747] disabled:opacity-60';
 
@@ -739,22 +754,13 @@ export const UploadsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: (
 };
 
 /* ============================ ELEMENTS ============================ */
-const ELEMENT_ITEMS = [
-  { id: 'rectangle', label: 'Rectangle' },
-  { id: 'rounded', label: 'Rounded' },
-  { id: 'circle', label: 'Circle' },
-  { id: 'triangle', label: 'Triangle' },
-  { id: 'line', label: 'Line' },
-  { id: 'star', label: 'Star' },
-  { id: 'badge', label: 'Badge bar' },
-  { id: 'frame', label: 'Frame' },
-] as const;
-
 export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: () => void; brandColors?: string[]; selected?: any }> = ({
   canvas, onChanged, brandColors = [], selected,
 }) => {
   const [q, setQ] = useState('');
+  const [category, setCategory] = useState<string | null>(null);
   const [fill, setFill] = useState(brandColors[0] || '#F47B35');
+  const photos = useMediaRows(['image']);
 
   // Keep the swatch in sync with whatever layer is selected on the canvas.
   useEffect(() => {
@@ -776,7 +782,15 @@ export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: 
     canvas.requestRenderAll();
     onChanged?.();
   };
-  const items = ELEMENT_ITEMS.filter((i) => i.label.toLowerCase().includes(q.trim().toLowerCase()));
+  const query = q.trim().toLowerCase();
+  const catalog = Object.entries(ELEMENT_LABELS).map(([id, label]) => ({ id, label }));
+  const activeCategory = ELEMENT_CATEGORIES.find((entry) => entry.id === category) ?? null;
+  const items = (query
+    ? catalog.filter((item) => item.label.toLowerCase().includes(query))
+    : activeCategory
+      ? activeCategory.items.map((id) => ({ id, label: ELEMENT_LABELS[id] }))
+      : []
+  );
 
   const add = (id: string) => {
     if (!canvas) return;
@@ -796,6 +810,20 @@ export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: 
           return { x: Math.cos(a) * r, y: Math.sin(a) * r };
         });
         obj = new Polygon(pts, { left: 80, top: 80, fill });
+        break;
+      }
+      case 'grid-2':
+      case 'grid-3':
+      case 'grid-hero': {
+        const cells = id === 'grid-3'
+          ? [0, 1, 2].map((i) => new Rect({ left: i * 108, top: 0, width: 100, height: 160, fill, stroke: '#ffffff', strokeWidth: 4 }))
+          : id === 'grid-hero'
+            ? [
+                new Rect({ left: 0, top: 0, width: 240, height: 140, fill, stroke: '#ffffff', strokeWidth: 4 }),
+                new Rect({ left: 0, top: 148, width: 240, height: 48, fill: '#111111', rx: 8, ry: 8 }),
+              ]
+            : [0, 1].map((i) => new Rect({ left: i * 128, top: 0, width: 120, height: 180, fill, stroke: '#ffffff', strokeWidth: 4 }));
+        obj = new Group(cells, { left: 40, top: 40 });
         break;
       }
       default: return;
@@ -832,33 +860,67 @@ export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: 
           </div>
         )}
         <SearchField value={q} onChange={setQ} placeholder="Search elements" />
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#888888]">Fill colour for new shapes</p>
-        <div className="mb-4 flex flex-wrap gap-1.5">
-          {swatches.map((c) => (
-            <button key={c} onClick={() => setFill(c)}
-              className={`h-7 w-7 rounded-full border ${fill === c ? 'ring-2 ring-[#F47B35]' : 'border-white/20'}`}
-              style={{ backgroundColor: c }} title={c} />
-          ))}
-        </div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#888888]">Shapes & graphics</p>
-        <div className="grid grid-cols-3 gap-2">
-          {items.map((i) => (
-            <button key={i.id} onClick={() => add(i.id)}
-              className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg bg-[#3D3D3D] text-[10px] text-[#CCCCCC] hover:bg-[#4D4D4D]">
-              <span className="block h-7 w-7 rounded" style={{
-                backgroundColor: i.id === 'frame' || i.id === 'line' ? 'transparent' : fill,
-                border: i.id === 'frame' ? `3px solid ${fill}` : undefined,
-                borderRadius: i.id === 'circle' ? '9999px' : i.id === 'rounded' || i.id === 'badge' ? '8px' : undefined,
-                height: i.id === 'line' ? 3 : undefined,
-                borderBottom: i.id === 'line' ? `3px solid ${fill}` : undefined,
-                clipPath: i.id === 'triangle' ? 'polygon(50% 0,100% 100%,0 100%)' : i.id === 'star'
-                  ? 'polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)' : undefined,
-              }} />
-              {i.label}
-            </button>
-          ))}
-        </div>
-        {items.length === 0 && <EmptyState>No elements match “{q}”.</EmptyState>}
+        {activeCategory && !query && (
+          <button type="button" onClick={() => setCategory(null)} className="mb-3 flex items-center gap-1 text-xs font-semibold text-white">
+            <ChevronLeft className="h-4 w-4" /> {activeCategory.label}
+          </button>
+        )}
+        {!activeCategory && !query && (
+          <div className="mb-4 grid grid-cols-2 gap-2">
+            {ELEMENT_CATEGORIES.map((entry) => (
+              <button key={entry.id} type="button" onClick={() => setCategory(entry.id)}
+                className="rounded-xl bg-[#3D3D3D] px-3 py-4 text-left text-sm font-semibold text-white hover:bg-[#4D4D4D]">
+                {entry.label}
+                <span className="mt-1 block text-[11px] font-normal text-[#AAAAAA]">
+                  {entry.id === 'photos' ? 'From your library' : `${entry.items.length} to place`}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+        {category === 'photos' && !query && (
+          photos.data?.length ? (
+            <div className="grid grid-cols-3 gap-2">
+              {photos.data.filter((row) => row.file_url).map((row) => (
+                <button key={row.id} type="button" onClick={() => addImageToCanvas(canvas, row.file_url as string, onChanged)}
+                  className="aspect-square overflow-hidden rounded-lg bg-[#3D3D3D]">
+                  <img src={row.thumbnail_url || row.file_url} alt={row.name} className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          ) : (
+            <EmptyState>{photos.isLoading ? 'Loading your photos…' : 'No photos yet. Use Camera Roll to add one.'}</EmptyState>
+          )
+        )}
+        {(query || (activeCategory && activeCategory.id !== 'photos')) && (
+          <>
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {swatches.map((c) => (
+                <button key={c} type="button" onClick={() => setFill(c)}
+                  className={`h-7 w-7 rounded-full border ${fill === c ? 'ring-2 ring-[#F47B35]' : 'border-white/20'}`}
+                  style={{ backgroundColor: c }} title={c} />
+              ))}
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+            {items.map((i) => (
+              <button key={i.id} onClick={() => add(i.id)}
+                className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg bg-[#3D3D3D] text-[10px] text-[#CCCCCC] hover:bg-[#4D4D4D]">
+                <span className="block h-7 w-7 rounded" style={{
+                  backgroundColor: i.id === 'frame' || i.id === 'line' ? 'transparent' : fill,
+                  border: i.id === 'frame' ? `3px solid ${fill}` : undefined,
+                  borderRadius: i.id === 'circle' ? '9999px' : i.id === 'rounded' || i.id === 'badge' || i.id.startsWith('grid') ? '8px' : undefined,
+                  height: i.id === 'line' ? 3 : undefined,
+                  borderBottom: i.id === 'line' ? `3px solid ${fill}` : undefined,
+                  clipPath: i.id === 'triangle' ? 'polygon(50% 0,100% 100%,0 100%)' : i.id === 'star'
+                    ? 'polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)' : undefined,
+                }} />
+                {i.label}
+              </button>
+            ))}
+            </div>
+          </>
+        )}
+        {query && items.length === 0 && <EmptyState>No elements match “{q}”.</EmptyState>}
       </div>
     </div>
   );
