@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Star, CreditCard, CheckCircle, Loader2 } from "lucide-react";
@@ -106,11 +107,14 @@ const Billing = () => {
 
   return (
     <div className="page-container space-y-8 py-4 md:py-6">
-      <div>
+      <div className="flex min-w-0 items-start gap-3">
+        <PageBackButton fallback="/dashboard" label="Back" />
+        <div className="min-w-0">
         <h1 className="text-3xl font-bold">Billing & Plan Controls</h1>
         <p className="text-muted-foreground mt-2">
           Keep credits, limits, and plan access aligned with how your team creates, launches, and operates campaigns.
         </p>
+        </div>
       </div>
 
       <Card className="border-border/80 shadow-card">

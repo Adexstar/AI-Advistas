@@ -23,6 +23,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PageBackButton } from '@/components/navigation/PageBackButton';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -264,11 +265,14 @@ const MediaLibrary: React.FC = () => {
     <div className="space-y-6 max-w-[1400px] mx-auto pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
+        <div className="flex min-w-0 items-start gap-3">
+          <PageBackButton fallback="/dashboard" label="Back" />
+          <div className="min-w-0">
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Media Library</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Manage all your images, videos, and audio files in one place.
           </p>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative hidden md:block">

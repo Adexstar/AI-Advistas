@@ -26,6 +26,7 @@ import {
   DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Card } from "@/components/ui/card";
@@ -76,13 +77,16 @@ const Analytics = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+        <div className="flex min-w-0 items-start gap-3">
+          <PageBackButton fallback="/dashboard" label="Back" />
+          <div className="min-w-0">
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
             Analytics &amp; Reports
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Track performance, analyze results, and grow your advertising impact.
           </p>
+          </div>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
           <Select value={range} onValueChange={(v) => setRange(v as AnalyticsRange)}>

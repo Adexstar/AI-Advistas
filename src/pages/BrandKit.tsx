@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { PageBackButton } from '@/components/navigation/PageBackButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -550,9 +551,12 @@ export default function BrandKitPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
+        <div className="flex min-w-0 items-start gap-3">
+          <PageBackButton fallback="/dashboard" label="Back" />
+          <div className="min-w-0">
           <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">Brand Kit</h1>
           <p className="text-sm text-muted-foreground">Manage your logos, colors, fonts, and brand assets.</p>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {kits.length > 0 && (

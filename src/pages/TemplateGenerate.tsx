@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PageBackButton } from '@/components/navigation/PageBackButton';
+import { supabase } from '@/integrations/supabase/client';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -47,8 +50,38 @@ const COLOR_PREFERENCES = ['Brand Colors', 'Warm Tones', 'Cool Tones', 'Monochro
 const IMAGE_PREFERENCES = ['Product Focus', 'Lifestyle', 'Abstract', 'Model/Person', 'No People', 'Flat Design'] as const;
 const TONE_OF_VOICE = ['Confident & Inspiring', 'Friendly & Warm', 'Professional & Trust', 'Urgent & Bold', 'Luxurious & Aspirational'] as const;
 const SORT_OPTIONS = ['Best Match', 'Newest First', 'Highest Confidence'] as const;
+const SAVED_PROMPTS_UNAVAILABLE = 'Saved prompts are not set up for this workspace yet.';
+
+function savedPromptMessage(message: string) {
+  if (/saved_prompts|schema cache|does not exist/i.test(message)) return SAVED_PROMPTS_UNAVAILABLE;
+  return message;
+}
 
 type GeneratedCard = GeneratedTemplate & { id: string; favorited?: boolean };
+
+type SavedPromptTable = {
+  from: (table: 'saved_prompts') => {
+    insert: (row: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
+    select: (columns: string) => {
+      eq: (column: string, value: string) => Promise<{ data: SavedPrompt[] | null; error: { message: string } | null }>;
+    };
+  };
+};
+
+type SavedPrompt = {
+  id: string;
+  name: string;
+  preferences: {
+    platform?: string;
+    category?: string;
+    goal?: string;
+    visual_style?: string;
+    color_preference?: string;
+    image_preference?: string;
+    tone_of_voice?: string;
+    special_request?: string;
+  } | null;
+};
 
 const TemplateGenerate = () => {
   const navigate = useNavigate();
@@ -82,6 +115,11 @@ const TemplateGenerate = () => {
   const [sortBy, setSortBy] = useState<string>(SORT_OPTIONS[0]);
 
   const [previewTemplate, setPreviewTemplate] = useState<GeneratedCard | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [promptsOpen, setPromptsOpen] = useState(false);
+  const [savedPrompts, setSavedPrompts] = useState<SavedPrompt[]>([]);
+  const [promptsLoading, setPromptsLoading] = useState(false);
+  const [promptsError, setPromptsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (effectiveContext?.active_platform) {
@@ -157,25 +195,69 @@ const TemplateGenerate = () => {
   };
 
   const handleSavePrompt = async () => {
-    try {
-      const { supabase } = await import('@/integrations/supabase/client');
-      const sb = supabase as any;
-      await sb.from('saved_prompts').insert({
-        user_id: user?.id,
-        name: `${platform} · ${goal}`,
-        preferences: {
-          platform, category, goal,
-          visual_style: visualStyle,
-          color_preference: colorPreference,
-          image_preference: imagePreference,
-          tone_of_voice: toneOfVoice,
-          special_request: specialRequest,
-        },
-      });
-      toast({ title: 'Prompt saved', description: 'You can reuse this setup anytime.' });
-    } catch {
-      toast({ title: 'Saved locally', description: 'Preferences saved for this session.' });
+    if (!user?.id) {
+      toast({ title: 'Sign in to save prompts', variant: 'destructive' });
+      return;
     }
+    const { error } = await (supabase as unknown as SavedPromptTable).from('saved_prompts').insert({
+      user_id: user.id,
+      name: `${platform} · ${goal}`,
+      preferences: {
+        platform, category, goal,
+        visual_style: visualStyle,
+        color_preference: colorPreference,
+        image_preference: imagePreference,
+        tone_of_voice: toneOfVoice,
+        special_request: specialRequest,
+      },
+    });
+    if (error) {
+      toast({ title: 'Could not save this prompt', description: savedPromptMessage(error.message), variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Prompt saved', description: 'Open Saved Prompts to use this setup again.' });
+  };
+
+  const openSavedPrompts = async () => {
+    setPromptsOpen(true);
+    if (!user?.id) {
+      setPromptsError('Sign in to see saved prompts.');
+      setSavedPrompts([]);
+      return;
+    }
+    setPromptsLoading(true);
+    setPromptsError(null);
+    try {
+      const { data, error } = await (supabase as unknown as SavedPromptTable)
+        .from('saved_prompts')
+        .select('id,name,preferences')
+        .eq('user_id', user.id);
+    if (error) {
+      setPromptsError(savedPromptMessage(error.message));
+      setSavedPrompts([]);
+      return;
+    }
+      setSavedPrompts(data ?? []);
+    } catch (err) {
+      setPromptsError(err instanceof Error ? err.message : 'Could not load saved prompts.');
+      setSavedPrompts([]);
+    } finally {
+      setPromptsLoading(false);
+    }
+  };
+
+  const applySavedPrompt = (prompt: SavedPrompt) => {
+    const prefs = prompt.preferences ?? {};
+    if (prefs.platform) setPlatform(prefs.platform);
+    if (prefs.category) setCategory(prefs.category);
+    if (prefs.goal) setGoal(prefs.goal);
+    if (prefs.visual_style) setVisualStyle(prefs.visual_style);
+    if (prefs.color_preference) setColorPreference(prefs.color_preference);
+    if (prefs.image_preference) setImagePreference(prefs.image_preference);
+    if (prefs.tone_of_voice) setToneOfVoice(prefs.tone_of_voice);
+    if (typeof prefs.special_request === 'string') setSpecialRequest(prefs.special_request);
+    setPromptsOpen(false);
+    toast({ title: 'Prompt restored' });
   };
 
   const toggleFavorite = (id: string) => {
@@ -213,27 +295,29 @@ const TemplateGenerate = () => {
       <div className="page-container py-6 lg:py-8">
         {/* PAGE HEADER */}
         <header className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-[28px] font-extrabold" style={{ color: 'hsl(var(--foreground))' }}>
-                AI Template Generator
-              </h1>
-              <span
-                className="inline-block rounded-md px-2 py-[3px] text-[11px] font-bold leading-none"
-                style={{ background: 'hsl(22 90% 58% / 0.16)', color: '#F47B35' }}
-              >
-                Beta
+          <div className="flex min-w-0 items-start gap-3">
+            <PageBackButton fallback="/templates" label="Back to templates" />
+            <div className="min-w-0">
+            <h1 className="text-[28px] font-extrabold leading-tight text-foreground">
+              AI Template{' '}
+              <span className="whitespace-nowrap">
+                Generator{' '}
+                <span className="ml-1 inline-block translate-y-[-2px] rounded-md bg-primary/15 px-2 py-1 align-middle text-[11px] font-bold leading-none text-primary">
+                  Beta
+                </span>
               </span>
-            </div>
+            </h1>
             <p className="mt-1 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
               Generate unique, high-converting marketing templates in seconds.
             </p>
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Button
               variant="outline"
               className="h-10 gap-2 rounded-xl px-4 text-sm font-medium"
               style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))', background: 'hsl(var(--card))' }}
+              onClick={() => setHistoryOpen(true)}
             >
               <RotateCcw className="h-4 w-4" /> Generation History
             </Button>
@@ -241,6 +325,7 @@ const TemplateGenerate = () => {
               variant="outline"
               className="h-10 gap-2 rounded-xl px-4 text-sm font-medium"
               style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))', background: 'hsl(var(--card))' }}
+              onClick={() => void openSavedPrompts()}
             >
               <Bookmark className="h-4 w-4" /> Saved Prompts
             </Button>
@@ -595,6 +680,59 @@ const TemplateGenerate = () => {
           </div>
         </div>
       </div>
+      <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Generation history</DialogTitle>
+            <DialogDescription>Templates generated during this visit.</DialogDescription>
+          </DialogHeader>
+          {generatedTemplates.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No templates generated in this session yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {generatedTemplates.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="flex w-full items-center justify-between rounded-xl border border-border px-3 py-2 text-left hover:border-primary/40"
+                  onClick={() => { setHistoryOpen(false); handleUseTemplate(item); }}
+                >
+                  <span className="truncate text-sm font-medium">{item.template?.name || 'Generated template'}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">{Math.round(item.confidence * 100)}%</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      <Dialog open={promptsOpen} onOpenChange={setPromptsOpen}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Saved prompts</DialogTitle>
+            <DialogDescription>Setups stored on your account.</DialogDescription>
+          </DialogHeader>
+          {promptsLoading ? (
+            <p className="text-sm text-muted-foreground">Loading saved prompts…</p>
+          ) : promptsError ? (
+            <p className="text-sm text-destructive">{promptsError}</p>
+          ) : savedPrompts.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No saved prompts yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {savedPrompts.map((prompt) => (
+                <button
+                  key={prompt.id}
+                  type="button"
+                  className="w-full rounded-xl border border-border px-3 py-2 text-left text-sm font-medium hover:border-primary/40"
+                  onClick={() => applySavedPrompt(prompt)}
+                >
+                  {prompt.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useUpdateCampaign, useDuplicateCampaign, useDeleteCampaign, type CampaignRow } from '@/hooks/useCampaigns';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -26,6 +27,7 @@ import { CampaignHealthService } from '@/services/campaign/CampaignHealthService
 import { CampaignVersionService } from '@/services/campaign/CampaignVersionService';
 import { CampaignEventService } from '@/services/campaign/CampaignEventService';
 import { useToast } from '@/hooks/use-toast';
+import { createAdPath, isDraftStatus, isPausedStatus, isRunningStatus, pauseResumePatch } from '@/lib/campaignStatus';
 import {
   ArrowLeft, MoreHorizontal, Edit3, Copy, PauseCircle, PlayCircle,
   Archive, Trash2, BarChart3, LayoutTemplate, Users, Wallet, Send,
@@ -35,7 +37,7 @@ import {
 
 const STATUS_COLORS: Record<string, string> = {
   draft: '#9CA3AF', planning: '#9CA3AF', creative_ready: '#F47B35',
-  publishing: '#3B82F6', running: '#22C55E', optimizing: '#F59E0B',
+  publishing: '#3B82F6', active: '#22C55E', running: '#22C55E', paused: '#F59E0B', optimizing: '#F59E0B',
   completed: '#3B82F6', archived: '#6B7280',
 };
 
@@ -84,8 +86,33 @@ const CampaignWorkspace = () => {
 
   const handlePauseResume = () => {
     if (!campaign) return;
-    const next = campaign.status === 'running' ? 'paused' : 'running';
-    updateCampaign.mutate({ id: campaign.id, updates: { status: next } });
+    const patch = pauseResumePatch(campaign.status, campaign.settings);
+    updateCampaign.mutate(
+      { id: campaign.id, updates: patch },
+      { onSuccess: () => qc.invalidateQueries({ queryKey: ['campaign', campaign.id] }) },
+    );
+  };
+
+  const handleArchive = () => {
+    if (!campaign) return;
+    updateCampaign.mutate(
+      { id: campaign.id, updates: { archived: true, status: 'archived' } },
+      { onSuccess: () => qc.invalidateQueries({ queryKey: ['campaign', campaign.id] }) },
+    );
+  };
+
+  const handleUnarchive = () => {
+    if (!campaign) return;
+    updateCampaign.mutate(
+      { id: campaign.id, updates: { archived: false, status: 'draft' } },
+      { onSuccess: () => qc.invalidateQueries({ queryKey: ['campaign', campaign.id] }) },
+    );
+  };
+
+  const handleDelete = () => {
+    if (!campaign) return;
+    if (!confirm(`Delete "${campaign.name}"? This cannot be undone.`)) return;
+    deleteCampaign.mutate(campaign, { onSuccess: () => navigate('/campaigns') });
   };
 
   const handleCreateVersion = async () => {
@@ -117,6 +144,10 @@ const CampaignWorkspace = () => {
         <Button onClick={() => navigate('/campaigns')} className="mt-4">Back to Campaigns</Button>
       </div>
     );
+  }
+
+  if (isDraftStatus(campaign.status)) {
+    return <Navigate to={createAdPath(campaign.id)} replace />;
   }
 
   const statusColor = STATUS_COLORS[campaign.status] || '#9CA3AF';
@@ -155,16 +186,32 @@ const CampaignWorkspace = () => {
             <Button variant="outline" size="sm" className="gap-1.5 rounded-xl" onClick={() => duplicateCampaign.mutate(campaign)}>
               <Copy className="h-3.5 w-3.5" /> Duplicate
             </Button>
-            {campaign.status === 'running' ? (
+            {isRunningStatus(campaign.status) ? (
               <Button variant="outline" size="sm" className="gap-1.5 rounded-xl" onClick={handlePauseResume}>
                 <PauseCircle className="h-3.5 w-3.5" /> Pause
               </Button>
-            ) : campaign.status === 'paused' ? (
+            ) : isPausedStatus(campaign.status) ? (
               <Button variant="outline" size="sm" className="gap-1.5 rounded-xl" onClick={handlePauseResume}>
                 <PlayCircle className="h-3.5 w-3.5" /> Resume
               </Button>
             ) : null}
-            <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="More actions">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                {campaign.archived ? (
+                  <DropdownMenuItem onClick={handleUnarchive}><Archive className="mr-2 h-4 w-4" /> Unarchive</DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={handleArchive}><Archive className="mr-2 h-4 w-4" /> Archive</DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={handleDelete} className="text-destructive focus:text-destructive">
+                  <Trash2 className="mr-2 h-4 w-4" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 

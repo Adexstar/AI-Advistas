@@ -20,10 +20,12 @@ import {
 } from '@/hooks/useCampaigns';
 import { CampaignFormDialog } from '@/components/campaigns/CampaignFormDialog';
 import { useContextOverride } from '@/contexts/AIContext';
+import { createAdPath, isDraftStatus, isPausedStatus, isRunningStatus, matchesStatusTab, pauseResumePatch } from '@/lib/campaignStatus';
 import { cn } from '@/lib/utils';
 
 const STATUS_STYLES: Record<string, string> = {
   active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
+  running: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
   paused: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
   draft: 'bg-slate-200 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300',
   completed: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
@@ -66,7 +68,7 @@ const Campaigns = () => {
 
   const counts = useMemo(() => ({
     total: campaigns.length,
-    active: campaigns.filter((c) => c.status === 'active').length,
+    active: campaigns.filter((c) => c.status === 'active' || c.status === 'running').length,
     paused: campaigns.filter((c) => c.status === 'paused').length,
     draft: campaigns.filter((c) => c.status === 'draft').length,
     completed: campaigns.filter((c) => c.status === 'completed').length,
@@ -75,7 +77,7 @@ const Campaigns = () => {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return campaigns.filter((c) => {
-      const matchesTab = tab === 'all' || c.status === tab;
+      const matchesTab = matchesStatusTab(c.status, tab);
       const matchesSearch = !q || c.name.toLowerCase().includes(q) || (c.platform || '').toLowerCase().includes(q);
       return matchesTab && matchesSearch;
     });
@@ -83,6 +85,11 @@ const Campaigns = () => {
 
   const openCreate = () => navigate('/create-ad');
   const openEdit = (c: CampaignRow) => { setEditing(c); setFormOpen(true); };
+  const openCampaign = (c: CampaignRow) => navigate(isDraftStatus(c.status) ? createAdPath(c.id) : `/campaigns/${c.id}`);
+  const editCampaign = (c: CampaignRow) => {
+    if (isDraftStatus(c.status)) navigate(createAdPath(c.id));
+    else openEdit(c);
+  };
 
   useContextOverride(
     formOpen && editing
@@ -99,8 +106,7 @@ const Campaigns = () => {
   );
 
   const togglePauseResume = (c: CampaignRow) => {
-    const next = c.status === 'active' ? 'paused' : 'active';
-    updateMut.mutate({ id: c.id, updates: { status: next } });
+    updateMut.mutate({ id: c.id, updates: pauseResumePatch(c.status, c.settings) });
   };
 
   const archive = (c: CampaignRow) => updateMut.mutate({ id: c.id, updates: { archived: true, status: 'archived' } });
@@ -216,7 +222,7 @@ const Campaigns = () => {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.02 }}
                       className="border-b last:border-b-0 hover:bg-muted/40 cursor-pointer"
-                      onClick={() => navigate(`/campaigns/${c.id}`)}
+                      onClick={() => openCampaign(c)}
                     >
                       <TableCell>
                         <div className="font-medium">{c.name}</div>
@@ -225,16 +231,16 @@ const Campaigns = () => {
                       <TableCell><StatusBadge status={c.status} /></TableCell>
                       <TableCell className="text-sm">{c.platform || '\u2014'}</TableCell>
                       <TableCell className="text-right tabular-nums">${Number(c.budget).toLocaleString()}</TableCell>
-                      <TableCell className="text-right tabular-nums">{c.reach.toLocaleString()}</TableCell>
-                      <TableCell className="text-right tabular-nums">{Number(c.ctr).toFixed(2)}%</TableCell>
-                      <TableCell className="text-right tabular-nums">{c.conversions.toLocaleString()}</TableCell>
-                      <TableCell className="text-right tabular-nums">{Number(c.roas).toFixed(2)}x</TableCell>
+                      <TableCell className="text-right tabular-nums">{isDraftStatus(c.status) ? '\u2014' : c.reach.toLocaleString()}</TableCell>
+                      <TableCell className="text-right tabular-nums">{isDraftStatus(c.status) ? '\u2014' : `${Number(c.ctr).toFixed(2)}%`}</TableCell>
+                      <TableCell className="text-right tabular-nums">{isDraftStatus(c.status) ? '\u2014' : c.conversions.toLocaleString()}</TableCell>
+                      <TableCell className="text-right tabular-nums">{isDraftStatus(c.status) ? '\u2014' : `${Number(c.roas).toFixed(2)}x`}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <CampaignActions
                           c={c}
-                          onView={() => navigate(`/campaigns/${c.id}`)}
-                          onEdit={() => openEdit(c)}
+                          onView={() => openCampaign(c)}
+                          onEdit={() => editCampaign(c)}
                           onDuplicate={() => duplicateMut.mutate(c)}
                           onTogglePause={() => togglePauseResume(c)}
                           onArchive={() => archive(c)}
@@ -251,7 +257,7 @@ const Campaigns = () => {
 
           <div className="md:hidden space-y-3">
             {filtered.map((c) => (
-              <Card key={c.id} className="rounded-2xl cursor-pointer" onClick={() => navigate(`/campaigns/${c.id}`)}>
+              <Card key={c.id} className="rounded-2xl cursor-pointer" onClick={() => openCampaign(c)}>
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
@@ -261,8 +267,8 @@ const Campaigns = () => {
                     <div onClick={(e) => e.stopPropagation()}>
                       <CampaignActions
                         c={c}
-                        onView={() => navigate(`/campaigns/${c.id}`)}
-                        onEdit={() => openEdit(c)}
+                        onView={() => openCampaign(c)}
+                        onEdit={() => editCampaign(c)}
                         onDuplicate={() => duplicateMut.mutate(c)}
                         onTogglePause={() => togglePauseResume(c)}
                         onArchive={() => archive(c)}
@@ -272,11 +278,15 @@ const Campaigns = () => {
                     </div>
                   </div>
                   <StatusBadge status={c.status} />
-                  <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t">
-                    <div><p className="text-[10px] uppercase text-muted-foreground">Budget</p><p className="text-sm font-semibold">${Number(c.budget).toLocaleString()}</p></div>
-                    <div><p className="text-[10px] uppercase text-muted-foreground">Reach</p><p className="text-sm font-semibold">{c.reach.toLocaleString()}</p></div>
-                    <div><p className="text-[10px] uppercase text-muted-foreground">ROAS</p><p className="text-sm font-semibold">{Number(c.roas).toFixed(2)}x</p></div>
-                  </div>
+                  {isDraftStatus(c.status) ? (
+                    <p className="border-t pt-2 text-sm text-muted-foreground">Continue editing</p>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t">
+                      <div><p className="text-[10px] uppercase text-muted-foreground">Budget</p><p className="text-sm font-semibold">${Number(c.budget).toLocaleString()}</p></div>
+                      <div><p className="text-[10px] uppercase text-muted-foreground">Reach</p><p className="text-sm font-semibold">{c.reach.toLocaleString()}</p></div>
+                      <div><p className="text-[10px] uppercase text-muted-foreground">ROAS</p><p className="text-sm font-semibold">{Number(c.roas).toFixed(2)}x</p></div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -312,9 +322,9 @@ function CampaignActions({
         <DropdownMenuItem onClick={onView}><Eye className="w-4 h-4 mr-2" /> View</DropdownMenuItem>
         <DropdownMenuItem onClick={onEdit}><Edit3 className="w-4 h-4 mr-2" /> Edit</DropdownMenuItem>
         <DropdownMenuItem onClick={onDuplicate}><Copy className="w-4 h-4 mr-2" /> Duplicate</DropdownMenuItem>
-        {c.status === 'active' ? (
+        {isRunningStatus(c.status) ? (
           <DropdownMenuItem onClick={onTogglePause}><Pause className="w-4 h-4 mr-2" /> Pause</DropdownMenuItem>
-        ) : c.status === 'paused' ? (
+        ) : isPausedStatus(c.status) ? (
           <DropdownMenuItem onClick={onTogglePause}><Play className="w-4 h-4 mr-2" /> Resume</DropdownMenuItem>
         ) : null}
         <DropdownMenuSeparator />

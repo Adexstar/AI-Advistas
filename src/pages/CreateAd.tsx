@@ -23,6 +23,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { CreativeService, creativeDocument } from '@/services/creative/CreativeService';
 import { TemplateEngine } from '@/services/templates/TemplateEngine';
 import { CreateAdTemplatePicker, type PickerTemplate } from '@/components/ad/CreateAdTemplatePicker';
+import { CreateAdMediaPicker } from '@/components/ad/CreateAdMediaPicker';
+import { isDraftStatus } from '@/lib/campaignStatus';
 import type { Json } from '@/integrations/supabase/types';
 
 /* ------------------------------------------------------------------ */
@@ -191,6 +193,7 @@ export default function CreateAd() {
   const [previewPlatform, setPreviewPlatform] = useState('facebook_feed');
   const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const [applyingTemplate, setApplyingTemplate] = useState(false);
   const [designName, setDesignName] = useState<string | null>(null);
 
@@ -220,6 +223,10 @@ export default function CreateAd() {
         ]);
         if (error) throw error;
         if (cancelled || !campaign) return;
+        if (!isDraftStatus(campaign.status)) {
+          navigate(`/campaigns/${id}`, { replace: true });
+          return;
+        }
         const creative = creatives[0];
         const content = (creative?.content ?? {}) as Partial<FormValues> & { templateName?: string };
         const copy = content;
@@ -278,17 +285,14 @@ export default function CreateAd() {
     const operation = (async () => {
     setSaving(true);
     try {
-      const payload = {
-        user_id: user.id,
+      const draftFields = {
         name: values.name || 'Untitled Campaign',
         objective: values.objective,
         platform: values.platforms.join(','),
         budget: Number(values.budgetAmount) || 0,
-        spend: 0, reach: 0, clicks: 0, impressions: 0, conversions: 0, revenue: 0, ctr: 0, roas: 0,
         start_date: format(values.startDate, 'yyyy-MM-dd'),
         end_date: values.endDate ? format(values.endDate, 'yyyy-MM-dd') : null,
         settings: { budgetType: values.budgetType, runType: values.runType },
-        /* audience fields */
         target_audience: {
           location: values.location,
           age_min: values.ageMin,
@@ -296,15 +300,23 @@ export default function CreateAd() {
           gender: values.gender,
           interests: values.interests,
         },
-        status: 'draft' as const,
       };
 
       let id = draftIdRef.current;
       if (id) {
-        const { error } = await supabase.from('campaigns').update(payload).eq('id', id);
+        const { data, error } = await supabase.from('campaigns').update(draftFields).eq('id', id).eq('status', 'draft').select('id');
         if (error) throw error;
+        if (!data?.length) {
+          if (!silent) toast.error('This campaign is no longer a draft, so it was left unchanged.');
+          return null;
+        }
       } else {
-        const { data, error } = await supabase.from('campaigns').insert(payload).select().single();
+        const { data, error } = await supabase.from('campaigns').insert({
+          ...draftFields,
+          user_id: user.id,
+          status: 'draft',
+          spend: 0, reach: 0, clicks: 0, impressions: 0, conversions: 0, revenue: 0, ctr: 0, roas: 0,
+        }).select().single();
         if (error) throw error;
         id = data.id;
         draftIdRef.current = id;
@@ -404,8 +416,7 @@ export default function CreateAd() {
     try {
       const id = await saveDraft(true);
       if (id) {
-        toast.success('Draft ready for publishing review');
-        navigate(`/campaigns/${id}`);
+        toast.success('Draft saved', { description: 'Reopen it from Campaigns whenever you want to keep editing.' });
       }
     } catch (e: any) {
       toast.error(e.message || 'Failed to publish campaign');
@@ -618,9 +629,9 @@ export default function CreateAd() {
               )}
             </div>
             <div className="flex gap-2 mt-2">
-              <button type="button" onClick={() => fileRef.current?.click()} className="text-xs text-primary font-medium hover:underline">Media from Library</button>
+              <button type="button" onClick={() => setLibraryOpen(true)} className="text-xs text-primary font-medium hover:underline">Media from Library</button>
               <span className="text-border">|</span>
-              <button type="button" className="text-xs text-primary font-medium hover:underline">AI Generate Image</button>
+              <button type="button" onClick={() => toast.message('Image generation is not connected', { description: 'Upload a file or choose one from your media library.' })} className="text-xs font-medium text-muted-foreground hover:underline">AI Generate Image</button>
             </div>
             <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
           </Field>
@@ -788,18 +799,18 @@ export default function CreateAd() {
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-foreground">$</span>
               <input type="number" min={1} value={field.value || ''} onChange={(e) => field.onChange(Number(e.target.value))}
                 placeholder="0.00"
-                className="w-full h-12 pl-7 pr-3.5 text-lg font-semibold border-[1.5px] border-border rounded-[10px] focus:border-primary focus:outline-none" />
+                className="w-full h-12 pl-7 pr-3.5 text-lg font-semibold text-foreground bg-card border-[1.5px] border-border rounded-[10px] focus:border-primary focus:outline-none placeholder:text-muted-foreground" />
             </div>
           )} />
         </div>
 
         {/* Estimated Reach Card */}
-        <div className="bg-[#F8F8FC] border border-[#E8E8F0] rounded-xl p-4 mb-5">
+        <div className="bg-card border border-border rounded-xl p-4 mb-5">
           <p className="text-xs font-semibold text-foreground">{reachEstimate.label}</p>
           <p className="text-2xl font-extrabold text-foreground mt-1">
             {reachEstimate.low.toLocaleString()} – {reachEstimate.high.toLocaleString()}
           </p>
-          <div className="h-1.5 bg-[#E8E8F0] rounded mt-3 overflow-hidden">
+          <div className="h-1.5 bg-muted rounded mt-3 overflow-hidden">
             <div className="h-full rounded bg-gradient-to-r from-primary to-primary-glow" style={{ width: `${reachPercent}%` }} />
           </div>
           <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
@@ -892,7 +903,7 @@ export default function CreateAd() {
         </div>
 
         {/* Campaign Summary Card */}
-        <div className="bg-[#F8F8FC] border border-[#E8E8F0] rounded-xl p-4 mt-5">
+        <div className="bg-card border border-border rounded-xl p-4 mt-5">
           <p className="text-xs font-bold text-foreground mb-3">Campaign Summary</p>
           <div className="space-y-2">
             <SummaryRow label={`${values.budgetType === 'daily' ? 'Daily' : 'Total'} Budget`} value={`$${values.budgetAmount.toFixed(2)}`} />
@@ -965,10 +976,11 @@ export default function CreateAd() {
           <p className="text-xs text-muted-foreground">I confirm that I have the rights to use all media and content in this ad, and I agree to the platform advertising policies.</p>
         </div>
 
+        <p className="text-xs text-muted-foreground">Saving stores this ad as a draft. Reopen it from Campaigns to keep editing. Platform delivery stays on the campaign Publishing tab after the ad is launched.</p>
         <button onClick={publish} disabled={publishing || !values.termsAccepted}
           className="w-full h-12 bg-primary text-white rounded-[10px] text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#5A52E0] transition disabled:opacity-50">
           {publishing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          Publish Ad
+          Save draft
         </button>
       </StepSection>
 
@@ -992,6 +1004,11 @@ export default function CreateAd() {
         onOpenChange={setTemplatePickerOpen}
         onSelect={(template) => void applyTemplate(template)}
         busy={applyingTemplate}
+      />
+      <CreateAdMediaPicker
+        open={libraryOpen}
+        onOpenChange={setLibraryOpen}
+        onSelect={(url) => setValue('mediaUrl', url)}
       />
       {/* Sticky Header */}
       <div className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
@@ -1025,7 +1042,7 @@ export default function CreateAd() {
               disabled={publishing}
               className="h-9 w-9 sm:w-auto sm:px-4 text-xs font-bold text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition grid place-items-center sm:flex sm:items-center sm:gap-1.5">
               {publishing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : step < 5 ? <ArrowRight className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">{step < 5 ? 'Next' : 'Publish'}</span>
+              <span className="hidden sm:inline">{step < 5 ? 'Next' : 'Save draft'}</span>
             </button>
           </div>
         </div>

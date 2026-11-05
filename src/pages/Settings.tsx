@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -153,9 +154,12 @@ const Settings = () => {
 
   return (
     <div className="page-container space-y-6 py-4 md:py-6">
-      <div>
+      <div className="flex min-w-0 items-start gap-3">
+        <PageBackButton fallback="/dashboard" label="Back" />
+        <div className="min-w-0">
         <h1 className="text-3xl font-bold">Workspace Settings</h1>
         <p className="text-muted-foreground">Tune profile, alerts, security, and connected channels so the team operates from one calmer control surface.</p>
+        </div>
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
