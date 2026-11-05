@@ -2699,12 +2699,25 @@ const EditorInner: React.FC = () => {
             ? {
                 id: brand.id,
                 name: brand.name,
-                logo_url: brand.logo_url ?? undefined,
-                colors: brand.colors ?? [],
+                logo_url: brand.logo_url ?? (activeKit as any)?.logo_url ?? undefined,
+                colors: brand.colors?.length
+                  ? brand.colors
+                  : ([activeKit?.primary_color, activeKit?.secondary_color].filter(Boolean) as string[]),
+                fonts: (activeKit as any)?.font_family ? [(activeKit as any).font_family] : undefined,
                 voice: (brand as any).voice ?? undefined,
                 locked: true,
               }
-            : null,
+            : activeKit
+              ? {
+                  id: activeKit.id,
+                  name: (activeKit as any).name ?? 'Brand',
+                  logo_url: (activeKit as any).logo_url ?? undefined,
+                  colors: [activeKit.primary_color, activeKit.secondary_color].filter(Boolean) as string[],
+                  fonts: (activeKit as any).font_family ? [(activeKit as any).font_family] : undefined,
+                  voice: (activeKit as any).brand_voice ?? undefined,
+                  locked: true,
+                }
+              : null,
           category: effectiveContext?.active_category ?? template.category ?? null,
           goal: effectiveContext?.current_goal ?? template.objective ?? null,
           platform: template.platform ?? null,
