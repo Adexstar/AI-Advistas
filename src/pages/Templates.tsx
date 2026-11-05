@@ -1,83 +1,124 @@
 /**
- * /templates — user-facing Template Library.
- * Reads the SAME `templates` table the admin page uses, applies AI Context
- * filtering (dismissible), computes an explainable score, and renders cards.
+ * /templates — template library.
+ * Reads active, approved rows from `templates` and renders them in the
+ * library layout. Counts, names, and previews come from those rows.
  */
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAIContext } from "@/contexts/AIContext";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { setPendingEditorTemplate } from "@/lib/templateEditorSession";
 import type { TemplateRecord } from "@/services/templates/types";
-import { CATEGORY_OPTIONS, normalizeTemplateCategory } from "@/utils/templateCategories";
+import { normalizeTemplateCategory } from "@/utils/templateCategories";
 import {
-  Search, Sparkles, Heart, Eye, Pencil, X, AlertTriangle, RefreshCw,
-  Facebook, Instagram, Linkedin, Youtube, LayoutGrid, ImageIcon,
+  LIBRARY_CATEGORIES,
+  LIBRARY_PLATFORMS,
+  FORMAT_FILTERS,
+  categoryCounts,
+  matchesFormat,
+  matchesPlatform,
+  relativeUpdated,
+} from "./templatesLibrary";
+import {
+  Search, Sparkles, Heart, X, AlertTriangle, RefreshCw, Bell,
+  Facebook, Instagram, Linkedin, Youtube, LayoutGrid, SlidersHorizontal,
+  ShoppingBag, Shirt, UtensilsCrossed, Home, Dumbbell, Laptop, ChevronDown,
 } from "lucide-react";
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 6;
 const FAV_KEY = "advista_template_favorites";
+const RECENT_KEY = "advista.editor.recentTemplateIds";
 
-const CATEGORY_CHIPS = ["All", ...CATEGORY_OPTIONS.map((category) => category.label)];
-const PLATFORM_CHIPS = ["All", "Instagram", "Instagram Story", "Facebook", "TikTok", "LinkedIn", "Google Display"];
-const FORMAT_CHIPS = ["All", "square", "story", "portrait", "landscape"];
-const FORMAT_LABEL: Record<string, string> = { square: "Post", story: "Story", portrait: "Portrait", landscape: "Landscape" };
+const CATEGORY_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
+  ecommerce: ShoppingBag,
+  beauty: Sparkles,
+  fashion: Shirt,
+  food: UtensilsCrossed,
+  real_estate: Home,
+  fitness: Dumbbell,
+  saas: Laptop,
+};
 
-const PLATFORM_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
-  Facebook, Instagram, "Instagram Story": Instagram, LinkedIn: Linkedin, YouTube: Youtube, TikTok: Sparkles,
+const POSTER_TONE: Record<string, string> = {
+  ecommerce: "bg-[#3C2F5A]",
+  beauty: "bg-[#3E5348]",
+  fashion: "bg-[#4A3B32]",
+  food: "bg-[#4A3428]",
+  real_estate: "bg-[#2C3E4E]",
+  fitness: "bg-[#2A2E33]",
+  saas: "bg-[#243044]",
 };
 
 type Row = TemplateRecord & { format: string | null };
 
-const hasBrandVars = (t: Row) => {
+interface Scored { t: Row; score: number; brandReady: boolean }
+
+const readIds = (key: string): string[] => {
   try {
-    return JSON.stringify(t.template_json ?? {}).includes("{{brand.");
+    const parsed = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(parsed) ? parsed.filter((id) => typeof id === "string") : [];
   } catch {
-    return false;
+    return [];
   }
 };
-
-interface Scored { t: Row; score: number; confidence: number; brandReady: boolean }
 
 const useFavorites = () => {
   const [favs, setFavs] = useState<Set<string>>(() => {
     try { return new Set(JSON.parse(localStorage.getItem(FAV_KEY) || "[]")); } catch { return new Set(); }
   });
   useEffect(() => { localStorage.setItem(FAV_KEY, JSON.stringify([...favs])); }, [favs]);
-  const toggle = (id: string) => setFavs((p) => {
-    const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n;
+  const toggle = (id: string) => setFavs((prev) => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
   });
   return [favs, toggle] as const;
 };
 
-const TemplateThumb = ({ t }: { t: Row }) => {
-  const [failed, setFailed] = useState(false);
-  const src = t.preview_url || t.thumbnail_url;
-  if (!src || failed) {
+function PlatformMark({ name, className = "h-3.5 w-3.5" }: { name: string; className?: string }) {
+  const key = name.toLowerCase();
+  if (key.includes("facebook")) return <Facebook className={className} />;
+  if (key.includes("instagram")) return <Instagram className={className} />;
+  if (key.includes("linkedin")) return <Linkedin className={className} />;
+  if (key.includes("youtube")) return <Youtube className={className} />;
+  if (key.includes("tiktok")) {
     return (
-      <div className="flex h-44 w-full flex-col items-center justify-center gap-2 bg-muted text-muted-foreground">
-        <ImageIcon className="h-6 w-6" />
-        <span className="px-3 text-center text-xs font-medium">{t.name}</span>
-      </div>
+      <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+        <path fill="currentColor" d="M14.5 3c.4 2.4 1.8 4 4.2 4.3v2.4c-1.5 0-2.9-.5-4.1-1.3v6.7c0 3.3-2.6 5.9-6 5.9S2.6 18.4 2.6 15.1c0-3.2 2.5-5.8 5.7-5.9v2.5c-1.8.1-3.2 1.6-3.2 3.4 0 1.9 1.5 3.4 3.4 3.4s3.4-1.5 3.4-3.4V3h2.6Z" />
+      </svg>
     );
   }
+  return <LayoutGrid className={className} />;
+}
+
+function TemplatePoster({ t, compact = false, className = "" }: { t: Row; compact?: boolean; className?: string }) {
+  const [failed, setFailed] = useState(false);
+  const src = t.preview_url || t.thumbnail_url;
+  if (src && !failed) {
+    return (
+      <img
+        src={src}
+        alt=""
+        loading="lazy"
+        onError={() => setFailed(true)}
+        className={`h-full w-full object-cover ${className}`}
+      />
+    );
+  }
+  const tone = POSTER_TONE[normalizeTemplateCategory(t.category)] || "bg-[#2C3140]";
+  if (compact) {
+    return <div className={`h-full w-full ${tone} ${className}`} />;
+  }
   return (
-    <img
-      src={src}
-      alt={`${t.name} template preview`}
-      loading="lazy"
-      onError={() => setFailed(true)}
-      className="h-44 w-full object-cover"
-    />
+    <div className={`flex h-full w-full flex-col justify-end bg-gradient-to-b from-white/10 to-black/20 p-3 text-white ${tone} ${className}`}>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/75">{t.platform || "Template"}</p>
+      <p className="mt-1 line-clamp-3 text-sm font-semibold leading-snug">{t.name}</p>
+    </div>
   );
-};
+}
 
 export default function Templates() {
   const navigate = useNavigate();
@@ -90,8 +131,11 @@ export default function Templates() {
   const [category, setCategory] = useState("All");
   const [platform, setPlatform] = useState("All");
   const [format, setFormat] = useState("All");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [ctxDismissed, setCtxDismissed] = useState(false);
   const [visible, setVisible] = useState(PAGE_SIZE);
+  const [recentIds] = useState<string[]>(() => readIds(RECENT_KEY));
 
   useEffect(() => {
     const id = setTimeout(() => setSearch(rawSearch.trim()), 300);
@@ -115,22 +159,20 @@ export default function Templates() {
 
   const ctxCategory = effectiveContext?.active_category ?? null;
   const ctxGoal = effectiveContext?.current_goal ?? effectiveContext?.active_objective ?? null;
-  const ctxPlatform = (effectiveContext as any)?.active_platform ?? null;
+  const ctxPlatform = (effectiveContext as { active_platform?: string } | null)?.active_platform ?? null;
   const ctxActive = !ctxDismissed && Boolean(ctxCategory || ctxGoal);
 
   const scored = useMemo<Scored[]>(() => {
     const rows = data ?? [];
     return rows
       .map((t) => {
-        let score = 0;
+        let score = t.popularity_score ?? 0;
         if (ctxCategory && normalizeTemplateCategory(t.category) === normalizeTemplateCategory(String(ctxCategory))) score += 30;
         if (ctxGoal && t.objective?.toLowerCase() === String(ctxGoal).toLowerCase()) score += 25;
         if (ctxPlatform && t.platform?.toLowerCase() === String(ctxPlatform).toLowerCase()) score += 20;
-        const brandReady = hasBrandVars(t);
-        if (brandReady) score += 15;
-        score += Number((t as any).performance_score ?? 0);
-        score += (t.popularity_score ?? 0) / 100;
-        return { t, score, confidence: Math.max(0, Math.min(100, Math.round(score))), brandReady };
+        const brandReady = t.brand_compatible === true;
+        if (brandReady) score += 5;
+        return { t, score, brandReady };
       })
       .sort((a, b) => b.score - a.score);
   }, [data, ctxCategory, ctxGoal, ctxPlatform]);
@@ -140,11 +182,11 @@ export default function Templates() {
     return scored.filter(({ t }) => {
       if (ctxActive && ctxCategory && normalizeTemplateCategory(t.category) !== normalizeTemplateCategory(String(ctxCategory))) return false;
       if (ctxActive && ctxGoal && t.objective?.toLowerCase() !== String(ctxGoal).toLowerCase()) return false;
-      if (category !== "All" && normalizeTemplateCategory(t.category) !== normalizeTemplateCategory(category)) return false;
-      if (platform !== "All" && t.platform !== platform) return false;
-      if (format !== "All" && t.format !== format) return false;
+      if (category !== "All" && normalizeTemplateCategory(t.category) !== category) return false;
+      if (!matchesPlatform(t.platform, platform)) return false;
+      if (!matchesFormat(t.format, format)) return false;
       if (!q) return true;
-      const haystack = [t.name, t.category, t.objective, ...(t.ai_tags ?? []), ...(t.industry_tags ?? [])]
+      const haystack = [t.name, t.description, t.category, t.platform, t.objective, ...(t.ai_tags ?? []), ...(t.industry_tags ?? [])]
         .filter(Boolean).join(" ").toLowerCase();
       return haystack.includes(q);
     });
@@ -152,160 +194,340 @@ export default function Templates() {
 
   useEffect(() => { setVisible(PAGE_SIZE); }, [search, category, platform, format, ctxActive]);
 
+  const counts = useMemo(() => categoryCounts((data ?? []).map((t) => t.category)), [data]);
+  const extraPlatforms = useMemo(() => {
+    const known = new Set(LIBRARY_PLATFORMS.map((item) => item.toLowerCase()));
+    const extra = new Set<string>();
+    for (const row of data ?? []) {
+      const name = row.platform?.trim();
+      if (name && !known.has(name.toLowerCase())) extra.add(name);
+    }
+    return [...extra];
+  }, [data]);
+
+  const featured = filtered.slice(0, 3);
+  const popular = filtered.slice(0, visible);
+  const recent = useMemo(() => {
+    const byId = new Map((data ?? []).map((t) => [t.id, t]));
+    const opened = recentIds.map((id) => byId.get(id)).filter((t): t is Row => Boolean(t));
+    if (opened.length) return { items: opened.slice(0, 4), fromEditor: true };
+    const updated = [...(data ?? [])].sort((a, b) => +new Date(b.updated_at) - +new Date(a.updated_at));
+    return { items: updated.slice(0, 4), fromEditor: false };
+  }, [data, recentIds]);
+
   const useTemplate = (t: Row) => {
     setPendingEditorTemplate(t as unknown as TemplateRecord, "originals");
     toast({ title: "Opening in editor", description: t.name });
     navigate("/visual-editor");
   };
 
-  const chip = (label: string, active: boolean, onClick: () => void, key?: string) => (
-    <button
-      key={key ?? label}
-      onClick={onClick}
-      className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-        active
-          ? "border-primary bg-primary text-primary-foreground"
-          : "border-border bg-background text-muted-foreground hover:bg-muted"
-      }`}
-    >
-      {label}
-    </button>
-  );
+  const clearFilters = () => {
+    setRawSearch("");
+    setSearch("");
+    setCategory("All");
+    setPlatform("All");
+    setFormat("All");
+    setCtxDismissed(true);
+  };
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Template Library</h1>
-          <p className="text-sm text-muted-foreground">Brand-ready ad templates, ranked for your context.</p>
+    <div className="template-library min-h-full overflow-x-hidden bg-[#F5F6FA] px-4 pb-28 pt-4 text-[#161A23] sm:px-6 lg:px-8 lg:pb-10 lg:pt-6">
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <h1 className="hidden text-[26px] font-semibold tracking-[-0.03em] text-[#12151C] lg:block">Templates</h1>
+          <p className="mt-1 hidden text-sm text-[#6E7585] lg:block">Choose from professionally designed templates or create your own.</p>
         </div>
-        <Button onClick={() => navigate("/templates/generate")} className="gap-2">
-          <Sparkles className="h-4 w-4" /> Create with AI
-        </Button>
+        <div className="flex w-full items-center gap-2 lg:w-auto">
+          <div className="relative min-w-0 flex-1 lg:w-[280px] lg:flex-none">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B93A7]" />
+            <input
+              value={rawSearch}
+              onChange={(e) => setRawSearch(e.target.value)}
+              placeholder="Search templates..."
+              aria-label="Search templates"
+              className="h-10 w-full rounded-lg border border-[#E4E7EE] bg-white pl-9 pr-3 text-sm text-[#161A23] outline-none placeholder:text-[#8B93A7] focus:border-[#6E56F5]"
+            />
+          </div>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => { setFilterOpen((open) => !open); setMoreOpen(false); }}
+              className={`inline-flex h-10 items-center gap-2 rounded-lg border bg-white px-3 text-sm font-medium ${format !== "All" ? "border-[#6E56F5] text-[#6E56F5]" : "border-[#E4E7EE] text-[#2A3142]"}`}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              Filter
+            </button>
+            {filterOpen && (
+              <div className="absolute right-0 z-20 mt-2 w-44 rounded-xl border border-[#E4E7EE] bg-white p-1 shadow-[0_12px_40px_rgba(16,24,40,0.08)]">
+                {FORMAT_FILTERS.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => { setFormat(item.id); setFilterOpen(false); }}
+                    className={`flex w-full rounded-lg px-3 py-2 text-left text-sm ${format === item.id ? "bg-[#F3F0FF] text-[#5B45E0]" : "text-[#2A3142] hover:bg-[#F6F7FB]"}`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <label className="relative hidden h-10 items-center sm:flex">
+            <span className="sr-only">Platform</span>
+            <select
+              value={platform}
+              onChange={(e) => setPlatform(e.target.value)}
+              className="h-10 appearance-none rounded-lg border border-[#E4E7EE] bg-white pl-3 pr-8 text-sm text-[#2A3142] outline-none focus:border-[#6E56F5]"
+            >
+              <option value="All">All Platforms</option>
+              {LIBRARY_PLATFORMS.filter((item) => item !== "All").map((item) => (
+                <option key={item} value={item}>{item}</option>
+              ))}
+              {extraPlatforms.map((item) => (
+                <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2 h-4 w-4 text-[#8B93A7]" />
+          </label>
+          <NavLink
+            to="/notifications"
+            aria-label="Notifications"
+            className="hidden h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#E4E7EE] bg-white text-[#2A3142] lg:grid"
+          >
+            <Bell className="h-4 w-4" />
+          </NavLink>
+        </div>
       </header>
 
       {ctxActive && (
-        <div className="flex w-fit items-center gap-2 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary">
-          Filtered by: {[ctxCategory, ctxGoal].filter(Boolean).join(" · ")}
-          <button aria-label="Clear context filter" onClick={() => setCtxDismissed(true)}>
+        <div className="mt-4 flex w-fit items-center gap-2 rounded-full bg-[#F3F0FF] px-3 py-1.5 text-xs font-medium text-[#5B45E0]">
+          Filtered by {[ctxCategory, ctxGoal].filter(Boolean).join(" · ")}
+          <button type="button" aria-label="Clear context filter" onClick={() => setCtxDismissed(true)}>
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
       )}
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={rawSearch}
-          onChange={(e) => setRawSearch(e.target.value)}
-          placeholder="Search templates by name, category, tag or goal…"
-          className="pl-9"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex flex-wrap gap-2">
-          {CATEGORY_CHIPS.map((c) => chip(c, category === c, () => setCategory(c), `c-${c}`))}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {PLATFORM_CHIPS.map((p) => chip(p, platform === p, () => setPlatform(p), `p-${p}`))}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {FORMAT_CHIPS.map((f) => chip(FORMAT_LABEL[f] ?? f, format === f, () => setFormat(f), `f-${f}`))}
-        </div>
-      </div>
-
-      {error ? (
-        <Card className="flex flex-col items-center gap-3 p-10 text-center">
-          <AlertTriangle className="h-8 w-8 text-destructive" />
-          <p className="text-sm text-muted-foreground">Couldn’t load templates: {error.message}</p>
-          <Button variant="outline" onClick={() => refetch()} className="gap-2">
-            <RefreshCw className="h-4 w-4" /> Retry
-          </Button>
-        </Card>
-      ) : isLoading ? (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Card key={i} className="overflow-hidden">
-              <Skeleton className="h-44 w-full" />
-              <div className="space-y-2 p-3">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
-              </div>
-            </Card>
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <Card className="flex flex-col items-center gap-3 p-12 text-center">
-          <LayoutGrid className="h-8 w-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">
-            {(data?.length ?? 0) === 0
-              ? "No templates yet. Create your first template or browse the marketplace."
-              : search
-              ? `No templates found for “${search}”. Try a different search.`
-              : "No templates match these filters. Try adjusting your filters."}
-          </p>
-          {(data?.length ?? 0) > 0 && (
-            <Button variant="outline" onClick={() => { setRawSearch(""); setCategory("All"); setPlatform("All"); setFormat("All"); setCtxDismissed(true); }}>
-              Browse all templates
-            </Button>
-          )}
-        </Card>
-      ) : (
-        <>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
-            {filtered.slice(0, visible).map(({ t, score, confidence, brandReady }) => {
-              const PIcon = (t.platform && PLATFORM_ICON[t.platform]) || LayoutGrid;
-              return (
-                <Card key={t.id} className="group flex flex-col overflow-hidden">
-                  <div className="relative">
-                    <TemplateThumb t={t} />
-                    <div className="absolute left-2 top-2 flex flex-wrap gap-1">
-                      {score > 70 && <Badge className="text-[10px]">Recommended</Badge>}
-                      {brandReady && <Badge variant="secondary" className="text-[10px]">Brand Ready</Badge>}
-                    </div>
-                    <button
-                      aria-label={favs.has(t.id) ? "Remove favorite" : "Add favorite"}
-                      onClick={() => toggleFav(t.id)}
-                      className="absolute right-2 top-2 rounded-full bg-background/80 p-1.5 backdrop-blur"
-                    >
-                      <Heart className={`h-4 w-4 ${favs.has(t.id) ? "fill-primary text-primary" : "text-muted-foreground"}`} />
-                    </button>
-                  </div>
-                  <div className="flex flex-1 flex-col gap-2 p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="line-clamp-2 text-sm font-semibold">{t.name}</p>
-                      <PIcon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {t.category && <Badge variant="outline" className="text-[10px]">{t.category}</Badge>}
-                      <span className="text-[10px] text-muted-foreground">Confidence: {confidence}%</span>
-                    </div>
-                    <div className="mt-auto grid grid-cols-2 gap-1.5 pt-1">
-                      <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={() => navigate(`/templates/${t.id}`)}>
-                        <Eye className="h-3.5 w-3.5" /> Preview
-                      </Button>
-                      <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={() => useTemplate(t)}>
-                        <Pencil className="h-3.5 w-3.5" /> Customize
-                      </Button>
-                      <Button size="sm" className="col-span-2 h-8 text-xs" onClick={() => useTemplate(t)}>
-                        Use Template
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-          {visible < filtered.length && (
-            <div className="flex justify-center">
-              <Button variant="outline" disabled={isFetching} onClick={() => setVisible((v) => v + PAGE_SIZE)}>
-                Load More ({filtered.length - visible} left)
-              </Button>
+      <div className="chip-row mt-5 flex w-full max-w-full gap-2 overflow-x-auto pb-1">
+        {LIBRARY_PLATFORMS.map((item) => {
+          const active = platform === item;
+          return (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setPlatform(item)}
+              className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-sm font-medium ${active ? "border-[#E4DFFF] bg-[#F3F0FF] text-[#5B45E0]" : "border-[#E4E7EE] bg-white text-[#2A3142]"}`}
+            >
+              {item === "All" ? <LayoutGrid className="h-3.5 w-3.5" /> : <PlatformMark name={item} />}
+              {item}
+            </button>
+          );
+        })}
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            onClick={() => { setMoreOpen((open) => !open); setFilterOpen(false); }}
+            className="inline-flex h-9 items-center gap-1 rounded-full border border-[#E4E7EE] bg-white px-3 text-sm font-medium text-[#2A3142]"
+          >
+            More
+            <ChevronDown className="h-3.5 w-3.5" />
+          </button>
+          {moreOpen && (
+            <div className="absolute left-0 z-20 mt-2 w-48 rounded-xl border border-[#E4E7EE] bg-white p-1 shadow-[0_12px_40px_rgba(16,24,40,0.08)]">
+              {extraPlatforms.length === 0 ? (
+                <p className="px-3 py-2 text-sm text-[#6E7585]">No other platforms in the library.</p>
+              ) : extraPlatforms.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => { setPlatform(item); setMoreOpen(false); }}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[#2A3142] hover:bg-[#F6F7FB]"
+                >
+                  <PlatformMark name={item} />
+                  {item}
+                </button>
+              ))}
             </div>
           )}
-        </>
-      )}
+        </div>
+      </div>
+
+      <section className="mt-4 grid items-center gap-5 overflow-hidden rounded-2xl bg-[#F4F1FE] px-5 py-5 lg:grid-cols-[minmax(240px,0.85fr)_minmax(320px,1.15fr)] lg:px-8 lg:py-7">
+        <div>
+          <h2 className="max-w-sm text-[28px] font-semibold leading-[1.15] tracking-[-0.03em] text-[#161A23]">
+            Stand out with stunning templates
+          </h2>
+          <p className="mt-2 max-w-sm text-sm leading-relaxed text-[#5E6575]">
+            High-performing, customizable templates designed to get you more results.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate("/templates/generate")}
+            className="mt-5 inline-flex h-10 items-center gap-2 rounded-lg bg-[#6E56F5] px-4 text-sm font-semibold text-white hover:bg-[#5E48E6]"
+          >
+            <Sparkles className="h-4 w-4" />
+            Create with AI
+          </button>
+        </div>
+        <div className={`flex items-end justify-center gap-3 sm:justify-end ${featured.length ? "h-[168px] lg:h-[210px]" : ""}`}>
+          {featured.length === 0 && !isLoading ? (
+            <p className="text-sm text-[#6E7585]">Featured templates appear here once the library has a match.</p>
+          ) : featured.map(({ t }, index) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => useTemplate(t)}
+              className="h-[150px] w-[108px] overflow-hidden rounded-2xl border border-white/70 shadow-[0_16px_30px_rgba(40,30,80,0.12)] lg:h-[190px] lg:w-[132px]"
+              style={{ transform: `rotate(${[-7, 0, 7][index] || 0}deg) translateY(${index === 1 ? "-12px" : "0"})` }}
+              aria-label={`Open ${t.name}`}
+            >
+              <TemplatePoster t={t} />
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-8">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-[#161A23]">Categories</h2>
+          <button type="button" onClick={() => setCategory("All")} className="text-sm font-medium text-[#6E56F5]">View all</button>
+        </div>
+        <div className="chip-row flex w-full max-w-full gap-2 overflow-x-auto pb-1">
+          {LIBRARY_CATEGORIES.map((item) => {
+            const Icon = CATEGORY_ICON[item.id] || LayoutGrid;
+            const count = counts.get(item.id) || 0;
+            const active = category === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setCategory(active ? "All" : item.id)}
+                className={`flex h-[68px] min-w-[148px] shrink-0 items-center gap-3 rounded-xl border bg-white px-3 text-left ${active ? "border-[#6E56F5]" : "border-[#E7E9F0]"}`}
+              >
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#F4F1FE] text-[#6E56F5]">
+                  <Icon className="h-4 w-4" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium text-[#1C2230]">{item.label}</span>
+                  <span className="block text-xs text-[#8B93A7]">{data ? `${count} ${count === 1 ? "template" : "templates"}` : "—"}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="mt-8">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-[#161A23]">Popular Templates</h2>
+          {filtered.length > PAGE_SIZE && (
+            <button
+              type="button"
+              onClick={() => setVisible((count) => count >= filtered.length ? PAGE_SIZE : filtered.length)}
+              className="text-sm font-medium text-[#6E56F5]"
+            >
+              {visible >= filtered.length ? "Show less" : "View all"}
+            </button>
+          )}
+        </div>
+
+        {error ? (
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-[#E7E9F0] bg-white px-6 py-12 text-center">
+            <AlertTriangle className="h-6 w-6 text-[#C24141]" />
+            <p className="text-sm text-[#6E7585]">Couldn’t load templates. {error.message}</p>
+            <button type="button" onClick={() => refetch()} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#E4E7EE] px-3 text-sm">
+              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+              Retry
+            </button>
+          </div>
+        ) : isLoading ? (
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="rounded-2xl border border-[#E7E9F0] bg-white p-2">
+                <Skeleton className="aspect-[4/5] w-full rounded-xl" />
+                <Skeleton className="mt-3 h-4 w-3/4" />
+              </div>
+            ))}
+          </div>
+        ) : popular.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-[#E7E9F0] bg-white px-6 py-12 text-center">
+            <LayoutGrid className="h-6 w-6 text-[#8B93A7]" />
+            <p className="text-sm text-[#6E7585]">
+              {(data?.length ?? 0) === 0
+                ? "No templates yet. Create one with AI or add templates from the admin library."
+                : "No templates match these filters."}
+            </p>
+            {(data?.length ?? 0) > 0 && (
+              <button type="button" onClick={clearFilters} className="h-9 rounded-lg border border-[#E4E7EE] px-3 text-sm">
+                Browse all templates
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+            {popular.map(({ t }) => (
+              <article key={t.id} className="group rounded-2xl border border-[#E7E9F0] bg-white p-2 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+                <button type="button" onClick={() => useTemplate(t)} className="relative block w-full overflow-hidden rounded-xl text-left" aria-label={`Use ${t.name}`}>
+                  <div className="aspect-[4/5] w-full">
+                    <TemplatePoster t={t} />
+                  </div>
+                  {t.platform && (
+                    <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-1 text-[10px] font-medium text-[#1C2230] shadow-sm">
+                      <PlatformMark name={t.platform} className="h-3 w-3" />
+                      {t.platform}
+                    </span>
+                  )}
+                </button>
+                <div className="flex items-start justify-between gap-2 px-1 pb-1 pt-2.5">
+                  <p className="line-clamp-2 text-sm font-medium text-[#1C2230]">{t.name}</p>
+                  <button
+                    type="button"
+                    aria-label={favs.has(t.id) ? "Remove favorite" : "Save template"}
+                    aria-pressed={favs.has(t.id)}
+                    onClick={() => toggleFav(t.id)}
+                    className="mt-0.5 shrink-0 text-[#8B93A7]"
+                  >
+                    <Heart className={`h-4 w-4 ${favs.has(t.id) ? "fill-[#6E56F5] text-[#6E56F5]" : ""}`} />
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="mt-8">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-[#161A23]">{recent.fromEditor ? "Recently used" : "Recently updated"}</h2>
+        </div>
+        {recent.items.length === 0 ? (
+          <p className="rounded-2xl border border-[#E7E9F0] bg-white px-4 py-6 text-sm text-[#6E7585]">
+            Templates you open in the editor show up here.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {recent.items.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => useTemplate(t)}
+                className="flex items-center gap-3 rounded-2xl border border-[#E7E9F0] bg-white p-3 text-left shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
+              >
+                <span className="h-14 w-14 shrink-0 overflow-hidden rounded-lg">
+                  <TemplatePoster t={t} compact />
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium text-[#1C2230]">{t.name}</span>
+                  <span className="mt-0.5 flex items-center gap-1.5 text-xs text-[#8B93A7]">
+                    {t.platform && <PlatformMark name={t.platform} className="h-3 w-3" />}
+                    {recent.fromEditor ? "Opened in the editor" : relativeUpdated(t.updated_at)}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

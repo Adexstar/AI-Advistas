@@ -16,7 +16,7 @@ const ComingSoon = ({
   return (
     <div className="page-container py-6 md:py-10">
       <div className="mx-auto max-w-2xl rounded-3xl border border-border bg-card p-8 text-center shadow-sm md:p-14">
-        <div className="mx-auto mb-6 grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-primary to-[hsl(243_82%_62%)] text-white shadow-lg">
+        <div className="mx-auto mb-6 grid h-14 w-14 place-items-center rounded-2xl bg-primary text-white">
           <Sparkles className="h-6 w-6" />
         </div>
         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{title}</h1>
