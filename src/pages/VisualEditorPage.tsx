@@ -52,6 +52,8 @@ import {
   reorderLayer, setLocked, setVisible,
 } from '@/components/visual-editor/canvasActions';
 import { fitContentToFrame, frameForTemplate, frameFromAspect, measureContentBounds, publishArtboard, replaceImageKeepingFrame, scaleImageToCover } from '@/components/visual-editor/canvasImagePlacement';
+import { selectionToolSet } from '@/components/visual-editor/editorTools';
+import { applyImageFilters, neutralImageAdjustments, type ImageAdjustments, type ImagePreset } from '@/components/visual-editor/imageAdjustments';
 
 /* ---------- Constants ---------- */
 const LEFT_TABS = [
@@ -1302,14 +1304,16 @@ const MULTI_TOOLS: ToolItem[] = [
   { id: 'layers', label: 'Layers', icon: LayersIcon },
 ];
 
-const getToolsForSelection = (selected: any): ToolItem[] => {
-  if (!selected) return CREATE_TOOLS;
-  const type = selected.type;
-  if (type === 'textbox' || type === 'text' || type === 'i-text') return TEXT_TOOLS;
-  if (type === 'image' || type === 'video') return IMAGE_TOOLS;
-  if (type === 'rect' || type === 'circle' || type === 'ellipse' || type === 'triangle' || type === 'polygon') return SHAPE_TOOLS;
-  return CREATE_TOOLS;
+const TOOL_SETS: Record<string, ToolItem[]> = {
+  create: CREATE_TOOLS,
+  text: TEXT_TOOLS,
+  image: IMAGE_TOOLS,
+  video: VIDEO_TOOLS,
+  shape: SHAPE_TOOLS,
+  multi: MULTI_TOOLS,
 };
+
+const getToolsForSelection = (selected: any): ToolItem[] => TOOL_SETS[selectionToolSet(selected)];
 
 const AI_ACTIONS: Record<string, { id: string; label: string }[]> = {
   text: [
@@ -1418,30 +1422,59 @@ const ColorToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> =
   );
 };
 
-const AnimateToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = () => {
-  const animations = ['None','Fade','Rise','Typewriter','Pop','Bounce','Slide'];
-  return (
-    <div className="space-y-3">
-      <p className="text-xs font-semibold text-muted-foreground">Entrance</p>
-      <div className="grid grid-cols-4 gap-2">{animations.map(a => <button key={a} className={`rounded-xl border px-3 py-4 text-xs font-medium text-center ${a === 'None' ? 'border-primary bg-primary/10' : 'hover:bg-muted'}`}>{a}</button>)}</div>
-      <div className="grid grid-cols-2 gap-3">
-        <div><p className="mb-1 text-xs text-muted-foreground">Duration</p><div className="flex items-center gap-2"><Slider value={[50]} max={100} className="flex-1" /><span className="text-xs w-10 text-right">0.5s</span></div></div>
-        <div><p className="mb-1 text-xs text-muted-foreground">Delay</p><div className="flex items-center gap-2"><Slider value={[0]} max={100} className="flex-1" /><span className="text-xs w-10 text-right">0s</span></div></div>
-      </div>
-    </div>
-  );
+const AnimateToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = () => (
+  <UnavailableTool
+    title="Animation is not applied yet"
+    detail="Entrance presets are listed in the design, but this editor does not write animation onto the canvas. Nothing on the artboard changes from this panel."
+  />
+);
+
+const paintObject = (selected: any, canvas: FabricCanvas | null, props: Record<string, unknown>) => {
+  if (!selected || !canvas) return;
+  selected.set(props);
+  selected.setCoords?.();
+  canvas.requestRenderAll();
+};
+
+const setObjectEffect = (selected: any, canvas: FabricCanvas | null, kind: 'shadow' | 'outline' | 'glow', on: boolean) => {
+  if (!selected || !canvas) return;
+  if (kind === 'outline') {
+    paintObject(selected, canvas, on ? { stroke: '#000000', strokeWidth: 2 } : { strokeWidth: 0 });
+    return;
+  }
+  if (!on) {
+    paintObject(selected, canvas, { shadow: null });
+    return;
+  }
+  paintObject(selected, canvas, {
+    shadow: new Shadow(
+      kind === 'glow'
+        ? { color: (selected.fill as string) || '#ffffff', blur: 24, offsetX: 0, offsetY: 0 }
+        : { color: 'rgba(0,0,0,0.35)', blur: 12, offsetX: 0, offsetY: 6 },
+    ),
+  });
 };
 
 const EffectsToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => {
-  const update = (prop: string, val: any) => { if (!selected || !canvas) return; selected.set(prop, val); canvas.renderAll(); };
+  const [, bump] = useState(0);
+  const refresh = () => bump((n) => n + 1);
+  const shadowOn = !!selected?.shadow && (selected.shadow.blur ?? 0) <= 16;
+  const glowOn = !!selected?.shadow && (selected.shadow.blur ?? 0) > 16;
   return (
     <div className="space-y-3">
       <div className="space-y-2">
-        {[{ l: 'Shadow', key: 'shadow' }, { l: 'Outline', key: 'outline' }, { l: 'Glow', key: 'glow' }].map(e => (
-          <div key={e.key} className="flex items-center justify-between rounded-lg border px-3 py-2"><span className="text-xs font-medium">{e.l}</span><Switch defaultChecked={e.key === 'shadow'} /></div>
+        {([
+          { l: 'Shadow', k: 'shadow' as const, on: shadowOn },
+          { l: 'Outline', k: 'outline' as const, on: (selected?.strokeWidth ?? 0) > 0 },
+          { l: 'Glow', k: 'glow' as const, on: glowOn },
+        ]).map((effect) => (
+          <div key={effect.k} className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2">
+            <span className="text-xs font-medium">{effect.l}</span>
+            <Switch checked={effect.on} onCheckedChange={(on) => { setObjectEffect(selected, canvas, effect.k, on); refresh(); }} />
+          </div>
         ))}
       </div>
-      <div><p className="mb-2 text-xs text-muted-foreground">Opacity</p><div className="flex items-center gap-3"><Slider value={[Math.round((selected?.opacity ?? 1) * 100)]} onValueChange={([v]) => update('opacity', v / 100)} max={100} /><span className="text-xs w-10 text-right">{Math.round((selected?.opacity ?? 1) * 100)}%</span></div></div>
+      <OpacityToolPanel selected={selected} canvas={canvas} />
     </div>
   );
 };
@@ -1463,7 +1496,7 @@ const SpacingToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }>
   return (
     <div className="space-y-3">
       <div><p className="mb-1 text-xs text-muted-foreground">Line Height</p><Input type="number" step={0.1} className="h-9" value={selected?.lineHeight || 1.2} onChange={(e) => update('lineHeight', parseFloat(e.target.value))} /></div>
-      <div><p className="mb-1 text-xs text-muted-foreground">Letter Spacing</p><div className="flex items-center gap-2"><Slider value={[0]} max={100} className="flex-1" /><span className="text-xs w-10 text-right">0%</span></div></div>
+      <div><p className="mb-1 text-xs text-muted-foreground">Letter Spacing</p><div className="flex items-center gap-2"><Slider value={[Math.round(selected?.charSpacing || 0)]} max={400} onValueChange={([v]) => update('charSpacing', v)} className="flex-1" /><span className="text-xs w-10 text-right">{Math.round(selected?.charSpacing || 0)}</span></div></div>
       <div><p className="mb-1 text-xs text-muted-foreground">Padding</p><Input type="number" className="h-9" defaultValue={0} /></div>
     </div>
   );
@@ -1534,6 +1567,170 @@ const OpacityToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }>
   );
 };
 
+const UnavailableTool = ({ title, detail }: { title: string; detail: string }) => (
+  <div className="rounded-xl border border-dashed p-4">
+    <p className="text-sm font-medium">{title}</p>
+    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{detail}</p>
+  </div>
+);
+
+const ReplaceImageToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const replace = async (file: File) => {
+    if (!canvas || !selected) return;
+    const url = URL.createObjectURL(file);
+    try {
+      await replaceImageKeepingFrame(canvas, selected, url);
+      canvas.requestRenderAll();
+    } catch {
+      toast({ title: 'Could not load image', description: 'Try a different file.', variant: 'destructive' });
+    }
+  };
+  return (
+    <div className="space-y-3">
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) replace(file); e.target.value = ''; }} />
+      <Button className="w-full" onClick={() => fileRef.current?.click()}>Choose a replacement image</Button>
+      <p className="text-xs text-muted-foreground">The new image fills the current frame without stretching it.</p>
+    </div>
+  );
+};
+
+const CropToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => {
+  const element = selected?.getElement?.();
+  const naturalW = element?.naturalWidth || element?.videoWidth || selected?.width || 1;
+  const naturalH = element?.naturalHeight || element?.videoHeight || selected?.height || 1;
+  const [inset, setInset] = useState(0);
+  const apply = (percent: number) => {
+    if (!selected || !canvas) return;
+    const frameW = (selected.width || 1) * (selected.scaleX || 1);
+    const frameH = (selected.height || 1) * (selected.scaleY || 1);
+    const cropX = Math.round(naturalW * percent);
+    const cropY = Math.round(naturalH * percent);
+    const width = Math.max(1, naturalW - cropX * 2);
+    const height = Math.max(1, naturalH - cropY * 2);
+    selected.set({ cropX, cropY, width, height, scaleX: frameW / width, scaleY: frameH / height });
+    selected.setCoords?.();
+    canvas.requestRenderAll();
+    setInset(percent);
+  };
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-muted-foreground">Crop equally from every edge. The frame on the artboard stays the same size.</p>
+      <div className="flex items-center gap-3">
+        <Slider value={[Math.round(inset * 100)]} max={40} onValueChange={([value]) => apply(value / 100)} className="flex-1" />
+        <span className="w-10 text-right text-xs tabular-nums">{Math.round(inset * 100)}%</span>
+      </div>
+    </div>
+  );
+};
+
+const ImageFilterToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null; mode: 'filters' | 'adjust' }> = ({ selected, canvas, mode }) => {
+  const stored = (selected?.__advistaAdjust ?? neutralImageAdjustments) as ImageAdjustments;
+  const [adjust, setAdjust] = useState<ImageAdjustments>(stored);
+  if (!selected || typeof selected.applyFilters !== "function") {
+    return <UnavailableTool title="Filters apply to images" detail="The selected object cannot take Fabric image filters, so this panel leaves it unchanged." />;
+  }
+  const commit = (next: ImageAdjustments) => {
+    setAdjust(next);
+    if (selected) selected.__advistaAdjust = next;
+    applyImageFilters(selected, canvas, next);
+  };
+  return (
+    <div className="space-y-4">
+      {mode === 'filters' && (
+        <div className="grid grid-cols-3 gap-2">
+          {(['none', 'grayscale', 'sepia'] as ImagePreset[]).map((preset) => (
+            <button key={preset} type="button" onClick={() => commit({ ...adjust, preset })} className={`rounded-lg border px-2 py-2 text-xs capitalize ${adjust.preset === preset ? 'border-primary bg-primary/10' : 'hover:bg-muted'}`}>{preset}</button>
+          ))}
+        </div>
+      )}
+      {mode === 'adjust' && (
+        <>
+          {([
+            ['brightness', 'Brightness'],
+            ['contrast', 'Contrast'],
+            ['saturation', 'Saturation'],
+          ] as const).map(([key, label]) => (
+            <div key={key}>
+              <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+                <span>{label}</span>
+                <span className="tabular-nums">{Math.round(adjust[key] * 100)}</span>
+              </div>
+              <Slider value={[Math.round(adjust[key] * 100)]} min={-100} max={100} onValueChange={([value]) => commit({ ...adjust, [key]: value / 100 })} />
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  );
+};
+
+const RadiusToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => {
+  if (selected?.type !== 'rect') {
+    return <UnavailableTool title="Corner radius applies to rectangles" detail="Circles, ellipses, and triangles already have their own outline. Select a rectangle to round its corners." />;
+  }
+  const radius = Math.round(selected.rx || 0);
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-xs text-muted-foreground"><span>Corner radius</span><span className="tabular-nums">{radius}px</span></div>
+      <Slider value={[radius]} max={120} onValueChange={([value]) => paintObject(selected, canvas, { rx: value, ry: value })} />
+    </div>
+  );
+};
+
+const ShadowToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => {
+  const [, bump] = useState(0);
+  const blur = Math.round(selected?.shadow?.blur ?? 0);
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2">
+        <span className="text-xs font-medium">Drop shadow</span>
+        <Switch checked={!!selected?.shadow} onCheckedChange={(on) => { setObjectEffect(selected, canvas, 'shadow', on); bump((n) => n + 1); }} />
+      </div>
+      <div>
+        <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground"><span>Blur</span><span className="tabular-nums">{blur}px</span></div>
+        <Slider value={[blur]} max={40} onValueChange={([value]) => {
+          paintObject(selected, canvas, { shadow: new Shadow({ color: 'rgba(0,0,0,0.35)', blur: value, offsetX: 0, offsetY: 6 }) });
+          bump((n) => n + 1);
+        }} />
+      </div>
+    </div>
+  );
+};
+
+const LayerOrderToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => (
+  <div className="grid grid-cols-2 gap-2">
+    <Button variant="outline" onClick={() => moveLayer(canvas, selected, 'front')}>Bring to front</Button>
+    <Button variant="outline" onClick={() => moveLayer(canvas, selected, 'up')}>Bring forward</Button>
+    <Button variant="outline" onClick={() => moveLayer(canvas, selected, 'down')}>Send backward</Button>
+    <Button variant="outline" onClick={() => moveLayer(canvas, selected, 'back')}>Send to back</Button>
+  </div>
+);
+
+const MoreObjectToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => (
+  <div className="grid grid-cols-2 gap-2">
+    <Button variant="outline" onClick={() => { duplicateObject(canvas, selected); }}>Duplicate</Button>
+    <Button variant="outline" className="text-destructive" onClick={() => deleteObject(canvas, selected)}>Delete</Button>
+    <Button variant="outline" onClick={() => setLocked(canvas, selected, !isLocked(selected))}>{isLocked(selected) ? 'Unlock' : 'Lock'}</Button>
+    <Button variant="outline" onClick={() => setVisible(canvas, selected, selected?.visible === false)}>{selected?.visible === false ? 'Show' : 'Hide'}</Button>
+  </div>
+);
+
+const AlignToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => (
+  <div className="grid grid-cols-2 gap-2">
+    {([
+      ['left', 'Align left'],
+      ['center-h', 'Center'],
+      ['right', 'Align right'],
+      ['top', 'Align top'],
+      ['center-v', 'Middle'],
+      ['bottom', 'Align bottom'],
+    ] as const).map(([value, label]) => (
+      <Button key={value} variant="outline" onClick={() => alignObject(canvas, selected, value)}>{label}</Button>
+    ))}
+  </div>
+);
+
 const renderToolSheet = (toolId: string, selected: any, canvas: FabricCanvas | null): React.ReactNode => {
   const props = { selected, canvas };
   switch (toolId) {
@@ -1548,7 +1745,29 @@ const renderToolSheet = (toolId: string, selected: any, canvas: FabricCanvas | n
     case 'font-size': return <FontToolPanel {...props} />;
     case 'opacity': return <OpacityToolPanel {...props} />;
     case 'border': return <FillToolPanel {...props} />;
-    default: return <p className="text-xs text-muted-foreground">Select an option above.</p>;
+    case 'replace': return <ReplaceImageToolPanel {...props} />;
+    case 'crop': return <CropToolPanel {...props} />;
+    case 'filters': return <ImageFilterToolPanel {...props} mode="filters" />;
+    case 'adjust': return <ImageFilterToolPanel {...props} mode="adjust" />;
+    case 'radius': return <RadiusToolPanel {...props} />;
+    case 'shadow': return <ShadowToolPanel {...props} />;
+    case 'layers': return <LayerOrderToolPanel {...props} />;
+    case 'more': return <MoreObjectToolPanel {...props} />;
+    case 'align': return <AlignToolPanel {...props} />;
+    case 'duplicate': return <MoreObjectToolPanel {...props} />;
+    case 'lock': return <MoreObjectToolPanel {...props} />;
+    case 'bg-remove':
+    case 'ai-enhance':
+      return <UnavailableTool title="This image action needs a provider" detail="Background removal and AI enhance are not connected to an image provider. The picture on the canvas is left unchanged." />;
+    case 'trim':
+    case 'split':
+    case 'speed':
+    case 'captions':
+    case 'transitions':
+    case 'group':
+    case 'distribute':
+      return <UnavailableTool title="This control is not available" detail="The editor does not apply this action yet, so it will not change the canvas or pretend that it did." />;
+    default: return <UnavailableTool title="No editor for this tool" detail="Choose another control. This one does not change the selected object." />;
   }
 };
 
@@ -1882,9 +2101,10 @@ const RightPanel: React.FC<{
               <p className="text-xs text-muted-foreground">Choose an entrance and exit animation for this element.</p>
               <div className="grid grid-cols-2 gap-2">
                 {['Fade','Slide','Zoom','Bounce','Pop','Blur'].map((a) => (
-                  <button key={a} className="rounded-xl border bg-background px-3 py-6 text-xs font-medium hover:bg-muted">{a}</button>
+                  <button key={a} type="button" disabled className="cursor-not-allowed rounded-xl border bg-background px-3 py-6 text-xs font-medium opacity-70">{a}</button>
                 ))}
               </div>
+              <p className="text-xs text-muted-foreground">These names are not applied to the canvas yet.</p>
             </TabsContent>
 
             <TabsContent value="position" className="p-4 mt-2 space-y-4">
