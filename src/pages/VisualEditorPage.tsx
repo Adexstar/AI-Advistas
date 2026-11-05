@@ -26,7 +26,7 @@ import {
   Copy, Trash2, MoreHorizontal, Search, Filter, Video, Music, Square as SquareIcon, Link,
   Circle as CircleIcon, MousePointer, Volume2, X, Menu, ChevronDown, PanelRight,
   Palette, Sun, Zap, Eye, EyeOff, Pause, ChevronRight, RefreshCw, GripVertical, Pipette, Box,
-  ChevronUp, Scissors,
+  ChevronUp, Scissors, FlipHorizontal2,
 } from 'lucide-react';
 import { AIActionsMenu } from '@/components/visual-editor/ai/AIActionsMenu';
 import { AIQuickActionsMenu } from '@/components/visual-editor/ai/AIQuickActionsMenu';
@@ -52,7 +52,7 @@ import {
   reorderLayer, setLocked, setVisible,
 } from '@/components/visual-editor/canvasActions';
 import { fitContentToFrame, frameForTemplate, frameFromAspect, measureContentBounds, placeFittedImage, publishArtboard, replaceImageKeepingFrame, scaleImageToCover } from '@/components/visual-editor/canvasImagePlacement';
-import { selectionToolSet } from '@/components/visual-editor/editorTools';
+import { selectionToolSet, SELECTION_ACTIONS, type ToolSetId } from '@/components/visual-editor/editorTools';
 import { CREATE_RAIL, EDITOR_TOOLS, FONT_COMBOS, TEXT_STYLES, matchTextStyle, panelForCreateTool } from '@/components/visual-editor/createRail';
 import { applyImageFilters, neutralImageAdjustments, type ImageAdjustments, type ImagePreset } from '@/components/visual-editor/imageAdjustments';
 
@@ -1307,81 +1307,34 @@ const CREATE_TOOLS: ToolItem[] = CREATE_RAIL.map((tool) => ({
   icon: CREATE_TOOL_ICONS[tool.id],
 }));
 
-const TEXT_TOOLS: ToolItem[] = [
-  { id: 'edit-text', label: 'Edit', icon: Edit3 },
-  { id: 'font', label: 'Font', icon: Type },
-  { id: 'text-style', label: 'Styles', icon: Bold },
-  { id: 'font-size', label: 'Size', icon: Plus },
-  { id: 'colour', label: 'Colour', icon: Palette },
-  { id: 'spacing', label: 'Spacing', icon: AlignLeft },
-  { id: 'effects', label: 'Effects', icon: Zap },
-  { id: 'animate', label: 'Animate', icon: Play },
-  { id: 'position', label: 'Position', icon: MoveUp },
-  { id: 'opacity', label: 'Opacity', icon: Eye },
-  { id: 'layers', label: 'Layers', icon: LayersIcon },
-  { id: 'more', label: 'More', icon: MoreHorizontal },
-];
-
-const IMAGE_TOOLS: ToolItem[] = [
-  { id: 'replace', label: 'Replace', icon: RefreshCw },
-  { id: 'crop', label: 'Crop', icon: Maximize2 },
-  { id: 'filters', label: 'Filters', icon: Palette },
-  { id: 'adjust', label: 'Adjust', icon: Sun },
-  { id: 'effects', label: 'Effects', icon: Zap },
-  { id: 'bg-remove', label: 'Bg Remove', icon: Wand2 },
-  { id: 'ai-enhance', label: 'AI Enhance', icon: Sparkles },
-  { id: 'opacity', label: 'Opacity', icon: Eye },
-  { id: 'animate', label: 'Animate', icon: Play },
-  { id: 'position', label: 'Position', icon: MoveUp },
-  { id: 'layers', label: 'Layers', icon: LayersIcon },
-  { id: 'more', label: 'More', icon: MoreHorizontal },
-];
-
-const SHAPE_TOOLS: ToolItem[] = [
-  { id: 'fill', label: 'Fill', icon: Palette },
-  { id: 'border', label: 'Border', icon: SquareIcon },
-  { id: 'radius', label: 'Radius', icon: Box },
-  { id: 'shadow', label: 'Shadow', icon: Moon },
-  { id: 'opacity', label: 'Opacity', icon: Eye },
-  { id: 'animate', label: 'Animate', icon: Play },
-  { id: 'position', label: 'Position', icon: MoveUp },
-  { id: 'layers', label: 'Layers', icon: LayersIcon },
-];
-
-const VIDEO_TOOLS: ToolItem[] = [
-  { id: 'trim', label: 'Trim', icon: Scissors },
-  { id: 'split', label: 'Split', icon: Scissors },
-  { id: 'speed', label: 'Speed', icon: Zap },
-  { id: 'volume', label: 'Volume', icon: Volume2 },
-  { id: 'captions', label: 'Captions', icon: Type },
-  { id: 'filters', label: 'Filters', icon: Palette },
-  { id: 'transitions', label: 'Trans', icon: ChevronRight },
-  { id: 'animate', label: 'Animate', icon: Play },
-  { id: 'position', label: 'Position', icon: MoveUp },
-  { id: 'layers', label: 'Layers', icon: LayersIcon },
-];
-
-const MULTI_TOOLS: ToolItem[] = [
-  { id: 'group', label: 'Group', icon: LayersIcon },
-  { id: 'align', label: 'Align', icon: AlignVerticalJustifyCenter },
-  { id: 'distribute', label: 'Distribute', icon: Grid3x3 },
-  { id: 'duplicate', label: 'Dup', icon: Copy },
-  { id: 'lock', label: 'Lock', icon: Lock },
-  { id: 'opacity', label: 'Opacity', icon: Eye },
-  { id: 'position', label: 'Position', icon: MoveUp },
-  { id: 'layers', label: 'Layers', icon: LayersIcon },
-];
-
-const TOOL_SETS: Record<string, ToolItem[]> = {
-  create: CREATE_TOOLS,
-  text: TEXT_TOOLS,
-  image: IMAGE_TOOLS,
-  video: VIDEO_TOOLS,
-  shape: SHAPE_TOOLS,
-  multi: MULTI_TOOLS,
+const ACTION_ICONS: Record<string, React.FC<{ className?: string }>> = {
+  'edit-text': Edit3,
+  font: Type,
+  'text-style': Bold,
+  'font-size': Type,
+  colour: Palette,
+  fill: Palette,
+  opacity: Eye,
+  replace: RefreshCw,
+  flip: FlipHorizontal2,
+  crop: Maximize2,
+  adjust: Sun,
+  position: MoveUp,
+  border: SquareIcon,
+  radius: Box,
+  align: AlignVerticalJustifyCenter,
 };
 
-const getToolsForSelection = (selected: any): ToolItem[] => TOOL_SETS[selectionToolSet(selected)];
+const toolsForSet = (set: ToolSetId): ToolItem[] => {
+  if (set === 'create') return CREATE_TOOLS;
+  return SELECTION_ACTIONS[set].map((action) => ({
+    id: action.id,
+    label: action.label,
+    icon: ACTION_ICONS[action.id] ?? MoreHorizontal,
+  }));
+};
+
+const getToolsForSelection = (selected: any): ToolItem[] => toolsForSet(selectionToolSet(selected));
 
 const AI_ACTIONS: Record<string, { id: string; label: string }[]> = {
   text: [
@@ -1455,6 +1408,48 @@ const ContextualToolbar: React.FC<{
     })}
   </nav>
 );
+
+const SelectionBar: React.FC<{
+  tools: ToolItem[];
+  active: string | null;
+  onTool: (id: string) => void;
+  onDone: () => void;
+  variant: 'dock' | 'float';
+}> = ({ tools, active, onTool, onDone, variant }) => {
+  const buttons = tools.map((tool) => {
+    const Icon = tool.icon;
+    const on = active === tool.id;
+    return (
+      <button key={tool.id} type="button" onClick={() => onTool(tool.id)}
+        className={variant === 'float'
+          ? `flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ${on ? 'bg-white text-neutral-900' : 'text-white/90 hover:bg-white/10'}`
+          : `flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-lg px-0.5 py-1.5 text-[9px] font-medium leading-tight ${on ? 'text-primary' : 'text-inherit'}`}>
+        <Icon className={variant === 'float' ? 'h-3.5 w-3.5' : 'h-5 w-5'} />
+        <span className={variant === 'float' ? '' : 'w-full truncate text-center'}>{tool.label}</span>
+      </button>
+    );
+  });
+  if (variant === 'float') {
+    return (
+      <div data-selection-bar="float" className="flex shrink-0 justify-center px-3 py-2">
+        <div className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full border border-white/10 bg-[#1a1a1a] px-1.5 py-1 shadow-lg [scrollbar-width:none]">
+          {buttons}
+          <button type="button" onClick={onDone} aria-label="Done editing" className="ml-1 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white text-neutral-900">
+            <Check className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <nav data-selection-bar="dock" className="studio-tool-rail z-40 flex min-h-[66px] shrink-0 items-center gap-0.5 border-t px-1.5 py-1">
+      {buttons}
+      <button type="button" onClick={onDone} aria-label="Done editing" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
+        <Check className="h-4 w-4" />
+      </button>
+    </nav>
+  );
+};
 
 /* ---------- Contextual Tool Sheet Panels ---------- */
 const FontToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => {
@@ -1550,13 +1545,32 @@ const EffectsToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }>
 };
 
 const PositionToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => {
-  const update = (prop: string, val: any) => { if (!selected || !canvas) return; selected.set(prop, val); canvas.renderAll(); };
+  const [, bump] = useState(0);
+  const update = (prop: string, val: any) => {
+    if (!selected || !canvas) return;
+    selected.set(prop, val);
+    selected.setCoords?.();
+    canvas.requestRenderAll();
+    bump((n) => n + 1);
+  };
+  const arrange = (dir: 'up' | 'down' | 'front' | 'back') => {
+    moveLayer(canvas, selected, dir);
+    bump((n) => n + 1);
+  };
   return (
-    <div className="grid grid-cols-2 gap-3">
-      <div><p className="mb-1 text-xs text-muted-foreground">X</p><Input type="number" className="h-9" value={Math.round(selected?.left || 0)} onChange={(e) => update('left', parseInt(e.target.value))} /></div>
-      <div><p className="mb-1 text-xs text-muted-foreground">Y</p><Input type="number" className="h-9" value={Math.round(selected?.top || 0)} onChange={(e) => update('top', parseInt(e.target.value))} /></div>
-      <div><p className="mb-1 text-xs text-muted-foreground">Rotation</p><Input type="number" className="h-9" value={Math.round(selected?.angle || 0)} onChange={(e) => update('angle', parseInt(e.target.value))} /></div>
-      <div><p className="mb-1 text-xs text-muted-foreground">Scale</p><Input type="number" step={0.1} className="h-9" value={selected?.scaleX || 1} onChange={(e) => { update('scaleX', parseFloat(e.target.value)); update('scaleY', parseFloat(e.target.value)); }} /></div>
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-2">
+        <Button variant="outline" onClick={() => arrange('up')}>Forward</Button>
+        <Button variant="outline" onClick={() => arrange('down')}>Backward</Button>
+        <Button variant="outline" onClick={() => arrange('front')}>To front</Button>
+        <Button variant="outline" onClick={() => arrange('back')}>To back</Button>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div><p className="mb-1 text-xs text-muted-foreground">X</p><Input type="number" className="h-9" value={Math.round(selected?.left || 0)} onChange={(e) => update('left', parseInt(e.target.value) || 0)} /></div>
+        <div><p className="mb-1 text-xs text-muted-foreground">Y</p><Input type="number" className="h-9" value={Math.round(selected?.top || 0)} onChange={(e) => update('top', parseInt(e.target.value) || 0)} /></div>
+        <div><p className="mb-1 text-xs text-muted-foreground">Rotation</p><Input type="number" className="h-9" value={Math.round(selected?.angle || 0)} onChange={(e) => update('angle', parseInt(e.target.value) || 0)} /></div>
+        <div><p className="mb-1 text-xs text-muted-foreground">Scale</p><Input type="number" step={0.1} className="h-9" value={Number(selected?.scaleX || 1).toFixed(2)} onChange={(e) => { const n = parseFloat(e.target.value) || 1; update('scaleX', n); update('scaleY', n); }} /></div>
+      </div>
     </div>
   );
 };
@@ -1573,6 +1587,64 @@ const SpacingToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }>
 };
 
 const FillToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = (props) => <ColorToolPanel {...props} />;
+
+const StrokeToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => {
+  const [width, setWidth] = useState(Math.round(selected?.strokeWidth ?? 0));
+  const apply = (next: number) => {
+    setWidth(next);
+    paintObject(selected, canvas, { strokeWidth: next, stroke: selected?.stroke || '#111111' });
+  };
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>Stroke weight</span>
+        <span className="tabular-nums">{width}</span>
+      </div>
+      <Slider value={[width]} max={40} onValueChange={([value]) => apply(value)} />
+      <div className="flex flex-wrap gap-2">
+        {['#111111', '#ffffff', '#F47B35', '#ef4444', '#2563eb'].map((color) => (
+          <button key={color} type="button" aria-label={color} onClick={() => paintObject(selected, canvas, { stroke: color, strokeWidth: width || 4 })}
+            className="h-8 w-8 rounded-full border border-white/20" style={{ backgroundColor: color }} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const FlipToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => {
+  const [flip, setFlip] = useState({ x: !!selected?.flipX, y: !!selected?.flipY });
+  const toggle = (axis: 'x' | 'y') => {
+    if (!selected || !canvas) return;
+    const next = { ...flip, [axis]: !flip[axis] };
+    selected.set(axis === 'x' ? 'flipX' : 'flipY', next[axis]);
+    selected.setCoords?.();
+    canvas.requestRenderAll();
+    setFlip(next);
+  };
+  return (
+    <div className="grid grid-cols-1 gap-2">
+      <Button variant="outline" aria-pressed={flip.x} onClick={() => toggle('x')}>Flip horizontal</Button>
+      <Button variant="outline" aria-pressed={flip.y} onClick={() => toggle('y')}>Flip vertical</Button>
+    </div>
+  );
+};
+
+const FontSizeToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => {
+  const [size, setSize] = useState(Math.round(selected?.fontSize || 32));
+  const apply = (next: number) => {
+    setSize(next);
+    paintObject(selected, canvas, { fontSize: next });
+  };
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>Font size</span>
+        <span className="tabular-nums">{size}</span>
+      </div>
+      <Slider value={[size]} min={10} max={160} onValueChange={([value]) => apply(value)} />
+    </div>
+  );
+};
 
 const TextEditToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => {
   const update = (prop: string, val: any) => { if (!selected || !canvas) return; selected.set(prop, val); canvas.renderAll(); };
@@ -1812,9 +1884,10 @@ const renderToolSheet = (toolId: string, selected: any, canvas: FabricCanvas | n
     case 'spacing': return <SpacingToolPanel {...props} />;
     case 'edit-text': return <TextEditToolPanel {...props} />;
     case 'text-style': return <TextStyleToolPanel {...props} />;
-    case 'font-size': return <FontToolPanel {...props} />;
+    case 'font-size': return <FontSizeToolPanel {...props} />;
     case 'opacity': return <OpacityToolPanel {...props} />;
-    case 'border': return <FillToolPanel {...props} />;
+    case 'border': return <StrokeToolPanel {...props} />;
+    case 'flip': return <FlipToolPanel {...props} />;
     case 'replace': return <ReplaceImageToolPanel {...props} />;
     case 'crop': return <CropToolPanel {...props} />;
     case 'filters': return <ImageFilterToolPanel {...props} mode="filters" />;
@@ -2853,6 +2926,16 @@ const EditorInner: React.FC = () => {
     setActiveTool(null);
   };
 
+  const openSelectionTool = (id: string) => {
+    if (activeTool === id) {
+      setActiveTool(null);
+      if (isMobile) setSheetExpanded(false);
+      return;
+    }
+    setActiveTool(id);
+    setSheetExpanded(true);
+  };
+
   const addText = (text: string, size: number, weight: string, fontFamily = 'Outfit') => {
     if (!canvas) return;
     const bgFill = String(canvas.backgroundColor || '#ffffff').toLowerCase();
@@ -3282,25 +3365,9 @@ const EditorInner: React.FC = () => {
           </div>
 
           {/* Contextual Toolbar — auto-switches based on selection */}
-          {selected && currentTools !== CREATE_TOOLS && (
-            <div className="studio-tool-rail flex shrink-0 items-center gap-1 overflow-x-auto border-t px-2 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <button type="button" onClick={clearSelection}
-                className="shrink-0 rounded-full bg-studio-panel px-3 py-1.5 text-[11px] font-semibold text-studio-text">
-                Done
-              </button>
-              {currentTools.map((tool) => {
-                const Icon = tool.icon;
-                const on = activeTool === tool.id;
-                return (
-                  <button key={tool.id} type="button" onClick={() => { setActiveTool(tool.id); setSheetExpanded(true); }}
-                    className={`flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-medium ${on ? 'bg-primary text-primary-foreground' : 'text-inherit'}`}>
-                    <Icon className="h-3.5 w-3.5" />
-                    {tool.label}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          {selected && currentTools !== CREATE_TOOLS ? (
+            <SelectionBar tools={currentTools} active={activeTool} onTool={openSelectionTool} onDone={clearSelection} variant="dock" />
+          ) : (
           <ContextualToolbar
             tools={CREATE_TOOLS}
             active={activeTool ? null : activeTab === 'uploads' ? 'uploads' : activeTab}
@@ -3322,6 +3389,7 @@ const EditorInner: React.FC = () => {
               setSheetExpanded(true);
             }}
           />
+          )}
         </>
       ) : (
         /* Desktop layout */
@@ -3332,19 +3400,34 @@ const EditorInner: React.FC = () => {
             <div className="editor-left-panel flex h-full overflow-hidden">
               <IconRail active={activeTab} onChange={selectTab} />
               <div className="editor-panel-content studio-panel hidden h-full w-[280px] shrink-0 flex-col overflow-hidden border-r md:flex">
-                <div key={activeTab} className="flex h-full min-h-0 flex-col">
-                  {renderLeftPanel()}
+                <div key={activeTool || activeTab} className="flex h-full min-h-0 flex-col">
+                  {activeTool && selected ? (
+                    <div className="flex h-full min-h-0 flex-col">
+                      <div className="flex items-center gap-2 border-b border-[#3D3D3D] px-3 py-3">
+                        <button type="button" onClick={() => setActiveTool(null)} className="grid h-8 w-8 place-items-center rounded-lg text-white hover:bg-white/10" aria-label="Back to tools">
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <h2 className="text-sm font-semibold text-white">{currentTools.find((tool) => tool.id === activeTool)?.label || 'Edit'}</h2>
+                      </div>
+                      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                        {renderToolSheet(activeTool, selected, canvas)}
+                      </div>
+                    </div>
+                  ) : renderLeftPanel()}
                 </div>
               </div>
             </div>
 
             {/* Canvas Area */}
             <div className="editor-canvas-area relative flex flex-1 min-w-0 flex-col overflow-hidden">
+              {selected && currentTools !== CREATE_TOOLS && (
+                <SelectionBar tools={currentTools} active={activeTool} onTool={openSelectionTool} onDone={clearSelection} variant="float" />
+              )}
               {renderCanvas()}
             </div>
 
-            {/* Desktop right panel — contextual */}
-            {selected && (
+            {/* Desktop right panel — opened from the top bar */}
+            {selected && rightOpen && (
                <div className="editor-right-panel studio-panel hidden w-[260px] shrink-0 overflow-y-auto border-l lg:flex">
                 <RightPanel selected={selected} canvas={canvas} onClose={() => setRightOpen(false)} preset={preset} customArtboard={customArtboard} onPresetChange={changeArtboardPreset} />
               </div>
