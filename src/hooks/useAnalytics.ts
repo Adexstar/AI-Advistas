@@ -207,7 +207,7 @@ export function useAnalytics(range: AnalyticsRange = 'daily') {
     const videos = mediaRows.filter((m: any) => m.type === 'video').length;
     const other = mediaRows.filter((m: any) => m.type && m.type !== 'image' && m.type !== 'video').length;
     return [
-      { name: 'Images', value: images, color: '#F47B35' },
+      { name: 'Images', value: images, color: '#6E56F5' },
       { name: 'Videos', value: videos, color: '#3b82f6' },
       { name: 'Other', value: other, color: '#9299A2' },
     ];

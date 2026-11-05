@@ -249,7 +249,7 @@ export const TemplatesPanel: React.FC<{
       <button
         key={t.id}
         onClick={() => remember(t)}
-        className="group relative aspect-[4/5] w-full overflow-hidden rounded-xl border border-[#3D3D3D] bg-[#1A1A1A] text-left hover:border-[#FF9455] transition-colors"
+        className="group relative aspect-[4/5] w-full overflow-hidden rounded-xl border border-[#3D3D3D] bg-[#1A1A1A] text-left hover:border-[#8B74F8] transition-colors"
       >
         {src ? (
           <img src={src} alt={t.name} loading="lazy" className="h-full w-full object-cover" />
@@ -288,7 +288,7 @@ export const TemplatesPanel: React.FC<{
                 index === 0 ? 'bg-primary/20 text-white' : 'border border-[#555555] text-[#CCCCCC] hover:bg-[#3D3D3D]'
               }`}
             >
-              {index === 0 && <Sparkles className="mr-1 inline h-3.5 w-3.5 text-[#FF9455]" />}
+              {index === 0 && <Sparkles className="mr-1 inline h-3.5 w-3.5 text-[#8B74F8]" />}
               {chip.label}
             </button>
           ))}
@@ -314,7 +314,7 @@ export const TemplatesPanel: React.FC<{
         <div className="mb-2 flex gap-2">
           <div className="relative flex h-11 min-w-0 flex-1 overflow-visible rounded-xl border border-[#555555]">
             <button type="button" onClick={() => void onGenerate()} disabled={busy} className="flex min-w-0 flex-1 items-center justify-center gap-1.5 text-sm font-medium text-white disabled:opacity-60">
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-[#FF9455]" />}
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-[#8B74F8]" />}
               Generate
             </button>
             <button type="button" aria-label="Generation options" aria-expanded={genOpen} onClick={() => setGenOpen((v) => !v)} className="flex w-9 items-center justify-center border-l border-[#555555] text-[#CCCCCC]">
@@ -337,7 +337,7 @@ export const TemplatesPanel: React.FC<{
               </div>
             )}
           </div>
-          <button type="button" onClick={onSearch} className="h-11 min-w-0 flex-1 rounded-xl bg-primary text-sm font-semibold text-primary-foreground hover:bg-[#DD6A28]">
+          <button type="button" onClick={onSearch} className="h-11 min-w-0 flex-1 rounded-xl bg-primary text-sm font-semibold text-primary-foreground hover:bg-[#5E48E6]">
             Search
           </button>
         </div>
@@ -646,7 +646,7 @@ export const UploadsPanel: React.FC<{
     <div className={`relative ${embedded ? 'flex h-full min-h-0 flex-col' : PANEL}`}>
       {!embedded && <div className={HEAD}><h2 className={H2}>Uploads</h2></div>}
       <div
-        className={`flex-1 min-h-0 overflow-y-auto p-3 ${dragOver ? 'ring-2 ring-inset ring-[#F47B35]' : ''}`}
+        className={`flex-1 min-h-0 overflow-y-auto p-3 ${dragOver ? 'ring-2 ring-inset ring-[#6E56F5]' : ''}`}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={(e) => { e.preventDefault(); setDragOver(false); upload(e.dataTransfer.files); }}
@@ -664,7 +664,7 @@ export const UploadsPanel: React.FC<{
           <button
             onClick={() => rollRef.current?.click()}
             disabled={busy}
-            className="flex h-10 items-center justify-center gap-2 rounded-lg bg-[#F47B35] text-xs font-semibold text-white hover:bg-[#DD6A28] disabled:opacity-60"
+            className="flex h-10 items-center justify-center gap-2 rounded-lg bg-[#6E56F5] text-xs font-semibold text-white hover:bg-[#5E48E6] disabled:opacity-60"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
             {busy ? 'Adding…' : 'Camera roll'}
@@ -739,12 +739,12 @@ export const UploadsPanel: React.FC<{
                 value={albumName}
                 onChange={(e) => setAlbumName(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') saveAlbum(); }}
-                className="mt-3 h-10 w-full rounded-lg border border-neutral-300 px-3 text-sm text-neutral-900 outline-none focus:border-[#F47B35]"
+                className="mt-3 h-10 w-full rounded-lg border border-neutral-300 px-3 text-sm text-neutral-900 outline-none focus:border-[#6E56F5]"
               />
             </div>
             <div className="grid grid-cols-2 border-t border-neutral-200">
-              <button type="button" onClick={() => setAlbumOpen(false)} className="h-11 text-sm font-medium text-[#F47B35]">Cancel</button>
-              <button type="button" onClick={saveAlbum} className="h-11 border-l border-neutral-200 text-sm font-semibold text-[#F47B35]">Save</button>
+              <button type="button" onClick={() => setAlbumOpen(false)} className="h-11 text-sm font-medium text-[#6E56F5]">Cancel</button>
+              <button type="button" onClick={saveAlbum} className="h-11 border-l border-neutral-200 text-sm font-semibold text-[#6E56F5]">Save</button>
             </div>
           </div>
         </div>
@@ -759,7 +759,7 @@ export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: 
 }) => {
   const [q, setQ] = useState('');
   const [category, setCategory] = useState<string | null>(null);
-  const [fill, setFill] = useState(brandColors[0] || '#F47B35');
+  const [fill, setFill] = useState(brandColors[0] || '#6E56F5');
   const photos = useMediaRows(['image']);
 
   // Keep the swatch in sync with whatever layer is selected on the canvas.
@@ -834,7 +834,7 @@ export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: 
     onChanged?.();
   };
 
-  const swatches = [...new Set([...(brandColors || []), '#F47B35', '#FFFFFF', '#000000', '#EF4444', '#F59E0B', '#10B981'])].slice(0, 8);
+  const swatches = [...new Set([...(brandColors || []), '#6E56F5', '#FFFFFF', '#000000', '#EF4444', '#F59E0B', '#10B981'])].slice(0, 8);
 
   return (
     <div className={PANEL}>
@@ -845,7 +845,7 @@ export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: 
           <div className="mb-4 space-y-2 rounded-lg border border-[#3D3D3D] bg-[#1A1A1A] p-3">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-[#888888]">Selected layer</p>
             <div className="flex flex-wrap gap-1.5">
-              {[...new Set([...(brandColors || []), '#F47B35', '#FFFFFF', '#000000', '#EF4444', '#F59E0B', '#10B981'])].slice(0, 8).map((c) => (
+              {[...new Set([...(brandColors || []), '#6E56F5', '#FFFFFF', '#000000', '#EF4444', '#F59E0B', '#10B981'])].slice(0, 8).map((c) => (
                 <button key={`sel-${c}`} onClick={() => { setFill(c); applyToSelected(c); }}
                   className="h-6 w-6 rounded-full border border-white/20" style={{ backgroundColor: c }} title={`Apply ${c}`} />
               ))}
@@ -897,7 +897,7 @@ export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: 
             <div className="mb-3 flex flex-wrap gap-1.5">
               {swatches.map((c) => (
                 <button key={c} type="button" onClick={() => setFill(c)}
-                  className={`h-7 w-7 rounded-full border ${fill === c ? 'ring-2 ring-[#F47B35]' : 'border-white/20'}`}
+                  className={`h-7 w-7 rounded-full border ${fill === c ? 'ring-2 ring-[#6E56F5]' : 'border-white/20'}`}
                   style={{ backgroundColor: c }} title={c} />
               ))}
             </div>
@@ -1113,7 +1113,7 @@ export const AIStudioPanel: React.FC<{
             className={[
               'px-3 py-2 text-[13px] transition-colors',
               activeTab === t.id
-                ? 'font-semibold text-white border-b-2 border-[#F47B35]'
+                ? 'font-semibold text-white border-b-2 border-[#6E56F5]'
                 : 'font-normal text-[#888888] hover:text-white/80',
             ].join(' ')}
           >
@@ -1203,7 +1203,7 @@ export const AIStudioPanel: React.FC<{
           onClick={generate}
           disabled={!canGenerate}
           className={`flex h-11 w-full items-center justify-center gap-2 rounded-lg text-[13px] font-semibold transition-colors ${
-            canGenerate ? 'bg-primary text-primary-foreground hover:bg-[#DD6A28]' : 'bg-[#2D2D2D] text-[#CCCCCC]'
+            canGenerate ? 'bg-primary text-primary-foreground hover:bg-[#5E48E6]' : 'bg-[#2D2D2D] text-[#CCCCCC]'
           }`}
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}

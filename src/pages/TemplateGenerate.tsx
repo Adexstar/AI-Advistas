@@ -138,12 +138,12 @@ const TemplateGenerate = () => {
   }, [effectiveContext]);
 
   const contextRows = useMemo(() => [
-    { icon: Building2, label: 'Workspace', value: workspace, bg: 'hsl(22 90% 58% / 0.16)', iconColor: '#F47B35' },
+    { icon: Building2, label: 'Workspace', value: workspace, bg: 'hsl(250 89% 65% / 0.16)', iconColor: '#6E56F5' },
     { icon: Diamond, label: 'Category', value: category, bg: '#DBEAFE', iconColor: '#2563EB' },
     { icon: Target, label: 'Goal', value: goal, bg: '#DCFCE7', iconColor: '#16A34A' },
     { icon: Instagram, label: 'Platform', value: platform === 'Instagram' ? 'Instagram Feed (1080×1080)' : platform, bg: '#FCE7F3', iconColor: '#DB2777' },
     { icon: ClipboardList, label: 'Campaign', value: campaignName, bg: '#FEF3C7', iconColor: '#D97706' },
-    { icon: Sparkles, label: 'AI Mode', value: aiMode, bg: 'hsl(22 90% 58% / 0.16)', iconColor: '#F47B35' },
+    { icon: Sparkles, label: 'AI Mode', value: aiMode, bg: 'hsl(250 89% 65% / 0.16)', iconColor: '#6E56F5' },
   ], [workspace, category, goal, platform, campaignName, aiMode]);
 
   const handleGenerate = async () => {
@@ -333,7 +333,7 @@ const TemplateGenerate = () => {
               onClick={handleGenerate}
               disabled={generating}
               className="h-10 gap-2 rounded-xl px-5 text-sm font-bold"
-              style={{ background: '#F47B35', color: 'white', border: 'none' }}
+              style={{ background: '#6E56F5', color: 'white', border: 'none' }}
             >
               {generating ? (
                 <><Loader2 className="h-4 w-4 animate-spin" /> Generating…</>
@@ -358,7 +358,7 @@ const TemplateGenerate = () => {
                   </div>
                   <button
                     className="flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs"
-                    style={{ borderColor: 'hsl(var(--border))', color: '#F47B35', background: 'transparent' }}
+                    style={{ borderColor: 'hsl(var(--border))', color: '#6E56F5', background: 'transparent' }}
                   >
                     <Wand2 className="h-3 w-3" /> Edit Context
                   </button>
@@ -416,8 +416,8 @@ const TemplateGenerate = () => {
                             <span className="flex items-center gap-2">
                               {s === 'Brand Colors' && (
                                 <span className="inline-flex -space-x-1">
-                                  <span className="h-3 w-3 rounded-full border border-white" style={{ background: activeKit?.primary_color || '#F47B35' }} />
-                                  <span className="h-3 w-3 rounded-full border border-white" style={{ background: activeKit?.secondary_color || 'hsl(22 90% 58% / 0.16)' }} />
+                                  <span className="h-3 w-3 rounded-full border border-white" style={{ background: activeKit?.primary_color || '#6E56F5' }} />
+                                  <span className="h-3 w-3 rounded-full border border-white" style={{ background: activeKit?.secondary_color || 'hsl(250 89% 65% / 0.16)' }} />
                                 </span>
                               )}
                               {s}
@@ -470,7 +470,7 @@ const TemplateGenerate = () => {
                   onClick={handleGenerate}
                   disabled={generating}
                   className="flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-bold"
-                  style={{ background: generating ? '#FF9455' : '#F47B35', color: 'white', border: 'none' }}
+                  style={{ background: generating ? '#8B74F8' : '#6E56F5', color: 'white', border: 'none' }}
                 >
                   {generating ? (
                     <><Loader2 className="h-4 w-4 animate-spin" /> Generating…</>
@@ -557,7 +557,7 @@ const TemplateGenerate = () => {
                         {idx === 0 && (
                           <span
                             className="absolute left-3 top-3 z-10 rounded px-2 py-1 text-[10px] font-extrabold tracking-wider"
-                            style={{ background: '#F47B35', color: 'white' }}
+                            style={{ background: '#6E56F5', color: 'white' }}
                           >
                             BEST MATCH
                           </span>
@@ -591,7 +591,7 @@ const TemplateGenerate = () => {
                           </Button>
                           <Button
                             className="flex-1 gap-1.5 rounded-lg text-xs font-semibold"
-                            style={{ background: '#F47B35', color: 'white', height: 36 }}
+                            style={{ background: '#6E56F5', color: 'white', height: 36 }}
                             onClick={() => handleUseTemplate(t)}
                           >
                             <CheckCircle className="h-3.5 w-3.5" /> Use This
@@ -651,8 +651,8 @@ const TemplateGenerate = () => {
                   <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <NextStepCard
                       icon={CheckCircle}
-                      bg="rgba(244,123,53,0.16)"
-                      color="#F47B35"
+                      bg="rgba(110,86,245,0.16)"
+                      color="#6E56F5"
                       title="Use Template"
                       description="Open in editor and customize to your liking."
                       onClick={() => generatedTemplates[0] && handleUseTemplate(generatedTemplates[0])}
