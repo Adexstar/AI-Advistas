@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { DecisionService } from '@/services/ai/DecisionService';
+import { resolveSuggestion } from '@/services/ai/resolveSuggestion';
 import type { AIRecommendation, UnifiedCampaignAnalytics } from './types';
 import { BudgetOptimizerService } from './BudgetOptimizerService';
 import { BenchmarkService } from './BenchmarkService';
@@ -26,7 +27,7 @@ export const RecommendationService = {
   },
   async updateStatus(id: string, status: AIRecommendation['status']) {
     if (!['accepted', 'dismissed', 'applied', 'rejected'].includes(status)) throw new Error('Invalid decision status');
-    await DecisionService.resolve(id, status as 'accepted' | 'dismissed' | 'applied' | 'rejected');
+    await resolveSuggestion({ id, status: status as 'accepted' | 'dismissed' | 'applied' | 'rejected' });
   },
 
   /** Generate deterministic recommendations from unified analytics; explainable + reversible. */

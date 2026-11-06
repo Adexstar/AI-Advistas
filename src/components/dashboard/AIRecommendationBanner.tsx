@@ -4,6 +4,7 @@ import { Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { DecisionService } from "@/services/ai";
+import { resolveSuggestion } from "@/services/ai/resolveSuggestion";
 
 export const AIRecommendationBanner = () => {
   const { user } = useAuth();
@@ -24,12 +25,12 @@ export const AIRecommendationBanner = () => {
 
   const dismiss = async () => {
     setDismissed(top.id);
-    await DecisionService.resolve(top.id, "dismissed");
+    await resolveSuggestion({ id: top.id, status: "dismissed", userId: user?.id, sourceType: top.category ?? top.action ?? "suggestion", confidence: Number(top.confidence) || undefined });
     qc.invalidateQueries({ queryKey: ["ai-decisions"] });
   };
 
   const accept = async () => {
-    await DecisionService.resolve(top.id, "accepted");
+    await resolveSuggestion({ id: top.id, status: "accepted", userId: user?.id, sourceType: top.category ?? top.action ?? "suggestion", confidence: Number(top.confidence) || undefined });
     qc.invalidateQueries({ queryKey: ["ai-decisions"] });
   };
 
@@ -49,7 +50,7 @@ export const AIRecommendationBanner = () => {
         </div>
         <div className="flex items-center gap-2 sm:shrink-0">
           <Button size="sm" className="h-8 rounded-lg text-xs" onClick={accept}>
-            {top.action?.slice(0, 30) || "Review"}
+            Review
           </Button>
           <Button size="sm" variant="ghost" className="h-8 rounded-lg text-xs" onClick={dismiss}>
             Not now

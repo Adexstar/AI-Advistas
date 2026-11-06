@@ -25,7 +25,8 @@ export interface Decision {
   action: string | null;
   reasoning: string | null;
   confidence: number | null;
-  status: "pending" | "accepted" | "dismissed" | "applied" | string;
+  status: "pending" | "accepted" | "dismissed" | "applied" | "rejected" | string;
+  metadata?: Record<string, unknown> | null;
   created_at: string;
   resolved_at: string | null;
 }

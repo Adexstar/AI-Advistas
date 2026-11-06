@@ -178,9 +178,9 @@ const Dashboard = () => {
       </div>
 
       {/* 3 + 4 + right column */}
-      <div className="grid gap-4 lg:grid-cols-4">
+      <div className="grid min-w-0 gap-4 lg:grid-cols-4">
         {/* Left column: Performance + Recent */}
-        <div className="space-y-4 lg:col-span-3">
+        <div className="min-w-0 space-y-4 lg:col-span-3">
           {/* Performance + Platform Spend */}
           <div className="grid gap-4 md:grid-cols-3">
             <Card className="rounded-2xl border-border/60 bg-card shadow-sm md:col-span-2">
@@ -384,7 +384,7 @@ const Dashboard = () => {
         </div>
 
         {/* Right column: AI Assistant + AI Actions Queue */}
-        <div className="space-y-4 lg:col-span-1">
+        <div className="min-w-0 space-y-4 lg:col-span-1">
           <AIAssistantPanel />
           <AIActionsQueue />
         </div>
