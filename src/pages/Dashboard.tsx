@@ -150,23 +150,14 @@ const Dashboard = () => {
   }, [performanceSeries]);
 
   return (
-    <div className="w-full min-w-0 space-y-5 pb-32 lg:pb-6">
+    <div className="w-full min-w-0 space-y-5">
 
       {/* Page header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Dashboard</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Here's what's happening with your campaigns today.
-          </p>
-        </div>
-        <Tabs value={range} onValueChange={(v) => setRange(v as Range)}>
-          <TabsList className="h-9 w-full rounded-xl bg-muted sm:w-auto">
-            <TabsTrigger value="daily" className="rounded-lg text-xs">7 days</TabsTrigger>
-            <TabsTrigger value="weekly" className="rounded-lg text-xs">30 days</TabsTrigger>
-            <TabsTrigger value="monthly" className="rounded-lg text-xs">90 days</TabsTrigger>
-          </TabsList>
-        </Tabs>
+      <div className="min-w-0">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Dashboard</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Here's what's happening with your campaigns today.
+        </p>
       </div>
 
       {/* 2. KPI cards — metric-cards-grid handles all breakpoints */}
@@ -390,7 +381,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* 8. Sticky AI recommendation banner */}
       <AIRecommendationBanner />
     </div>
   );

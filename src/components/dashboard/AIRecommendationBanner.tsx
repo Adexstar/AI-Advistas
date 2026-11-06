@@ -23,6 +23,10 @@ export const AIRecommendationBanner = () => {
 
   if (!top) return null;
 
+  const suggestion = [top.reasoning, top.action, top.signal]
+    .map((value) => (typeof value === "string" ? value.trim() : ""))
+    .find((value) => value && value !== "[]" && value !== "{}" && !/^[a-z0-9_:-]+$/i.test(value));
+
   const dismiss = async () => {
     setDismissed(top.id);
     await resolveSuggestion({ id: top.id, status: "dismissed", userId: user?.id, sourceType: top.category ?? top.action ?? "suggestion", confidence: Number(top.confidence) || undefined });
@@ -35,8 +39,8 @@ export const AIRecommendationBanner = () => {
   };
 
   return (
-    <div className="pointer-events-none sticky bottom-20 z-30 mx-auto w-full max-w-4xl px-4 lg:bottom-4">
-      <div className="pointer-events-auto flex flex-col gap-3 rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/5 via-card to-card p-3 shadow-xl backdrop-blur sm:flex-row sm:items-center">
+    <div className="w-full min-w-0">
+      <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card p-4 shadow-sm sm:flex-row sm:items-center">
         <div className="flex min-w-0 flex-1 items-start gap-3">
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">
             <Sparkles className="h-4 w-4" />
@@ -44,7 +48,7 @@ export const AIRecommendationBanner = () => {
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-primary">AI Suggestion</p>
             <p className="line-clamp-2 text-sm text-foreground">
-              {top.reasoning || top.action || top.signal}
+              {suggestion || "A recommendation is ready to review."}
             </p>
           </div>
         </div>

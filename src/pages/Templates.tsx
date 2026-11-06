@@ -231,40 +231,40 @@ export default function Templates() {
   };
 
   return (
-    <div className="template-library min-h-full overflow-x-hidden bg-[#F5F6FA] px-4 pb-28 pt-4 text-[#161A23] sm:px-6 lg:px-8 lg:pb-10 lg:pt-6">
+    <div className="template-library min-h-full overflow-x-hidden bg-background px-4 pb-28 pt-4 text-foreground sm:px-6 lg:px-8 lg:pb-10 lg:pt-6">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
-          <h1 className="hidden text-[26px] font-semibold tracking-[-0.03em] text-[#12151C] lg:block">Templates</h1>
-          <p className="mt-1 hidden text-sm text-[#6E7585] lg:block">Choose from professionally designed templates or create your own.</p>
+          <h1 className="hidden text-[26px] font-semibold tracking-[-0.03em] text-foreground lg:block">Templates</h1>
+          <p className="mt-1 hidden text-sm text-muted-foreground lg:block">Choose from professionally designed templates or create your own.</p>
         </div>
         <div className="flex w-full items-center gap-2 lg:w-auto">
           <div className="relative min-w-0 flex-1 lg:w-[280px] lg:flex-none">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B93A7]" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               value={rawSearch}
               onChange={(e) => setRawSearch(e.target.value)}
               placeholder="Search templates..."
               aria-label="Search templates"
-              className="h-10 w-full rounded-lg border border-[#E4E7EE] bg-white pl-9 pr-3 text-sm text-[#161A23] outline-none placeholder:text-[#8B93A7] focus:border-[#6E56F5]"
+              className="h-10 w-full rounded-lg border border-border bg-card pl-9 pr-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
             />
           </div>
           <div className="relative">
             <button
               type="button"
               onClick={() => { setFilterOpen((open) => !open); setMoreOpen(false); }}
-              className={`inline-flex h-10 items-center gap-2 rounded-lg border bg-white px-3 text-sm font-medium ${format !== "All" ? "border-[#6E56F5] text-[#6E56F5]" : "border-[#E4E7EE] text-[#2A3142]"}`}
+              className={`inline-flex h-10 items-center gap-2 rounded-lg border bg-card px-3 text-sm font-medium ${format !== "All" ? "border-primary text-primary" : "border-border text-foreground"}`}
             >
               <SlidersHorizontal className="h-4 w-4" />
               Filter
             </button>
             {filterOpen && (
-              <div className="absolute right-0 z-20 mt-2 w-44 rounded-xl border border-[#E4E7EE] bg-white p-1 shadow-[0_12px_40px_rgba(16,24,40,0.08)]">
+              <div className="absolute right-0 z-20 mt-2 w-44 rounded-xl border border-border bg-card p-1 shadow-lg">
                 {FORMAT_FILTERS.map((item) => (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => { setFormat(item.id); setFilterOpen(false); }}
-                    className={`flex w-full rounded-lg px-3 py-2 text-left text-sm ${format === item.id ? "bg-[#F3F0FF] text-[#5B45E0]" : "text-[#2A3142] hover:bg-[#F6F7FB]"}`}
+                    className={`flex w-full rounded-lg px-3 py-2 text-left text-sm ${format === item.id ? "bg-primary/15 text-primary" : "text-foreground hover:bg-muted"}`}
                   >
                     {item.label}
                   </button>
@@ -277,7 +277,7 @@ export default function Templates() {
             <select
               value={platform}
               onChange={(e) => setPlatform(e.target.value)}
-              className="h-10 appearance-none rounded-lg border border-[#E4E7EE] bg-white pl-3 pr-8 text-sm text-[#2A3142] outline-none focus:border-[#6E56F5]"
+              className="h-10 appearance-none rounded-lg border border-border bg-card pl-3 pr-8 text-sm text-foreground outline-none focus:border-primary"
             >
               <option value="All">All Platforms</option>
               {LIBRARY_PLATFORMS.filter((item) => item !== "All").map((item) => (
@@ -287,12 +287,12 @@ export default function Templates() {
                 <option key={item} value={item}>{item}</option>
               ))}
             </select>
-            <ChevronDown className="pointer-events-none absolute right-2 h-4 w-4 text-[#8B93A7]" />
+            <ChevronDown className="pointer-events-none absolute right-2 h-4 w-4 text-muted-foreground" />
           </label>
           <NavLink
             to="/notifications"
             aria-label="Notifications"
-            className="hidden h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#E4E7EE] bg-white text-[#2A3142] lg:grid"
+            className="hidden h-10 w-10 shrink-0 place-items-center rounded-lg border border-border bg-card text-foreground lg:grid"
           >
             <Bell className="h-4 w-4" />
           </NavLink>
@@ -300,7 +300,7 @@ export default function Templates() {
       </header>
 
       {ctxActive && (
-        <div className="mt-4 flex w-fit items-center gap-2 rounded-full bg-[#F3F0FF] px-3 py-1.5 text-xs font-medium text-[#5B45E0]">
+        <div className="mt-4 flex w-fit items-center gap-2 rounded-full bg-primary/15 px-3 py-1.5 text-xs font-medium text-primary">
           Filtered by {[ctxCategory, ctxGoal].filter(Boolean).join(" · ")}
           <button type="button" aria-label="Clear context filter" onClick={() => setCtxDismissed(true)}>
             <X className="h-3.5 w-3.5" />
@@ -316,7 +316,7 @@ export default function Templates() {
               key={item}
               type="button"
               onClick={() => setPlatform(item)}
-              className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-sm font-medium ${active ? "border-[#E4DFFF] bg-[#F3F0FF] text-[#5B45E0]" : "border-[#E4E7EE] bg-white text-[#2A3142]"}`}
+              className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-sm font-medium ${active ? "border-primary/40 bg-primary/15 text-primary" : "border-border bg-card text-foreground"}`}
             >
               {item === "All" ? <LayoutGrid className="h-3.5 w-3.5" /> : <PlatformMark name={item} />}
               {item}
@@ -327,21 +327,21 @@ export default function Templates() {
           <button
             type="button"
             onClick={() => { setMoreOpen((open) => !open); setFilterOpen(false); }}
-            className="inline-flex h-9 items-center gap-1 rounded-full border border-[#E4E7EE] bg-white px-3 text-sm font-medium text-[#2A3142]"
+            className="inline-flex h-9 items-center gap-1 rounded-full border border-border bg-card px-3 text-sm font-medium text-foreground"
           >
             More
             <ChevronDown className="h-3.5 w-3.5" />
           </button>
           {moreOpen && (
-            <div className="absolute left-0 z-20 mt-2 w-48 rounded-xl border border-[#E4E7EE] bg-white p-1 shadow-[0_12px_40px_rgba(16,24,40,0.08)]">
+            <div className="absolute left-0 z-20 mt-2 w-48 rounded-xl border border-border bg-card p-1 shadow-lg">
               {extraPlatforms.length === 0 ? (
-                <p className="px-3 py-2 text-sm text-[#6E7585]">No other platforms in the library.</p>
+                <p className="px-3 py-2 text-sm text-muted-foreground">No other platforms in the library.</p>
               ) : extraPlatforms.map((item) => (
                 <button
                   key={item}
                   type="button"
                   onClick={() => { setPlatform(item); setMoreOpen(false); }}
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[#2A3142] hover:bg-[#F6F7FB]"
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-foreground hover:bg-muted"
                 >
                   <PlatformMark name={item} />
                   {item}
@@ -352,18 +352,18 @@ export default function Templates() {
         </div>
       </div>
 
-      <section className="mt-4 grid items-center gap-5 overflow-hidden rounded-2xl bg-[#F4F1FE] px-5 py-5 lg:grid-cols-[minmax(240px,0.85fr)_minmax(320px,1.15fr)] lg:px-8 lg:py-7">
+      <section className="mt-4 grid items-center gap-5 overflow-hidden rounded-2xl border border-border/60 bg-card px-5 py-5 lg:grid-cols-[minmax(240px,0.85fr)_minmax(320px,1.15fr)] lg:px-8 lg:py-7">
         <div>
-          <h2 className="max-w-sm text-[28px] font-semibold leading-[1.15] tracking-[-0.03em] text-[#161A23]">
+          <h2 className="max-w-sm text-[28px] font-semibold leading-[1.15] tracking-[-0.03em] text-foreground">
             Stand out with stunning templates
           </h2>
-          <p className="mt-2 max-w-sm text-sm leading-relaxed text-[#5E6575]">
+          <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
             High-performing, customizable templates designed to get you more results.
           </p>
           <button
             type="button"
             onClick={() => navigate("/templates/generate")}
-            className="mt-5 inline-flex h-10 items-center gap-2 rounded-lg bg-[#6E56F5] px-4 text-sm font-semibold text-white hover:bg-[#5E48E6]"
+            className="mt-5 inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
           >
             <Sparkles className="h-4 w-4" />
             Create with AI
@@ -371,13 +371,13 @@ export default function Templates() {
         </div>
         <div className={`flex items-end justify-center gap-3 sm:justify-end ${featured.length ? "h-[168px] lg:h-[210px]" : ""}`}>
           {featured.length === 0 && !isLoading ? (
-            <p className="text-sm text-[#6E7585]">Featured templates appear here once the library has a match.</p>
+            <p className="text-sm text-muted-foreground">Featured templates appear here once the library has a match.</p>
           ) : featured.map(({ t }, index) => (
             <button
               key={t.id}
               type="button"
               onClick={() => useTemplate(t)}
-              className="h-[150px] w-[108px] overflow-hidden rounded-2xl border border-white/70 shadow-[0_16px_30px_rgba(40,30,80,0.12)] lg:h-[190px] lg:w-[132px]"
+              className="h-[150px] w-[108px] overflow-hidden rounded-2xl border border-border shadow-md lg:h-[190px] lg:w-[132px]"
               style={{ transform: `rotate(${[-7, 0, 7][index] || 0}deg) translateY(${index === 1 ? "-12px" : "0"})` }}
               aria-label={`Open ${t.name}`}
             >
@@ -389,8 +389,8 @@ export default function Templates() {
 
       <section className="mt-8">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-[#161A23]">Categories</h2>
-          <button type="button" onClick={() => setCategory("All")} className="text-sm font-medium text-[#6E56F5]">View all</button>
+          <h2 className="text-base font-semibold text-foreground">Categories</h2>
+          <button type="button" onClick={() => setCategory("All")} className="text-sm font-medium text-primary">View all</button>
         </div>
         <div className="chip-row flex w-full max-w-full gap-2 overflow-x-auto pb-1">
           {LIBRARY_CATEGORIES.map((item) => {
@@ -402,14 +402,14 @@ export default function Templates() {
                 key={item.id}
                 type="button"
                 onClick={() => setCategory(active ? "All" : item.id)}
-                className={`flex h-[68px] min-w-[148px] shrink-0 items-center gap-3 rounded-xl border bg-white px-3 text-left ${active ? "border-[#6E56F5]" : "border-[#E7E9F0]"}`}
+                className={`flex h-[68px] min-w-[148px] shrink-0 items-center gap-3 rounded-xl border bg-card px-3 text-left ${active ? "border-primary" : "border-border"}`}
               >
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#F4F1FE] text-[#6E56F5]">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/15 text-primary">
                   <Icon className="h-4 w-4" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-[#1C2230]">{item.label}</span>
-                  <span className="block text-xs text-[#8B93A7]">{data ? `${count} ${count === 1 ? "template" : "templates"}` : "—"}</span>
+                  <span className="block truncate text-sm font-medium text-foreground">{item.label}</span>
+                  <span className="block text-xs text-muted-foreground">{data ? `${count} ${count === 1 ? "template" : "templates"}` : "—"}</span>
                 </span>
               </button>
             );
@@ -419,12 +419,12 @@ export default function Templates() {
 
       <section className="mt-8">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-[#161A23]">Popular Templates</h2>
+          <h2 className="text-base font-semibold text-foreground">Popular Templates</h2>
           {filtered.length > PAGE_SIZE && (
             <button
               type="button"
               onClick={() => setVisible((count) => count >= filtered.length ? PAGE_SIZE : filtered.length)}
-              className="text-sm font-medium text-[#6E56F5]"
+              className="text-sm font-medium text-primary"
             >
               {visible >= filtered.length ? "Show less" : "View all"}
             </button>
@@ -432,10 +432,10 @@ export default function Templates() {
         </div>
 
         {error ? (
-          <div className="flex flex-col items-center gap-3 rounded-2xl border border-[#E7E9F0] bg-white px-6 py-12 text-center">
-            <AlertTriangle className="h-6 w-6 text-[#C24141]" />
-            <p className="text-sm text-[#6E7585]">Couldn’t load templates. {error.message}</p>
-            <button type="button" onClick={() => refetch()} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#E4E7EE] px-3 text-sm">
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card px-6 py-12 text-center">
+            <AlertTriangle className="h-6 w-6 text-destructive" />
+            <p className="text-sm text-muted-foreground">Couldn’t load templates. {error.message}</p>
+            <button type="button" onClick={() => refetch()} className="inline-flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-sm text-foreground">
               <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
               Retry
             </button>
@@ -443,22 +443,22 @@ export default function Templates() {
         ) : isLoading ? (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
             {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="rounded-2xl border border-[#E7E9F0] bg-white p-2">
+              <div key={index} className="rounded-2xl border border-border bg-card p-2">
                 <Skeleton className="aspect-[4/5] w-full rounded-xl" />
                 <Skeleton className="mt-3 h-4 w-3/4" />
               </div>
             ))}
           </div>
         ) : popular.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 rounded-2xl border border-[#E7E9F0] bg-white px-6 py-12 text-center">
-            <LayoutGrid className="h-6 w-6 text-[#8B93A7]" />
-            <p className="text-sm text-[#6E7585]">
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card px-6 py-12 text-center">
+            <LayoutGrid className="h-6 w-6 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
               {(data?.length ?? 0) === 0
                 ? "No templates yet. Create one with AI or add templates from the admin library."
                 : "No templates match these filters."}
             </p>
             {(data?.length ?? 0) > 0 && (
-              <button type="button" onClick={clearFilters} className="h-9 rounded-lg border border-[#E4E7EE] px-3 text-sm">
+              <button type="button" onClick={clearFilters} className="h-9 rounded-lg border border-border px-3 text-sm text-foreground">
                 Browse all templates
               </button>
             )}
@@ -466,28 +466,28 @@ export default function Templates() {
         ) : (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
             {popular.map(({ t }) => (
-              <article key={t.id} className="group rounded-2xl border border-[#E7E9F0] bg-white p-2 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+              <article key={t.id} className="group rounded-2xl border border-border bg-card p-2">
                 <button type="button" onClick={() => useTemplate(t)} className="relative block w-full overflow-hidden rounded-xl text-left" aria-label={`Use ${t.name}`}>
                   <div className="aspect-[4/5] w-full">
                     <TemplatePoster t={t} />
                   </div>
                   {t.platform && (
-                    <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-1 text-[10px] font-medium text-[#1C2230] shadow-sm">
+                    <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-background/90 px-2 py-1 text-[10px] font-medium text-foreground shadow-sm">
                       <PlatformMark name={t.platform} className="h-3 w-3" />
                       {t.platform}
                     </span>
                   )}
                 </button>
                 <div className="flex items-start justify-between gap-2 px-1 pb-1 pt-2.5">
-                  <p className="line-clamp-2 text-sm font-medium text-[#1C2230]">{t.name}</p>
+                  <p className="line-clamp-2 text-sm font-medium text-foreground">{t.name}</p>
                   <button
                     type="button"
                     aria-label={favs.has(t.id) ? "Remove favorite" : "Save template"}
                     aria-pressed={favs.has(t.id)}
                     onClick={() => toggleFav(t.id)}
-                    className="mt-0.5 shrink-0 text-[#8B93A7]"
+                    className="mt-0.5 shrink-0 text-muted-foreground"
                   >
-                    <Heart className={`h-4 w-4 ${favs.has(t.id) ? "fill-[#6E56F5] text-[#6E56F5]" : ""}`} />
+                    <Heart className={`h-4 w-4 ${favs.has(t.id) ? "fill-primary text-primary" : ""}`} />
                   </button>
                 </div>
               </article>
@@ -498,10 +498,10 @@ export default function Templates() {
 
       <section className="mt-8">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-[#161A23]">{recent.fromEditor ? "Recently used" : "Recently updated"}</h2>
+          <h2 className="text-base font-semibold text-foreground">{recent.fromEditor ? "Recently used" : "Recently updated"}</h2>
         </div>
         {recent.items.length === 0 ? (
-          <p className="rounded-2xl border border-[#E7E9F0] bg-white px-4 py-6 text-sm text-[#6E7585]">
+          <p className="rounded-2xl border border-border bg-card px-4 py-6 text-sm text-muted-foreground">
             Templates you open in the editor show up here.
           </p>
         ) : (
@@ -511,14 +511,14 @@ export default function Templates() {
                 key={t.id}
                 type="button"
                 onClick={() => useTemplate(t)}
-                className="flex items-center gap-3 rounded-2xl border border-[#E7E9F0] bg-white p-3 text-left shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
+                className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 text-left"
               >
                 <span className="h-14 w-14 shrink-0 overflow-hidden rounded-lg">
                   <TemplatePoster t={t} compact />
                 </span>
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-[#1C2230]">{t.name}</span>
-                  <span className="mt-0.5 flex items-center gap-1.5 text-xs text-[#8B93A7]">
+                  <span className="block truncate text-sm font-medium text-foreground">{t.name}</span>
+                  <span className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
                     {t.platform && <PlatformMark name={t.platform} className="h-3 w-3" />}
                     {recent.fromEditor ? "Opened in the editor" : relativeUpdated(t.updated_at)}
                   </span>

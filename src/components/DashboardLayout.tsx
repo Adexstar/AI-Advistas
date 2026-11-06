@@ -154,7 +154,7 @@ const NavItemRow = ({
       <div
         aria-disabled
         className={cn(
-          "group flex cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/40",
+          "group flex cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-sidebar-foreground/40",
           collapsed && "justify-center px-2"
         )}
       >
@@ -194,7 +194,7 @@ const NavItemRow = ({
           item.soon && "pointer-events-none opacity-60",
           isActive
             ? "bg-primary text-primary-foreground shadow-sm"
-            : "text-white/70 hover:bg-white/10 hover:text-white"
+            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
         )
       }
     >
@@ -210,7 +210,7 @@ const NavItemRow = ({
             <NotifyBadge count={item.notify} variant="unread" />
           ) : null}
           {item.badge && (
-            <Badge variant="secondary" className="h-5 rounded-full bg-white/10 px-2 text-[10px] font-semibold text-white/70 hover:bg-white/10">
+            <Badge variant="secondary" className="h-5 rounded-full bg-sidebar-accent px-2 text-[10px] font-semibold text-sidebar-foreground/70 hover:bg-sidebar-accent">
               {item.badge}
             </Badge>
           )}
@@ -262,13 +262,13 @@ const SidebarBody = ({
               </div>
               {!collapsed && (
                 <div className="min-w-0">
-                  <p className="text-truncate text-base font-bold text-white">AdVista</p>
-                  <p className="text-truncate text-[11px] font-medium text-white/50">Advertising Studio</p>
+                  <p className="text-truncate text-base font-bold text-sidebar-foreground">AdVista</p>
+                  <p className="text-truncate text-[11px] font-medium text-sidebar-foreground/50">Advertising Studio</p>
                 </div>
               )}
             </NavLink>
             {isMobile && (
-              <Button variant="ghost" size="icon" className="ml-auto text-white hover:bg-white/10 hover:text-white" onClick={close}>
+              <Button variant="ghost" size="icon" className="ml-auto text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground" onClick={close}>
                 <X className="h-5 w-5" />
               </Button>
             )}
@@ -276,7 +276,7 @@ const SidebarBody = ({
               <Button
                 variant="ghost"
                 size="icon"
-                className="ml-auto h-8 w-8 text-white/60 hover:bg-white/10 hover:text-white"
+                className="ml-auto h-8 w-8 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                 onClick={onToggleCollapse}
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -314,7 +314,7 @@ const SidebarBody = ({
           {navGroups.map((group, idx) => (
             <div key={group.title}>
               {!collapsed && group.title !== "Creative Workspace" && (
-                <div className="border-t border-white/10 mx-3 my-2" />
+                <div className="border-t border-sidebar-border mx-3 my-2" />
               )}
               {!collapsed && (
                 <p className="sidebar-section-label">{group.title}</p>
@@ -324,7 +324,7 @@ const SidebarBody = ({
               ))}
               {group.title === "Account" && isAdmin && (
                 <>
-                  {!collapsed && <div className="border-t border-white/10 mx-3 my-2" />}
+                  {!collapsed && <div className="border-t border-sidebar-border mx-3 my-2" />}
                   {!collapsed && <p className="sidebar-section-label">Admin</p>}
                   {adminNavItems.map((item) => (
                     <NavItemRow key={item.name} item={item} collapsed={collapsed} onNavigate={close} />
@@ -337,12 +337,12 @@ const SidebarBody = ({
 
           {/* Usage Widget */}
           {!collapsed && (
-            <div className="mx-3 mt-4 rounded-2xl border border-white/10 bg-white/5 p-3">
+            <div className="mx-3 mt-4 rounded-2xl border border-sidebar-border bg-sidebar-accent p-3">
               <div className="mb-2 flex items-center justify-between">
-                <p className="font-micro font-semibold text-white">Plan</p>
+                <p className="font-micro font-semibold text-sidebar-foreground">Plan</p>
                 <Badge className="h-5 rounded-full bg-primary/20 px-2 text-[10px] text-primary hover:bg-primary/20">{planLabel}</Badge>
               </div>
-              <p className="text-[11px] leading-relaxed text-white/55">Campaign quotas are not connected to billing yet.</p>
+              <p className="text-[11px] leading-relaxed text-sidebar-foreground/55">Campaign quotas are not connected to billing yet.</p>
               <Button asChild size="sm" className="mt-3 h-8 w-full rounded-lg bg-primary text-white shadow-none hover:bg-primary/90">
                 <NavLink to="/billing" onClick={close}>Upgrade Plan</NavLink>
               </Button>
@@ -357,7 +357,7 @@ const SidebarBody = ({
               <TooltipTrigger asChild>
                 <button
                   onClick={signOut}
-                  className="grid h-10 w-full place-items-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white"
+                  className="grid h-10 w-full place-items-center rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                   aria-label="Sign out"
                 >
                   <LogOut className="h-4 w-4" />
@@ -366,19 +366,19 @@ const SidebarBody = ({
               <TooltipContent side="right">Sign out</TooltipContent>
             </Tooltip>
           ) : (
-            <div className="flex items-center gap-3 rounded-lg bg-white/5 p-2">
+            <div className="flex items-center gap-3 rounded-lg bg-sidebar-accent p-2">
               <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary text-[11px] font-bold text-white">
                 {displayName.charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-truncate text-sm font-semibold text-white">{displayName}</p>
-                <p className="text-truncate text-[10px] text-white/50">{planLabel}</p>
+                <p className="text-truncate text-sm font-semibold text-sidebar-foreground">{displayName}</p>
+                <p className="text-truncate text-[10px] text-sidebar-foreground/50">{planLabel}</p>
               </div>
               <Tooltip delayDuration={100}>
                 <TooltipTrigger asChild>
                   <button
                     onClick={signOut}
-                    className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-white/60 hover:bg-white/10 hover:text-white"
+                    className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-sidebar-foreground/60 hover:bg-background/60 hover:text-sidebar-foreground"
                     aria-label="Sign out"
                   >
                     <LogOut className="h-4 w-4" />
@@ -438,7 +438,7 @@ const DashboardShell = () => {
               <Menu className="h-5 w-5" />
             </Button>
             {library ? (
-              <span className="text-base font-semibold text-[#161A23]">Templates</span>
+              <span className="text-base font-semibold text-foreground">Templates</span>
             ) : admin ? (
               <span className="text-base font-semibold">{activePage.title}</span>
             ) : (
@@ -491,7 +491,7 @@ const DashboardShell = () => {
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetContent
             side="left"
-            className="w-[min(20rem,calc(100vw-3rem))] border-r-0 bg-[hsl(var(--sidebar-background))] p-0 shadow-2xl [&>button]:hidden lg:hidden"
+            className="w-[min(20rem,calc(100vw-3rem))] border-r-0 bg-sidebar p-0 text-sidebar-foreground shadow-2xl [&>button]:hidden lg:hidden"
           >
             <VisuallyHidden.Root>
               <SheetTitle>Navigation</SheetTitle>
@@ -512,7 +512,7 @@ const DashboardShell = () => {
         {/* Desktop sidebar — scrolls independently */}
         <aside
           className={cn(
-            "sidebar border-r border-white/5 bg-[hsl(var(--sidebar-background))] text-white transition-[width] duration-300",
+            "sidebar border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-300",
             collapsed && "collapsed"
           )}
         >
