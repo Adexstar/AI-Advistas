@@ -8,6 +8,7 @@ import { useAIContext } from "@/contexts/AIContext";
 import { useAIStatus } from "@/contexts/AIStatusContext";
 import { useAuth } from "@/hooks/useAuth";
 import { DecisionService } from "@/services/ai/DecisionService";
+import { resolveSuggestion } from "@/services/ai/resolveSuggestion";
 import { AIPreviewDialog } from "./AIPreviewDialog";
 import {
   AISuggestion,
@@ -103,8 +104,16 @@ export const AIActionsMenu: React.FC<Props> = ({ selected, canvas, trigger, alig
           action: s.action,
           reasoning: s.reason,
           confidence: s.confidence,
+          metadata: { angle: s.action },
         });
-        await DecisionService.resolve(decision.id, "applied");
+        await resolveSuggestion({
+          id: decision.id,
+          status: "applied",
+          userId: user.id,
+          sourceType: s.action,
+          sourceLabel: s.kind,
+          confidence: s.confidence,
+        });
       } catch (error) {
         console.error("[VisualEditor] decision logging failed", error);
       }

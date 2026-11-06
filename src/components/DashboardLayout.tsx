@@ -16,7 +16,6 @@ import {
   Code2,
   CreditCard,
   Download,
-  HelpCircle,
   ImageIcon,
   LayoutDashboard,
   LayoutGrid,
@@ -42,7 +41,6 @@ import { useAdmin } from "@/hooks/useAdmin";
 import SidebarSearch from "@/components/sidebar/SidebarSearch";
 import GlobalSearch from "@/components/GlobalSearch";
 import MobileBottomNav from "@/components/MobileBottomNav";
-import AIContextBar from "@/components/dashboard/AIContextBar";
 import NotifyBadge from "@/components/ui/NotifyBadge";
 
 
@@ -483,24 +481,9 @@ const DashboardShell = () => {
                 <Bell className="h-4 w-4" />
               </NavLink>
             </Button>
-            <Button variant="outline" size="icon" className="h-9 w-9 rounded-lg">
-              <HelpCircle className="h-4 w-4" />
-            </Button>
           </div>
         </div>
-
-        {/* Mobile context bar (below header on mobile) */}
-        {!library && (
-        <div className="flex border-t border-border/40 bg-background/80 px-4 py-2 lg:hidden">
-          <AIContextBar />
-        </div>
-        )}
       </header>
-
-      {/* Desktop Context Bar — separate row, never scrolls */}
-      <div className="context-bar hidden border-b border-border/40 bg-background/60 px-6 py-1.5 backdrop-blur-xl lg:flex">
-        <AIContextBar />
-      </div>
 
       {/* Main Body — only .page-content scrolls */}
       <div className="main-body">

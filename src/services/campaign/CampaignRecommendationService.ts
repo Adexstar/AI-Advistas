@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { CampaignRecommendation } from './types';
 import { DecisionService } from '@/services/ai/DecisionService';
+import { resolveSuggestion } from '@/services/ai/resolveSuggestion';
 
 function toRecommendation(row: any): CampaignRecommendation {
   const metadata = row.metadata ?? {};
@@ -26,11 +27,13 @@ export const CampaignRecommendationService = {
       metadata: { estimated_impact: input.estimated_impact, estimated_improvement: input.estimated_improvement, action_label: input.action_label, action_data: input.action_data } });
     return toRecommendation(row);
   },
-  async accept(id: string, _campaignId: string, _userId: string) { await DecisionService.resolve(id, 'accepted'); },
-  async dismiss(id: string) { await DecisionService.resolve(id, 'dismissed'); },
-  async apply(id: string, _campaignId: string, _userId: string) {
-    // Acknowledgement is not execution: budget/artwork changes need a separate preview and confirmation.
-    await DecisionService.resolve(id, 'accepted');
+  async accept(id: string, campaignId: string, userId: string) {
+    await resolveSuggestion({ id, status: 'accepted', userId, context: { campaignId } });
+  },
+  async dismiss(id: string) { await resolveSuggestion({ id, status: 'dismissed' }); },
+  async apply(id: string, campaignId: string, userId: string) {
+    // Acknowledgement is not execution: budget and artwork stay unchanged until a separate confirmation.
+    await resolveSuggestion({ id, status: 'applied', userId, context: { campaignId } });
   },
   async get(id: string) {
     const { data, error } = await supabase.from('decisions').select('*').eq('id', id).single();

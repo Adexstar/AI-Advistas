@@ -1,4 +1,5 @@
 import { sb } from './supabase';
+import { budgetEfficiency, creativeStyleFrom, type CampaignTrackRecord } from './suggestionLearning';
 
 export interface LearningEvent {
   userId: string;
@@ -23,7 +24,7 @@ export interface LearningSummary {
 }
 
 export const LearningService = {
-  async record(event: LearningEvent): Promise<string | null> {
+  async recordEvent(event: LearningEvent): Promise<string | null> {
     try {
       const { data, error } = await sb.rpc('record_ai_feedback', {
         p_user_id: event.userId,
@@ -57,9 +58,13 @@ export const LearningService = {
       }
       return data as string | null;
     } catch (e) {
-      console.error('LearningService.record error:', e);
+      console.error('LearningService.recordEvent error:', e);
       return null;
     }
+  },
+
+  record(event: LearningEvent): Promise<string | null> {
+    return this.recordEvent(event);
   },
 
   async getSummary(userId: string): Promise<LearningSummary[]> {
@@ -100,6 +105,53 @@ export const LearningService = {
         .sort((a, b) => b.acceptRate - a.acceptRate)
         .slice(0, limit);
     } catch {
+      return [];
+    }
+  },
+
+  async getTrackRecord(userId: string): Promise<CampaignTrackRecord[]> {
+    try {
+      const { data: campaigns, error } = await sb
+        .from('campaigns')
+        .select('id,name,objective,platform,ctr,roas,budget,spend,revenue,settings')
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false })
+        .limit(25);
+      if (error || !campaigns) return [];
+
+      const { data: ads } = await sb
+        .from('ads')
+        .select('campaign_id,content')
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false })
+        .limit(80);
+      const styleByCampaign = new Map<string, string>();
+      for (const ad of ads ?? []) {
+        if (!ad.campaign_id || styleByCampaign.has(ad.campaign_id)) continue;
+        const style = creativeStyleFrom(ad.content);
+        if (style) styleByCampaign.set(ad.campaign_id, style);
+      }
+
+      return campaigns.map((row: any) => {
+        const budget = Number(row.budget) || 0;
+        const spend = Number(row.spend) || 0;
+        const revenue = Number(row.revenue) || 0;
+        return {
+          id: row.id,
+          name: row.name ?? 'Campaign',
+          objective: row.objective ?? '',
+          platform: row.platform ?? null,
+          ctr: Number(row.ctr) || 0,
+          roas: Number(row.roas) || 0,
+          budget,
+          spend,
+          revenue,
+          budgetEfficiency: budgetEfficiency(budget, spend, revenue),
+          creativeStyle: styleByCampaign.get(row.id) ?? creativeStyleFrom(row.settings),
+        };
+      });
+    } catch (e) {
+      console.error('LearningService.getTrackRecord error:', e);
       return [];
     }
   },
