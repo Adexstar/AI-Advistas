@@ -1,132 +1,74 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Sparkles, X, Check, ExternalLink } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { CampaignRecommendationService } from '@/services/campaign/CampaignRecommendationService';
-import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
-import type { CampaignRecommendation } from '@/services/campaign/types';
+import { useMemo, useState } from "react";
+import { Sparkles } from "lucide-react";
+import { LearnedSuggestionList } from "@/components/ai/LearnedSuggestionList";
+import { useLearnedSuggestions } from "@/hooks/useLearnedSuggestions";
+import { budgetEfficiency, type CampaignTrackRecord, type LearnedSuggestion } from "@/services/ai/suggestionLearning";
+import type { SuggestionStatus } from "@/services/ai/resolveSuggestion";
+import type { Database } from "@/integrations/supabase/types";
+import { toast } from "sonner";
 
-interface Props {
-  campaignId: string;
+type CampaignRow = Database["public"]["Tables"]["campaigns"]["Row"];
+
+export function suggestionsForCampaign(suggestions: LearnedSuggestion[], campaignId: string) {
+  return suggestions.filter((item) => !item.campaignId || item.campaignId === campaignId);
 }
 
-export function CampaignRecommendations({ campaignId }: Props) {
-  const { user } = useAuth();
-  const qc = useQueryClient();
+export function CampaignRecommendations({ campaign }: { campaign: CampaignRow }) {
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const focus = useMemo<CampaignTrackRecord>(() => {
+    const budget = Number(campaign.budget) || 0;
+    const spend = Number(campaign.spend) || 0;
+    const revenue = Number(campaign.revenue) || 0;
+    return {
+      id: campaign.id,
+      name: campaign.name,
+      objective: campaign.objective ?? "",
+      platform: campaign.platform,
+      ctr: Number(campaign.ctr) || 0,
+      roas: Number(campaign.roas) || 0,
+      budget,
+      spend,
+      revenue,
+      budgetEfficiency: budgetEfficiency(budget, spend, revenue),
+      creativeStyle: null,
+    };
+  }, [campaign]);
+  const learned = useLearnedSuggestions(focus);
+  const suggestions = suggestionsForCampaign(learned.suggestions, campaign.id);
+  const ctr = Number(campaign.ctr) || 0;
+  const roas = Number(campaign.roas) || 0;
 
-  const { data: recommendations, isLoading } = useQuery({
-    queryKey: ['campaign-recommendations', campaignId],
-    queryFn: () => CampaignRecommendationService.list(campaignId, 'pending'),
-  });
-
-  const handleDismiss = async (id: string) => {
+  const act = async (suggestion: LearnedSuggestion, status: SuggestionStatus) => {
+    const key = suggestion.decisionId ?? suggestion.angle;
+    setPendingId(key);
     try {
-      await CampaignRecommendationService.dismiss(id);
-      qc.invalidateQueries({ queryKey: ['campaign-recommendations', campaignId] });
-      toast.success('Recommendation dismissed');
+      await learned.resolve(suggestion, status);
+      toast.success(status === "dismissed" ? "Recommendation dismissed" : status === "rejected" ? "Recommendation rejected" : "Choice recorded. The campaign is unchanged.");
     } catch {
-      toast.error('Failed to dismiss');
+      toast.error("Could not record that choice");
+    } finally {
+      setPendingId(null);
     }
   };
-
-  const handleApply = async (id: string) => {
-    try {
-      if (!user) return;
-      await CampaignRecommendationService.accept(id, campaignId, user.id);
-      qc.invalidateQueries({ queryKey: ['campaign-recommendations', campaignId] });
-      qc.invalidateQueries({ queryKey: ['campaign-events', campaignId] });
-      toast.success('Recommendation accepted; your campaign is unchanged');
-    } catch {
-      toast.error('Failed to apply recommendation');
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="space-y-3">
-        {Array.from({ length: 2 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 w-full rounded-xl" />
-        ))}
-      </div>
-    );
-  }
-
-  if (!recommendations || recommendations.length === 0) {
-    return (
-      <Card className="border-dashed">
-        <CardContent className="p-8 text-center">
-          <Sparkles className="mx-auto h-8 w-8 text-muted-foreground" />
-          <p className="mt-3 font-semibold">No pending recommendations</p>
-          <p className="text-sm text-muted-foreground">AI will generate recommendations as your campaign runs.</p>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {recommendations.length} recommendation{recommendations.length !== 1 ? 's' : ''} pending
-        </p>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <Sparkles className="h-3.5 w-3.5 text-primary" />
+        <span>
+          Built from this campaign: {ctr.toFixed(2)}% CTR · {roas.toFixed(2)}x ROAS · {focus.budgetEfficiency.toFixed(2)}x return on budget
+        </span>
       </div>
-      {recommendations.map((rec) => (
-        <RecommendationCard
-          key={rec.id}
-          recommendation={rec}
-          onDismiss={() => handleDismiss(rec.id)}
-          onApply={() => handleApply(rec.id)}
+      {learned.isLoading ? (
+        <p className="text-sm text-muted-foreground">Reading this campaign’s results…</p>
+      ) : (
+        <LearnedSuggestionList
+          suggestions={suggestions}
+          onAction={act}
+          pendingId={pendingId}
+          emptyLabel="This campaign has no CTR or ROAS yet, so there is no performance suggestion to make."
         />
-      ))}
+      )}
     </div>
-  );
-}
-
-function RecommendationCard({
-  recommendation: rec,
-  onDismiss,
-  onApply,
-}: {
-  recommendation: CampaignRecommendation;
-  onDismiss: () => void;
-  onApply: () => void;
-}) {
-  return (
-    <Card className="rounded-2xl border border-border/60 hover:border-primary/20 transition-colors">
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h4 className="font-semibold">{rec.title}</h4>
-              <Badge variant="secondary" className="rounded-full text-[10px] whitespace-nowrap">
-                {rec.confidence}% confidence
-              </Badge>
-              <Badge variant="outline" className="rounded-full text-[10px] capitalize">
-                {rec.recommendation_type}
-              </Badge>
-            </div>
-            {rec.description && (
-              <p className="mt-1 text-sm text-muted-foreground">{rec.description}</p>
-            )}
-            {rec.estimated_impact && (
-              <p className="mt-1 text-xs font-medium text-emerald-600 flex items-center gap-1">
-                <Sparkles className="h-3 w-3" /> {rec.estimated_impact}
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <Button size="sm" variant="ghost" className="h-8 w-8" onClick={onDismiss}>
-              <X className="h-4 w-4" />
-            </Button>
-            <Button size="sm" className="h-8 gap-1 rounded-xl" onClick={onApply}>
-              <Check className="h-3.5 w-3.5" /> Accept
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 }

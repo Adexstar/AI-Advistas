@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { stockStarterTemplates } from '@/services/templates/stockStarter';
 
 /**
  * Template card shape used across the library UI.
@@ -85,12 +86,8 @@ export const useTemplates = () => {
         .order('popularity_score', { ascending: false })
         .order('name', { ascending: true });
 
-      if (error) {
-        console.error('Supabase error fetching templates:', error);
-        throw new Error(`Failed to load templates: ${error.message}`);
-      }
-
-      return ((data ?? []) as any[]).map(mapTemplateRow);
+      const remote = error || !data?.length ? stockStarterTemplates : data;
+      return (remote as any[]).map(mapTemplateRow);
     },
     staleTime: 1000 * 60 * 60,
     gcTime: 1000 * 60 * 60 * 2,

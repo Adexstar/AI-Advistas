@@ -2724,7 +2724,7 @@ const EditorInner: React.FC = () => {
           productName: template.name,
           skipAI: true,
         });
-        templateIdRef.current = template.id;
+        templateIdRef.current = typeof template.id === "string" && template.id.startsWith("stock-") ? null : template.id;
         const json = inst.json as any;
 
         // Resilient load — unresolved {{image}} placeholders become editable

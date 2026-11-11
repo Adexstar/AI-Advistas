@@ -11,6 +11,7 @@ import { useAIContext } from "@/contexts/AIContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { setPendingEditorTemplate } from "@/lib/templateEditorSession";
+import { withStockStarter } from "@/services/templates/stockStarter";
 import type { TemplateRecord } from "@/services/templates/types";
 import { normalizeTemplateCategory } from "@/utils/templateCategories";
 import {
@@ -151,8 +152,8 @@ export default function Templates() {
         .eq("is_active", true)
         .eq("review_status", "approved")
         .order("popularity_score", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as unknown as Row[];
+      if (error) return withStockStarter<Row>([], true);
+      return withStockStarter((data ?? []) as unknown as Row[]);
     },
     staleTime: 60_000,
   });
