@@ -345,7 +345,7 @@ const CampaignWorkspace = () => {
             <section>
               <h3 className="text-lg font-bold mb-1">AI Recommendations</h3>
               <p className="text-sm text-muted-foreground mb-4">Continuous evaluation of your campaign performance.</p>
-              <CampaignRecommendations campaignId={campaign.id} />
+              <CampaignRecommendations campaign={campaign} />
             </section>
           </TabsContent>
 

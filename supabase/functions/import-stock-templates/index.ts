@@ -44,9 +44,10 @@ const json = (body: unknown, status = 200) =>
 
 // ---------- providers ----------
 
-async function searchPexels(query: string, limit: number): Promise<StockItem[]> {
+async function searchPexels(query: string, limit: number, orientation?: string): Promise<StockItem[]> {
   if (!PEXELS_KEY) return [];
   const params = new URLSearchParams({ query, per_page: String(limit) });
+  if (orientation) params.set("orientation", orientation);
   const res = await fetch(`https://api.pexels.com/v1/search?${params}`, {
     headers: { Authorization: PEXELS_KEY },
   });
@@ -70,9 +71,10 @@ async function searchPexels(query: string, limit: number): Promise<StockItem[]> 
   })).filter((i) => i.image_url);
 }
 
-async function searchUnsplash(query: string, limit: number): Promise<StockItem[]> {
+async function searchUnsplash(query: string, limit: number, orientation?: string): Promise<StockItem[]> {
   if (!UNSPLASH_KEY) return [];
   const params = new URLSearchParams({ query, per_page: String(Math.min(limit, 30)) });
+  if (orientation) params.set("orientation", orientation === "square" ? "squarish" : orientation);
   const res = await fetch(`https://api.unsplash.com/search/photos?${params}`, {
     headers: { Authorization: `Client-ID ${UNSPLASH_KEY}`, "Accept-Version": "v1" },
   });
@@ -103,7 +105,7 @@ async function searchUnsplash(query: string, limit: number): Promise<StockItem[]
   }).filter((item) => item.image_url);
 }
 
-async function searchPixabay(query: string, limit: number): Promise<StockItem[]> {
+async function searchPixabay(query: string, limit: number, orientation?: string): Promise<StockItem[]> {
   if (!PIXABAY_KEY) return [];
   const params = new URLSearchParams({
     key: PIXABAY_KEY,
@@ -111,6 +113,8 @@ async function searchPixabay(query: string, limit: number): Promise<StockItem[]>
     image_type: "all",
     per_page: String(Math.min(limit, 200)),
   });
+  if (orientation === "landscape") params.set("orientation", "horizontal");
+  if (orientation === "portrait" || orientation === "story") params.set("orientation", "vertical");
   const res = await fetch(`https://pixabay.com/api/?${params}`);
   if (!res.ok) {
     console.error("pixabay search failed", res.status, await res.text());
@@ -132,11 +136,11 @@ async function searchPixabay(query: string, limit: number): Promise<StockItem[]>
   })).filter((item) => item.image_url);
 }
 
-async function searchProviders(providers: string[], query: string, limit: number) {
+async function searchProviders(providers: string[], query: string, limit: number, orientation?: string) {
   const jobs: Promise<StockItem[]>[] = [];
-  if (providers.includes("pexels")) jobs.push(searchPexels(query, limit).catch(() => []));
-  if (providers.includes("unsplash")) jobs.push(searchUnsplash(query, limit).catch(() => []));
-  if (providers.includes("pixabay")) jobs.push(searchPixabay(query, limit).catch(() => []));
+  if (providers.includes("pexels")) jobs.push(searchPexels(query, limit, orientation).catch(() => []));
+  if (providers.includes("unsplash")) jobs.push(searchUnsplash(query, limit, orientation).catch(() => []));
+  if (providers.includes("pixabay")) jobs.push(searchPixabay(query, limit, orientation).catch(() => []));
   const out = await Promise.all(jobs);
   return out.flat();
 }
@@ -148,8 +152,9 @@ async function cachedSearch(
   providers: string[],
   query: string,
   limit: number,
+  orientation?: string,
 ): Promise<StockItem[]> {
-  const cacheKey = `${providers.slice().sort().join("+")}|${query.toLowerCase()}|${limit}`;
+  const cacheKey = `${providers.slice().sort().join("+")}|${query.toLowerCase()}|${limit}|${orientation ?? "any"}`;
   const { data: hit } = await admin
     .from("provider_search_cache")
     .select("results, expires_at")
@@ -159,7 +164,7 @@ async function cachedSearch(
   if (hit && new Date(hit.expires_at as string).getTime() > Date.now()) {
     return hit.results as unknown as StockItem[];
   }
-  const results = await searchProviders(providers, query, limit);
+  const results = await searchProviders(providers, query, limit, orientation);
   if (results.length) {
     try {
       await admin.from("provider_search_cache").upsert(
@@ -287,7 +292,7 @@ function buildTemplateJSON(item: StockItem, W: number, H: number) {
   };
 }
 
-function toTemplateRow(item: StockItem, category: string | null, userId: string) {
+function toTemplateRow(item: StockItem, category: string | null, userId: string, publish = false) {
   const { format, width, height } = pickFormat(item.width, item.height);
   return {
     name: item.name,
@@ -308,8 +313,10 @@ function toTemplateRow(item: StockItem, category: string | null, userId: string)
     brand_compatible: true,
     premium: false,
     popularity_score: 0,
-    is_active: false,
-    review_status: "pending",
+    is_active: publish,
+    review_status: publish ? "approved" : "pending",
+    reviewed_at: publish ? new Date().toISOString() : null,
+    review_note: publish ? "Starter stock pack" : null,
     template_source: item.provider,
     source: item.provider,
     source_id: item.source_id,
@@ -329,22 +336,18 @@ function toTemplateRow(item: StockItem, category: string | null, userId: string)
   };
 }
 
-const SEED_QUERIES: { query: string; category: string }[] = [
-  { query: "beauty skincare product", category: "Beauty" },
-  { query: "fashion model studio", category: "Fashion" },
-  { query: "restaurant food plating", category: "Restaurant & Food" },
-  { query: "gym fitness training", category: "Fitness" },
-  { query: "modern house real estate", category: "Real Estate" },
-  { query: "software startup workspace", category: "SaaS & Technology" },
-  { query: "online shopping product", category: "E-commerce" },
-  { query: "healthcare clinic doctor", category: "Healthcare" },
-  { query: "education learning classroom", category: "Education" },
-  { query: "automotive car dealership", category: "Automotive" },
-  { query: "finance fintech business", category: "Finance" },
-  { query: "travel destination resort", category: "Travel" },
-  { query: "creative marketing agency", category: "Agency" },
-  { query: "seasonal holiday promotion", category: "Seasonal" },
-  { query: "professional business team", category: "Business" },
+const SEED_QUERIES: { query: string; category: string; orientation: "portrait" | "landscape" | "square" }[] = [
+  { query: "skincare product", category: "Beauty", orientation: "portrait" },
+  { query: "skincare product flat lay", category: "Beauty", orientation: "square" },
+  { query: "fashion editorial portrait", category: "Fashion", orientation: "portrait" },
+  { query: "restaurant food plating", category: "Restaurant & Food", orientation: "landscape" },
+  { query: "modern house exterior", category: "Real Estate", orientation: "landscape" },
+  { query: "residential building windows", category: "Real Estate", orientation: "portrait" },
+  { query: "gym fitness training", category: "Fitness", orientation: "square" },
+  { query: "product packaging", category: "E-commerce", orientation: "square" },
+  { query: "startup office workspace", category: "SaaS & Technology", orientation: "landscape" },
+  { query: "beach resort", category: "Travel", orientation: "landscape" },
+  { query: "palm beach", category: "Travel", orientation: "portrait" },
 ];
 
 async function trackUnsplashDownloads(items: StockItem[]) {
@@ -415,9 +418,9 @@ Deno.serve(async (req) => {
         const cat = body.category ? String(body.category) : null;
         items.forEach((i) => categoryOf.set(`${i.provider}:${i.source_id}`, cat));
       } else {
-        const perQuery = Math.min(Math.max(Number(body.perQuery) || 5, 1), 12);
+        const perQuery = Math.min(Math.max(Number(body.perQuery) || 2, 1), 4);
         for (const q of SEED_QUERIES) {
-          const found = await cachedSearch(admin, providers, q.query, perQuery);
+          const found = await cachedSearch(admin, providers, q.query, perQuery, q.orientation);
           for (const f of found) {
             items.push(f);
             categoryOf.set(`${f.provider}:${f.source_id}`, q.category);
@@ -447,7 +450,7 @@ Deno.serve(async (req) => {
       }
 
       const rows = fresh.map((i) =>
-        toTemplateRow(i, categoryOf.get(`${i.provider}:${i.source_id}`) ?? null, userData.user.id)
+        toTemplateRow(i, categoryOf.get(`${i.provider}:${i.source_id}`) ?? null, userData.user.id, mode === "seed")
       );
 
       const { data: inserted, error: insErr } = await admin

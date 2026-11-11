@@ -7,10 +7,12 @@ export function LearnedSuggestionList({
   suggestions,
   onAction,
   pendingId,
+  emptyLabel = "Recommendations appear after a campaign has results, and they follow what you accept or reject.",
 }: {
   suggestions: LearnedSuggestion[];
   onAction: (suggestion: LearnedSuggestion, status: SuggestionStatus) => Promise<void> | void;
   pendingId?: string | null;
+  emptyLabel?: string;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -18,9 +20,7 @@ export function LearnedSuggestionList({
     return (
       <div className="rounded-xl border border-dashed border-border p-6 text-center">
         <p className="text-sm font-medium">No suggestions yet</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Recommendations appear after a campaign has results, and they follow what you accept or reject.
-        </p>
+        <p className="mt-1 text-xs text-muted-foreground">{emptyLabel}</p>
       </div>
     );
   }

@@ -11,6 +11,7 @@ import { useAIContext } from "@/contexts/AIContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { setPendingEditorTemplate } from "@/lib/templateEditorSession";
+import { withStockStarter } from "@/services/templates/stockStarter";
 import type { TemplateRecord } from "@/services/templates/types";
 import { normalizeTemplateCategory } from "@/utils/templateCategories";
 import {
@@ -151,8 +152,8 @@ export default function Templates() {
         .eq("is_active", true)
         .eq("review_status", "approved")
         .order("popularity_score", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as unknown as Row[];
+      if (error) return withStockStarter<Row>([], true);
+      return withStockStarter((data ?? []) as unknown as Row[]);
     },
     staleTime: 60_000,
   });
@@ -453,9 +454,7 @@ export default function Templates() {
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-[#E7E9F0] bg-white px-6 py-12 text-center">
             <LayoutGrid className="h-6 w-6 text-[#8B93A7]" />
             <p className="text-sm text-[#6E7585]">
-              {(data?.length ?? 0) === 0
-                ? "No templates yet. Create one with AI or add templates from the admin library."
-                : "No templates match these filters."}
+              No templates match these filters.
             </p>
             {(data?.length ?? 0) > 0 && (
               <button type="button" onClick={clearFilters} className="h-9 rounded-lg border border-[#E4E7EE] px-3 text-sm">
