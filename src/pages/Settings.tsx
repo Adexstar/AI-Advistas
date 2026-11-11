@@ -27,7 +27,9 @@ import {
 import AIPreferences from "@/components/settings/AIPreferences";
 import AIBrainSettings from "@/components/settings/AIBrainSettings";
 import { useAuth } from "@/hooks/useAuth";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { useToast } from "@/hooks/use-toast";
+import { Moon, Sun } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PlatformConnectionService, type PlatformConnection } from "@/services/publishing/PlatformConnectionService";
 
@@ -47,6 +49,38 @@ const defaultNotifications = {
   emailTips: true,
   pushCampaigns: true,
   pushBilling: false,
+};
+
+const AppearanceSettings = () => {
+  const { theme, setTheme } = useAppTheme();
+  const dark = theme === "dark";
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><PaletteIcon className="h-5 w-5 text-primary" />Appearance</CardTitle>
+        <CardDescription>Choose the theme used across the whole app on this device.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-background p-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-primary/15 text-primary">
+              {dark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">Dark mode</p>
+              <p className="text-sm text-muted-foreground">{dark ? "The app is using the dark theme." : "The app is using the light theme."}</p>
+            </div>
+          </div>
+          <Switch
+            checked={dark}
+            onCheckedChange={(on) => setTheme(on ? "dark" : "light")}
+            aria-label="Dark mode"
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
 };
 
 const Settings = () => {
@@ -193,13 +227,7 @@ const Settings = () => {
         </TabsContent>
 
         <TabsContent value="appearance">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><PaletteIcon className="h-5 w-5 text-primary" />Appearance</CardTitle>
-              <CardDescription>Theme, density and accent color.</CardDescription>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">Theme controls coming soon.</CardContent>
-          </Card>
+          <AppearanceSettings />
         </TabsContent>
 
         <TabsContent value="ai-brain">

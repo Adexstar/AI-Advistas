@@ -25,6 +25,7 @@ import { TemplateEngine } from '@/services/templates/TemplateEngine';
 import { CreateAdTemplatePicker, type PickerTemplate } from '@/components/ad/CreateAdTemplatePicker';
 import { CreateAdMediaPicker } from '@/components/ad/CreateAdMediaPicker';
 import { isDraftStatus } from '@/lib/campaignStatus';
+import { PublishingService } from '@/services/publishing';
 import type { Json } from '@/integrations/supabase/types';
 
 /* ------------------------------------------------------------------ */
@@ -191,7 +192,6 @@ export default function CreateAd() {
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [previewTab, setPreviewTab] = useState<'mobile' | 'desktop'>('mobile');
   const [previewPlatform, setPreviewPlatform] = useState('facebook_feed');
-  const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [applyingTemplate, setApplyingTemplate] = useState(false);
@@ -411,13 +411,38 @@ export default function CreateAd() {
 
   const publish = handleSubmit(async () => {
     if (!values.name) { toast.error('Campaign name is required'); setStep(1); return; }
+    if (!values.platforms.length) { toast.error('Choose at least one platform'); setStep(1); return; }
     if (!values.termsAccepted) { toast.error('Please accept the terms'); return; }
     setPublishing(true);
     try {
       const id = await saveDraft(true);
-      if (id) {
-        toast.success('Draft saved', { description: 'Reopen it from Campaigns whenever you want to keep editing.' });
+      const creativeId = creativeIdRef.current;
+      if (!id || !user || !creativeId) {
+        toast.error('Save the ad before publishing');
+        return;
       }
+      await PublishingService.publish({
+        campaignId: id,
+        when: 'now',
+        targets: values.platforms.map((platform) => ({
+          platform,
+          mode: platform === 'google' ? 'paid' as const : 'social' as const,
+        })),
+        asset: {
+          id: creativeId,
+          userId: user.id,
+          campaignId: id,
+          platform: values.platforms[0],
+          goal: values.objective,
+          status: 'draft',
+          mediaUrl: values.mediaUrl || undefined,
+          headline: values.headline,
+          body: values.primaryText,
+          cta: values.cta,
+        },
+      });
+      toast.success('Publishing started');
+      navigate(`/campaigns/${id}`);
     } catch (e: any) {
       toast.error(e.message || 'Failed to publish campaign');
     } finally {
@@ -463,8 +488,7 @@ export default function CreateAd() {
   /* STEP 1 — Setup                                                     */
   /* ------------------------------------------------------------------ */
   const StepSetup = (
-    <div className="flex flex-col lg:flex-row gap-8">
-      <div className="w-full max-w-none lg:max-w-[480px] space-y-6">
+    <div className="max-w-[480px] space-y-6">
         <StepSection title="Campaign & Goal" subtitle="Choose the campaign objective and define your ad.">
           <div className="space-y-4">
             <Field label="Campaign Name" required>
@@ -512,31 +536,37 @@ export default function CreateAd() {
             Next: Ad Creative <ArrowRight className="h-4 w-4" />
           </button>
         </div>
-      </div>
+    </div>
+  );
 
-      {/* Right Preview Panel */}
-      <div id="ad-preview" className={cn(showMobilePreview ? "block" : "hidden", "w-full flex-1 lg:block lg:max-w-[420px]")}>
-        <div className="sticky top-24 space-y-4">
-          <div>
-            <h3 className="font-section-header text-foreground">Ad Preview</h3>
-            <p className="font-label text-muted-foreground">See how your ad will look across platforms.</p>
-          </div>
-          <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
-            <button onClick={() => setPreviewTab('mobile')}
-              className={cn('px-3 py-1.5 text-xs font-medium rounded-md transition', previewTab === 'mobile' ? 'bg-primary text-white' : 'text-muted-foreground')}>Mobile</button>
-            <button onClick={() => setPreviewTab('desktop')}
-              className={cn('px-3 py-1.5 text-xs font-medium rounded-md transition', previewTab === 'desktop' ? 'bg-primary text-white' : 'text-muted-foreground')}>Desktop</button>
-          </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 text-xs">
-            {['Facebook Feed', 'Instagram Feed', 'Instagram Story', 'Facebook Story', 'TikTok', 'LinkedIn'].map((p) => (
-              <button key={p} onClick={() => setPreviewPlatform(p.toLowerCase().replace(/\s+/g, '_'))}
-                className={cn('pb-1 whitespace-nowrap', previewPlatform === p.toLowerCase().replace(/\s+/g, '_') ? 'text-primary border-b-2 border-primary font-medium' : 'text-muted-foreground')}>{p}</button>
-            ))}
-          </div>
-          <div className={cn(
-            'bg-card border border-border rounded-xl overflow-hidden text-[13px] leading-[1.4] transition-all',
-            previewTab === 'mobile' ? 'max-w-[340px] mx-auto' : 'w-full',
-          )}>
+  const previewPlatforms = ['Facebook Feed', 'Instagram Feed', 'Instagram Story', 'Facebook Story', 'TikTok', 'LinkedIn'];
+  const adPreview = (
+    <div id="ad-preview" className="min-w-0 space-y-4">
+      <div>
+        <h3 className="font-section-header text-foreground">Ad Preview</h3>
+        <p className="font-label text-muted-foreground">See how your ad will look across platforms.</p>
+      </div>
+      <div className="flex w-fit gap-1 rounded-lg bg-muted/50 p-0.5">
+        <button type="button" onClick={() => setPreviewTab('mobile')}
+          className={cn('rounded-md px-3 py-1.5 text-xs font-medium transition', previewTab === 'mobile' ? 'bg-primary text-white' : 'text-muted-foreground')}>Mobile</button>
+        <button type="button" onClick={() => setPreviewTab('desktop')}
+          className={cn('rounded-md px-3 py-1.5 text-xs font-medium transition', previewTab === 'desktop' ? 'bg-primary text-white' : 'text-muted-foreground')}>Desktop</button>
+      </div>
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        {previewPlatforms.map((p) => {
+          const id = p.toLowerCase().replace(/\s+/g, '_');
+          return (
+            <button key={p} type="button" onClick={() => setPreviewPlatform(id)}
+              className={cn('shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs', previewPlatform === id ? 'border-primary bg-primary/10 font-medium text-primary' : 'border-border text-muted-foreground')}>
+              {p}
+            </button>
+          );
+        })}
+      </div>
+      <div className={cn(
+        'mx-auto overflow-hidden rounded-xl border border-[#DADDE1] bg-white text-[13px] leading-[1.4] text-[#050505]',
+        previewTab === 'mobile' ? 'max-w-[340px]' : 'w-full max-w-[520px]',
+      )}>
             {/* Header: Page info + sponsored */}
             <div className="flex items-center gap-2.5 px-3 py-2.5">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary-glow shrink-0" />
@@ -581,23 +611,21 @@ export default function CreateAd() {
             </div>
 
             {/* Like / Comment / Share */}
-            <div className="flex items-center gap-0.5 px-3 py-2 border-t border-[#DADDE1]">
+            <div className="flex items-center gap-1 border-t border-[#DADDE1] px-2 py-2">
               {[
                 { label: 'Like', icon: '👍' },
                 { label: 'Comment', icon: '💬' },
                 { label: 'Share', icon: '↗' },
               ].map((a) => (
-                <button key={a.label}
-                  className="flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[12px] font-semibold text-[#65676B] hover:bg-[#F2F2F2] transition">
+                <button key={a.label} type="button"
+                  className="flex h-8 min-w-0 flex-1 items-center justify-center gap-1 rounded-md text-[12px] font-semibold text-[#65676B]">
                   <span className="text-sm">{a.icon}</span>
                   {a.label}
                 </button>
               ))}
             </div>
-          </div>
-          <p className="text-[10px] text-muted-foreground italic max-w-[320px]">Preview is an approximation and may differ from the actual ad on each platform.</p>
-        </div>
       </div>
+      <p className="text-[10px] italic text-muted-foreground">Preview is an approximation and may differ from the actual ad on each platform.</p>
     </div>
   );
 
@@ -957,16 +985,7 @@ export default function CreateAd() {
           ]} />
         </div>
 
-        <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
-          <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted/30 shrink-0">
-            {values.mediaUrl ? <img src={values.mediaUrl} alt="" className="w-full h-full object-cover" /> : <ImageIcon className="h-6 w-6 m-5 text-muted-foreground/40" />}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold truncate">{values.headline || 'No headline'}</p>
-            <p className="text-xs text-muted-foreground truncate">{values.primaryText || 'No primary text'}</p>
-            <p className="text-[10px] text-primary mt-0.5">{values.cta}</p>
-          </div>
-        </div>
+        {adPreview}
 
         <div className="flex items-start gap-2">
           <Controller control={control} name="termsAccepted" render={({ field }) => (
@@ -976,11 +995,10 @@ export default function CreateAd() {
           <p className="text-xs text-muted-foreground">I confirm that I have the rights to use all media and content in this ad, and I agree to the platform advertising policies.</p>
         </div>
 
-        <p className="text-xs text-muted-foreground">Saving stores this ad as a draft. Reopen it from Campaigns to keep editing. Platform delivery stays on the campaign Publishing tab after the ad is launched.</p>
         <button onClick={publish} disabled={publishing || !values.termsAccepted}
           className="w-full h-12 bg-primary text-white rounded-[10px] text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#5A52E0] transition disabled:opacity-50">
-          {publishing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          Save draft
+          {publishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          {publishing ? 'Publishing…' : 'Publish'}
         </button>
       </StepSection>
 
@@ -1030,8 +1048,7 @@ export default function CreateAd() {
             <button
               type="button"
               onClick={() => {
-                if (step !== 1) setStep(1);
-                setShowMobilePreview(true);
+                setStep(5);
                 window.setTimeout(() => document.getElementById("ad-preview")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
               }}
               className="h-9 w-9 sm:w-auto sm:px-3 text-xs font-medium text-foreground border border-border rounded-lg hover:bg-muted/50 transition grid place-items-center sm:flex sm:items-center sm:gap-1.5">
@@ -1042,7 +1059,7 @@ export default function CreateAd() {
               disabled={publishing}
               className="h-9 w-9 sm:w-auto sm:px-4 text-xs font-bold text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition grid place-items-center sm:flex sm:items-center sm:gap-1.5">
               {publishing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : step < 5 ? <ArrowRight className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">{step < 5 ? 'Next' : 'Save draft'}</span>
+              <span className="hidden sm:inline">{step < 5 ? 'Next' : 'Publish'}</span>
             </button>
           </div>
         </div>
