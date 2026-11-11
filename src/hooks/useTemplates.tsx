@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { stockStarterTemplates } from '@/services/templates/stockStarter';
+import { loadLibraryTemplates } from '@/services/templates/publishLibrary';
 
 /**
  * Template card shape used across the library UI.
@@ -79,15 +79,8 @@ export const useTemplates = () => {
   return useQuery<AdTemplate[], Error>({
     queryKey: ['ad-templates'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('templates')
-        .select('*')
-        .eq('is_active', true)
-        .order('popularity_score', { ascending: false })
-        .order('name', { ascending: true });
-
-      const remote = error || !data?.length ? stockStarterTemplates : data;
-      return (remote as any[]).map(mapTemplateRow);
+      const remote = await loadLibraryTemplates();
+      return remote.map(mapTemplateRow);
     },
     staleTime: 1000 * 60 * 60,
     gcTime: 1000 * 60 * 60 * 2,

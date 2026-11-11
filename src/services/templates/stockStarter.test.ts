@@ -20,10 +20,17 @@ describe("stock starter templates", () => {
     }
   });
 
-  it("uses stock templates only when the library is empty", () => {
-    expect(withStockStarter([{ id: "db-1" }])).toEqual([{ id: "db-1" }]);
+  it("keeps saved templates and adds the stock designs that are missing", () => {
+    const saved = { id: "db-1", source: "pexels", source_id: "1", format: "square", preview_url: "https://example.com/saved.jpg" };
+    const merged = withStockStarter([saved]);
+    expect(merged[0]).toEqual(saved);
+    expect(merged).toHaveLength(stockStarterTemplates.length + 1);
     expect(withStockStarter([])).toHaveLength(stockStarterTemplates.length);
-    expect(withStockStarter(null)).toHaveLength(stockStarterTemplates.length);
+    expect(withStockStarter(null, true)).toHaveLength(stockStarterTemplates.length);
+    const categories = new Set(stockStarterTemplates.map((item) => item.category));
+    for (const category of ["Beauty", "Fashion", "Restaurant & Food", "Real Estate", "Fitness", "E-commerce", "SaaS & Technology"]) {
+      expect(categories.has(category)).toBe(true);
+    }
   });
 
   it("cover-fits the photo onto the chosen artboard", () => {
