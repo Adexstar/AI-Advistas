@@ -51,6 +51,14 @@ export function categoryCounts(categories: Array<string | null | undefined>) {
   return counts;
 }
 
+export function templateDisplayName(name: string | null | undefined) {
+  const value = (name || "Template").replace(/\s+/g, " ").trim();
+  const parts = value.split(",").map((part) => part.trim()).filter(Boolean);
+  if (parts.length < 4) return value;
+  const title = parts.slice(0, 3).join(" ");
+  return title.charAt(0).toUpperCase() + title.slice(1);
+}
+
 export function relativeUpdated(iso: string | null | undefined, now = Date.now()) {
   if (!iso) return "";
   const time = new Date(iso).getTime();
