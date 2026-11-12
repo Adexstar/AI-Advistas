@@ -33,6 +33,7 @@ import { AIQuickActionsMenu } from '@/components/visual-editor/ai/AIQuickActions
 import { consumePendingEditorTemplate, peekPendingEditorTemplate } from '@/lib/templateEditorSession';
 import { TemplateEngine } from '@/services/templates/TemplateEngine';
 import { isOverlayScrim, loadTemplateJSONIntoCanvas, retryFailedImages, type ImageLayerStatus } from '@/services/templates/loadIntoCanvas';
+import { ensureContrastScrim, placeContrastScrim, prepareLoadedScrims } from '@/services/templates/contrastScrim';
 import { supabase } from '@/integrations/supabase/client';
 import { useAIContext } from '@/contexts/AIContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -782,7 +783,7 @@ const CanvasSubToolbar: React.FC<{
 /* ---------- Canvas Stage ---------- */
 const CANVAS_WIDTH = 1080;
 const CANVAS_HEIGHT = 1920;
-const SERIALIZED_CANVAS_PROPS = ['id', 'name', 'mediaFit', 'variableKey', 'brandReplaceable', 'aiReplaceable', 'brandCompliant'];
+const SERIALIZED_CANVAS_PROPS = ['id', 'name', 'mediaFit', 'variableKey', 'brandReplaceable', 'aiReplaceable', 'brandCompliant', 'perPixelTargetFind'];
 
 const MIN_ZOOM = 10;
 const MAX_ZOOM = 400;
@@ -2001,6 +2002,7 @@ const RightPanel: React.FC<{
     if (!selected || !canvas) return;
     if (isOverlayScrim(selected) && (prop === 'fill' || prop === 'stroke')) return;
     selected.set(prop, val);
+    if (isOverlayScrim(selected)) ensureContrastScrim(selected);
     selected.setCoords?.();
     canvas.requestRenderAll();
     bump((n) => n + 1);
@@ -2008,14 +2010,20 @@ const RightPanel: React.FC<{
 
   const updateMany = (props: Record<string, any>) => {
     if (!selected || !canvas) return;
-    selected.set(props);
+    if (isOverlayScrim(selected)) {
+      const { fill: _fill, stroke: _stroke, ...rest } = props;
+      selected.set(rest);
+      ensureContrastScrim(selected);
+    } else {
+      selected.set(props);
+    }
     selected.setCoords?.();
     canvas.requestRenderAll();
     bump((n) => n + 1);
   };
 
   const setEffect = (kind: 'shadow' | 'outline' | 'glow', on: boolean) => {
-    if (!selected || !canvas) return;
+    if (!selected || !canvas || isOverlayScrim(selected)) return;
     if (kind === 'outline') {
       updateMany(on ? { stroke: '#000000', strokeWidth: 2 } : { strokeWidth: 0 });
       return;
@@ -2184,7 +2192,7 @@ const RightPanel: React.FC<{
                 </div>
               )}
 
-              {(isShape || isText) && (
+              {(isShape || isText) && !isOverlayScrim(selected) && (
                 <div>
                   <p className="mb-2 text-xs font-semibold text-muted-foreground">Color</p>
                   <div className="flex items-center gap-2 rounded-xl border px-3 py-2">
@@ -2232,7 +2240,7 @@ const RightPanel: React.FC<{
               </div>
 
               <div>
-                <p className="mb-2 text-xs font-semibold text-muted-foreground">Opacity</p>
+                <p className="mb-2 text-xs font-semibold text-muted-foreground">{isOverlayScrim(selected) ? 'Intensity' : 'Opacity'}</p>
                 <div className="flex items-center gap-3">
                   <Slider value={[Math.round((selected.opacity ?? 1) * 100)]} onValueChange={([v]) => update('opacity', v / 100)} max={100} />
                   <span className="min-w-[38px] text-right text-xs font-medium">{Math.round((selected.opacity ?? 1) * 100)}%</span>
@@ -2443,6 +2451,7 @@ const EditorInner: React.FC = () => {
     try {
       const json = JSON.parse(historyRef.current[idx]);
       await c.loadFromJSON(json);
+      prepareLoadedScrims(c);
       c.discardActiveObject();
       c.requestRenderAll();
       setSelected(null);
@@ -2470,14 +2479,21 @@ const EditorInner: React.FC = () => {
   // Wire canvas events for history
   useEffect(() => {
     if (!canvas) return;
+    const refreshScrim = (event: { target?: unknown }) => {
+      if (isOverlayScrim(event?.target as { name?: string; meta?: { role?: string } })) ensureContrastScrim(event.target as any);
+    };
     const save = () => { saveSnapshot(canvas); forceUpdate(n => n + 1); };
     canvas.on('object:added', save);
+    canvas.on('object:scaling', refreshScrim);
+    canvas.on('object:modified', refreshScrim);
     canvas.on('object:modified', save);
     canvas.on('object:removed', save);
     // Save initial state
     setTimeout(() => saveSnapshot(canvas), 100);
     return () => {
       canvas.off('object:added', save);
+      canvas.off('object:scaling', refreshScrim);
+      canvas.off('object:modified', refreshScrim);
       canvas.off('object:modified', save);
       canvas.off('object:removed', save);
     };
@@ -2766,16 +2782,12 @@ const EditorInner: React.FC = () => {
 
         canvas.getObjects().forEach((obj: any, i) => {
           const src = srcObjects[i] ?? {};
-          // The contrast scrim is a translucent tint behind the type. It must not
-          // become a solid plate, and it must not steal taps from the photo or text.
+          // The contrast scrim stays a fading wash behind the type. Fully clear
+          // pixels pass clicks through; text above it still takes the pointer.
           if (isOverlayScrim(obj) || isOverlayScrim(src)) {
-            const authored = typeof src.fill === 'string' ? src.fill : 'rgba(8,8,14,0.62)';
-            obj.set({
-              fill: authored,
-              selectable: false,
-              evented: false,
-              hoverCursor: 'default',
-            });
+            obj.name = src.name ?? obj.name ?? 'Contrast scrim';
+            if (src.meta) obj.meta = { ...(obj.meta || {}), ...src.meta, role: 'scrim' };
+            placeContrastScrim(obj, frame);
             obj.setCoords?.();
             return;
           }
@@ -2888,6 +2900,7 @@ const EditorInner: React.FC = () => {
             const height = Number(doc.height) || 1350;
             isRestoringRef.current = true;
             await loadTemplateJSONIntoCanvas(canvas, doc, { onImageStatus: upsertImageStatus });
+            prepareLoadedScrims(canvas);
             if (cancelled) return;
             setCustomArtboard({ label: `Custom · ${width}×${height}`, width, height });
             setPreset('custom');
@@ -3122,7 +3135,10 @@ const EditorInner: React.FC = () => {
     next[pageIdx] = snapshot;
     setPages(next);
     const target = next[idx];
-    if (target) await canvas.loadFromJSON(target);
+    if (target) {
+      await canvas.loadFromJSON(target);
+      prepareLoadedScrims(canvas);
+    }
     else { canvas.clear(); canvas.backgroundColor = '#ffffff'; }
     canvas.requestRenderAll();
     setPageIdx(idx);

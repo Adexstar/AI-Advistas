@@ -836,18 +836,21 @@ export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: 
       <div className={HEAD}><h2 className={H2}>Elements</h2></div>
       <div className="flex-1 min-h-0 overflow-y-auto p-4">
         <SelectedBanner selected={selected} hint="Colour and opacity below apply to this layer instantly." />
-        {selected && !isOverlayScrim(selected) && (
+        {selected && (
           <div className="mb-4 space-y-2 rounded-lg border border-[#3D3D3D] bg-[#1A1A1A] p-3">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-[#888888]">Selected layer</p>
-            <div className="flex flex-wrap gap-1.5">
-              {[...new Set([...(brandColors || []), '#6E56F5', '#FFFFFF', '#000000', '#EF4444', '#F59E0B', '#10B981'])].slice(0, 8).map((c) => (
-                <button key={`sel-${c}`} onClick={() => { setFill(c); applyToSelected(c); }}
-                  className="h-6 w-6 rounded-full border border-white/20" style={{ backgroundColor: c }} title={`Apply ${c}`} />
-              ))}
-            </div>
+            {!isOverlayScrim(selected) && (
+              <div className="flex flex-wrap gap-1.5">
+                {[...new Set([...(brandColors || []), '#6E56F5', '#FFFFFF', '#000000', '#EF4444', '#F59E0B', '#10B981'])].slice(0, 8).map((c) => (
+                  <button key={`sel-${c}`} onClick={() => { setFill(c); applyToSelected(c); }}
+                    className="h-6 w-6 rounded-full border border-white/20" style={{ backgroundColor: c }} title={`Apply ${c}`} />
+                ))}
+              </div>
+            )}
             <label className="block text-[10px] text-[#888888]">
-              Opacity
+              {isOverlayScrim(selected) ? 'Intensity' : 'Opacity'}
               <input type="range" min={0} max={1} step={0.05}
+                key={`${selected.name ?? selected.type}-${selected.opacity ?? 1}`}
                 defaultValue={typeof selected.opacity === 'number' ? selected.opacity : 1}
                 onChange={(e) => setOpacity(Number(e.target.value))}
                 className="mt-1 w-full accent-primary" />
