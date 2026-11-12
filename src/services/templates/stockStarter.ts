@@ -36,11 +36,80 @@ const STARTER_PHOTOS: StockPhoto[] = [
   photo("6804612", "Startup Workstations", "SaaS & Technology", "landscape", 6486, 4325, "cottonbro studio", "workstations-of-a-startup-software-company"),
   photo("6789839", "Beach Resort", "Travel", "landscape", 4426, 2819, "Lelani Badenhorst", "scenic-view-of-a-resort"),
   photo("25706808", "Palm Shore", "Travel", "story", 2268, 4032, "Saila Holidays  Zanzibar", "palm-trees-on-sandy-beach-in-resort"),
+  photo("4041392", "Serum and Petals", "Beauty", "landscape", 6000, 4000, "Pexels", "serum-bottle-on-petals"),
+  photo("1926769", "Studio Look", "Fashion", "story", 4000, 6000, "Pexels", "fashion-portrait-in-studio"),
+  photo("996329", "Clothing Rack", "Fashion", "landscape", 6000, 4000, "Pexels", "clothes-on-wooden-hangers"),
+  photo("1640777", "Vegetable Bowl", "Restaurant & Food", "square", 6000, 4000, "Pexels", "vegetable-salad-bowl"),
+  photo("376464", "Pancake Stack", "Restaurant & Food", "landscape", 6000, 3665, "Pexels", "pancakes-with-strawberries"),
+  photo("1552242", "Rope Training", "Fitness", "landscape", 6000, 4000, "Pexels", "athletes-training-with-ropes"),
+  photo("4164761", "Dumbbell Set", "Fitness", "story", 4000, 6000, "Pexels", "dumbbell-workout"),
+  photo("5632399", "Sale Drop", "E-commerce", "square", 6000, 4000, "Pexels", "black-friday-sale"),
+  photo("3965545", "Boutique Rail", "E-commerce", "landscape", 6000, 4000, "Pexels", "boutique-clothing-rail"),
+  photo("3184465", "Team Handshake", "SaaS & Technology", "square", 6000, 4000, "Pexels", "handshake-at-a-laptop"),
 ];
 
 export const stockStarterTemplates = STARTER_PHOTOS.map((item) => stockTemplateRecord(item));
 
-export function withStockStarter<T extends { id: string }>(remote: T[] | null | undefined, failed = false): T[] {
-  if (remote && remote.length > 0 && !failed) return remote;
-  return stockStarterTemplates as unknown as T[];
+export type StockCatalogItem = {
+  provider: StockPhoto["provider"];
+  source_id: string;
+  name: string;
+  image_url: string;
+  thumbnail_url: string;
+  width: number;
+  height: number;
+  license: string;
+  author?: string;
+  page_url?: string;
+  tags?: string[];
+  category: string;
+  format: StockPhoto["format"];
+};
+
+/** Payload for the import-stock-templates catalog mode. */
+export function stockCatalogItems(): StockCatalogItem[] {
+  return STARTER_PHOTOS.map((photo) => ({
+    provider: photo.provider,
+    source_id: photo.source_id,
+    name: photo.name,
+    image_url: photo.image_url,
+    thumbnail_url: photo.thumbnail_url,
+    width: photo.width,
+    height: photo.height,
+    license: "pexels:free",
+    author: photo.author,
+    page_url: photo.page_url,
+    tags: [photo.category, photo.format],
+    category: photo.category,
+    format: photo.format,
+  }));
+}
+
+type LibraryIdentity = {
+  id?: string;
+  source?: string | null;
+  source_id?: string | null;
+  format?: string | null;
+  preview_url?: string | null;
+};
+
+export function libraryIdentityKeys(row: LibraryIdentity) {
+  const keys: string[] = [];
+  if (row.source && row.source_id) keys.push(`${row.source}:${row.source_id}:${row.format ?? ""}`);
+  if (row.preview_url) keys.push(`url:${row.preview_url}`);
+  if (row.id) keys.push(`id:${row.id}`);
+  return keys;
+}
+
+/** Saved rows stay, and any stock design that is not already stored is added. */
+export function mergeLibraryTemplates<T extends LibraryIdentity>(remote: T[] | null | undefined): T[] {
+  const rows = Array.isArray(remote) ? remote.filter(Boolean) : [];
+  const seen = new Set(rows.flatMap((row) => libraryIdentityKeys(row)));
+  const extras = stockStarterTemplates.filter((item) => !libraryIdentityKeys(item).some((key) => seen.has(key)));
+  return [...rows, ...(extras as unknown as T[])];
+}
+
+export function withStockStarter<T extends LibraryIdentity>(remote: T[] | null | undefined, failed = false): T[] {
+  if (failed || !remote || remote.length === 0) return stockStarterTemplates as unknown as T[];
+  return mergeLibraryTemplates(remote);
 }
