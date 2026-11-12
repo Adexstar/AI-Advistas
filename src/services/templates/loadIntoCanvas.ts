@@ -38,7 +38,7 @@ export const makePlaceholderImage = (width = 400, height = 400, label = 'Image')
 
 const isImage = (o: AnyObj) => String(o?.type ?? '').toLowerCase() === 'image';
 
-/** A contrast scrim is a dimming plate over the photo. It is not a design object. */
+/** A contrast scrim is the fading wash behind the type. Colour tools must not flatten it. */
 export const isOverlayScrim = (object: { name?: string; meta?: { role?: string } } | null | undefined) => {
   const role = `${object?.meta?.role ?? ''} ${object?.name ?? ''}`.toLowerCase();
   return role.includes('scrim');

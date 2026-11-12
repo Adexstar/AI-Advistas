@@ -1,3 +1,5 @@
+import { contrastScrimFillJSON } from "./contrastScrim";
+
 export type StockFormat = "square" | "story" | "landscape";
 
 export interface StockPhoto {
@@ -49,10 +51,15 @@ export function buildStockTemplateJSON(photo: Pick<StockPhoto, "image_url" | "wi
         name: "Contrast scrim",
         left: 0,
         top: height * 0.42,
+        originX: "left",
+        originY: "top",
         width,
         height: height * 0.58,
-        fill: "rgba(8,8,14,0.62)",
+        fill: contrastScrimFillJSON(),
+        opacity: 1,
         selectable: true,
+        evented: true,
+        perPixelTargetFind: true,
         meta: { role: "scrim" },
       },
       {

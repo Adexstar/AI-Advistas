@@ -193,6 +193,22 @@ function pickFormat(w: number, h: number) {
   return { format: "square", width: 1080, height: 1080 };
 }
 
+// Same fade as src/services/templates/contrastScrim.ts. The top stop is clear
+// so the plate has no hard edge; object opacity is the intensity control.
+function contrastScrimFill() {
+  return {
+    type: "linear",
+    gradientUnits: "percentage",
+    coords: { x1: 0, y1: 0, x2: 0, y2: 1 },
+    colorStops: [
+      { offset: 0, color: "rgba(0,0,0,0)" },
+      { offset: 0.08, color: "rgba(0,0,0,0.12)" },
+      { offset: 0.28, color: "rgba(0,0,0,0.34)" },
+      { offset: 1, color: "rgba(0,0,0,0.55)" },
+    ],
+  };
+}
+
 function buildTemplateJSON(item: StockItem, W: number, H: number) {
   // Cover-fit the source image onto the artboard.
   const scale = Math.max(W / Math.max(item.width, 1), H / Math.max(item.height, 1));
@@ -228,8 +244,11 @@ function buildTemplateJSON(item: StockItem, W: number, H: number) {
         top: H * 0.42,
         width: W,
         height: H * 0.58,
-        fill: "rgba(8,8,14,0.62)",
+        fill: contrastScrimFill(),
+        opacity: 1,
         selectable: true,
+        evented: true,
+        perPixelTargetFind: true,
         meta: { role: "scrim" },
       },
       {
