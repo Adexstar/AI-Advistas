@@ -2103,7 +2103,6 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      ensure_library_templates: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

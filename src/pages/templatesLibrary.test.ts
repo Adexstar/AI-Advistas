@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { categoryCounts, matchesFormat, matchesPlatform, relativeUpdated, templateDisplayName } from "./templatesLibrary";
+import { categoryCounts, matchesFormat, matchesPlatform, relativeUpdated } from "./templatesLibrary";
 
 describe("template library filters", () => {
   it("matches platform names without caring about case", () => {
@@ -20,11 +20,6 @@ describe("template library filters", () => {
     expect(counts.get("beauty")).toBe(2);
     expect(counts.get("fashion")).toBe(1);
     expect(counts.get("ecommerce")).toBeUndefined();
-  });
-
-  it("turns a keyword dump into a short title", () => {
-    expect(templateDisplayName("Skincare Still Life")).toBe("Skincare Still Life");
-    expect(templateDisplayName("eyeliner, makeup, beauty, make-up, cosmetics, brush")).toBe("Eyeliner makeup beauty");
   });
 
   it("labels update time from the record timestamp", () => {

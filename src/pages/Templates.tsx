@@ -6,11 +6,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useAIContext } from "@/contexts/AIContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { setPendingEditorTemplate } from "@/lib/templateEditorSession";
-import { loadLibraryTemplates } from "@/services/templates/publishLibrary";
+import { withStockStarter } from "@/services/templates/stockStarter";
 import type { TemplateRecord } from "@/services/templates/types";
 import { normalizeTemplateCategory } from "@/utils/templateCategories";
 import {
@@ -21,14 +22,14 @@ import {
   matchesFormat,
   matchesPlatform,
   relativeUpdated,
-  templateDisplayName,
 } from "./templatesLibrary";
 import {
-  Search, Sparkles, Heart, AlertTriangle, RefreshCw, Bell,
+  Search, Sparkles, Heart, X, AlertTriangle, RefreshCw, Bell,
   Facebook, Instagram, Linkedin, Youtube, LayoutGrid, SlidersHorizontal,
   ShoppingBag, Shirt, UtensilsCrossed, Home, Dumbbell, Laptop, ChevronDown,
 } from "lucide-react";
 
+const PAGE_SIZE = 6;
 const FAV_KEY = "advista_template_favorites";
 const RECENT_KEY = "advista.editor.recentTemplateIds";
 
@@ -95,29 +96,27 @@ function PlatformMark({ name, className = "h-3.5 w-3.5" }: { name: string; class
 }
 
 function TemplatePoster({ t, compact = false, className = "" }: { t: Row; compact?: boolean; className?: string }) {
-  const sources = [t.preview_url, t.thumbnail_url].filter((src, index, all): src is string => Boolean(src) && all.indexOf(src) === index);
-  const [index, setIndex] = useState(0);
-  const src = sources[index];
-  if (src) {
+  const [failed, setFailed] = useState(false);
+  const src = t.preview_url || t.thumbnail_url;
+  if (src && !failed) {
     return (
       <img
         src={src}
         alt=""
         loading="lazy"
-        onError={() => setIndex((current) => current + 1)}
+        onError={() => setFailed(true)}
         className={`h-full w-full object-cover ${className}`}
       />
     );
   }
   const tone = POSTER_TONE[normalizeTemplateCategory(t.category)] || "bg-[#2C3140]";
-  const title = templateDisplayName(t.name);
   if (compact) {
     return <div className={`h-full w-full ${tone} ${className}`} />;
   }
   return (
     <div className={`flex h-full w-full flex-col justify-end bg-gradient-to-b from-white/10 to-black/20 p-3 text-white ${tone} ${className}`}>
       <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/75">{t.platform || "Template"}</p>
-      <p className="mt-1 line-clamp-3 text-sm font-semibold leading-snug">{title}</p>
+      <p className="mt-1 line-clamp-3 text-sm font-semibold leading-snug">{t.name}</p>
     </div>
   );
 }
@@ -135,6 +134,8 @@ export default function Templates() {
   const [format, setFormat] = useState("All");
   const [filterOpen, setFilterOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [ctxDismissed, setCtxDismissed] = useState(false);
+  const [visible, setVisible] = useState(PAGE_SIZE);
   const [recentIds] = useState<string[]>(() => readIds(RECENT_KEY));
 
   useEffect(() => {
@@ -144,13 +145,23 @@ export default function Templates() {
 
   const { data, isLoading, error, refetch, isFetching } = useQuery<Row[], Error>({
     queryKey: ["templates-library"],
-    queryFn: () => loadLibraryTemplates() as Promise<Row[]>,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("templates")
+        .select("*")
+        .eq("is_active", true)
+        .eq("review_status", "approved")
+        .order("popularity_score", { ascending: false });
+      if (error) return withStockStarter<Row>([], true);
+      return withStockStarter((data ?? []) as unknown as Row[]);
+    },
     staleTime: 60_000,
   });
 
   const ctxCategory = effectiveContext?.active_category ?? null;
   const ctxGoal = effectiveContext?.current_goal ?? effectiveContext?.active_objective ?? null;
   const ctxPlatform = (effectiveContext as { active_platform?: string } | null)?.active_platform ?? null;
+  const ctxActive = !ctxDismissed && Boolean(ctxCategory || ctxGoal);
 
   const scored = useMemo<Scored[]>(() => {
     const rows = data ?? [];
@@ -162,7 +173,6 @@ export default function Templates() {
         if (ctxPlatform && t.platform?.toLowerCase() === String(ctxPlatform).toLowerCase()) score += 20;
         const brandReady = t.brand_compatible === true;
         if (brandReady) score += 5;
-        if (!t.preview_url && !t.thumbnail_url) score -= 50;
         return { t, score, brandReady };
       })
       .sort((a, b) => b.score - a.score);
@@ -171,6 +181,8 @@ export default function Templates() {
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return scored.filter(({ t }) => {
+      if (ctxActive && ctxCategory && normalizeTemplateCategory(t.category) !== normalizeTemplateCategory(String(ctxCategory))) return false;
+      if (ctxActive && ctxGoal && t.objective?.toLowerCase() !== String(ctxGoal).toLowerCase()) return false;
       if (category !== "All" && normalizeTemplateCategory(t.category) !== category) return false;
       if (!matchesPlatform(t.platform, platform)) return false;
       if (!matchesFormat(t.format, format)) return false;
@@ -179,7 +191,9 @@ export default function Templates() {
         .filter(Boolean).join(" ").toLowerCase();
       return haystack.includes(q);
     });
-  }, [scored, search, category, platform, format]);
+  }, [scored, search, category, platform, format, ctxActive, ctxCategory, ctxGoal]);
+
+  useEffect(() => { setVisible(PAGE_SIZE); }, [search, category, platform, format, ctxActive]);
 
   const counts = useMemo(() => categoryCounts((data ?? []).map((t) => t.category)), [data]);
   const extraPlatforms = useMemo(() => {
@@ -193,7 +207,7 @@ export default function Templates() {
   }, [data]);
 
   const featured = filtered.slice(0, 3);
-  const popular = filtered;
+  const popular = filtered.slice(0, visible);
   const recent = useMemo(() => {
     const byId = new Map((data ?? []).map((t) => [t.id, t]));
     const opened = recentIds.map((id) => byId.get(id)).filter((t): t is Row => Boolean(t));
@@ -214,6 +228,7 @@ export default function Templates() {
     setCategory("All");
     setPlatform("All");
     setFormat("All");
+    setCtxDismissed(true);
   };
 
   return (
@@ -284,6 +299,15 @@ export default function Templates() {
           </NavLink>
         </div>
       </header>
+
+      {ctxActive && (
+        <div className="mt-4 flex w-fit items-center gap-2 rounded-full bg-primary/15 px-3 py-1.5 text-xs font-medium text-primary">
+          Filtered by {[ctxCategory, ctxGoal].filter(Boolean).join(" · ")}
+          <button type="button" aria-label="Clear context filter" onClick={() => setCtxDismissed(true)}>
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
 
       <div className="chip-row mt-5 flex w-full max-w-full gap-2 overflow-x-auto pb-1">
         {LIBRARY_PLATFORMS.map((item) => {
@@ -397,7 +421,15 @@ export default function Templates() {
       <section className="mt-8">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-base font-semibold text-foreground">Popular Templates</h2>
-          {data && <p className="text-sm text-muted-foreground">{filtered.length} {filtered.length === 1 ? "template" : "templates"}</p>}
+          {filtered.length > PAGE_SIZE && (
+            <button
+              type="button"
+              onClick={() => setVisible((count) => count >= filtered.length ? PAGE_SIZE : filtered.length)}
+              className="text-sm font-medium text-primary"
+            >
+              {visible >= filtered.length ? "Show less" : "View all"}
+            </button>
+          )}
         </div>
 
         {error ? (
@@ -448,7 +480,7 @@ export default function Templates() {
                   )}
                 </button>
                 <div className="flex items-start justify-between gap-2 px-1 pb-1 pt-2.5">
-                  <p className="line-clamp-2 text-sm font-medium text-foreground">{templateDisplayName(t.name)}</p>
+                  <p className="line-clamp-2 text-sm font-medium text-foreground">{t.name}</p>
                   <button
                     type="button"
                     aria-label={favs.has(t.id) ? "Remove favorite" : "Save template"}
@@ -486,7 +518,7 @@ export default function Templates() {
                   <TemplatePoster t={t} compact />
                 </span>
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-foreground">{templateDisplayName(t.name)}</span>
+                  <span className="block truncate text-sm font-medium text-foreground">{t.name}</span>
                   <span className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
                     {t.platform && <PlatformMark name={t.platform} className="h-3 w-3" />}
                     {recent.fromEditor ? "Opened in the editor" : relativeUpdated(t.updated_at)}
