@@ -292,15 +292,42 @@ function buildTemplateJSON(item: StockItem, W: number, H: number) {
   };
 }
 
-function toTemplateRow(item: StockItem, category: string | null, userId: string, publish = false) {
-  const { format, width, height } = pickFormat(item.width, item.height);
+function chosenArtboard(format: string | null | undefined) {
+  if (format === "landscape") return { format: "landscape", width: 1200, height: 628 };
+  if (format === "story") return { format: "story", width: 1080, height: 1920 };
+  if (format === "square") return { format: "square", width: 1080, height: 1080 };
+  return null;
+}
+
+const IMAGE_HOSTS = ["images.pexels.com", "images.unsplash.com", "pixabay.com", "cdn.pixabay.com"];
+
+function acceptCatalog(raw: unknown): Array<StockItem & { category?: string; format?: string }> {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((item) => {
+    if (!item || typeof item !== "object") return false;
+    const row = item as StockItem & { category?: string; format?: string };
+    if (!["pexels", "unsplash", "pixabay"].includes(row.provider)) return false;
+    if (!/^[A-Za-z0-9_-]{1,40}$/.test(String(row.source_id ?? ""))) return false;
+    if (!row.image_url || !row.name) return false;
+    try {
+      const host = new URL(row.image_url).hostname;
+      if (!IMAGE_HOSTS.some((allowed) => host === allowed || host.endsWith(`.${allowed}`))) return false;
+    } catch {
+      return false;
+    }
+    return true;
+  }).slice(0, 40) as Array<StockItem & { category?: string; format?: string }>;
+}
+
+function toTemplateRow(item: StockItem, category: string | null, userId: string, publish = false, formatName?: string | null) {
+  const { format, width, height } = chosenArtboard(formatName) ?? pickFormat(item.width, item.height);
   return {
     name: item.name,
     description: item.author
       ? `Photo by ${item.author}${item.provider === "unsplash" ? " on Unsplash" : ` on ${item.provider === "pexels" ? "Pexels" : "Pixabay"}`}`
       : null,
     category,
-    platform: format === "story" ? "Instagram Story" : "Instagram",
+    platform: format === "story" ? "Instagram Story" : format === "landscape" ? "Facebook" : "Instagram",
     objective: "awareness",
     format,
     width,
@@ -407,11 +434,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (mode === "import" || mode === "seed") {
+    if (mode === "import" || mode === "seed" || mode === "catalog") {
       let items: StockItem[] = [];
       let categoryOf = new Map<string, string | null>();
+      const formatOf = new Map<string, string | null>();
 
-      if (mode === "import") {
+      if (mode === "catalog") {
+        const accepted = acceptCatalog(body.items);
+        if (!accepted.length) return json({ error: "items is required" }, 400);
+        items = accepted;
+        accepted.forEach((item) => {
+          const key = `${item.provider}:${item.source_id}`;
+          categoryOf.set(key, item.category ? String(item.category) : null);
+          formatOf.set(key, item.format ? String(item.format) : null);
+        });
+      } else if (mode === "import") {
         items = (Array.isArray(body.items) ? body.items : []) as StockItem[];
         if (!items.length) return json({ error: "items is required" }, 400);
         items = items.slice(0, 60);
@@ -450,7 +487,13 @@ Deno.serve(async (req) => {
       }
 
       const rows = fresh.map((i) =>
-        toTemplateRow(i, categoryOf.get(`${i.provider}:${i.source_id}`) ?? null, userData.user.id, mode === "seed")
+        toTemplateRow(
+          i,
+          categoryOf.get(`${i.provider}:${i.source_id}`) ?? null,
+          userData.user.id,
+          mode === "seed" || mode === "catalog",
+          formatOf.get(`${i.provider}:${i.source_id}`),
+        )
       );
 
       const { data: inserted, error: insErr } = await admin

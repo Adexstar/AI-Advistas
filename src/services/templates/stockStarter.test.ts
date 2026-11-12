@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { artboardFor, buildStockTemplateJSON, isStockTemplateId } from "./stockLayout";
-import { stockStarterTemplates, withStockStarter } from "./stockStarter";
+import { stockCatalogItems, stockStarterTemplates, withStockStarter } from "./stockStarter";
 import { suggestionsForCampaign } from "@/components/campaigns/CampaignRecommendations";
 import type { LearnedSuggestion } from "@/services/ai/suggestionLearning";
 
@@ -20,10 +20,28 @@ describe("stock starter templates", () => {
     }
   });
 
-  it("uses stock templates only when the library is empty", () => {
-    expect(withStockStarter([{ id: "db-1" }])).toEqual([{ id: "db-1" }]);
+  it("keeps saved templates and adds the stock designs that are missing", () => {
+    const saved = { id: "db-1", source: "pexels", source_id: "1", format: "square", preview_url: "https://example.com/saved.jpg" };
+    const merged = withStockStarter([saved]);
+    expect(merged[0]).toEqual(saved);
+    expect(merged).toHaveLength(stockStarterTemplates.length + 1);
     expect(withStockStarter([])).toHaveLength(stockStarterTemplates.length);
-    expect(withStockStarter(null)).toHaveLength(stockStarterTemplates.length);
+    expect(withStockStarter(null, true)).toHaveLength(stockStarterTemplates.length);
+    const categories = new Set(stockStarterTemplates.map((item) => item.category));
+    for (const category of ["Beauty", "Fashion", "Restaurant & Food", "Real Estate", "Fitness", "E-commerce", "SaaS & Technology"]) {
+      expect(categories.has(category)).toBe(true);
+    }
+  });
+
+  it("sends the catalog to the import API as Pexels photos", () => {
+    const items = stockCatalogItems();
+    expect(items).toHaveLength(stockStarterTemplates.length);
+    for (const item of items) {
+      expect(item.provider).toBe("pexels");
+      expect(item.image_url).toContain("https://images.pexels.com/");
+      expect(item.category).toBeTruthy();
+      expect(["square", "story", "landscape"]).toContain(item.format);
+    }
   });
 
   it("cover-fits the photo onto the chosen artboard", () => {

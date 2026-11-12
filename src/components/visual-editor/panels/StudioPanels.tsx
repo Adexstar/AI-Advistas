@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas as FabricCanvas, Rect, Circle as FCircle, Triangle, Line, Polygon, Group } from 'fabric';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { loadLibraryTemplates } from '@/services/templates/publishLibrary';
 import { signedMediaUrl } from '@/lib/mediaUrl';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -124,14 +125,8 @@ export const TemplatesPanel: React.FC<{
   const { data, isLoading, error } = useQuery({
     queryKey: ['editor-templates'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('templates')
-        .select('id,name,description,category,platform,preview_url,thumbnail_url,template_json,width,height,popularity_score')
-        .eq('is_active', true)
-        .order('popularity_score', { ascending: false })
-        .limit(120);
-      if (error) throw error;
-      return (data ?? []) as unknown as StudioTemplate[];
+      const rows = await loadLibraryTemplates();
+      return rows as unknown as StudioTemplate[];
     },
   });
 
