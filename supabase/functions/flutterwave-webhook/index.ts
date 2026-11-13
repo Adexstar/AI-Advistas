@@ -1,106 +1,91 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { createClient } from "npm:@supabase/supabase-js@2"
+import { reconcileCharge } from "../_shared/reconcile.ts"
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, verif-hash" } })
   }
+
+  const secretHash = Deno.env.get("FLUTTERWAVE_SECRET_HASH")
+  const signature = req.headers.get("verif-hash")
+  if (!secretHash || !signature || signature !== secretHash) {
+    return new Response("Unauthorized", { status: 401 })
+  }
+
+  const secret = Deno.env.get("FLUTTERWAVE_SECRET_KEY")
+  if (!secret) return new Response("Payments are not configured", { status: 503 })
 
   try {
     const payload = await req.json()
-    console.log('Flutterwave webhook received:', payload)
-
-    // Verify webhook signature (implement based on Flutterwave docs)
-    const secretHash = Deno.env.get('FLUTTERWAVE_SECRET_HASH')
-    const signature = req.headers.get('verif-hash')
-    
-    if (!signature || signature !== secretHash) {
-      console.error('Invalid webhook signature')
-      return new Response('Unauthorized', { status: 401 })
-    }
-
-    // Handle successful payment
-    if (payload.event === 'charge.completed' && payload.data.status === 'successful') {
-      const { tx_ref, customer, meta, amount } = payload.data
-      
-      console.log('Processing successful payment:', { tx_ref, customer, meta, amount })
-
-      // Create Supabase client with service role
-      const supabase = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      )
-
-      const user_id = meta.user_id
-      const plan = meta.plan
-      const interval = meta.interval
-
-      // Calculate subscription period
-      const currentPeriodStart = new Date()
-      const currentPeriodEnd = new Date()
-      if (interval === 'monthly') {
-        currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1)
-      } else if (interval === 'yearly') {
-        currentPeriodEnd.setFullYear(currentPeriodEnd.getFullYear() + 1)
-      }
-
-      // Upsert subscription record
-      const { error: subscriptionError } = await supabase
-        .from('subscriptions')
-        .upsert({
-          user_id,
-          provider: 'flutterwave',
-          provider_subscription_id: tx_ref,
-          plan,
-          status: 'active',
-          current_period_start: currentPeriodStart.toISOString(),
-          current_period_end: currentPeriodEnd.toISOString(),
-        }, {
-          onConflict: 'user_id'
-        })
-
-      if (subscriptionError) {
-        console.error('Error updating subscription:', subscriptionError)
-        throw subscriptionError
-      }
-
-      // Reset usage counters for the user
-      const { error: usageError } = await supabase
-        .from('user_usage')
-        .upsert([
-          { user_id, feature: 'ai_generations', usage_count: 0 },
-          { user_id, feature: 'active_campaigns', usage_count: 0 },
-          { user_id, feature: 'template_downloads', usage_count: 0 },
-        ], {
-          onConflict: 'user_id,feature'
-        })
-
-      if (usageError) {
-        console.error('Error resetting usage:', usageError)
-      }
-
-      console.log('Subscription updated successfully for user:', user_id)
-    }
-
-    return new Response('OK', { 
-      headers: corsHeaders,
-      status: 200,
-    })
-
-  } catch (error) {
-    console.error('Webhook error:', error)
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'An error occurred' }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     )
+    const txRef = payload?.data?.tx_ref as string | undefined
+    const transactionId = payload?.data?.id
+
+    if (payload?.event === "subscription.cancelled" && txRef) {
+      const { data: session } = await admin.from("checkout_sessions").select("user_id").eq("tx_ref", txRef).maybeSingle()
+      if (session?.user_id) {
+        await admin.from("subscriptions").update({ status: "cancelled" }).eq("user_id", session.user_id).eq("provider_subscription_id", txRef)
+      }
+      return Response.json({ received: true })
+    }
+
+    if (payload?.event !== "charge.completed" || !txRef || transactionId == null) {
+      return Response.json({ ignored: true })
+    }
+
+    const { data: session } = await admin.from("checkout_sessions").select("*").eq("tx_ref", txRef).maybeSingle()
+    if (!session) return Response.json({ ignored: "Unknown checkout" })
+    if (session.status === "paid") return Response.json({ duplicate: true })
+
+    const verifyResponse = await fetch(`https://api.flutterwave.com/v3/transactions/${transactionId}/verify`, {
+      headers: { Authorization: `Bearer ${secret}` },
+    })
+    if (!verifyResponse.ok) return new Response("Could not verify the transaction", { status: 502 })
+    const verifiedBody = await verifyResponse.json()
+    const verified = verifiedBody?.data ?? {}
+    const decision = reconcileCharge(
+      { txRef: session.tx_ref, amount: Number(session.amount), currency: session.currency, plan: session.plan },
+      { status: verified.status, tx_ref: verified.tx_ref, amount: verified.amount, currency: verified.currency },
+    )
+
+    if (!decision.ok) {
+      await admin.from("checkout_sessions").update({
+        status: "rejected",
+        provider_transaction_id: String(transactionId),
+        failure_reason: decision.reason,
+        processed_at: new Date().toISOString(),
+      }).eq("tx_ref", txRef).eq("status", "pending")
+      return Response.json({ rejected: decision.reason })
+    }
+
+    const { data: locked } = await admin.from("checkout_sessions").update({
+      status: "paid",
+      provider_transaction_id: String(verified.id ?? transactionId),
+      processed_at: new Date().toISOString(),
+    }).eq("tx_ref", txRef).eq("status", "pending").select("tx_ref")
+    if (!locked?.length) return Response.json({ duplicate: true })
+
+    const periodStart = new Date()
+    const periodEnd = new Date(periodStart)
+    periodEnd.setMonth(periodEnd.getMonth() + 1)
+    const { error: subscriptionError } = await admin.from("subscriptions").upsert({
+      user_id: session.user_id,
+      provider: "flutterwave",
+      provider_subscription_id: txRef,
+      plan: session.plan,
+      status: "active",
+      current_period_start: periodStart.toISOString(),
+      current_period_end: periodEnd.toISOString(),
+    }, { onConflict: "user_id" })
+    if (subscriptionError) return new Response("Could not grant the plan", { status: 500 })
+
+    return Response.json({ granted: true })
+  } catch (error) {
+    console.error("flutterwave webhook", error)
+    return new Response("Webhook failed", { status: 500 })
   }
 })

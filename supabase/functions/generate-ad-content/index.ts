@@ -1,3 +1,4 @@
+import { consumeAiQuota, requireUser } from "../_shared/guard.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
@@ -11,6 +12,8 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+  const gate = await requireUser(req);
+  if (gate instanceof Response) return gate;
 
   try {
     const { product, platform, adType } = await req.json();
@@ -24,6 +27,8 @@ serve(async (req) => {
     if (!GEMINI_API_KEY) {
       throw new Error('Google Gemini API key not configured');
     }
+    const denied = await consumeAiQuota(gate.client);
+    if (denied) return denied;
 
     // Platform-specific tone and style
     const platformStyles = {
@@ -86,22 +91,16 @@ Format as JSON with keys: headline, body, cta, hashtags`;
       try {
         adContent = JSON.parse(jsonMatch[0]);
       } catch (e) {
-        // Fallback parsing if JSON is malformed
-        adContent = {
-          headline: "Discover Amazing " + product,
-          body: `Experience the best ${product} has to offer. Quality, innovation, and style come together in perfect harmony.`,
-          cta: "Shop Now",
-          hashtags: ["#" + product.replace(/\s+/g, ''), "#quality", "#innovation"]
-        };
+        return new Response(JSON.stringify({ success: false, error: "The copy provider returned an unreadable result." }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
     } else {
-      // Fallback if no JSON found
-      adContent = {
-        headline: "Discover Amazing " + product,
-        body: generatedText.substring(0, 200),
-        cta: "Learn More",
-        hashtags: ["#" + product.replace(/\s+/g, ''), "#amazing"]
-      };
+      return new Response(JSON.stringify({ success: false, error: "The copy provider did not return structured copy." }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     console.log('Generated ad content:', adContent);

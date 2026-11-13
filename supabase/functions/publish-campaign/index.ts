@@ -1,3 +1,4 @@
+import { requireUser } from "../_shared/guard.ts";
 // publish-campaign — server-side dispatcher for AdVista's Publishing Engine.
 // Routes to Meta, TikTok, or Google APIs (organic + paid). Each provider
 // returns 501 with the list of missing secrets until real credentials are set.
@@ -47,6 +48,8 @@ function stub(provider: string, extra: Record<string, unknown> = {}) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const gate = await requireUser(req);
+  if (gate instanceof Response) return gate;
   try {
     const body = (await req.json()) as PublishBody;
     if (!body?.platform) {

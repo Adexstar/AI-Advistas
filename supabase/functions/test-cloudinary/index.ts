@@ -1,3 +1,4 @@
+import { requireUser } from "../_shared/guard.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -7,6 +8,8 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const gate = await requireUser(req);
+  if (gate instanceof Response) return gate;
 
   try {
     const cloudName = Deno.env.get("CLOUDINARY_CLOUD_NAME");

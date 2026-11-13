@@ -1,3 +1,4 @@
+import { consumeAiQuota, requireUser } from "../_shared/guard.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.53.0';
@@ -16,6 +17,8 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+  const gate = await requireUser(req);
+  if (gate instanceof Response) return gate;
 
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -26,6 +29,8 @@ serve(async (req) => {
     if (!groqApiKey) {
       throw new Error('GROQ_API_KEY not configured');
     }
+    const denied = await consumeAiQuota(gate.client);
+    if (denied) return denied;
 
     // Create a detailed prompt for style generation
     const prompt = `Generate 3 distinct design style suggestions for:
@@ -100,32 +105,10 @@ serve(async (req) => {
       stylesSuggestion = JSON.parse(jsonString);
     } catch (parseError) {
       console.error('Failed to parse AI style response:', data.choices[0].message.content);
-      // Fallback style suggestions
-      stylesSuggestion = {
-        styles: [
-          {
-            name: "Professional Blue",
-            description: "Trust-building corporate style",
-            primaryColor: "hsl(210, 100%, 50%)",
-            secondaryColor: "hsl(45, 100%, 60%)",
-            fontFamily: "Inter"
-          },
-          {
-            name: "Vibrant Energy",
-            description: "Bold and engaging modern style",
-            primaryColor: "hsl(340, 85%, 55%)",
-            secondaryColor: "hsl(25, 90%, 55%)",
-            fontFamily: "Poppins"
-          },
-          {
-            name: "Elegant Minimal",
-            description: "Clean and sophisticated design",
-            primaryColor: "hsl(0, 0%, 20%)",
-            secondaryColor: "hsl(200, 10%, 85%)",
-            fontFamily: "Playfair Display"
-          }
-        ]
-      };
+      return new Response(JSON.stringify({ error: "The style provider returned an unreadable result." }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Get user ID from auth header

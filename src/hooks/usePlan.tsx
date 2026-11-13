@@ -131,42 +131,24 @@ export const usePlan = () => {
   };
 
   const incrementUsage = async (feature: keyof PlanLimits): Promise<boolean> => {
-    if (!user || !canUse(feature)) return false;
+    if (!user) return false;
 
     try {
-      const currentUsage = getUsageForFeature(feature);
-      
-      const { error } = await supabase
-        .from('user_usage')
-        .upsert({
-          user_id: user.id,
-          feature,
-          usage_count: currentUsage + 1,
-        }, {
-          onConflict: 'user_id,feature'
-        });
-
+      const { data, error } = await (supabase as unknown as { rpc: (fn: string, args: { p_feature: string }) => Promise<{ data: unknown; error: { message: string } | null }> }).rpc('consume_quota', { p_feature: feature });
       if (error) {
         console.error('Error incrementing usage:', error);
         return false;
       }
-
-      // Update local state
+      const result = (data ?? {}) as { allowed?: boolean; used?: number };
+      if (!result.allowed) return false;
+      const used = Number(result.used) || 0;
       setUsage(prev => {
         const updated = [...prev];
         const index = updated.findIndex(u => u.feature === feature);
-        if (index >= 0) {
-          updated[index] = { ...updated[index], usage_count: currentUsage + 1 };
-        } else {
-          updated.push({
-            feature,
-            usage_count: 1,
-            last_reset: new Date().toISOString(),
-          });
-        }
+        if (index >= 0) updated[index] = { ...updated[index], usage_count: used };
+        else updated.push({ feature, usage_count: used, last_reset: new Date().toISOString() });
         return updated;
       });
-
       return true;
     } catch (error) {
       console.error('Error incrementing usage:', error);

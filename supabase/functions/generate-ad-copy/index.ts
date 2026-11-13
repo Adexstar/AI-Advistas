@@ -1,3 +1,4 @@
+import { consumeAiQuota, requireUser } from "../_shared/guard.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.53.0';
@@ -16,6 +17,8 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+  const gate = await requireUser(req);
+  if (gate instanceof Response) return gate;
 
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -26,6 +29,8 @@ serve(async (req) => {
     if (!groqApiKey) {
       throw new Error('GROQ_API_KEY not configured');
     }
+    const denied = await consumeAiQuota(gate.client);
+    if (denied) return denied;
 
     // Create a detailed prompt for copy generation
     const prompt = `Generate compelling ad copy for:
@@ -90,17 +95,10 @@ serve(async (req) => {
       adCopy = JSON.parse(jsonString);
     } catch (parseError) {
       console.error('Failed to parse AI response:', data.choices[0].message.content);
-      // Fallback copy generation
-      adCopy = {
-        headline: `Discover ${productName}`,
-        subtitle: `Experience the best ${productName} has to offer`,
-        cta: "Learn More",
-        alternativeHeadlines: [
-          `Get ${productName} Today`,
-          `Try ${productName} Now`,
-          `${productName} Awaits`
-        ]
-      };
+      return new Response(JSON.stringify({ error: 'The copy provider returned an unreadable result. No placeholder copy was saved.' }), {
+        status: 502,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Get user ID from auth header

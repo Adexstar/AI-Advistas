@@ -1,3 +1,4 @@
+import { requireUser } from "../_shared/guard.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -21,6 +22,8 @@ async function cacheKey(input: unknown): Promise<string> {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const gate = await requireUser(req);
+  if (gate instanceof Response) return gate;
   const key = Deno.env.get("PEXELS_API_KEY");
   if (!key) {
     return new Response(JSON.stringify({ error: "PEXELS_API_KEY not configured", results: [] }), {

@@ -1,13 +1,18 @@
+import { consumeAiQuota, requireUser } from "../_shared/guard.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const gate = await requireUser(req);
+  if (gate instanceof Response) return gate;
   const key = Deno.env.get("LEONARDO_API_KEY");
   if (!key) {
     return new Response(JSON.stringify({ error: "LEONARDO_API_KEY not configured" }), {
       status: 501, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+  const denied = await consumeAiQuota(gate.client);
+  if (denied) return denied;
   try {
     const { prompt, width = 1024, height = 1024, modelId = "aa77f04e-3eec-4034-9c07-d0f619684628" } = await req.json();
     if (!prompt) throw new Error("prompt required");

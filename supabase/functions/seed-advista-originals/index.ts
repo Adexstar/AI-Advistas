@@ -1,3 +1,4 @@
+import { requireAdmin } from "../_shared/guard.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 import data from "./data.json" with { type: "json" };
@@ -25,6 +26,8 @@ type OriginalRow = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const gate = await requireAdmin(req);
+  if (gate instanceof Response) return gate;
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
