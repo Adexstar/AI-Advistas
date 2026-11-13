@@ -39,20 +39,23 @@ export const AIEngine = {
             : undefined,
         },
       });
-      if (error) throw error;
+      if (error || !data) throw error ?? new Error("AI copy is unavailable");
 
-      const copy = (data ?? {}) as Record<string, string>;
+      const copy = ((data as { copy?: Record<string, string> }).copy ?? data) as Record<string, string>;
+      if (!copy.headline && !copy.cta && !copy.body) {
+        throw new Error("AI copy is unavailable. The template text was left unchanged.");
+      }
       return {
-        ...fallback,
         headline: copy.headline ?? fallback.headline,
-        subheadline: copy.subheadline ?? fallback.subheadline,
-        body: copy.body ?? copy.description ?? fallback.body,
+        subheadline: copy.subtitle ?? copy.subheadline ?? fallback.subheadline,
+        body: copy.body ?? copy.subtitle ?? copy.description ?? fallback.body,
         cta: copy.cta ?? fallback.cta,
         offer: copy.offer ?? fallback.offer,
+        website: fallback.website,
+        phone: fallback.phone,
       };
     } catch (err) {
-      console.warn("[AIEngine] falling back to static copy", err);
-      return fallback;
+      throw err instanceof Error ? err : new Error("AI copy is unavailable. The template text was left unchanged.");
     }
   },
 };

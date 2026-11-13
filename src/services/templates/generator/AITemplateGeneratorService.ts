@@ -8,7 +8,7 @@ import type { BrandIdentity } from "@/services/ai/BrandService";
 import type { TemplateRecord, FabricTemplateJSON } from "@/services/templates/types";
 import { TemplateBlueprintService, type TemplateBlueprint } from "./TemplateBlueprintService";
 import { TemplateRenderingService } from "./TemplateRenderingService";
-import { MarketingCopyService, type GeneratedCopy } from "./MarketingCopyService";
+import { type GeneratedCopy } from "./MarketingCopyService";
 import { TemplateLearningService } from "./TemplateLearningService";
 
 export interface GenerateTemplateInput {
@@ -44,25 +44,16 @@ export const AITemplateGeneratorService = {
       campaignId: input.campaignId,
     });
 
-    // Ask the edge function to generate copy + pick a hero image URL.
-    let copy: GeneratedCopy = MarketingCopyService.fallback(blueprint);
-    let heroImageUrl: string | undefined;
-    let reasoning: string[] = [];
-    let confidence = 0.6;
-
-    try {
-      const { data, error } = await supabase.functions.invoke("generate-ai-template", {
-        body: { blueprint, prompt: input.prompt ?? null },
-      });
-      if (!error && data?.success) {
-        if (data.copy) copy = { ...copy, ...data.copy };
-        heroImageUrl = data.heroImageUrl ?? undefined;
-        reasoning = Array.isArray(data.reasoning) ? data.reasoning : reasoning;
-        if (typeof data.confidence === "number") confidence = data.confidence;
-      }
-    } catch (err) {
-      console.warn("[AITemplateGeneratorService] edge function failed, using fallback", err);
+    const { data, error } = await supabase.functions.invoke("generate-ai-template", {
+      body: { blueprint, prompt: input.prompt ?? null },
+    });
+    if (error || !data?.success || !data.copy?.headline || !data.copy?.cta) {
+      throw new Error(data?.error || error?.message || "AI template generation is unavailable. No placeholder copy was created.");
     }
+    const copy: GeneratedCopy = data.copy;
+    const heroImageUrl: string | undefined = data.heroImageUrl ?? undefined;
+    const reasoning: string[] = Array.isArray(data.reasoning) ? data.reasoning : [];
+    const confidence = typeof data.confidence === "number" ? data.confidence : 0;
 
     const json: FabricTemplateJSON = TemplateRenderingService.render(blueprint, copy, heroImageUrl);
     const now = new Date().toISOString();

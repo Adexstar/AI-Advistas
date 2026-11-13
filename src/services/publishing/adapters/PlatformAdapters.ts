@@ -9,6 +9,21 @@ import type {
   PublishResult,
 } from "../types";
 
+async function providerError(error: unknown, data: unknown): Promise<string> {
+  const body = data as { error?: string } | null;
+  if (body?.error) return body.error;
+  const context = (error as { context?: { json?: () => Promise<{ error?: string }> } } | null)?.context;
+  if (context && typeof context.json === "function") {
+    try {
+      const parsed = await context.json();
+      if (parsed?.error) return parsed.error;
+    } catch {
+      /* The client already consumed the body. */
+    }
+  }
+  return error instanceof Error ? error.message : "Publish failed";
+}
+
 function makeAdapter(
   id: string,
   kind: "social" | "paid",
@@ -18,10 +33,18 @@ function makeAdapter(
     id,
     kind,
     supports: (p) => platforms.includes(p.toLowerCase()),
-    // Availability is validated server-side by the edge function.
-    isConfigured: () => true,
+    isConfigured: () => false,
     async publish(asset: MarketingAsset, opts: PublishOptions = {}): Promise<PublishResult> {
       const publishedAt = new Date().toISOString();
+      if (kind === "paid") {
+        return {
+          adapter: id,
+          platform: asset.platform,
+          ok: false,
+          error: "Paid ads stay unavailable until that provider workflow is connected.",
+          publishedAt,
+        };
+      }
       const { data, error } = await supabase.functions.invoke("publish-campaign", {
         body: {
           platform: asset.platform,
@@ -32,11 +55,8 @@ function makeAdapter(
           budget: (opts as any).budget,
         },
       });
-      if (error) {
-        return { adapter: id, platform: asset.platform, ok: false, error: error.message, publishedAt };
-      }
-      if ((data as any)?.error) {
-        return { adapter: id, platform: asset.platform, ok: false, error: (data as any).error, publishedAt };
+      if (error || (data as { error?: string } | null)?.error) {
+        return { adapter: id, platform: asset.platform, ok: false, error: await providerError(error, data), publishedAt };
       }
       return {
         adapter: id,

@@ -58,7 +58,7 @@ export const PublishingService = {
     return PublishingValidator.validateMany(request.asset, request.targets.map((t) => t.platform));
   },
 
-  async publish(request: PublishRequest): Promise<PublishJobRow[]> {
+  async publish(request: PublishRequest): Promise<{ jobs: PublishJobRow[]; results: PublishResult[] }> {
     const userId = await currentUserId();
     const validation = await this.validate(request);
 
@@ -103,7 +103,11 @@ export const PublishingService = {
 
     // Immediate publish → dispatch now
     if (request.when === "now") {
-      await Promise.all((jobs ?? []).map((job) => this.dispatchJob(job as PublishJobRow, request.asset, request.options)));
+      const results = await Promise.all((jobs ?? []).map((job) => this.dispatchJob(job as PublishJobRow, request.asset, request.options)));
+      if (results.length > 0 && results.every((result) => !result.ok)) {
+        await supabase.from("campaigns").update({ status: "draft" }).eq("id", request.campaignId);
+      }
+      return { jobs: (jobs ?? []) as PublishJobRow[], results };
     } else {
       // Log scheduled/draft
       await Promise.all((jobs ?? []).map((job) =>
@@ -118,7 +122,7 @@ export const PublishingService = {
       ));
     }
 
-    return (jobs ?? []) as PublishJobRow[];
+    return { jobs: (jobs ?? []) as PublishJobRow[], results: [] };
   },
 
   async dispatchJob(job: PublishJobRow, asset: MarketingAsset, opts: PublishOptions = {}): Promise<PublishResult> {

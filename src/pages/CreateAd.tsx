@@ -190,6 +190,8 @@ export default function CreateAd() {
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [previewTab, setPreviewTab] = useState<'mobile' | 'desktop'>('mobile');
   const [previewPlatform, setPreviewPlatform] = useState('facebook_feed');
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
@@ -284,6 +286,8 @@ export default function CreateAd() {
     if (saveInFlight.current) return saveInFlight.current;
     const operation = (async () => {
     setSaving(true);
+    setSaveState('saving');
+    setSaveError(null);
     try {
       const draftFields = {
         name: values.name || 'Untitled Campaign',
@@ -333,9 +337,12 @@ export default function CreateAd() {
       creativeIdRef.current = creative.id;
       setCreativeId(creative.id);
       setLastSavedAt(new Date());
+      setSaveState('saved');
       if (!silent) toast.success('Draft saved');
       return id;
     } catch (e: any) {
+      setSaveState('failed');
+      setSaveError(e.message || 'Could not save this draft');
       if (!silent) toast.error(e.message || 'Failed to save draft');
       return null;
     } finally {
@@ -407,7 +414,7 @@ export default function CreateAd() {
     if (autosaveRef.current) clearTimeout(autosaveRef.current);
     autosaveRef.current = setTimeout(() => { void saveDraft(true); }, 4000);
     return () => { if (autosaveRef.current) clearTimeout(autosaveRef.current); };
-  }, [values.name, values.objective, values.budgetAmount, values.platforms.join(','), values.startDate, values.endDate]);
+  }, [values.name, values.objective, values.budgetAmount, values.platforms.join(','), values.startDate, values.endDate, values.headline, values.primaryText, values.descriptionCopy, values.cta, values.websiteUrl, values.mediaUrl, values.location, values.ageMin, values.ageMax, values.gender, values.interests]);
 
   const publish = handleSubmit(async () => {
     if (!values.name) { toast.error('Campaign name is required'); setStep(1); return; }
@@ -421,7 +428,7 @@ export default function CreateAd() {
         toast.error('Save the ad before publishing');
         return;
       }
-      await PublishingService.publish({
+      const outcome = await PublishingService.publish({
         campaignId: id,
         when: 'now',
         targets: values.platforms.map((platform) => ({
@@ -441,7 +448,9 @@ export default function CreateAd() {
           cta: values.cta,
         },
       });
-      toast.success('Publishing started');
+      const failed = outcome.results.filter((result) => !result.ok);
+      if (failed.length) toast.error(failed.map((result) => `${result.platform}: ${result.error ?? 'Unavailable'}`).join(' · '));
+      else toast.success('Published');
       navigate(`/campaigns/${id}`);
     } catch (e: any) {
       toast.error(e.message || 'Failed to publish campaign');
@@ -1037,10 +1046,15 @@ export default function CreateAd() {
             </Button>
             <div className="min-w-0">
               <h1 className="font-page-title text-foreground truncate">Create Ad</h1>
-              <p className="font-micro text-muted-foreground hidden sm:block">Build high-performing ads in minutes.</p>
+              <p className="font-micro text-muted-foreground hidden sm:block">
+                {saveState === 'saving' ? 'Saving…' : saveState === 'failed' ? (saveError || 'Save failed') : saveState === 'saved' ? 'Saved' : 'Build high-performing ads in minutes.'}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
+            <span className="font-micro text-muted-foreground" aria-live="polite">
+              {saveState === 'saving' ? 'Saving' : saveState === 'failed' ? 'Not saved' : saveState === 'saved' ? 'Saved' : ''}
+            </span>
             <button onClick={() => saveDraft()} disabled={saving}
               className="h-9 w-9 sm:w-auto sm:px-3 text-xs font-medium text-foreground border border-border rounded-lg hover:bg-muted/50 transition grid place-items-center sm:flex sm:items-center sm:gap-1.5">
               <Save className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Save Draft</span>

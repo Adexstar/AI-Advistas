@@ -24,40 +24,16 @@ interface PerformanceChartProps {
 }
 
 export const PerformanceChart = ({ timeRange, onTimeRangeChange, campaigns = [] }: PerformanceChartProps) => {
-  // Build a simple time series based on the selected timeRange.
-  const days = Number(timeRange) || 7;
-
   const data = useMemo(() => {
-    // initialize days entries
-    const points = Array.from({ length: days }).map((_, i) => ({
-      label: `${i + 1}`,
-      impressions: 0,
-      clicks: 0,
-      spent: 0,
-    }));
-
-    // spread campaign totals across points proportionally
-    const totals = campaigns.reduce(
-      (acc, c) => {
-        acc.impressions += c.impressions || 0;
-        acc.clicks += c.clicks || 0;
-        acc.spent += c.spent || 0;
-        return acc;
-      },
-      { impressions: 0, clicks: 0, spent: 0 }
-    );
-
-    for (let i = 0; i < days; i++) {
-      // simple wave distribution to make the chart look realistic
-      const factor = 0.6 + Math.sin((i / days) * Math.PI * 2) * 0.4 + Math.random() * 0.2;
-      points[i].impressions = Math.round((totals.impressions / days) * factor);
-      points[i].clicks = Math.round((totals.clicks / days) * factor) || Math.round((points[i].impressions || 0) * 0.02);
-      points[i].spent = Math.round((totals.spent / days) * factor);
-      points[i].label = `${i === 0 ? '1' : i + 1}`;
-    }
-
-    return points;
-  }, [campaigns, days]);
+    return campaigns
+      .filter((campaign) => campaign.date)
+      .map((campaign) => ({
+        label: new Date(campaign.date as string).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        impressions: campaign.impressions || 0,
+        clicks: campaign.clicks || 0,
+        spent: campaign.spent || 0,
+      }));
+  }, [campaigns]);
 
   const totals = useMemo(() => {
     return data.reduce(
@@ -94,6 +70,7 @@ export const PerformanceChart = ({ timeRange, onTimeRangeChange, campaigns = [] 
         </div>
       </CardHeader>
       <CardContent>
+        {data.length === 0 && <p className="mb-3 text-sm text-muted-foreground">No dated metrics yet. The chart stays empty until a platform sync writes real results.</p>}
         <div style={{ width: '100%', height: 320 }}>
           <ResponsiveContainer>
             <AreaChart data={data} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>

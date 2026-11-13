@@ -2,31 +2,47 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import {
+  addAsset,
+  addColor,
+  addFont,
+  applyBrandUpdate,
+  emptyBrandWrite,
+  readAssets,
+  readBrandKit,
+  readColors,
+  readFonts,
+  removeColor,
+  type BrandAssetItem,
+  type BrandColorItem,
+  type BrandFontItem,
+  type BrandKitRow,
+  type BrandKitView,
+} from '@/services/brand/brandKitDocument';
 
 export const BRAND_BUCKET = 'brand-assets';
 
-export type BrandKit = {
-  id: string;
-  user_id: string;
-  name: string;
-  industry: string | null;
-  website: string | null;
-  description: string | null;
-  primary_color: string;
-  secondary_color: string;
-  accent_color: string;
-  logo_url: string | null;
-  cover_image_url: string | null;
-  brand_score: number;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-};
-export type BrandColor = { id: string; brand_id: string; name: string | null; hex: string; rgb: string | null; is_primary: boolean };
-export type BrandFont = { id: string; brand_id: string; name: string; font_url: string | null; font_type: string | null; role: string | null };
-export type BrandAsset = { id: string; brand_id: string; name: string | null; asset_url: string; asset_type: string | null };
+export type BrandKit = BrandKitView;
+export type BrandColor = BrandColorItem;
+export type BrandFont = BrandFontItem;
+export type BrandAsset = BrandAssetItem;
 
 const sb: any = supabase;
+
+async function loadRow(id: string): Promise<BrandKitRow> {
+  const { data, error } = await sb
+    .from('brand_kits')
+    .select('id,user_id,name,logos,colors,fonts,created_at,updated_at')
+    .eq('id', id)
+    .single();
+  if (error) throw error;
+  return data as BrandKitRow;
+}
+
+async function saveDocument(id: string, write: { name: string; logos: unknown[]; colors: unknown[]; fonts: unknown[] }) {
+  const { error } = await sb.from('brand_kits').update(write).eq('id', id);
+  if (error) throw error;
+}
 
 export const useBrandKits = () => {
   const { user } = useAuth();
@@ -34,9 +50,13 @@ export const useBrandKits = () => {
     queryKey: ['brand-kits', user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
-      const { data, error } = await sb.from('brand_kits').select('*').eq('user_id', user!.id).order('created_at', { ascending: false });
+      const { data, error } = await sb
+        .from('brand_kits')
+        .select('id,user_id,name,logos,colors,fonts,created_at,updated_at')
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: false });
       if (error) throw error;
-      return (data || []) as BrandKit[];
+      return ((data || []) as BrandKitRow[]).map(readBrandKit);
     },
   });
 };
@@ -45,33 +65,21 @@ export const useBrandColors = (brandId?: string) =>
   useQuery({
     queryKey: ['brand-colors', brandId],
     enabled: !!brandId,
-    queryFn: async () => {
-      const { data, error } = await sb.from('brand_colors').select('*').eq('brand_id', brandId).order('created_at');
-      if (error) throw error;
-      return (data || []) as BrandColor[];
-    },
+    queryFn: async () => readColors(await loadRow(brandId!)),
   });
 
 export const useBrandFonts = (brandId?: string) =>
   useQuery({
     queryKey: ['brand-fonts', brandId],
     enabled: !!brandId,
-    queryFn: async () => {
-      const { data, error } = await sb.from('brand_fonts').select('*').eq('brand_id', brandId).order('created_at');
-      if (error) throw error;
-      return (data || []) as BrandFont[];
-    },
+    queryFn: async () => readFonts(await loadRow(brandId!)),
   });
 
 export const useBrandAssets = (brandId?: string) =>
   useQuery({
     queryKey: ['brand-assets', brandId],
     enabled: !!brandId,
-    queryFn: async () => {
-      const { data, error } = await sb.from('brand_assets').select('*').eq('brand_id', brandId).order('created_at', { ascending: false });
-      if (error) throw error;
-      return (data || []) as BrandAsset[];
-    },
+    queryFn: async () => readAssets(await loadRow(brandId!)),
   });
 
 export const useCreateBrandKit = () => {
@@ -81,13 +89,14 @@ export const useCreateBrandKit = () => {
   return useMutation({
     mutationFn: async (input: Partial<BrandKit>) => {
       if (!user) throw new Error('Not authenticated');
+      const write = emptyBrandWrite(input.name || 'Untitled brand', input);
       const { data, error } = await sb
         .from('brand_kits')
-        .insert({ ...input, user_id: user.id, brand_score: 40 })
-        .select()
+        .insert({ ...write, user_id: user.id })
+        .select('id,user_id,name,logos,colors,fonts,created_at,updated_at')
         .single();
       if (error) throw error;
-      return data as BrandKit;
+      return readBrandKit(data as BrandKitRow);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['brand-kits'] });
@@ -102,13 +111,16 @@ export const useUpdateBrandKit = () => {
   const { toast } = useToast();
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<BrandKit> }) => {
-      const { error } = await sb.from('brand_kits').update(updates).eq('id', id);
-      if (error) throw error;
+      const row = await loadRow(id);
+      await saveDocument(id, applyBrandUpdate(row, updates));
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['brand-kits'] });
+      qc.invalidateQueries({ queryKey: ['brand-colors', variables.id] });
+      qc.invalidateQueries({ queryKey: ['brand-assets', variables.id] });
       toast({ title: 'Saved' });
     },
+    onError: (e: any) => toast({ title: 'Could not save brand kit', description: e.message, variant: 'destructive' }),
   });
 };
 
@@ -133,21 +145,27 @@ export const useAddBrandColor = () => {
   return useMutation({
     mutationFn: async (input: { brand_id: string; hex: string; name?: string; is_primary?: boolean }) => {
       if (!user) throw new Error('Not authenticated');
-      const { error } = await sb.from('brand_colors').insert({ ...input, user_id: user.id });
-      if (error) throw error;
+      const row = await loadRow(input.brand_id);
+      await saveDocument(input.brand_id, addColor(row, input));
     },
-    onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ['brand-colors', v.brand_id] }),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ['brand-colors', v.brand_id] });
+      qc.invalidateQueries({ queryKey: ['brand-kits'] });
+    },
   });
 };
 
 export const useDeleteBrandColor = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id }: { id: string; brand_id: string }) => {
-      const { error } = await sb.from('brand_colors').delete().eq('id', id);
-      if (error) throw error;
+    mutationFn: async ({ id, brand_id }: { id: string; brand_id: string }) => {
+      const row = await loadRow(brand_id);
+      await saveDocument(brand_id, removeColor(row, id));
     },
-    onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ['brand-colors', v.brand_id] }),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ['brand-colors', v.brand_id] });
+      qc.invalidateQueries({ queryKey: ['brand-kits'] });
+    },
   });
 };
 
@@ -172,10 +190,13 @@ export const useAddBrandAsset = () => {
   return useMutation({
     mutationFn: async (input: { brand_id: string; asset_url: string; asset_type: string; name?: string }) => {
       if (!user) throw new Error('Not authenticated');
-      const { error } = await sb.from('brand_assets').insert({ ...input, user_id: user.id });
-      if (error) throw error;
+      const row = await loadRow(input.brand_id);
+      await saveDocument(input.brand_id, addAsset(row, input));
     },
-    onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ['brand-assets', v.brand_id] }),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ['brand-assets', v.brand_id] });
+      qc.invalidateQueries({ queryKey: ['brand-kits'] });
+    },
   });
 };
 
@@ -185,8 +206,8 @@ export const useAddBrandFont = () => {
   return useMutation({
     mutationFn: async (input: { brand_id: string; name: string; role: string; font_url?: string; font_type?: string }) => {
       if (!user) throw new Error('Not authenticated');
-      const { error } = await sb.from('brand_fonts').insert({ ...input, user_id: user.id });
-      if (error) throw error;
+      const row = await loadRow(input.brand_id);
+      await saveDocument(input.brand_id, addFont(row, input));
     },
     onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ['brand-fonts', v.brand_id] }),
   });

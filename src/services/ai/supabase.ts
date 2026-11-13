@@ -6,4 +6,5 @@ export const sb = supabase as unknown as {
   from: (table: string) => any;
   auth: typeof supabase.auth;
   rpc: (fn: string, params?: Record<string, unknown>) => Promise<{ data: any; error: any }>;
+  functions: { invoke: (name: string, options?: { body?: unknown }) => Promise<{ data: any; error: any }> };
 };

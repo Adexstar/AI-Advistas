@@ -120,8 +120,17 @@ export function CampaignPublishingTab({ campaign }: Props) {
         scheduledAt: when === "schedule" ? scheduledAt : undefined,
       });
     },
-    onSuccess: () => {
-      toast({ title: when === "now" ? "Publishing started" : when === "schedule" ? "Scheduled" : "Saved as draft" });
+    onSuccess: (outcome) => {
+      const failed = outcome.results.filter((result) => !result.ok);
+      if (when === "now" && failed.length) {
+        toast({
+          title: failed.length === outcome.results.length ? "Publishing unavailable" : "Some platforms were not published",
+          description: failed.map((result) => `${result.platform}: ${result.error ?? "Unavailable"}`).join(" "),
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: when === "now" ? "Published" : when === "schedule" ? "Scheduled" : "Saved as draft" });
+      }
       qc.invalidateQueries({ queryKey: ["publishing-jobs", campaign.id] });
       qc.invalidateQueries({ queryKey: ["publishing-history", campaign.id] });
       qc.invalidateQueries({ queryKey: ["campaign", campaign.id] });

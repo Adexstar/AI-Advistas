@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { groupMetricRows } from '@/services/analytics/timeBuckets';
 
 export type Range = 'daily' | 'weekly' | 'monthly';
 
@@ -63,43 +64,7 @@ export interface ActivityRow {
 // Storage cap per user (5 GB)
 export const STORAGE_CAP_BYTES = 5 * 1024 * 1024 * 1024;
 
-const groupAnalytics = (rows: AnalyticsRow[], range: Range) => {
-  const fmt = (d: Date) => {
-    if (range === 'daily') {
-      return d.toLocaleDateString('en-US', { weekday: 'short' });
-    }
-    if (range === 'weekly') {
-      const week = Math.ceil(d.getDate() / 7);
-      return `W${week}`;
-    }
-    return d.toLocaleDateString('en-US', { month: 'short' });
-  };
-
-  const buckets = new Map<string, { name: string; reach: number; clicks: number; conversions: number; revenue: number; order: number }>();
-  rows.forEach((r) => {
-    const d = new Date(r.recorded_at);
-    const key = fmt(d);
-    const existing = buckets.get(key);
-    const order = d.getTime();
-    if (existing) {
-      existing.reach += r.impressions;
-      existing.clicks += r.clicks;
-      existing.conversions += r.conversions;
-      existing.revenue += Number(r.revenue);
-      existing.order = Math.min(existing.order, order);
-    } else {
-      buckets.set(key, {
-        name: key,
-        reach: r.impressions,
-        clicks: r.clicks,
-        conversions: r.conversions,
-        revenue: Number(r.revenue),
-        order,
-      });
-    }
-  });
-  return Array.from(buckets.values()).sort((a, b) => a.order - b.order);
-};
+const groupAnalytics = (rows: AnalyticsRow[], range: Range) => groupMetricRows(rows, range);
 
 export const useDashboardData = (range: Range = 'daily') => {
   const { user } = useAuth();
