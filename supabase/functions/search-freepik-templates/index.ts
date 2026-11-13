@@ -1,3 +1,4 @@
+import { requireUser } from "../_shared/guard.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -16,6 +17,8 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+  const gate = await requireUser(req);
+  if (gate instanceof Response) return gate;
 
   try {
     const { query, page = 1, limit = 20 } = await req.json();

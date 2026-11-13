@@ -1,3 +1,4 @@
+import { consumeAiQuota, requireUser } from "../_shared/guard.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
@@ -10,6 +11,8 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+  const gate = await requireUser(req);
+  if (gate instanceof Response) return gate;
 
   try {
     const { product, platform, adContent } = await req.json();
@@ -23,6 +26,8 @@ serve(async (req) => {
     if (!OPENAI_API_KEY) {
       throw new Error('OpenAI API key not configured');
     }
+    const denied = await consumeAiQuota(gate.client);
+    if (denied) return denied;
 
     // Platform-specific image specifications
     const platformSpecs = {

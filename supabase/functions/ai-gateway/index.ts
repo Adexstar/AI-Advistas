@@ -1,3 +1,4 @@
+import { consumeAiQuota, requireUser } from "../_shared/guard.ts";
 // AI Gateway — routes AI requests to the appropriate model provider
 // Every AI request from the Marketing Brain flows through this function.
 // Supports OpenAI, Groq, Gemini, and Claude through interchangeable adapters.
@@ -33,6 +34,10 @@ serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+  const gate = await requireUser(req);
+  if (gate instanceof Response) return gate;
+  const denied = await consumeAiQuota(gate.client);
+  if (denied) return denied;
 
   try {
     const body: GatewayRequest = await req.json();

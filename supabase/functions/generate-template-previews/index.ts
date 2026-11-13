@@ -1,3 +1,4 @@
+import { requireAdmin } from "../_shared/guard.ts";
 // Generates preview images for AdVista Originals templates via Lovable AI
 // Gateway (google/gemini-3.1-flash-image), uploads the PNG to Cloudinary, and
 // writes ONLY the preview_url back to the templates row. Runs sequentially
@@ -90,6 +91,8 @@ async function uploadToCloudinary(b64: string, publicId: string): Promise<string
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const gate = await requireAdmin(req);
+  if (gate instanceof Response) return gate;
   try {
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const force = Boolean(body.force);

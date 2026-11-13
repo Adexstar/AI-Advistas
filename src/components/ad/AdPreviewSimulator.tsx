@@ -79,7 +79,7 @@ const AdPreviewSimulator = ({ adContent, isGenerating = false }: AdPreviewSimula
     const reach = Math.floor((base * audienceSize[0]) / 100);
     const engagement = Math.floor((reach * engagementRate[0]) / 100);
     const ctr = (engagementRate[0] / 10).toFixed(1);
-    const cpc = (0.5 + Math.random() * 1.5).toFixed(2);
+    const cpc = (0.4 + (100 - audienceSize[0]) / 100).toFixed(2);
     
     return { reach, engagement, ctr, cpc };
   };
@@ -286,7 +286,7 @@ const AdPreviewSimulator = ({ adContent, isGenerating = false }: AdPreviewSimula
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Est. CPC</span>
+                <span className="text-sm font-medium">Planning CPC</span>
               </div>
               <div className="text-2xl font-bold">${metrics.cpc}</div>
               <Badge variant="secondary" className="text-xs">

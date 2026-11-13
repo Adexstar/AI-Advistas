@@ -1,3 +1,4 @@
+import { consumeAiQuota, requireUser } from "../_shared/guard.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.53.0';
@@ -16,6 +17,8 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+  const gate = await requireUser(req);
+  if (gate instanceof Response) return gate;
 
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -26,6 +29,8 @@ serve(async (req) => {
     if (!groqApiKey) {
       throw new Error('GROQ_API_KEY not configured');
     }
+    const denied = await consumeAiQuota(gate.client);
+    if (denied) return denied;
 
     // Get user ID from auth header first
     const authHeader = req.headers.get('authorization');
@@ -131,20 +136,10 @@ serve(async (req) => {
       autoFillResult = JSON.parse(jsonString);
     } catch (parseError) {
       console.error('Failed to parse AI auto-fill response:', data.choices[0].message.content);
-      // Fallback auto-fill
-      autoFillResult = {
-        filledTemplate: {
-          headline: `Discover ${productName}`,
-          subtitle: `Experience the best ${productName} has to offer`,
-          cta: "Get Started",
-          description: `Transform your experience with ${productName}. Join thousands of satisfied customers today.`
-        },
-        suggestions: {
-          primaryColor: "hsl(210, 100%, 50%)",
-          secondaryColor: "hsl(45, 100%, 60%)",
-          fontFamily: "Inter"
-        }
-      };
+      return new Response(JSON.stringify({ error: "The copy provider returned an unreadable result. The template was left unchanged." }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Save AI suggestion to database if user is authenticated
@@ -252,15 +247,7 @@ Return a JSON object with content for each layer, plus styling suggestions:
     parsedContent = JSON.parse(aiContent);
   } catch (parseError) {
     console.error('Error parsing AI response:', parseError);
-    // Fallback parsing
-    parsedContent = {
-      layerContent: {},
-      suggestions: {
-        primaryColor: '#007bff',
-        secondaryColor: '#6c757d',
-        fontFamily: 'Arial'
-      }
-    };
+    throw new Error('The copy provider returned an unreadable result. The template was left unchanged.');
   }
 
   // Create filled template by updating layer content

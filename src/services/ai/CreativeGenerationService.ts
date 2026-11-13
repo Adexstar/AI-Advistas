@@ -19,74 +19,54 @@ export interface CreativeVariant {
   reasoning: string;
 }
 
+function variantsFromCopy(request: CreativeRequest, copy: Record<string, unknown>): CreativeVariant[] {
+  const headline = typeof copy.headline === 'string' ? copy.headline : '';
+  const subtitle = typeof copy.subtitle === 'string' ? copy.subtitle : typeof copy.body === 'string' ? copy.body : '';
+  const cta = typeof copy.cta === 'string' ? copy.cta : '';
+  const alternatives = Array.isArray(copy.alternativeHeadlines)
+    ? copy.alternativeHeadlines.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+    : [];
+  const pieces: Array<{ type: string; content: string }> = [];
+  if (request.type === 'headline') {
+    if (headline) pieces.push({ type: 'headline', content: headline });
+    alternatives.forEach((content) => pieces.push({ type: 'headline', content }));
+  } else if (request.type === 'cta') {
+    if (cta) pieces.push({ type: 'cta', content: cta });
+  } else if (request.type === 'body' || request.type === 'description') {
+    if (subtitle) pieces.push({ type: request.type, content: subtitle });
+  } else if (headline || subtitle || cta) {
+    pieces.push({ type: request.type, content: [headline, subtitle, cta].filter(Boolean).join('\n\n') });
+    alternatives.forEach((content) => pieces.push({ type: 'headline', content }));
+  }
+  const limit = request.count ?? pieces.length;
+  return pieces.slice(0, Math.max(limit, 1)).map((piece, index) => ({
+    id: `creative-${Date.now()}-${index}`,
+    type: piece.type,
+    content: piece.content,
+    reasoning: 'Returned by the copy provider. Nothing was filled in locally.',
+  }));
+}
+
 export const CreativeGenerationService = {
   async generate(request: CreativeRequest): Promise<CreativeVariant[]> {
-    const count = request.count ?? 3;
-    const variants: CreativeVariant[] = [];
-
-    for (let i = 0; i < count; i++) {
-      const variant = this.generateVariant(request, i);
-      variants.push(variant);
-    }
-
+    const productName = request.productName ?? request.brand?.name ?? '';
+    if (!productName.trim()) throw new Error('Add a product or brand name before generating copy.');
+    const { data, error } = await sb.functions.invoke('generate-ad-copy', {
+      body: {
+        productName,
+        templateType: request.type,
+        platform: request.platform ?? request.context?.active_platform ?? 'social',
+        targetAudience: request.context?.active_category ?? '',
+        additionalContext: [request.existingContent, ...(request.constraints ?? [])].filter(Boolean).join('\n'),
+      },
+    });
+    if (error) throw new Error(error.message || 'AI copy is unavailable');
+    const copy = (data as { copy?: Record<string, unknown> } | null)?.copy;
+    if (!copy) throw new Error('AI copy is unavailable. No placeholder copy was created.');
+    const variants = variantsFromCopy(request, copy).filter((variant) => variant.content.trim());
+    if (!variants.length) throw new Error('The copy provider returned an empty result.');
     await this.logGeneration(request, variants);
     return variants;
-  },
-
-  generateVariant(request: CreativeRequest, index: number): CreativeVariant {
-    const brandName = request.brand?.name ?? request.context?.brand_id ?? 'your brand';
-    const platform = request.platform ?? request.context?.active_platform ?? 'social media';
-    const product = request.productName ?? 'your product';
-
-    const content = this.mockContent(request.type, brandName, product, platform, index);
-    const reasoning = this.reasoning(request.type, index);
-
-    return {
-      id: `creative-${Date.now()}-${index}`,
-      type: request.type,
-      content,
-      reasoning,
-    };
-  },
-
-  mockContent(type: string, brand: string, product: string, platform: string, index: number): string {
-    const headlines = [
-      `Discover the Power of ${product} Today`,
-      `Transform Your ${product.split(' ').pop() ?? 'Experience'} with ${brand}`,
-      `Why Top Marketers Choose ${product}`,
-      `Unlock ${product} — The Smarter Way`,
-      `${product}: Built for Results, Backed by Data`,
-    ];
-    const ctas = [
-      'Get Started Free',
-      'Claim Your Offer',
-      'See It in Action',
-      'Learn More',
-      'Shop Now',
-    ];
-    const bodies = [
-      `${brand} helps you achieve more with ${product}. Trusted by thousands of marketers worldwide.`,
-      `Experience the next generation of ${product}. ${brand} delivers performance you can measure.`,
-      `Stop guessing. Start growing. ${product} from ${brand} gives you the insights you need.`,
-    ];
-
-    switch (type) {
-      case 'headline': return headlines[index % headlines.length];
-      case 'cta': return ctas[index % ctas.length];
-      case 'body':
-      case 'description': return bodies[index % bodies.length];
-      case 'full_ad': return `${headlines[index % headlines.length]}\n\n${bodies[index % bodies.length]}\n\n${ctas[index % ctas.length]}`;
-      default: return `AI-generated ${type} for ${brand} on ${platform}`;
-    }
-  },
-
-  reasoning(type: string, index: number): string {
-    const reasons = [
-      `Optimized for engagement based on ${type} best practices`,
-      `Tailored to platform-specific audience behavior patterns`,
-      `Designed to maximize conversion rate through persuasive framing`,
-    ];
-    return reasons[index % reasons.length];
   },
 
   async logGeneration(request: CreativeRequest, variants: CreativeVariant[]): Promise<void> {

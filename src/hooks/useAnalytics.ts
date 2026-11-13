@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { InsightService } from '@/services/analytics/InsightService';
+import { groupMetricRows } from '@/services/analytics/timeBuckets';
 
 export type AnalyticsRange = 'daily' | 'weekly' | 'monthly';
 
@@ -107,24 +108,14 @@ export function useAnalytics(range: AnalyticsRange = 'daily') {
   }, [analyticsRows, campaigns.length, range]);
 
   const performanceSeries = useMemo(() => {
-    const fmt = (d: Date) => {
-      if (range === 'daily') return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-      if (range === 'weekly') return `W${Math.ceil(d.getDate() / 7)}`;
-      return d.toLocaleDateString('en-US', { month: 'short' });
-    };
-    const buckets = new Map<string, { day: string; reach: number; clicks: number; conversions: number; revenue: number; order: number }>();
-    analyticsRows.forEach((r: any) => {
-      const d = new Date(r.recorded_at);
-      const key = fmt(d);
-      const existing = buckets.get(key) || { day: key, reach: 0, clicks: 0, conversions: 0, revenue: 0, order: d.getTime() };
-      existing.reach += Number(r.impressions || 0);
-      existing.clicks += Number(r.clicks || 0);
-      existing.conversions += Number(r.conversions || 0);
-      existing.revenue += Number(r.revenue || 0);
-      existing.order = Math.min(existing.order, d.getTime());
-      buckets.set(key, existing);
-    });
-    return Array.from(buckets.values()).sort((a, b) => a.order - b.order);
+    return groupMetricRows(analyticsRows, range).map((bucket) => ({
+      day: bucket.name,
+      reach: bucket.reach,
+      clicks: bucket.clicks,
+      conversions: bucket.conversions,
+      revenue: bucket.revenue,
+      order: bucket.order,
+    }));
   }, [analyticsRows, range]);
 
   const topCampaigns = useMemo(() =>

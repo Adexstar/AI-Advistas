@@ -12,27 +12,7 @@ const hours = Array.from({ length: 24 }, (_, i) => `${i}:00`);
 export const AdPerformanceHeatmap = ({ isLoading }: AdPerformanceHeatmapProps) => {
   const [metric, setMetric] = useState<Metric>("ctr");
 
-  // Generate demo matrix: 7 days x 24 hours
-  const data = useMemo(() => {
-    const rand = (min: number, max: number) => Math.random() * (max - min) + min;
-    const genFor = (m: Metric) =>
-      Array.from({ length: 7 }, () =>
-        Array.from({ length: 24 }, () => {
-          switch (m) {
-            case "ctr": return rand(0.2, 4.2); // %
-            case "clicks": return rand(10, 1200);
-            case "impressions": return rand(200, 10000);
-            case "conversions": return rand(0, 200);
-          }
-        })
-      );
-    return {
-      ctr: genFor("ctr"),
-      clicks: genFor("clicks"),
-      impressions: genFor("impressions"),
-      conversions: genFor("conversions"),
-    };
-  }, []);
+  const data = useMemo(() => ({ ctr: [] as number[][], clicks: [] as number[][], impressions: [] as number[][], conversions: [] as number[][] }), []);
 
   const maxByMetric = (m: Metric) => ({ ctr: 5, clicks: 1200, impressions: 10000, conversions: 200 })[m];
   const formatVal = (m: Metric, v: number) => (m === "ctr" ? `${v.toFixed(1)}%` : Math.round(v).toString());
@@ -41,7 +21,7 @@ export const AdPerformanceHeatmap = ({ isLoading }: AdPerformanceHeatmapProps) =
     <Card className="overflow-hidden">
       <CardHeader>
         <CardTitle>Ad Performance Heatmap</CardTitle>
-        <CardDescription>Time-based performance across the last 7 days</CardDescription>
+        <CardDescription>Hourly results appear after a connected platform syncs real metrics.</CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs value={metric} onValueChange={(v) => setMetric(v as Metric)}>
@@ -52,6 +32,9 @@ export const AdPerformanceHeatmap = ({ isLoading }: AdPerformanceHeatmapProps) =
             <TabsTrigger value="conversions" className="min-w-0 whitespace-normal">Conversions</TabsTrigger>
           </TabsList>
           <TabsContent value={metric} className="mt-4">
+            {data[metric].length === 0 ? (
+              <p className="text-sm text-muted-foreground">No hourly metrics yet.</p>
+            ) : (
             <div className="space-y-3">
               {/* Header with hour labels */}
               <div className="overflow-x-auto">
@@ -94,6 +77,7 @@ export const AdPerformanceHeatmap = ({ isLoading }: AdPerformanceHeatmapProps) =
                 <span>High</span>
               </div>
             </div>
+            )}
           </TabsContent>
         </Tabs>
       </CardContent>

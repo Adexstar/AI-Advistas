@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageBackButton } from "@/components/navigation/PageBackButton";
@@ -9,11 +10,21 @@ import { usePlan } from "@/hooks/usePlan";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { readCheckoutError } from "@/services/billing/checkoutError";
 
 const Billing = () => {
   const { user } = useAuth();
-  const { currentPlan, loading, getUsageForFeature, getLimitForFeature } = usePlan();
+  const { currentPlan, loading, getUsageForFeature, getLimitForFeature, refresh } = usePlan();
+  const [searchParams] = useSearchParams();
   const [upgrading, setUpgrading] = useState<string | null>(null);
+  const [paymentsUnavailable, setPaymentsUnavailable] = useState(false);
+  const returnedFromCheckout = searchParams.get('checkout') === 'return';
+
+  useEffect(() => {
+    if (returnedFromCheckout) void refresh();
+    // refresh is a new function each render; this should run once per return visit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [returnedFromCheckout]);
   
   const subscriptionPlans = [
     {
@@ -80,18 +91,33 @@ const Billing = () => {
         body: {
           plan: planKey,
           email: user.email,
-          name: user.user_metadata?.full_name || user.email?.split('@')[0]
+          name: user.user_metadata?.full_name || user.email?.split('@')[0],
+          returnOrigin: window.location.origin,
         }
       });
 
-      if (error) throw error;
+      if (data?.unavailable || (error && data?.error)) {
+        const failure = data?.unavailable || data?.error
+          ? { message: data.error || 'Payments are unavailable until Flutterwave is configured.', unavailable: Boolean(data.unavailable) }
+          : await readCheckoutError(error);
+        if (failure.unavailable) setPaymentsUnavailable(true);
+        toast.error(failure.message);
+        return;
+      }
+      if (error || !data?.checkout_url) {
+        const failure = error ? await readCheckoutError(error) : { message: 'Checkout did not return a payment link.', unavailable: false };
+        if (failure.unavailable) setPaymentsUnavailable(true);
+        toast.error(failure.message);
+        return;
+      }
 
-      // Redirect to Flutterwave checkout
-      window.open(data.checkout_url, '_blank');
+      window.location.assign(data.checkout_url);
       
     } catch (error) {
       console.error('Error creating checkout:', error);
-      toast.error('Failed to create checkout session. Please try again.');
+      const failure = await readCheckoutError(error);
+      if (failure.unavailable) setPaymentsUnavailable(true);
+      toast.error(failure.message);
     } finally {
       setUpgrading(null);
     }
@@ -114,6 +140,12 @@ const Billing = () => {
         <p className="text-muted-foreground mt-2">
           Keep credits, limits, and plan access aligned with how your team creates, launches, and operates campaigns.
         </p>
+        {returnedFromCheckout && (
+          <p className="mt-3 text-sm text-foreground">Payment received by the browser. The plan updates only after Flutterwave verifies the transaction.</p>
+        )}
+        {paymentsUnavailable && (
+          <p className="mt-3 text-sm text-destructive">Paid plans are unavailable until Flutterwave is configured and a test payment is verified.</p>
+        )}
         </div>
       </div>
 

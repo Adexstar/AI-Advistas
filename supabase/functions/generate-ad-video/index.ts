@@ -1,3 +1,4 @@
+import { consumeAiQuota, requireUser } from "../_shared/guard.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
@@ -12,6 +13,8 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+  const gate = await requireUser(req);
+  if (gate instanceof Response) return gate;
 
   try {
     const authHeader = req.headers.get('Authorization');
@@ -42,6 +45,8 @@ serve(async (req) => {
     if (!runwareApiKey) {
       throw new Error('RunAI API key not configured');
     }
+    const denied = await consumeAiQuota(gate.client);
+    if (denied) return denied;
 
     console.log('Generating video for product:', product, 'platform:', platform);
 
@@ -140,10 +145,6 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       success: false, 
       error: error instanceof Error ? error.message : 'An error occurred',
-      // Temporary placeholder for development
-      videoUrl: `https://via.placeholder.com/1920x1080/000000/ffffff?text=Video+Generation+Coming+Soon`,
-      thumbnailUrl: `https://via.placeholder.com/1920x1080/000000/ffffff?text=Video+Preview`,
-      message: "Video generation is being implemented. This is a placeholder."
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -24,7 +24,7 @@ export const BrandIntelligenceService = {
     try {
       const { data: brand, error: brandError } = await sb
         .from('brand_kits')
-        .select('*, brand_colors(*), brand_fonts(*)')
+        .select('id,name,logos,colors,fonts')
         .eq('id', brandId)
         .eq('user_id', userId)
         .single();
@@ -35,12 +35,7 @@ export const BrandIntelligenceService = {
         .select('*')
         .eq('brand_id', brandId)
         .eq('user_id', userId)
-        .single();
-
-      const { data: assets } = await sb
-        .from('brand_assets')
-        .select('id')
-        .eq('brand_id', brandId);
+        .maybeSingle();
 
       const { data: feedback } = await sb
         .from('ai_feedback')
@@ -50,8 +45,15 @@ export const BrandIntelligenceService = {
         .order('created_at', { ascending: false })
         .limit(100);
 
-      const colors = (brand as any).brand_colors?.map((c: any) => c.hex) ?? [];
-      const fontNames = (brand as any).brand_fonts?.map((f: any) => f.name ?? f.font_url) ?? [];
+      const colors = Array.isArray((brand as any).colors)
+        ? (brand as any).colors.map((c: any) => c?.hex).filter(Boolean)
+        : [];
+      const fontNames = Array.isArray((brand as any).fonts)
+        ? (brand as any).fonts.map((f: any) => f?.name ?? f?.font_url).filter(Boolean)
+        : [];
+      const logos = Array.isArray((brand as any).logos) ? (brand as any).logos : [];
+      const logoUrl = logos.find((item: any) => item?.asset_type === 'logo' && item.asset_url)?.asset_url ?? null;
+      const assetCount = logos.filter((item: any) => item?.asset_url && item.asset_type !== 'profile').length;
       const brandMemory = memory as CampaignMemory | null;
 
       const topHeadlines: string[] = [];
@@ -83,15 +85,16 @@ export const BrandIntelligenceService = {
         });
       }
 
+      const profile = logos.find((item: any) => item?.asset_type === 'profile') ?? {};
       return {
         id: brandId,
         name: (brand as any).name ?? 'Unknown Brand',
-        industry: (brand as any).industry ?? null,
-        tone: (brand as any).description ?? null,
+        industry: profile.industry ?? null,
+        tone: profile.description ?? null,
         colors,
         fonts: fontNames,
-        logoUrl: (brand as any).logo_url ?? null,
-        assetCount: assets?.length ?? 0,
+        logoUrl,
+        assetCount,
         memory: brandMemory,
         learning: {
           topHeadlines: [...new Set(topHeadlines)],

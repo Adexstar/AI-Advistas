@@ -1,3 +1,4 @@
+import { consumeAiQuota, requireUser } from "../_shared/guard.ts";
 // generate-ai-template — Layer 3D backend.
 // Input: a TemplateBlueprint (from AITemplateGeneratorService) + optional prompt.
 // Output: { copy: {headline, subheadline, body, cta, offer}, heroImageUrl,
@@ -17,6 +18,8 @@ interface Blueprint {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const gate = await requireUser(req);
+  if (gate instanceof Response) return gate;
 
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) {
@@ -24,6 +27,8 @@ Deno.serve(async (req) => {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+  const denied = await consumeAiQuota(gate.client);
+  if (denied) return denied;
 
   let body: { blueprint?: Blueprint; prompt?: string | null } = {};
   try { body = await req.json(); } catch { /* ignore */ }

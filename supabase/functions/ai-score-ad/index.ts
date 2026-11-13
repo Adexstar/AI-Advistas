@@ -1,3 +1,4 @@
+import { consumeAiQuota, requireUser } from "../_shared/guard.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
@@ -31,6 +32,8 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+  const gate = await requireUser(req);
+  if (gate instanceof Response) return gate;
 
   try {
     const { ad, adId } = await req.json() as { ad: AdData; adId?: string };
@@ -72,8 +75,20 @@ serve(async (req) => {
 
     // Compute heuristic score
     const heuristicScore = computeHeuristicScore(ad);
-    
-    // Get AI model score
+    if (!Deno.env.get('OPENAI_API_KEY')) {
+      return new Response(JSON.stringify({
+        score: {
+          qualityScore: heuristicScore,
+          ctrEstimate: null,
+          confidence: null,
+          suggestions: [...getHeuristicSuggestions(ad), 'AI scoring is unavailable. This is a checklist, not a predicted result.'],
+          aiAvailable: false,
+        },
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const denied = await consumeAiQuota(gate.client);
+    if (denied) return denied;
+
     const aiScore = await getAIScore(ad);
     
     // Combine scores
@@ -168,15 +183,7 @@ function getHeuristicSuggestions(ad: AdData): string[] {
 
 async function getAIScore(ad: AdData): Promise<SimulatorScore> {
   const openAIKey = Deno.env.get('OPENAI_API_KEY');
-  if (!openAIKey) {
-    // Fallback to heuristic-only scoring
-    return {
-      qualityScore: 75,
-      ctrEstimate: 2.5,
-      confidence: 0.6,
-      suggestions: ['Unable to get AI analysis - using baseline scoring']
-    };
-  }
+  if (!openAIKey) throw new Error('AI scoring is unavailable');
 
   try {
     const prompt = `You are an ad-quality assessor. Given the ad data below, return JSON with keys:
@@ -218,10 +225,13 @@ Return only valid JSON with no additional text.`;
     
     try {
       const parsed = JSON.parse(content);
+      if (typeof parsed.qualityScore !== 'number' || typeof parsed.ctrEstimate !== 'number') {
+        throw new Error('AI scoring returned an incomplete result');
+      }
       return {
-        qualityScore: Math.max(0, Math.min(100, parsed.qualityScore || 75)),
-        ctrEstimate: Math.max(0, Math.min(10, parsed.ctrEstimate || 2.5)),
-        confidence: Math.max(0, Math.min(1, parsed.confidence || 0.7)),
+        qualityScore: Math.max(0, Math.min(100, parsed.qualityScore)),
+        ctrEstimate: Math.max(0, Math.min(10, parsed.ctrEstimate)),
+        confidence: Math.max(0, Math.min(1, Number(parsed.confidence) || 0)),
         suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions.slice(0, 3) : []
       };
     } catch (parseError) {
@@ -230,12 +240,6 @@ Return only valid JSON with no additional text.`;
     }
   } catch (error) {
     console.error('AI scoring error:', error);
-    // Fallback scoring
-    return {
-      qualityScore: 75,
-      ctrEstimate: 2.5,
-      confidence: 0.6,
-      suggestions: ['AI analysis unavailable - using baseline scoring']
-    };
+    throw error instanceof Error ? error : new Error('AI scoring is unavailable');
   }
 }

@@ -8,7 +8,7 @@ export const TopCampaignsWidget = () => {
     .map(campaign => ({
       name: campaign.name,
       spend: `$${campaign.budget.toLocaleString()}`,
-      performance: Math.floor(Math.random() * 30 + 70) + '%'
+      performance: campaign.status || 'No results yet'
     }));
 
   if (topCampaigns.length === 0) {
@@ -27,7 +27,7 @@ export const TopCampaignsWidget = () => {
             <div className="text-sm font-medium truncate">{campaign.name}</div>
             <div className="text-xs text-muted-foreground">{campaign.spend}</div>
           </div>
-          <div className="text-sm font-bold text-green-600">{campaign.performance}</div>
+          <div className="text-sm text-muted-foreground">{campaign.performance}</div>
         </div>
       ))}
     </div>

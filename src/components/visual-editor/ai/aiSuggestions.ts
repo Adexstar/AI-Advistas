@@ -20,6 +20,11 @@ export interface AISuggestion {
 }
 
 const clamp = (n: number, lo = 60, hi = 98) => Math.max(lo, Math.min(hi, Math.round(n)));
+const stableConfidence = (action: string, base: number) => {
+  const extra = Array.from(action).reduce((sum, char) => sum + char.charCodeAt(0), 0) % 12;
+  return clamp(base + extra);
+};
+const NOT_MEASURED = "Not measured — preview before applying";
 
 const withCtx = (ctx: AIContextInput, extra: string[] = []) => {
   const base = [
@@ -111,8 +116,8 @@ export function buildTextSuggestion(
         : action.includes("Tone")
         ? `Adjusted voice to match ${action.replace(" Tone", "")} category conventions.`
         : "Refined to lift clarity, rhythm and conversion signal.",
-    confidence: clamp(78 + Math.random() * 20),
-    estImprovement: action === "Improve Headline" ? "+12% CTR" : action === "High Conversion Version" ? "+18% CVR" : "+8% engagement",
+    confidence: stableConfidence(action, 78),
+    estImprovement: NOT_MEASURED,
     basedOn: withCtx(ctx, ["Winning historical creatives", "Copywriting heuristics"]),
     before: { type: "text", value: currentText || "(empty)" },
     after: { type: "text", value: after },
@@ -141,8 +146,8 @@ export function buildImageSuggestion(action: string, ctx: AIContextInput): AISug
     action,
     title: action,
     reason: `${action} tuned for ${ctx.category || "your category"} on ${ctx.platform || "current platform"}.`,
-    confidence: clamp(72 + Math.random() * 24),
-    estImprovement: "+9% attention score",
+    confidence: stableConfidence(action, 72),
+    estImprovement: NOT_MEASURED,
     basedOn: withCtx(ctx, ["Brand palette", "Visual composition rules"]),
     before: { type: "image", value: "current" },
     after: { type: "image", value: `preview:${action}` },
@@ -175,8 +180,8 @@ export function buildVideoSuggestion(action: string, ctx: AIContextInput): AISug
       action.includes("TikTok") || action.includes("Instagram") || action.includes("Facebook")
         ? "Reformats aspect ratio, pacing and safe zones to the platform's top-performing pattern."
         : `${action} improves the first 3 seconds — the biggest lever for view-through.`,
-    confidence: clamp(75 + Math.random() * 22),
-    estImprovement: "+15% view-through",
+    confidence: stableConfidence(action, 75),
+    estImprovement: NOT_MEASURED,
     basedOn: withCtx(ctx, ["Hook analytics", "Platform pacing rules"]),
     before: { type: "video", value: "current" },
     after: { type: "video", value: `preview:${action}` },
@@ -202,8 +207,8 @@ export function buildLayoutSuggestion(action: string, ctx: AIContextInput): AISu
     action,
     title: action,
     reason: `${action} applied using ${ctx.category || "category"} conversion patterns.`,
-    confidence: clamp(80 + Math.random() * 18),
-    estImprovement: "+7% conversion focus",
+    confidence: stableConfidence(action, 80),
+    estImprovement: NOT_MEASURED,
     basedOn: withCtx(ctx, ["Grid + hierarchy rules", "Mobile safe zones"]),
     before: { type: "layout", value: "current" },
     after: { type: "layout", value: `preview:${action}` },
@@ -236,8 +241,8 @@ export function buildQuickSuggestion(action: string, ctx: AIContextInput): AISug
     action,
     title: action,
     reason: `Workflow shortcut — ${action.toLowerCase()} using current brand and category context.`,
-    confidence: clamp(82 + Math.random() * 15),
-    estImprovement: action.startsWith("Optimize") ? "+11% platform fit" : "+10% velocity",
+    confidence: stableConfidence(action, 82),
+    estImprovement: NOT_MEASURED,
     basedOn: withCtx(ctx, ["Workflow templates"]),
     before: { type: "layout", value: "current creative" },
     after: { type: "layout", value: `plan:${action}` },
@@ -263,8 +268,8 @@ export function buildTimelineSuggestion(action: string, ctx: AIContextInput): AI
     action,
     title: action,
     reason: `${action} tuned to hook, retention and pacing benchmarks.`,
-    confidence: clamp(76 + Math.random() * 20),
-    estImprovement: "+12% retention",
+    confidence: stableConfidence(action, 76),
+    estImprovement: NOT_MEASURED,
     basedOn: withCtx(ctx, ["Hook analytics", "Retention curves"]),
     before: { type: "video", value: "current timeline" },
     after: { type: "video", value: `preview:${action}` },
