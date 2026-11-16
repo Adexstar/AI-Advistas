@@ -170,7 +170,7 @@ const LandingPages = () => {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="min-w-0 overflow-hidden p-0 sm:p-6">
           <Table>
             <TableHeader>
               <TableRow>
@@ -187,10 +187,10 @@ const LandingPages = () => {
             <TableBody>
               {filteredPages.map((page) => (
                 <TableRow key={page.id}>
-                  <TableCell className="font-medium">{page.name}</TableCell>
+                  <TableCell className="max-w-[200px] truncate font-medium" title={page.name}>{page.name}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      <Globe className="h-3 w-3 text-muted-foreground" />
+                      <Globe className="h-3 w-3 shrink-0 text-muted-foreground" />
                       <span className="text-sm">{page.slug}</span>
                     </div>
                   </TableCell>
@@ -204,7 +204,7 @@ const LandingPages = () => {
                   <TableCell>{page.conversionRate}%</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <Calendar className="h-3 w-3" />
+                      <Calendar className="h-3 w-3 shrink-0" />
                       {page.lastModified}
                     </div>
                   </TableCell>

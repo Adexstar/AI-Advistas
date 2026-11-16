@@ -34,9 +34,9 @@ export const AIActionsQueue = () => {
   return (
     <Card className="rounded-2xl border-border/60 bg-card shadow-sm">
       <CardContent className="space-y-3 p-4">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold">AI Actions Queue</p>
-          <Button variant="ghost" size="sm" className="h-7 text-xs">View all <ChevronRight className="h-3 w-3" /></Button>
+        <div className="flex items-center justify-between gap-2">
+          <p className="min-w-0 truncate text-sm font-semibold">AI Actions Queue</p>
+          <Button variant="ghost" size="sm" className="h-7 shrink-0 px-2 text-xs">View all <ChevronRight className="h-3 w-3" /></Button>
         </div>
 
         {isLoading ? (
@@ -51,17 +51,19 @@ export const AIActionsQueue = () => {
               const Icon = iconFor(job.job_type);
               const title = job.job_type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
               return (
-                <div key={job.id} className="flex items-center gap-3 rounded-xl border border-border/60 p-2.5">
+                <div key={job.id} className="flex items-start gap-2.5 rounded-xl border border-border/60 p-2.5">
                   <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
                     <Icon className="h-4 w-4" />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{title}</p>
-                    <span className={cn("mt-0.5 inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium capitalize", statusColor(job.status))}>
-                      {job.status}
-                    </span>
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <p className="truncate text-sm font-medium leading-tight" title={title}>{title}</p>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className={cn("inline-flex shrink-0 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[10px] font-medium capitalize", statusColor(job.status))}>
+                        {job.status}
+                      </span>
+                      <Button size="sm" variant="outline" className="h-6 shrink-0 rounded-lg px-2 text-[11px]">Review</Button>
+                    </div>
                   </div>
-                  <Button size="sm" variant="outline" className="h-7 rounded-lg text-xs">Review</Button>
                 </div>
               );
             })}

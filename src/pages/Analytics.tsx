@@ -326,22 +326,22 @@ const Analytics = () => {
             <h3 className="min-w-0 text-base font-semibold text-foreground">Campaign Performance</h3>
             <button type="button" onClick={() => navigate("/campaigns")} className="shrink-0 text-xs font-medium text-primary hover:underline">View all</button>
           </div>
-          <div className="-mx-2 overflow-x-auto">
+          <div className="-mx-2 min-w-0 overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th style={{width:'25%'}}>Campaign</th>
-                  <th style={{width:'10%'}}>Status</th>
-                  <th style={{width:'12%'}}>Reach</th>
-                  <th style={{width:'10%'}}>CTR</th>
-                  <th style={{width:'12%'}}>Conversions</th>
-                  <th style={{width:'10%'}}>ROAS</th>
+                  <th>Campaign</th>
+                  <th>Status</th>
+                  <th>Reach</th>
+                  <th>CTR</th>
+                  <th>Conversions</th>
+                  <th>ROAS</th>
                 </tr>
               </thead>
               <tbody>
                 {campaignRows.map((r) => (
                   <tr key={r.name}>
-                    <td data-label="Campaign" className="text-truncate font-medium text-foreground">{r.name}</td>
+                    <td data-label="Campaign" className="max-w-[200px] font-medium text-foreground" title={r.name}>{r.name}</td>
                     <td data-label="Status"><span className={`status-badge ${r.status.toLowerCase()}`}>{r.status}</span></td>
                     <td data-label="Reach" className="text-foreground">{r.reach}</td>
                     <td data-label="CTR" className="text-foreground">{r.ctr}</td>

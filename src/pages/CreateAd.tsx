@@ -59,11 +59,11 @@ type FormValues = {
 };
 
 const STEPS = [
-  { id: 1, label: 'Setup', subtitle: 'Campaign & Goal' },
-  { id: 2, label: 'Ad Creative', subtitle: 'Design Your Ad' },
-  { id: 3, label: 'Audience', subtitle: 'Target People' },
-  { id: 4, label: 'Budget', subtitle: 'Set Budget & Schedule' },
-  { id: 5, label: 'Review', subtitle: 'Finalize & Publish' },
+  { id: 1, label: 'Setup' },
+  { id: 2, label: 'Creative' },
+  { id: 3, label: 'Audience' },
+  { id: 4, label: 'Budget' },
+  { id: 5, label: 'Review' },
 ] as const;
 
 const OBJECTIVES = [
@@ -88,9 +88,9 @@ const PLATFORMS = [
   { value: 'linkedin', label: 'LinkedIn', icon: Linkedin },
   { value: 'tiktok', label: 'TikTok', icon: Video },
   { value: 'pinterest', label: 'Pinterest', icon: PinIcon },
-  { value: 'twitter', label: 'Twitter/X', icon: XIcon },
+  { value: 'twitter', label: 'X', icon: XIcon },
   { value: 'youtube', label: 'YouTube', icon: VideoIcon },
-  { value: 'more', label: 'More', icon: Menu },
+  { value: 'more', label: 'Other', icon: Menu },
 ];
 
 function PinIcon({ className }: { className?: string }) { return <Target className={className} />; }
@@ -106,33 +106,30 @@ const GENDERS = ['All', 'Men', 'Women'];
 
 function StepProgress({ step }: { step: number }) {
   return (
-    <div className="flex items-center w-full max-w-4xl mx-auto mb-8 px-4 overflow-x-auto">
+    <div className="mx-auto flex w-full max-w-xl items-center gap-1 px-4 py-3 sm:gap-2 sm:px-6">
       {STEPS.map((s, i) => {
         const idx = i + 1;
         const active = step === idx;
         const completed = step > idx;
         return (
-          <div key={s.id} className="flex items-center flex-1 last:flex-none min-w-0">
-            <div className="flex flex-col items-center">
+          <div key={s.id} className="flex min-w-0 flex-1 items-center last:flex-none">
+            <div className="flex min-w-0 flex-col items-center gap-1">
               <div className={cn(
-                'flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full text-[10px] sm:text-xs font-bold transition-all shrink-0',
+                'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold transition-all sm:h-7 sm:w-7 sm:text-xs',
                 active && 'bg-primary text-white shadow-sm',
                 completed && 'bg-primary text-white',
-                !active && !completed && 'bg-card border-2 border-border text-muted-foreground',
+                !active && !completed && 'border border-border bg-background text-muted-foreground',
               )}>
                 {completed ? <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> : idx}
               </div>
               <span className={cn(
-                'font-label mt-1',
-                active && 'text-primary',
-                completed && 'text-primary',
-                !active && !completed && 'text-muted-foreground',
+                'max-w-full truncate text-[10px] font-medium sm:text-[11px]',
+                active || completed ? 'text-primary' : 'text-muted-foreground',
               )}>{s.label}</span>
-              <span className="hidden sm:block font-micro text-muted-foreground leading-tight">{s.subtitle}</span>
             </div>
             {i < STEPS.length - 1 && (
               <div className={cn(
-                'flex-1 h-px mx-1.5 sm:mx-3 mt-[-18px] sm:mt-[-20px]',
+                'mx-1 mb-4 h-px min-w-[8px] flex-1 sm:mx-2',
                 completed ? 'bg-primary' : 'bg-border',
               )} />
             )}
@@ -161,9 +158,19 @@ function Field({ label, hint, children, required }: { label: string; hint?: stri
 
 function StepSection({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <div className="mb-6">
-      <h3 className="font-section-header text-foreground">{title}</h3>
-      {subtitle && <p className="font-label text-muted-foreground mt-0.5 mb-4">{subtitle}</p>}
+    <section className="rounded-xl border border-border/60 bg-card p-4 sm:p-5">
+      <header className="mb-4">
+        <h3 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">{title}</h3>
+        {subtitle && <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>}
+      </header>
+      {children}
+    </section>
+  );
+}
+
+function StepPanel({ children, wide }: { children: React.ReactNode; wide?: boolean }) {
+  return (
+    <div className={cn('mx-auto w-full space-y-4', wide ? 'max-w-xl' : 'max-w-lg')}>
       {children}
     </div>
   );
@@ -198,6 +205,11 @@ export default function CreateAd() {
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [applyingTemplate, setApplyingTemplate] = useState(false);
   const [designName, setDesignName] = useState<string | null>(null);
+  const [interestInput, setInterestInput] = useState('');
+  const [interests, setInterests] = useState<string[]>(['Skincare', 'Beauty', 'Wellness']);
+  const [startOpen, setStartOpen] = useState(false);
+  const [endOpen, setEndOpen] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const { register, watch, control, handleSubmit, setValue, reset } = useForm<FormValues>({
     defaultValues: {
@@ -263,11 +275,11 @@ export default function CreateAd() {
     if (values.budgetType === 'daily') {
       const low = amt * 840;
       const high = amt * 1680;
-      return { label: 'Estimated Daily Reach', low, high };
+      return { label: 'Est. daily reach', low, high };
     }
     const low = amt * 840;
     const high = amt * 1680;
-    return { label: 'Estimated Campaign Reach', low, high };
+    return { label: 'Est. campaign reach', low, high };
   }, [values.budgetAmount, values.budgetType]);
 
   const reachPercent = useMemo(() => {
@@ -460,7 +472,6 @@ export default function CreateAd() {
   });
 
   /* ---------- Media upload ---------- */
-  const fileRef = useRef<HTMLInputElement>(null);
   const handleFile = async (f: File) => {
     if (!user) return;
     const path = `${user.id}/creatives/${Date.now()}-${f.name}`;
@@ -497,8 +508,8 @@ export default function CreateAd() {
   /* STEP 1 — Setup                                                     */
   /* ------------------------------------------------------------------ */
   const StepSetup = (
-    <div className="max-w-[480px] space-y-6">
-        <StepSection title="Campaign & Goal" subtitle="Choose the campaign objective and define your ad.">
+    <StepPanel>
+        <StepSection title="Campaign setup" subtitle="Name the campaign, pick an objective, and choose where it runs.">
           <div className="space-y-4">
             <Field label="Campaign Name" required>
               <Input placeholder="Summer Sale Campaign" {...register('name', { required: true })}
@@ -507,30 +518,30 @@ export default function CreateAd() {
             <Field label="Objective">
               <Controller control={control} name="objective" render={({ field }) => (
                 <select value={field.value} onChange={(e) => field.onChange(e.target.value)}
-                  className="h-11 w-full border-[1.5px] border-border rounded-[10px] text-sm px-3.5 bg-card focus:border-primary focus:outline-none appearance-none">
+                  className="h-11 w-full appearance-none rounded-[10px] border-[1.5px] border-border bg-background px-3.5 text-sm focus:border-primary focus:outline-none">
                   {OBJECTIVES.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
                 </select>
               )} />
             </Field>
-            <Field label="Platform">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <Field label="Platforms">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {PLATFORMS.slice(0, 8).map((p) => {
                   const selected = values.platforms.includes(p.value);
                   const Icon = p.icon;
                   return (
                     <button key={p.value} type="button" onClick={() => togglePlatform(p.value)}
                       className={cn(
-                        'relative flex flex-col items-center justify-center h-[72px] rounded-[10px] border-[1.5px] transition text-xs font-medium text-foreground',
-                        selected ? 'border-primary bg-primary/10' : 'border-border bg-card',
+                        'relative flex h-[72px] flex-col items-center justify-center rounded-[10px] border-[1.5px] text-xs font-medium text-foreground transition',
+                        selected ? 'border-primary bg-primary/10' : 'border-border bg-background',
                       )}>
                       {selected && (
-                        <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                        <div className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary">
                           <Check className="h-2.5 w-2.5 text-white" />
                         </div>
                       )}
-                      <Icon className="h-5 w-5 mb-1" />
+                      <Icon className="mb-1 h-5 w-5" />
                       <span className="text-[10px]">{p.label}</span>
                     </button>
                   );
@@ -541,19 +552,19 @@ export default function CreateAd() {
         </StepSection>
 
         <div className="flex justify-end">
-          <button onClick={nextStep} className="bg-primary text-white rounded-[10px] h-11 px-6 text-sm font-semibold flex items-center gap-2 hover:bg-[#5A52E0] transition">
-            Next: Ad Creative <ArrowRight className="h-4 w-4" />
+          <button onClick={nextStep} className="flex h-10 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-white transition hover:bg-primary/90">
+            Continue <ArrowRight className="h-4 w-4" />
           </button>
         </div>
-    </div>
+    </StepPanel>
   );
 
   const previewPlatforms = ['Facebook Feed', 'Instagram Feed', 'Instagram Story', 'Facebook Story', 'TikTok', 'LinkedIn'];
   const adPreview = (
     <div id="ad-preview" className="min-w-0 space-y-4">
       <div>
-        <h3 className="font-section-header text-foreground">Ad Preview</h3>
-        <p className="font-label text-muted-foreground">See how your ad will look across platforms.</p>
+        <h3 className="text-sm font-semibold text-foreground">Preview</h3>
+        <p className="text-xs text-muted-foreground">Approximate look across placements.</p>
       </div>
       <div className="flex w-fit gap-1 rounded-lg bg-muted/50 p-0.5">
         <button type="button" onClick={() => setPreviewTab('mobile')}
@@ -634,7 +645,7 @@ export default function CreateAd() {
               ))}
             </div>
       </div>
-      <p className="text-[10px] italic text-muted-foreground">Preview is an approximation and may differ from the actual ad on each platform.</p>
+      <p className="text-[10px] text-muted-foreground">Live ads may differ slightly by platform.</p>
     </div>
   );
 
@@ -642,47 +653,46 @@ export default function CreateAd() {
   /* STEP 2 — Ad Creative                                                */
   /* ------------------------------------------------------------------ */
   const StepCreative = (
-    <div className="max-w-[480px] space-y-6">
-      <StepSection title="Ad Creative" subtitle="Design the content for your ad.">
+    <StepPanel>
+      <StepSection title="Creative" subtitle="Add media and write the ad copy.">
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" disabled={saving || restoring || applyingTemplate} onClick={() => void openStudio()}><Edit3 className="mr-2 h-4 w-4" />{values.mediaUrl || designName ? 'Edit design' : 'Open in Visual Editor'}</Button>
-            <Button variant="outline" disabled={saving || restoring || applyingTemplate} onClick={() => setTemplatePickerOpen(true)}><ImageIcon className="mr-2 h-4 w-4" />Select Template</Button>
+            <Button variant="outline" disabled={saving || restoring || applyingTemplate} onClick={() => void openStudio()}><Edit3 className="mr-2 h-4 w-4" />{values.mediaUrl || designName ? 'Edit design' : 'Open editor'}</Button>
+            <Button variant="outline" disabled={saving || restoring || applyingTemplate} onClick={() => setTemplatePickerOpen(true)}><ImageIcon className="mr-2 h-4 w-4" />Use template</Button>
           </div>
-          <p className="text-[11px] leading-relaxed text-muted-foreground">
-            {designName ? `Using “${designName}”. ` : ''}
-            A template is added on this step. Saving in the editor brings you back here to continue.
-          </p>
+          {designName && (
+            <p className="text-[11px] text-muted-foreground">Using “{designName}”.</p>
+          )}
           <Field label="Media">
             <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/40 transition cursor-pointer" onClick={() => fileRef.current?.click()}>
               {values.mediaUrl ? (
                 <img src={values.mediaUrl} alt="" className="max-h-40 mx-auto rounded-lg" />
               ) : (
                 <>
-                  <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                  <p className="text-xs font-medium text-primary mt-2">Upload Media</p>
-                  <p className="text-[11px] text-muted-foreground">or drag and drop</p>
+                  <Upload className="mx-auto h-7 w-7 text-muted-foreground" />
+                  <p className="mt-2 text-xs font-medium text-primary">Upload media</p>
+                  <p className="text-[11px] text-muted-foreground">Image or video</p>
                 </>
               )}
             </div>
             <div className="flex gap-2 mt-2">
-              <button type="button" onClick={() => setLibraryOpen(true)} className="text-xs text-primary font-medium hover:underline">Media from Library</button>
+              <button type="button" onClick={() => setLibraryOpen(true)} className="text-xs font-medium text-primary hover:underline">From library</button>
               <span className="text-border">|</span>
-              <button type="button" onClick={() => toast.message('Image generation is not connected', { description: 'Upload a file or choose one from your media library.' })} className="text-xs font-medium text-muted-foreground hover:underline">AI Generate Image</button>
+              <button type="button" onClick={() => toast.message('Image generation unavailable', { description: 'Upload a file or pick one from your library.' })} className="text-xs font-medium text-muted-foreground hover:underline">Generate</button>
             </div>
             <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
           </Field>
-          <Field label="Primary Text" hint={`${values.primaryText.length}/125`}>
-            <Textarea rows={2} maxLength={125} placeholder="Write your ad copy..."
+          <Field label="Primary text" hint={`${values.primaryText.length}/125`}>
+            <Textarea rows={2} maxLength={125} placeholder="Write your ad copy…"
               {...register('primaryText')}
-              className="border-[1.5px] border-border rounded-[10px] text-sm resize-none focus:border-primary" />
+              className="resize-none rounded-[10px] border-[1.5px] border-border text-sm focus:border-primary" />
           </Field>
-          <div className="rounded-lg border border-primary/20 bg-primary/[0.04] p-3">
-            <p className="text-[10px] font-semibold text-primary flex items-center gap-1"><Sparkles className="h-3 w-3" /> AI Suggestions</p>
-            <div className="flex flex-wrap gap-1.5 mt-1.5">
-              {['Generate Copy', 'Improve Headline', 'Use Brand Voice'].map((a) => (
-                <button key={a} type="button" onClick={() => toast.message(a, { description: 'AI hook ready — will populate once connected.' })}
-                  className="text-[10px] px-2.5 py-1 rounded-full border border-border hover:border-primary/40 transition">{a}</button>
+          <div className="rounded-lg border border-border/70 bg-muted/30 p-3">
+            <p className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground"><Sparkles className="h-3 w-3" /> Writing tools</p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {['Suggest copy', 'Refine headline', 'Match brand voice'].map((a) => (
+                <button key={a} type="button" onClick={() => toast.message(a, { description: 'Coming soon.' })}
+                  className="rounded-full border border-border px-2.5 py-1 text-[10px] transition hover:border-primary/40">{a}</button>
               ))}
             </div>
           </div>
@@ -690,11 +700,11 @@ export default function CreateAd() {
             <Input maxLength={40} placeholder="Headline" {...register('headline')}
               className="h-11 border-[1.5px] border-border rounded-[10px] text-sm px-3.5 focus:border-primary" />
           </Field>
-          <Field label="Description (Optional)" hint={`${values.descriptionCopy.length}/30`}>
-            <Input maxLength={30} placeholder="Description" {...register('descriptionCopy')}
-              className="h-11 border-[1.5px] border-border rounded-[10px] text-sm px-3.5 focus:border-primary" />
+          <Field label="Description" hint={`${values.descriptionCopy.length}/30 · optional`}>
+            <Input maxLength={30} placeholder="Short supporting line" {...register('descriptionCopy')}
+              className="h-11 rounded-[10px] border-[1.5px] border-border px-3.5 text-sm focus:border-primary" />
           </Field>
-          <Field label="Call to Action">
+          <Field label="Call to action">
             <Controller control={control} name="cta" render={({ field }) => (
               <select value={field.value} onChange={(e) => field.onChange(e.target.value)}
                 className="h-11 w-full border-[1.5px] border-border rounded-[10px] text-sm px-3.5 bg-card focus:border-primary focus:outline-none appearance-none">
@@ -712,22 +722,19 @@ export default function CreateAd() {
         </div>
       </StepSection>
       <div className="flex justify-end">
-        <button onClick={nextStep} className="bg-primary text-white rounded-[10px] h-11 px-6 text-sm font-semibold flex items-center gap-2 hover:bg-[#5A52E0] transition">
-          Next: Audience <ArrowRight className="h-4 w-4" />
+        <button onClick={nextStep} className="flex h-10 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-white transition hover:bg-primary/90">
+          Continue <ArrowRight className="h-4 w-4" />
         </button>
       </div>
-    </div>
+    </StepPanel>
   );
 
   /* ------------------------------------------------------------------ */
   /* STEP 3 — Audience                                                   */
   /* ------------------------------------------------------------------ */
-  const [interestInput, setInterestInput] = useState('');
-  const [interests, setInterests] = useState<string[]>(['Skincare', 'Beauty', 'Wellness']);
-
   const StepAudience = (
-    <div className="max-w-[480px] space-y-6">
-      <StepSection title="Audience" subtitle="Target the right people for your ad.">
+    <StepPanel>
+      <StepSection title="Audience" subtitle="Define who should see this ad.">
         <div className="space-y-5">
           <Field label="Locations">
             <Controller control={control} name="location" render={({ field }) => (
@@ -778,49 +785,46 @@ export default function CreateAd() {
           </Field>
         </div>
       </StepSection>
-      <div className="flex justify-between">
-        <button onClick={prevStep} className="h-11 px-4 text-sm font-medium text-foreground border border-border rounded-[10px] hover:bg-muted/50 transition flex items-center gap-1">
+      <div className="flex justify-between gap-3">
+        <button onClick={prevStep} className="flex h-10 items-center gap-1 rounded-lg border border-border px-4 text-sm font-medium text-foreground transition hover:bg-muted/50">
           <ArrowLeft className="h-4 w-4" /> Back
         </button>
-        <button onClick={nextStep} className="bg-primary text-white rounded-[10px] h-11 px-6 text-sm font-semibold flex items-center gap-2 hover:bg-[#5A52E0] transition">
-          Next: Budget <ArrowRight className="h-4 w-4" />
+        <button onClick={nextStep} className="flex h-10 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-white transition hover:bg-primary/90">
+          Continue <ArrowRight className="h-4 w-4" />
         </button>
       </div>
-    </div>
+    </StepPanel>
   );
 
   /* ------------------------------------------------------------------ */
   /* STEP 4 — Budget & Schedule                                          */
   /* ------------------------------------------------------------------ */
-  const [startOpen, setStartOpen] = useState(false);
-  const [endOpen, setEndOpen] = useState(false);
-
   const StepBudget = (
-    <div className="max-w-[480px] space-y-6">
-      <StepSection title="Budget & Schedule" subtitle="Set your spending limits and campaign timing.">
+    <StepPanel>
+      <StepSection title="Budget & schedule" subtitle="Set spend and when the campaign runs.">
         {/* Budget Type Selector */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
           <Controller control={control} name="budgetType" render={({ field }) => (
             <>
               <button type="button" onClick={() => field.onChange('daily')}
-                className={cn('rounded-xl border-[1.5px] p-5 text-left transition',
-                  field.value === 'daily' ? 'border-primary bg-primary/10' : 'border-border bg-card')}>
-                <div className={cn('w-4 h-4 rounded-full border-2 flex items-center justify-center mb-2',
+                className={cn('rounded-xl border-[1.5px] p-4 text-left transition',
+                  field.value === 'daily' ? 'border-primary bg-primary/10' : 'border-border bg-background')}>
+                <div className={cn('mb-2 flex h-4 w-4 items-center justify-center rounded-full border-2',
                   field.value === 'daily' ? 'border-primary' : 'border-border')}>
-                  {field.value === 'daily' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                  {field.value === 'daily' && <div className="h-2 w-2 rounded-full bg-primary" />}
                 </div>
-                <p className="text-sm font-bold text-foreground">Daily Budget</p>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">Best for always-on campaigns and boost-style delivery.</p>
+                <p className="text-sm font-semibold text-foreground">Daily budget</p>
+                <p className="mt-1 text-xs text-muted-foreground">Spend up to this amount each day.</p>
               </button>
               <button type="button" onClick={() => field.onChange('total')}
-                className={cn('rounded-xl border-[1.5px] p-5 text-left transition',
-                  field.value === 'total' ? 'border-primary bg-primary/10' : 'border-border bg-card')}>
-                <div className={cn('w-4 h-4 rounded-full border-2 flex items-center justify-center mb-2',
+                className={cn('rounded-xl border-[1.5px] p-4 text-left transition',
+                  field.value === 'total' ? 'border-primary bg-primary/10' : 'border-border bg-background')}>
+                <div className={cn('mb-2 flex h-4 w-4 items-center justify-center rounded-full border-2',
                   field.value === 'total' ? 'border-primary' : 'border-border')}>
-                  {field.value === 'total' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                  {field.value === 'total' && <div className="h-2 w-2 rounded-full bg-primary" />}
                 </div>
-                <p className="text-sm font-bold text-foreground">Total Budget</p>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">Best when you know the full campaign spend upfront.</p>
+                <p className="text-sm font-semibold text-foreground">Lifetime budget</p>
+                <p className="mt-1 text-xs text-muted-foreground">Cap spend for the full campaign.</p>
               </button>
             </>
           )} />
@@ -850,8 +854,8 @@ export default function CreateAd() {
           <div className="h-1.5 bg-muted rounded mt-3 overflow-hidden">
             <div className="h-full rounded bg-gradient-to-r from-primary to-primary-glow" style={{ width: `${reachPercent}%` }} />
           </div>
-          <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
-            A simple estimate based on budget and selected platforms. Final delivery will adjust after launch.
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            Estimate based on budget and platforms. Actual reach may vary.
           </p>
         </div>
 
@@ -882,30 +886,30 @@ export default function CreateAd() {
               <Controller control={control} name="runType" render={({ field }) => (
                 <>
                   <button type="button" onClick={() => field.onChange('continuous')}
-                    className={cn('w-full rounded-xl border-[1.5px] p-4 text-left transition',
-                      field.value === 'continuous' ? 'border-primary bg-primary/10' : 'border-border bg-card')}>
+                    className={cn('w-full rounded-xl border-[1.5px] p-3.5 text-left transition',
+                      field.value === 'continuous' ? 'border-primary bg-primary/10' : 'border-border bg-background')}>
                     <div className="flex items-center gap-2">
-                      <div className={cn('w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0',
+                      <div className={cn('flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2',
                         field.value === 'continuous' ? 'border-primary' : 'border-border')}>
-                        {field.value === 'continuous' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                        {field.value === 'continuous' && <div className="h-2 w-2 rounded-full bg-primary" />}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-foreground">Run Continuously</p>
-                        <p className="text-xs text-muted-foreground">Keep the campaign live until you pause it from Campaigns.</p>
+                        <p className="text-sm font-semibold text-foreground">Run continuously</p>
+                        <p className="text-xs text-muted-foreground">Stays live until you pause it.</p>
                       </div>
                     </div>
                   </button>
                   <button type="button" onClick={() => field.onChange('end_date')}
-                    className={cn('w-full rounded-xl border-[1.5px] p-4 text-left transition',
-                      field.value === 'end_date' ? 'border-primary bg-primary/10' : 'border-border bg-card')}>
+                    className={cn('w-full rounded-xl border-[1.5px] p-3.5 text-left transition',
+                      field.value === 'end_date' ? 'border-primary bg-primary/10' : 'border-border bg-background')}>
                     <div className="flex items-center gap-2">
-                      <div className={cn('w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0',
+                      <div className={cn('flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2',
                         field.value === 'end_date' ? 'border-primary' : 'border-border')}>
-                        {field.value === 'end_date' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                        {field.value === 'end_date' && <div className="h-2 w-2 rounded-full bg-primary" />}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-foreground">Choose an End Date</p>
-                        <p className="text-xs text-muted-foreground">Set a clear campaign window when you know the promotion should stop.</p>
+                        <p className="text-sm font-semibold text-foreground">Set an end date</p>
+                        <p className="text-xs text-muted-foreground">Stops automatically on the date you choose.</p>
                       </div>
                     </div>
                   </button>
@@ -940,37 +944,37 @@ export default function CreateAd() {
         </div>
 
         {/* Campaign Summary Card */}
-        <div className="bg-card border border-border rounded-xl p-4 mt-5">
-          <p className="text-xs font-bold text-foreground mb-3">Campaign Summary</p>
+        <div className="mt-4 rounded-xl border border-border bg-background p-4">
+          <p className="mb-3 text-xs font-semibold text-foreground">Summary</p>
           <div className="space-y-2">
-            <SummaryRow label={`${values.budgetType === 'daily' ? 'Daily' : 'Total'} Budget`} value={`$${values.budgetAmount.toFixed(2)}`} />
-            <SummaryRow label={reachEstimate.label} value={`${reachEstimate.low.toLocaleString()} – ${reachEstimate.high.toLocaleString()} people`} />
-            <SummaryRow label="Start Date" value={format(values.startDate, 'MMMM d, yyyy')} />
-            <SummaryRow label="Run Length" value={values.runType === 'continuous' ? 'Continuous' : runDays ? `${runDays} days` : '—'} />
+            <SummaryRow label={`${values.budgetType === 'daily' ? 'Daily' : 'Total'} budget`} value={`$${values.budgetAmount.toFixed(2)}`} />
+            <SummaryRow label={reachEstimate.label} value={`${reachEstimate.low.toLocaleString()} – ${reachEstimate.high.toLocaleString()}`} />
+            <SummaryRow label="Start" value={format(values.startDate, 'MMM d, yyyy')} />
+            <SummaryRow label="Duration" value={values.runType === 'continuous' ? 'Continuous' : runDays ? `${runDays} days` : '—'} />
             {values.runType === 'end_date' && runDays && (
-              <SummaryRow label="Estimated Total Spend" value={`$${(values.budgetAmount * runDays).toFixed(2)}`} />
+              <SummaryRow label="Est. total spend" value={`$${(values.budgetAmount * runDays).toFixed(2)}`} />
             )}
           </div>
         </div>
       </StepSection>
 
-      <div className="flex justify-between">
-        <button onClick={prevStep} className="h-11 px-4 text-sm font-medium text-foreground border border-border rounded-[10px] hover:bg-muted/50 transition flex items-center gap-1">
+      <div className="flex justify-between gap-3">
+        <button onClick={prevStep} className="flex h-10 items-center gap-1 rounded-lg border border-border px-4 text-sm font-medium text-foreground transition hover:bg-muted/50">
           <ArrowLeft className="h-4 w-4" /> Back
         </button>
-        <button onClick={nextStep} className="bg-primary text-white rounded-[10px] h-11 px-6 text-sm font-semibold flex items-center gap-2 hover:bg-[#5A52E0] transition">
-          Next: Review <ArrowRight className="h-4 w-4" />
+        <button onClick={nextStep} className="flex h-10 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-white transition hover:bg-primary/90">
+          Continue <ArrowRight className="h-4 w-4" />
         </button>
       </div>
-    </div>
+    </StepPanel>
   );
 
   /* ------------------------------------------------------------------ */
   /* STEP 5 — Review & Publish                                           */
   /* ------------------------------------------------------------------ */
   const StepReview = (
-    <div className="max-w-[580px] space-y-6">
-      <StepSection title="Review & Publish" subtitle="Review your ad before publishing.">
+    <StepPanel wide>
+      <StepSection title="Review" subtitle="Confirm the details, then publish.">
         <div className="grid gap-4 sm:grid-cols-2">
           <ReviewCard title="Campaign" rows={[
             ['Name', values.name || '—'],
@@ -1001,22 +1005,22 @@ export default function CreateAd() {
             <input type="checkbox" checked={field.value} onChange={(e) => field.onChange(e.target.checked)}
               className="mt-0.5 accent-primary" />
           )} />
-          <p className="text-xs text-muted-foreground">I confirm that I have the rights to use all media and content in this ad, and I agree to the platform advertising policies.</p>
+          <p className="text-xs text-muted-foreground">I have rights to this media and content, and I agree to the platform advertising policies.</p>
         </div>
 
         <button onClick={publish} disabled={publishing || !values.termsAccepted}
-          className="w-full h-12 bg-primary text-white rounded-[10px] text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#5A52E0] transition disabled:opacity-50">
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary text-sm font-semibold text-white transition hover:bg-primary/90 disabled:opacity-50">
           {publishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          {publishing ? 'Publishing…' : 'Publish'}
+          {publishing ? 'Publishing…' : 'Publish campaign'}
         </button>
       </StepSection>
 
-      <div className="flex justify-between">
-        <button onClick={prevStep} className="h-11 px-4 text-sm font-medium text-foreground border border-border rounded-[10px] hover:bg-muted/50 transition flex items-center gap-1">
+      <div className="flex justify-start">
+        <button onClick={prevStep} className="flex h-10 items-center gap-1 rounded-lg border border-border px-4 text-sm font-medium text-foreground transition hover:bg-muted/50">
           <ArrowLeft className="h-4 w-4" /> Back
         </button>
       </div>
-    </div>
+    </StepPanel>
   );
 
   const stepContent = [null, StepSetup, StepCreative, StepAudience, StepBudget, StepReview][step];
@@ -1025,7 +1029,7 @@ export default function CreateAd() {
   /* Layout                                                              */
   /* ------------------------------------------------------------------ */
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
       <CreateAdTemplatePicker
         open={templatePickerOpen}
         onOpenChange={setTemplatePickerOpen}
@@ -1037,66 +1041,68 @@ export default function CreateAd() {
         onOpenChange={setLibraryOpen}
         onSelect={(url) => setValue('mediaUrl', url)}
       />
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-4 h-14 sm:h-16">
-          <div className="flex items-center gap-3 min-w-0">
+
+      {/* Fixed chrome — never scrolls; form scrolls in the pane below */}
+      <div className="shrink-0 border-b border-border bg-background">
+        <div className="mx-auto flex h-12 max-w-3xl items-center justify-between gap-3 px-4 sm:h-14 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2.5">
             <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => navigate(-1)} aria-label="Back">
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="min-w-0">
-              <h1 className="font-page-title text-foreground truncate">Create Ad</h1>
-              <p className="font-micro text-muted-foreground hidden sm:block">
-                {saveState === 'saving' ? 'Saving…' : saveState === 'failed' ? (saveError || 'Save failed') : saveState === 'saved' ? 'Saved' : 'Build high-performing ads in minutes.'}
-              </p>
+              <h1 className="truncate text-base font-semibold tracking-tight text-foreground sm:text-lg">Create ad</h1>
+              {(saveState === 'saving' || saveState === 'failed' || saveState === 'saved') && (
+                <p className="font-micro text-muted-foreground">
+                  {saveState === 'saving' ? 'Saving…' : saveState === 'failed' ? (saveError || 'Save failed') : 'Draft saved'}
+                </p>
+              )}
             </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <span className="font-micro text-muted-foreground" aria-live="polite">
-              {saveState === 'saving' ? 'Saving' : saveState === 'failed' ? 'Not saved' : saveState === 'saved' ? 'Saved' : ''}
-            </span>
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <button onClick={() => saveDraft()} disabled={saving}
-              className="h-9 w-9 sm:w-auto sm:px-3 text-xs font-medium text-foreground border border-border rounded-lg hover:bg-muted/50 transition grid place-items-center sm:flex sm:items-center sm:gap-1.5">
-              <Save className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Save Draft</span>
+              className="grid h-8 w-8 place-items-center rounded-lg border border-border text-xs font-medium text-foreground transition hover:bg-muted/50 sm:flex sm:h-9 sm:w-auto sm:items-center sm:gap-1.5 sm:px-3">
+              <Save className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Save</span>
             </button>
             <button
               type="button"
               onClick={() => {
                 setStep(5);
-                window.setTimeout(() => document.getElementById("ad-preview")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+                window.setTimeout(() => document.getElementById("ad-preview")?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
               }}
-              className="h-9 w-9 sm:w-auto sm:px-3 text-xs font-medium text-foreground border border-border rounded-lg hover:bg-muted/50 transition grid place-items-center sm:flex sm:items-center sm:gap-1.5">
+              className="grid h-8 w-8 place-items-center rounded-lg border border-border text-xs font-medium text-foreground transition hover:bg-muted/50 sm:flex sm:h-9 sm:w-auto sm:items-center sm:gap-1.5 sm:px-3">
               <Eye className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Preview</span>
             </button>
             <button
               onClick={() => { if (step < 5) nextStep(); else void publish(); }}
               disabled={publishing}
-              className="h-9 w-9 sm:w-auto sm:px-4 text-xs font-bold text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition grid place-items-center sm:flex sm:items-center sm:gap-1.5">
+              className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-xs font-semibold text-primary-foreground transition hover:bg-primary/90 sm:flex sm:h-9 sm:w-auto sm:items-center sm:gap-1.5 sm:px-3.5">
               {publishing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : step < 5 ? <ArrowRight className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">{step < 5 ? 'Next' : 'Publish'}</span>
+              <span className="hidden sm:inline">{step < 5 ? 'Continue' : 'Publish'}</span>
             </button>
           </div>
         </div>
+
+        <div className="border-t border-border bg-background">
+          <StepProgress step={step} />
+        </div>
       </div>
 
-      {/* Step Progress */}
-      <div className="bg-card border-b border-border">
-        <StepProgress step={step} />
-      </div>
-
-      {/* Body */}
-      <div className="max-w-6xl mx-auto px-4 py-6">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={step}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-          >
-            {stepContent}
-          </motion.div>
-        </AnimatePresence>
+      {/* Only this pane scrolls — content cannot pass under the chrome */}
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="mx-auto w-full max-w-3xl px-4 py-5 sm:px-6 sm:py-6">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="w-full"
+            >
+              {stepContent}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );
@@ -1105,6 +1111,8 @@ export default function CreateAd() {
 /* ------------------------------------------------------------------ */
 /* Small helpers                                                       */
 /* ------------------------------------------------------------------ */
+
+type ReviewRow = readonly [string, string];
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
@@ -1115,15 +1123,15 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ReviewCard({ title, rows }: { title: string; rows: [string, string][] }) {
+function ReviewCard({ title, rows }: { title: string; rows: ReviewRow[] }) {
   return (
     <div className="rounded-xl border border-border p-4">
-      <p className="font-caption-upper text-muted-foreground mb-2">{title}</p>
+      <p className="mb-2 font-caption-upper text-muted-foreground">{title}</p>
       <dl className="space-y-1">
         {rows.map(([k, v]) => (
           <div key={k} className="flex justify-between gap-2 font-label">
             <dt className="text-muted-foreground">{k}</dt>
-            <dd className="font-medium text-foreground text-right truncate min-w-0 max-w-[140px]">{v}</dd>
+            <dd className="min-w-0 max-w-[140px] truncate text-right font-medium text-foreground">{v}</dd>
           </div>
         ))}
       </dl>

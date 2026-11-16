@@ -489,10 +489,11 @@ p  { line-height: 1.6; }
 
   .top-bar {
     flex-shrink: 0;
-    position: sticky;
+    position: relative;
     top: 0;
     z-index: 50;
     width: 100%;
+    background: hsl(var(--background));
   }
 
   .context-bar {
@@ -508,16 +509,25 @@ p  { line-height: 1.6; }
   }
 
   .sidebar {
+    position: relative;
     flex-shrink: 0;
     width: 260px;
     height: 100%;
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    z-index: 30;
   }
 
   .sidebar.collapsed {
     width: 76px;
+    /* Allow the expand handle to sit outside the rail without being clipped */
+    overflow: visible;
+  }
+
+  .sidebar.collapsed .sidebar-nav,
+  .sidebar.collapsed .sidebar-bottom {
+    overflow-x: hidden;
   }
 
   .sidebar-top {
@@ -572,12 +582,11 @@ p  { line-height: 1.6; }
     height: 100%;
     width: 100%;
     min-width: 0;
+    max-width: none;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 1.5rem;
-    width: 100%;
-    max-width: 1600px;
-    margin-inline: auto;
+    margin-inline: 0;
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--foreground) / 0.28) hsl(var(--background));
   }
@@ -681,6 +690,36 @@ p  { line-height: 1.6; }
 
   .template-library .chip-row::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Create Ad owns its own chrome + scroll pane so form content cannot
+     paint under / over the page header and step progress. */
+  .app-shell.create-ad-surface .page-content {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0;
+    max-width: none;
+    margin: 0;
+  }
+
+  .app-shell.create-ad-surface .page-content > * {
+    flex: 1;
+    min-height: 0;
+    max-width: none;
+  }
+
+  /* Drop the duplicate shell title on desktop — Create Ad has its own header. */
+  @media (min-width: 1024px) {
+    .app-shell.create-ad-surface .top-bar {
+      display: none;
+    }
+  }
+
+  @media (max-width: 1023px) {
+    html.mobile-browser .app-shell.create-ad-surface .page-content {
+      padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+    }
   }
 
   /* The library keeps its own page header on desktop, so the shell title
@@ -798,10 +837,14 @@ p  { line-height: 1.6; }
   }
 
   /* ── Data Table ── */
+  /* Override global * { word-break: break-word; min-width: 0 } so columns
+     scroll horizontally instead of crushing mid-word (Budget → Budg/et). */
   .data-table {
     width: 100%;
+    min-width: max-content;
     border-collapse: collapse;
-    table-layout: fixed;
+    table-layout: auto;
+    word-break: normal;
   }
 
   .data-table th,
@@ -812,6 +855,15 @@ p  { line-height: 1.6; }
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    word-break: normal;
+    overflow-wrap: normal;
+    min-width: max-content;
+  }
+
+  table th,
+  table td {
+    word-break: normal;
+    overflow-wrap: normal;
   }
 
   .data-table thead {
@@ -850,6 +902,10 @@ p  { line-height: 1.6; }
     font-size: 11px;
     font-weight: 600;
     white-space: nowrap;
+    word-break: normal;
+    overflow-wrap: normal;
+    max-width: none;
+    flex-shrink: 0;
   }
 
   .status-badge::before {

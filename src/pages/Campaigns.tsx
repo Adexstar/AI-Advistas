@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 const STATUS_STYLES: Record<string, string> = {
   active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
   running: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
+  publishing: 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300',
   paused: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
   draft: 'bg-slate-200 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300',
   completed: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
@@ -33,7 +34,11 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 function StatusBadge({ status }: { status: string }) {
-  return <Badge className={cn('capitalize border-0', STATUS_STYLES[status] || STATUS_STYLES.draft)}>{status}</Badge>;
+  return (
+    <Badge className={cn('shrink-0 capitalize border-0', STATUS_STYLES[status] || STATUS_STYLES.draft)}>
+      {status}
+    </Badge>
+  );
 }
 
 function KpiCard({ icon: Icon, label, value, iconBg }: { icon: any; label: string; value: string | number; iconBg: string }) {
@@ -197,62 +202,60 @@ const Campaigns = () => {
         </Card>
       ) : (
         <>
-          <Card className="rounded-2xl hidden md:block overflow-hidden">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Campaign</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Platform</TableHead>
-                    <TableHead className="text-right">Budget</TableHead>
-                    <TableHead className="text-right">Reach</TableHead>
-                    <TableHead className="text-right">CTR</TableHead>
-                    <TableHead className="text-right">Conv.</TableHead>
-                    <TableHead className="text-right">ROAS</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((c, i) => (
-                    <motion.tr
-                      key={c.id}
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.02 }}
-                      className="border-b last:border-b-0 hover:bg-muted/40 cursor-pointer"
-                      onClick={() => openCampaign(c)}
-                    >
-                      <TableCell>
-                        <div className="font-medium">{c.name}</div>
-                        <div className="text-xs text-muted-foreground capitalize">{c.objective}</div>
-                      </TableCell>
-                      <TableCell><StatusBadge status={c.status} /></TableCell>
-                      <TableCell className="text-sm">{c.platform || '\u2014'}</TableCell>
-                      <TableCell className="text-right tabular-nums">${Number(c.budget).toLocaleString()}</TableCell>
-                      <TableCell className="text-right tabular-nums">{isDraftStatus(c.status) ? '\u2014' : c.reach.toLocaleString()}</TableCell>
-                      <TableCell className="text-right tabular-nums">{isDraftStatus(c.status) ? '\u2014' : `${Number(c.ctr).toFixed(2)}%`}</TableCell>
-                      <TableCell className="text-right tabular-nums">{isDraftStatus(c.status) ? '\u2014' : c.conversions.toLocaleString()}</TableCell>
-                      <TableCell className="text-right tabular-nums">{isDraftStatus(c.status) ? '\u2014' : `${Number(c.roas).toFixed(2)}x`}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</TableCell>
-                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                        <CampaignActions
-                          c={c}
-                          onView={() => openCampaign(c)}
-                          onEdit={() => editCampaign(c)}
-                          onDuplicate={() => duplicateMut.mutate(c)}
-                          onTogglePause={() => togglePauseResume(c)}
-                          onArchive={() => archive(c)}
-                          onUnarchive={() => unarchive(c)}
-                          onDelete={() => handleDelete(c)}
-                        />
-                      </TableCell>
-                    </motion.tr>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+          <Card className="hidden overflow-hidden rounded-2xl md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Campaign</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Platform</TableHead>
+                  <TableHead className="text-right">Budget</TableHead>
+                  <TableHead className="text-right">Reach</TableHead>
+                  <TableHead className="text-right">CTR</TableHead>
+                  <TableHead className="text-right">Conv.</TableHead>
+                  <TableHead className="text-right">ROAS</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((c, i) => (
+                  <motion.tr
+                    key={c.id}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.02 }}
+                    className="cursor-pointer border-b last:border-b-0 hover:bg-muted/40"
+                    onClick={() => openCampaign(c)}
+                  >
+                    <TableCell className="max-w-[220px] whitespace-normal">
+                      <div className="truncate font-medium" title={c.name}>{c.name}</div>
+                      <div className="truncate text-xs capitalize text-muted-foreground">{c.objective}</div>
+                    </TableCell>
+                    <TableCell><StatusBadge status={c.status} /></TableCell>
+                    <TableCell className="text-sm">{c.platform || '\u2014'}</TableCell>
+                    <TableCell className="text-right tabular-nums">${Number(c.budget).toLocaleString()}</TableCell>
+                    <TableCell className="text-right tabular-nums">{isDraftStatus(c.status) ? '\u2014' : c.reach.toLocaleString()}</TableCell>
+                    <TableCell className="text-right tabular-nums">{isDraftStatus(c.status) ? '\u2014' : `${Number(c.ctr).toFixed(2)}%`}</TableCell>
+                    <TableCell className="text-right tabular-nums">{isDraftStatus(c.status) ? '\u2014' : c.conversions.toLocaleString()}</TableCell>
+                    <TableCell className="text-right tabular-nums">{isDraftStatus(c.status) ? '\u2014' : `${Number(c.roas).toFixed(2)}x`}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                      <CampaignActions
+                        c={c}
+                        onView={() => openCampaign(c)}
+                        onEdit={() => editCampaign(c)}
+                        onDuplicate={() => duplicateMut.mutate(c)}
+                        onTogglePause={() => togglePauseResume(c)}
+                        onArchive={() => archive(c)}
+                        onUnarchive={() => unarchive(c)}
+                        onDelete={() => handleDelete(c)}
+                      />
+                    </TableCell>
+                  </motion.tr>
+                ))}
+              </TableBody>
+            </Table>
           </Card>
 
           <div className="md:hidden space-y-3">

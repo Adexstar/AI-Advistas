@@ -13,6 +13,7 @@ import {
   SlidersHorizontal,
 
   ChevronLeft,
+  ChevronRight,
   Code2,
   CreditCard,
   Download,
@@ -114,7 +115,7 @@ const pageMeta: { match: (p: string) => boolean; title: string; description: str
   { match: (p) => p.startsWith("/campaigns"), title: "Campaigns", description: "Track, pause, and edit running ads." },
   { match: (p) => p.startsWith("/template"), title: "Templates", description: "Browse and customize creative templates." },
   { match: (p) => p.startsWith("/visual-editor") || p.startsWith("/ad-editor"), title: "Visual Editor", description: "Design and edit creatives." },
-  { match: (p) => p.startsWith("/create"), title: "Create Ad", description: "Launch a new ad with AI." },
+  { match: (p) => p.startsWith("/create"), title: "Create ad", description: "Campaign setup" },
   { match: (p) => p.startsWith("/billing"), title: "Billing", description: "Manage your plan and credits." },
   { match: (p) => p.startsWith("/settings"), title: "Settings", description: "Preferences and account details." },
   { match: (p) => p.startsWith("/analytics"), title: "Analytics & Reports", description: "Track performance, analyze results, and grow your advertising impact." },
@@ -255,7 +256,7 @@ const SidebarBody = ({
       <div className="flex h-full min-h-0 flex-col">
         {/* Sidebar Top — logo + actions */}
         <div className="sidebar-top">
-          <div className={cn("flex h-14 items-center px-3", collapsed && "justify-center")}>
+          <div className={cn("flex items-center px-3", collapsed ? "h-auto flex-col gap-1 py-2" : "h-14")}>
             <NavLink to="/dashboard" onClick={close} className="flex min-w-0 items-center gap-3">
               <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary">
                 <Sparkles className="h-4 w-4 text-white" />
@@ -272,14 +273,19 @@ const SidebarBody = ({
                 <X className="h-5 w-5" />
               </Button>
             )}
-            {!isMobile && !collapsed && onToggleCollapse && (
+            {!isMobile && onToggleCollapse && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="ml-auto h-8 w-8 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                className={cn(
+                  "h-8 w-8 shrink-0 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                  collapsed ? undefined : "ml-auto"
+                )}
                 onClick={onToggleCollapse}
+                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                aria-expanded={!collapsed}
               >
-                <ChevronLeft className="h-4 w-4" />
+                {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
               </Button>
             )}
           </div>
@@ -405,6 +411,7 @@ const DashboardShell = () => {
   const activePage = pageMeta.find((item) => item.match(location.pathname)) || pageMeta[0];
   const library = location.pathname === "/templates";
   const admin = location.pathname === "/admin" || location.pathname.startsWith("/admin/");
+  const createAd = location.pathname === "/create-ad" || location.pathname.startsWith("/create-ad/");
 
   useEffect(() => {
     document.body.classList.toggle("admin-surface", admin);
@@ -426,11 +433,11 @@ const DashboardShell = () => {
 
 
   return (
-    <div className={cn("app-shell bg-background", library && "library-surface", admin && "admin-surface")}>
+    <div className={cn("app-shell bg-background", library && "library-surface", admin && "admin-surface", createAd && "create-ad-surface")}>
       <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
 
       {/* Top Bar — never scrolls, always visible */}
-      <header className="top-bar z-50 border-b border-border/60 bg-background/95 backdrop-blur-xl">
+      <header className="top-bar z-50 border-b border-border/60 bg-background">
         {/* Mobile header (hamburger + logo + bell) */}
         <div className="flex h-[52px] items-center justify-between px-4 lg:hidden">
           <div className="flex items-center gap-3">
@@ -524,15 +531,6 @@ const DashboardShell = () => {
             signOut={signOut}
             onOpenSearch={openSearch}
           />
-          {collapsed && (
-            <button
-              onClick={() => setCollapsed(false)}
-              className="absolute -right-3 top-20 grid h-6 w-6 place-items-center rounded-full border border-border bg-background text-foreground shadow-md transition hover:scale-110"
-              aria-label="Expand sidebar"
-            >
-              <Menu className="h-3 w-3" />
-            </button>
-          )}
         </aside>
 
         {/* Page content — ONLY this scrolls */}

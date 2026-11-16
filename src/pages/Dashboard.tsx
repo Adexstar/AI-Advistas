@@ -31,7 +31,8 @@ const money = (n: number) => `$${(n || 0).toLocaleString(undefined, { maximumFra
 
 const statusColor = (s: string) => {
   const v = (s || "").toLowerCase();
-  if (v === "active") return "bg-emerald-500/15 text-emerald-600";
+  if (v === "active" || v === "running") return "bg-emerald-500/15 text-emerald-600";
+  if (v === "publishing") return "bg-sky-500/15 text-sky-600";
   if (v === "paused") return "bg-amber-500/15 text-amber-600";
   return "bg-muted text-muted-foreground";
 };
@@ -80,14 +81,14 @@ const KpiCard = ({ icon: Icon, label, value, delta, positive = true, spark, colo
         <p className="font-label text-muted-foreground">{label}</p>
         {/* Delta */}
         {delta !== null && delta !== undefined ? (
-          <div className="flex items-center gap-1">
-            <span className={cn("font-semibold", positive ? "text-emerald-600" : "text-rose-600")}>
+          <div className="flex min-w-0 items-center gap-1">
+            <span className={cn("shrink-0 font-semibold", positive ? "text-emerald-600" : "text-rose-600")}>
               {positive ? "▲" : "▼"} {Math.abs(delta).toFixed(1)}%
             </span>
-            <span className="font-micro text-muted-foreground">vs last period</span>
+            <span className="font-micro truncate text-muted-foreground">vs last period</span>
           </div>
         ) : (
-          <span className="font-micro text-muted-foreground">No previous data</span>
+          <span className="font-micro truncate text-muted-foreground">No previous data</span>
         )}
       </>
     )}
@@ -168,10 +169,10 @@ const Dashboard = () => {
         <KpiCard icon={TrendingUp} label="ROAS" value={`${totals.roas.toFixed(2)}x`} delta={null} spark={spark("revenue")} color="hsl(30 95% 55%)" loading={loading} />
       </div>
 
-      {/* 3 + 4 + right column */}
-      <div className="grid min-w-0 gap-4 lg:grid-cols-4">
+      {/* 3 + 4 + right column — fixed min width on the AI rail so badges/table don't crush */}
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(260px,300px)]">
         {/* Left column: Performance + Recent */}
-        <div className="min-w-0 space-y-4 lg:col-span-3">
+        <div className="min-w-0 space-y-4">
           {/* Performance + Platform Spend */}
           <div className="grid gap-4 md:grid-cols-3">
             <Card className="rounded-2xl border-border/60 bg-card shadow-sm md:col-span-2">
@@ -294,7 +295,7 @@ const Dashboard = () => {
               ) : (
                 <>
                   {/* Desktop table */}
-                  <div className="hidden overflow-x-auto md:block">
+                  <div className="hidden min-w-0 md:block">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -305,15 +306,15 @@ const Dashboard = () => {
                           <TableHead className="text-right">Conversions</TableHead>
                           <TableHead className="text-right">ROAS</TableHead>
                           <TableHead>Trend</TableHead>
-                          <TableHead />
+                          <TableHead className="w-10" />
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {campaigns.slice(0, 6).map((c) => (
                           <TableRow key={c.id} className="cursor-pointer" onClick={() => navigate(`/campaigns/${c.id}`)}>
-                            <TableCell className="font-medium">{c.name}</TableCell>
+                            <TableCell className="max-w-[180px] truncate font-medium" title={c.name}>{c.name}</TableCell>
                             <TableCell>
-                              <Badge className={cn("rounded-full px-2 py-0 text-[10px]", statusColor(c.status))}>{c.status}</Badge>
+                              <Badge className={cn("rounded-full px-2 py-0 text-[10px] capitalize", statusColor(c.status))}>{c.status}</Badge>
                             </TableCell>
                             <TableCell className="text-right">{money((c as any).spend || 0)}</TableCell>
                             <TableCell className="text-right">{Number(c.ctr).toFixed(2)}%</TableCell>
@@ -375,7 +376,7 @@ const Dashboard = () => {
         </div>
 
         {/* Right column: AI Assistant + AI Actions Queue */}
-        <div className="min-w-0 space-y-4 lg:col-span-1">
+        <div className="min-w-0 space-y-4">
           <AIAssistantPanel />
           <AIActionsQueue />
         </div>
