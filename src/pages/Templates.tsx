@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAIContext } from "@/contexts/AIContext";
+import { GridSkeleton } from "@/components/ui/loading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { setPendingEditorTemplate } from "@/lib/templateEditorSession";
@@ -223,7 +224,7 @@ export default function Templates() {
           <p className="mt-1 hidden text-sm text-muted-foreground lg:block">Choose from professionally designed templates or create your own.</p>
         </div>
         <div className="flex w-full items-center gap-2 lg:w-auto">
-          <div className="relative min-w-0 flex-1 lg:w-[280px] lg:flex-none">
+          <div className="relative min-w-0 flex-1 lg:max-w-[280px]">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               value={rawSearch}
@@ -237,7 +238,7 @@ export default function Templates() {
             <button
               type="button"
               onClick={() => { setFilterOpen((open) => !open); setMoreOpen(false); }}
-              className={`inline-flex h-10 items-center gap-2 rounded-lg border bg-card px-3 text-sm font-medium ${format !== "All" ? "border-primary text-primary" : "border-border text-foreground"}`}
+              className={`inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border bg-card px-3 text-sm font-medium ${format !== "All" ? "border-primary text-primary" : "border-border text-foreground"}`}
             >
               <SlidersHorizontal className="h-4 w-4" />
               Filter
@@ -262,7 +263,7 @@ export default function Templates() {
             <select
               value={platform}
               onChange={(e) => setPlatform(e.target.value)}
-              className="h-10 appearance-none rounded-lg border border-border bg-card pl-3 pr-8 text-sm text-foreground outline-none focus:border-primary"
+              className="h-10 shrink-0 appearance-none whitespace-nowrap rounded-lg border border-border bg-card pl-3 pr-8 text-sm text-foreground outline-none focus:border-primary"
             >
               <option value="All">All Platforms</option>
               {LIBRARY_PLATFORMS.filter((item) => item !== "All").map((item) => (
@@ -345,8 +346,12 @@ export default function Templates() {
             Create with AI
           </button>
         </div>
-        <div className={`flex items-end justify-center gap-3 sm:justify-end ${featured.length ? "h-[168px] lg:h-[210px]" : ""}`}>
-          {featured.length === 0 && !isLoading ? (
+        <div className={`flex items-end justify-center gap-3 sm:justify-end ${featured.length || isLoading ? "h-[168px] lg:h-[210px]" : ""}`}>
+          {isLoading ? (
+            Array.from({ length: 3 }).map((_, index) => (
+              <Skeleton key={index} className="h-[150px] w-[108px] rounded-2xl lg:h-[190px] lg:w-[132px]" />
+            ))
+          ) : featured.length === 0 ? (
             <p className="text-sm text-muted-foreground">Featured templates appear here once the library has a match.</p>
           ) : featured.map(({ t }, index) => (
             <button
@@ -409,14 +414,7 @@ export default function Templates() {
             </button>
           </div>
         ) : isLoading ? (
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="rounded-2xl border border-border bg-card p-2">
-                <Skeleton className="aspect-[4/5] w-full rounded-xl" />
-                <Skeleton className="mt-3 h-4 w-3/4" />
-              </div>
-            ))}
-          </div>
+          <GridSkeleton count={6} aspect="4/5" />
         ) : popular.length === 0 ? (
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card px-6 py-12 text-center">
             <LayoutGrid className="h-6 w-6 text-muted-foreground" />

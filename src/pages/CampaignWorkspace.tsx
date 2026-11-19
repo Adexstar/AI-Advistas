@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeaderSkeleton } from '@/components/ui/loading';
 import { CampaignHealthDashboard } from '@/components/campaigns/CampaignHealthDashboard';
 import { CampaignAIBrain } from '@/components/campaigns/CampaignAIBrain';
 import { CampaignTimeline } from '@/components/campaigns/CampaignTimeline';
@@ -128,8 +129,9 @@ const CampaignWorkspace = () => {
 
   if (isLoading) {
     return (
-      <div className="page-container py-6 lg:py-8 space-y-6">
-        <Skeleton className="h-8 w-64" />
+      <div className="page-container space-y-6 py-6 lg:py-8" aria-busy="true">
+        <p className="sr-only">Loading campaign</p>
+        <PageHeaderSkeleton />
         <Skeleton className="h-32 w-full rounded-2xl" />
         <Skeleton className="h-64 w-full rounded-2xl" />
       </div>

@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { MetricCardsSkeleton, TableSkeleton } from '@/components/ui/loading';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -144,12 +145,14 @@ const Campaigns = () => {
         </div>
       </div>
 
-      <div className="metric-cards-grid">
+      {isLoading ? <MetricCardsSkeleton count={4} /> : (
+      <div className="metric-cards-grid adv-fade-in">
         <KpiCard icon={TrendingUp} label="Total Campaigns" value={counts.total} iconBg="bg-primary/10 text-primary" />
         <KpiCard icon={ShoppingCart} label="Active" value={counts.active} iconBg="bg-emerald-100 text-emerald-600" />
         <KpiCard icon={Pause} label="Paused" value={counts.paused} iconBg="bg-amber-100 text-amber-600" />
         <KpiCard icon={Target} label="Completed" value={counts.completed} iconBg="bg-blue-100 text-blue-600" />
       </div>
+      )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full min-w-0 sm:w-auto">
@@ -175,11 +178,26 @@ const Campaigns = () => {
           </CardContent>
         </Card>
       ) : isLoading ? (
-        <Card className="rounded-2xl">
-          <CardContent className="p-4 space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
-          </CardContent>
-        </Card>
+        <>
+          <Card className="hidden overflow-hidden rounded-2xl md:block">
+            <TableSkeleton rows={5} cols={10} />
+          </Card>
+          <div className="space-y-3 md:hidden" data-loading="cards" aria-hidden>
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Card key={index} className="rounded-2xl">
+                <CardContent className="space-y-3 p-4">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-3 w-1/3" />
+                  <div className="grid grid-cols-3 gap-2 border-t pt-2">
+                    <Skeleton className="h-8" />
+                    <Skeleton className="h-8" />
+                    <Skeleton className="h-8" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </>
       ) : filtered.length === 0 ? (
         <Card className="rounded-2xl">
           <CardContent className="p-12 text-center space-y-4">

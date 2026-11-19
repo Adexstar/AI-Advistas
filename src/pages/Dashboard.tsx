@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ChartSkeleton, MetricCardSkeleton, TableSkeleton } from "@/components/ui/loading";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,9 +57,9 @@ interface KPIProps {
 }
 
 const KpiCard = ({ icon: Icon, label, value, delta, positive = true, spark, color, loading }: KPIProps) => (
-  <div className="card">
+  <div className={cn("card", !loading && "adv-fade-in")}>
     {loading ? (
-      <div className="space-y-2"><Skeleton className="h-10 w-10 rounded-full" /><Skeleton className="h-6 w-16" /><Skeleton className="h-4 w-20" /><Skeleton className="h-3 w-24" /></div>
+      <MetricCardSkeleton />
     ) : (
       <>
         {/* Icon + sparkline row */}
@@ -192,7 +192,7 @@ const Dashboard = () => {
                 </div>
                 <div className="h-[240px] w-full">
                   {loading ? (
-                    <Skeleton className="h-full w-full rounded-xl" />
+                    <ChartSkeleton height={240} />
                   ) : perfSeries.length === 0 ? (
                     <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
                       No performance data yet.
@@ -287,9 +287,7 @@ const Dashboard = () => {
               </div>
 
               {loading ? (
-                <div className="space-y-2">
-                  {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
-                </div>
+                <TableSkeleton rows={4} cols={8} />
               ) : campaigns.length === 0 ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">No campaigns yet.</p>
               ) : (

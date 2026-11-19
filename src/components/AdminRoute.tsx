@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { RouteLoadingScreen } from '@/components/ui/loading';
 
 interface AdminRouteProps {
   children: React.ReactNode;
@@ -42,13 +43,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     }
   }, [user, authLoading, navigate]);
 
-  if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  if (authLoading || loading) return <RouteLoadingScreen />;
 
   if (!isAdmin) {
     return (

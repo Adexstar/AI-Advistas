@@ -10,6 +10,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import { AppProvider } from "./contexts/AppContext";
 import { AIContextProvider } from "./contexts/AIContext";
+import { RouteLoadingScreen } from "@/components/ui/loading";
 
 const queryClient = new QueryClient();
 const TemplateRouteRedirect = () => {
@@ -52,8 +53,7 @@ const AssetMarketplace = lazy(() => import("./pages/AssetMarketplace"));
 const DeveloperCenter = lazy(() => import("./pages/DeveloperCenter"));
 const SystemMonitor = lazy(() => import("./pages/SystemMonitor"));
 
-// No full-screen loader on route transitions — pages render their own skeletons.
-const RouteFallback = () => null;
+const RouteFallback = () => <RouteLoadingScreen />;
 
 const AppContent = () => {
   // Global keyboard shortcuts - simplified for core actions

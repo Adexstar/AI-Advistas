@@ -53,6 +53,7 @@ import {
   reorderLayer, setLocked, setVisible,
 } from '@/components/visual-editor/canvasActions';
 import { fitContentToFrame, frameForTemplate, frameFromAspect, measureContentBounds, placeFittedImage, publishArtboard, replaceImageKeepingFrame, scaleImageToCover } from '@/components/visual-editor/canvasImagePlacement';
+import { CanvasStageSkeleton } from '@/components/ui/loading';
 import { selectionToolSet, SELECTION_ACTIONS, type ToolSetId } from '@/components/visual-editor/editorTools';
 import { CREATE_RAIL, EDITOR_TOOLS, FONT_COMBOS, TEXT_STYLES, matchTextStyle, panelForCreateTool } from '@/components/visual-editor/createRail';
 import { applyImageFilters, neutralImageAdjustments, type ImageAdjustments, type ImagePreset } from '@/components/visual-editor/imageAdjustments';
@@ -981,13 +982,7 @@ const fitZoom = (isMobile: boolean, containerWidth: number, containerHeight: num
     >
 
       {/* Loading skeleton */}
-      {loading && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-studio-bg">
-          <div className="h-10 w-10 animate-pulse rounded-lg bg-studio-panel" />
-          <div className="h-3 w-32 animate-pulse rounded-full bg-studio-panel" />
-          <div className="h-2 w-24 animate-pulse rounded-full bg-studio-panel" />
-        </div>
-      )}
+      {loading && <CanvasStageSkeleton />}
       {/* Scroll layer: pans when the user zooms past fit, never clips the artboard. */}
       <div className="absolute inset-0 overflow-auto">
         {/* Centering shell: grid + margin:auto centers the scaled footprint and,
