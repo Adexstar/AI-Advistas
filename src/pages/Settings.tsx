@@ -215,7 +215,7 @@ const Settings = () => {
               <CardTitle className="flex items-center gap-2"><Briefcase className="h-5 w-5 text-primary" />Workspace</CardTitle>
               <CardDescription>Workspace name, defaults, timezone and locale settings.</CardDescription>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">Workspace configuration coming soon.</CardContent>
+            <CardContent className="text-sm text-muted-foreground">The name people see is the display name on General. Dates and times follow this browser.</CardContent>
           </Card>
         </TabsContent>
 
@@ -243,7 +243,7 @@ const Settings = () => {
               <CardTitle className="flex items-center gap-2"><Wrench className="h-5 w-5 text-primary" />Advanced</CardTitle>
               <CardDescription>Data export, workspace deletion and developer tools.</CardDescription>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">Advanced controls coming soon.</CardContent>
+            <CardContent className="text-sm text-muted-foreground">Open a campaign to export its creative. Closing an account is handled by the sign-in provider, not from this page.</CardContent>
           </Card>
         </TabsContent>
 

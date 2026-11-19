@@ -14,12 +14,9 @@ import {
   LayoutTemplate,
   ImageIcon,
   Palette,
-  Download,
   Bell,
   Settings,
   Sparkles,
-  Zap,
-  Users,
   Plug,
   BarChart3,
 } from "lucide-react";
@@ -34,22 +31,15 @@ const groups = [
     heading: "Navigate",
     items: [
       { icon: Megaphone, label: "Campaigns", path: "/campaigns" },
+      { icon: Sparkles, label: "Create Ad", path: "/create-ad" },
       { icon: LayoutTemplate, label: "Templates", path: "/templates" },
+      { icon: ImageIcon, label: "Visual Editor", path: "/visual-editor" },
       { icon: ImageIcon, label: "Media Library", path: "/media-library" },
-      { icon: Palette, label: "Brand Kits", path: "/brand-kit" },
+      { icon: Palette, label: "Brand Kit", path: "/brand-kit" },
       { icon: BarChart3, label: "Analytics", path: "/analytics" },
-      { icon: Download, label: "Exports", path: "/exports" },
       { icon: Plug, label: "Integrations", path: "/integrations" },
-      { icon: Bell, label: "Notifications", path: "/notifications" },
       { icon: Settings, label: "Settings", path: "/settings" },
-    ],
-  },
-  {
-    heading: "AI",
-    items: [
-      { icon: Sparkles, label: "AI Decisions", path: "/automation" },
-      { icon: Zap, label: "Automation Rules", path: "/automation" },
-      { icon: Users, label: "Users & Team", path: "/team" },
+      { icon: Bell, label: "Billing", path: "/billing" },
     ],
   },
 ];
@@ -77,7 +67,7 @@ export const GlobalSearch = ({ open, onOpenChange }: GlobalSearchProps) => {
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <CommandInput placeholder="Search campaigns, templates, brands, decisions..." />
       <CommandList>
-        <CommandEmpty>No results. Full search coming soon.</CommandEmpty>
+        <CommandEmpty>No matching pages.</CommandEmpty>
         {groups.map((g, i) => (
           <div key={g.heading}>
             {i > 0 && <CommandSeparator />}
