@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
+import { RouteLoadingScreen } from "@/components/ui/loading";
 import Footer from "@/components/Footer";
 import {
   ArrowRight,
@@ -74,24 +75,24 @@ const proofPoints = [
 
 const plans = [
   {
-    name: "Starter",
+    name: "Free",
     price: "$0",
-    description: "For solo advertisers validating offers and learning the campaign workflow.",
-    features: ["AI draft entry", "Template browsing", "Guided editor", "Basic workspace shell"],
+    description: "For learning the workspace and launching a first campaign flow.",
+    features: ["3 active campaigns", "5 AI drafts per day", "2 template exports", "Basic email support"],
     emphasis: false,
   },
   {
-    name: "Growth",
-    price: "$49",
-    description: "For marketers running multiple campaigns who need speed without losing control.",
-    features: ["Saved and recent templates", "Campaign operations workspace", "Visual template customization", "Export-ready setup"],
+    name: "Pro",
+    price: "$29",
+    description: "For operators running regular launches across the editor, library, and campaign surface.",
+    features: ["50 active campaigns", "100 AI drafts per day", "50 template exports", "Saved templates and recent history"],
     emphasis: true,
   },
   {
-    name: "Studio",
-    price: "$149",
-    description: "For teams managing creative systems, approvals, and heavier launch velocity.",
-    features: ["Admin template uploads", "Batch-ready template library", "Shared campaign management", "Priority support"],
+    name: "Enterprise",
+    price: "$99",
+    description: "For teams managing larger creative systems, approvals, and higher launch volume.",
+    features: ["Unlimited campaign operations", "Unlimited AI drafts", "Admin template workflows", "API access"],
     emphasis: false,
   },
 ] as const;
@@ -125,13 +126,7 @@ const Index = () => {
     }
   }, [user, loading, navigate]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  if (loading) return <RouteLoadingScreen />;
 
   return (
     <div className="page-aura min-h-screen bg-background">
@@ -489,7 +484,10 @@ const Index = () => {
                     {user ? "Go to Dashboard" : "Start Free"}
                     <Rocket className="ml-2 h-4 w-4" />
                   </Button>
-                  <Button size="lg" variant="outline" className="rounded-full border-white/30 text-white hover:bg-white/10" onClick={() => navigate(user ? "/templates" : "/auth") }>
+                  <Button size="lg" variant="outline" className="rounded-full border-white/30 text-white hover:bg-white/10" onClick={() => {
+                    if (user) navigate("/templates");
+                    else document.getElementById("workflow")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}>
                     {user ? "Browse Library" : "See the Workflow"}
                   </Button>
                 </div>

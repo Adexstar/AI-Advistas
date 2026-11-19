@@ -206,7 +206,8 @@ export default function CreateAd() {
   const [applyingTemplate, setApplyingTemplate] = useState(false);
   const [designName, setDesignName] = useState<string | null>(null);
   const [interestInput, setInterestInput] = useState('');
-  const [interests, setInterests] = useState<string[]>(['Skincare', 'Beauty', 'Wellness']);
+  const [interests, setInterests] = useState<string[]>([]);
+  const [writing, setWriting] = useState<string | null>(null);
   const [startOpen, setStartOpen] = useState(false);
   const [endOpen, setEndOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -223,7 +224,7 @@ export default function CreateAd() {
   });
 
   const values = watch();
-  const brandName = 'Your Brand';
+  const brandName = values.name.trim() || 'Your brand';
 
   useEffect(() => {
     const id = searchParams.get('campaignId');
@@ -259,6 +260,8 @@ export default function CreateAd() {
         setCreativeId(creative?.id ?? null);
         creativeIdRef.current = creative?.id ?? null;
         setDesignName(typeof content.templateName === 'string' ? content.templateName : null);
+        const savedInterests = typeof audience?.interests === 'string' ? audience.interests : '';
+        setInterests(savedInterests.split(',').map((item) => item.trim()).filter(Boolean));
       } catch (error) {
         toast.error(error instanceof Error ? error.message : 'Could not restore campaign');
       } finally { if (!cancelled) setRestoring(false); }
@@ -281,6 +284,54 @@ export default function CreateAd() {
     const high = amt * 1680;
     return { label: 'Est. campaign reach', low, high };
   }, [values.budgetAmount, values.budgetType]);
+
+  const setInterestList = (next: string[]) => {
+    setInterests(next);
+    setValue('interests', next.join(', '), { shouldDirty: true });
+  };
+
+  const applyWritingTool = async (tool: string) => {
+    const productName = values.name.trim() || values.headline.trim();
+    if (!productName) {
+      toast.message('Name the campaign first', { description: 'The writer uses that name as the offer. Your draft stays as you left it.' });
+      return;
+    }
+    setWriting(tool);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-ad-copy', {
+        body: {
+          productName,
+          templateType: tool === 'Refine headline' ? 'headline' : 'full_ad',
+          platform: values.platforms[0] ?? 'social',
+          targetAudience: [values.location, interests.join(', ')].filter(Boolean).join(' · '),
+          additionalContext: [
+            values.primaryText,
+            values.headline,
+            tool === 'Match brand voice' ? 'Keep a clear, confident voice. Do not invent a different brand name.' : '',
+          ].filter(Boolean).join('\n'),
+        },
+      });
+      if (error) throw new Error(error.message || 'Copy is unavailable');
+      const copy = (data as { copy?: { headline?: string; subtitle?: string; cta?: string } } | null)?.copy;
+      const headline = copy?.headline?.trim();
+      const subtitle = copy?.subtitle?.trim();
+      if (!headline && !subtitle) throw new Error('No copy came back. Try a more specific campaign name.');
+      if (headline) setValue('headline', headline.slice(0, 40), { shouldDirty: true });
+      if (tool !== 'Refine headline' && subtitle) setValue('primaryText', subtitle.slice(0, 125), { shouldDirty: true });
+      const cta = copy?.cta?.trim();
+      const matchedCta = cta ? CTAS.find((item) => item.toLowerCase() === cta.toLowerCase()) : undefined;
+      if (matchedCta) setValue('cta', matchedCta, { shouldDirty: true });
+      toast.success(tool === 'Refine headline' ? 'Headline updated' : 'Copy added to this draft');
+    } catch (error) {
+      const raw = error instanceof Error ? error.message : '';
+      const plain = !raw || /non-2xx|edge function|failed to fetch|failed to send/i.test(raw)
+        ? 'Copy is unavailable right now. Your draft was not changed.'
+        : raw;
+      toast.error(plain);
+    } finally {
+      setWriting(null);
+    }
+  };
 
   const reachPercent = useMemo(() => {
     const high = reachEstimate.high || 1;
@@ -691,8 +742,8 @@ export default function CreateAd() {
             <p className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground"><Sparkles className="h-3 w-3" /> Writing tools</p>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {['Suggest copy', 'Refine headline', 'Match brand voice'].map((a) => (
-                <button key={a} type="button" onClick={() => toast.message(a, { description: 'Coming soon.' })}
-                  className="rounded-full border border-border px-2.5 py-1 text-[10px] transition hover:border-primary/40">{a}</button>
+                <button key={a} type="button" disabled={writing !== null} onClick={() => void applyWritingTool(a)}
+                  className="rounded-full border border-border px-2.5 py-1 text-[10px] transition hover:border-primary/40 disabled:opacity-60">{writing === a ? 'Writing…' : a}</button>
               ))}
             </div>
           </div>
@@ -748,11 +799,11 @@ export default function CreateAd() {
           <Field label="Age Range">
             <div className="flex items-center gap-3">
               <Controller control={control} name="ageMin" render={({ field }) => (
-                <input type="range" min={13} max={65} step={1} value={field.value} onChange={(e) => field.onChange(Number(e.target.value))} className="w-full accent-primary" />
+                <input type="range" min={13} max={65} step={1} value={field.value} onChange={(e) => field.onChange(Math.min(Number(e.target.value), values.ageMax))} className="w-full accent-primary" />
               )} />
               <span className="text-xs font-medium text-foreground shrink-0 w-16 text-right">{values.ageMin}–{values.ageMax}</span>
               <Controller control={control} name="ageMax" render={({ field }) => (
-                <input type="range" min={13} max={65} step={1} value={field.value} onChange={(e) => field.onChange(Number(e.target.value))} className="w-full accent-primary" />
+                <input type="range" min={13} max={65} step={1} value={field.value} onChange={(e) => field.onChange(Math.max(Number(e.target.value), values.ageMin))} className="w-full accent-primary" />
               )} />
             </div>
           </Field>
@@ -769,17 +820,18 @@ export default function CreateAd() {
           </Field>
           <Field label="Interests">
             <div className="flex flex-wrap gap-1.5 mb-2">
+              {interests.length === 0 && <p className="text-[11px] text-muted-foreground">Add the topics this audience already cares about.</p>}
               {interests.map((int) => (
                 <span key={int} className="inline-flex items-center gap-1 px-2 py-1 text-[11px] bg-primary/10 text-primary rounded-md">
                   {int}
-                  <button type="button" onClick={() => setInterests(interests.filter((i) => i !== int))}><X className="h-3 w-3" /></button>
+                  <button type="button" onClick={() => setInterestList(interests.filter((i) => i !== int))}><X className="h-3 w-3" /></button>
                 </span>
               ))}
             </div>
             <div className="flex gap-2">
               <Input value={interestInput} onChange={(e) => setInterestInput(e.target.value)}
                 placeholder="Add interest..." className="h-10 text-sm border-[1.5px] border-border rounded-[10px] focus:border-primary" />
-              <button type="button" onClick={() => { if (interestInput.trim()) { setInterests([...interests, interestInput.trim()]); setInterestInput(''); } }}
+              <button type="button" onClick={() => { if (interestInput.trim()) { setInterestList([...interests, interestInput.trim()]); setInterestInput(''); } }}
                 className="px-3 py-2 text-xs font-medium text-primary border border-primary rounded-lg hover:bg-primary/10">+ Add</button>
             </div>
           </Field>
