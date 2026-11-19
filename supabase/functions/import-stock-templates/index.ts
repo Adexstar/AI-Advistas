@@ -442,15 +442,22 @@ Deno.serve(async (req) => {
       const query = String(body.query ?? "").trim();
       if (!query) return json({ error: "query is required" }, 400);
       const limit = Math.min(Math.max(Number(body.limit) || 16, 1), 40);
-      const results = await cachedSearch(admin, providers, query, limit);
-      return json({
-        results,
-        providers: {
-          pexels: !!PEXELS_KEY,
-          unsplash: !!UNSPLASH_KEY,
-          pixabay: !!PIXABAY_KEY,
-        },
-      });
+      const flags = {
+        pexels: !!PEXELS_KEY,
+        unsplash: !!UNSPLASH_KEY,
+        pixabay: !!PIXABAY_KEY,
+      };
+      const secretFor: Record<string, string> = {
+        pexels: "PEXELS_API_KEY",
+        unsplash: "UNSPLASH_ACCESS_KEY",
+        pixabay: "PIXABAY_API_KEY",
+      };
+      const missing = providers.filter((provider) => !flags[provider as keyof typeof flags]).map((provider) => secretFor[provider] ?? provider);
+      const results = missing.length === providers.length ? [] : await cachedSearch(admin, providers, query, limit);
+      if (!results.length && missing.length === providers.length) {
+        return json({ error: `Missing ${missing.join(", ")}. Nothing was fetched.`, results, providers: flags, missing }, 501);
+      }
+      return json({ results, providers: flags, missing });
     }
 
     if (mode === "import" || mode === "seed" || mode === "catalog") {
@@ -493,10 +500,27 @@ Deno.serve(async (req) => {
         return !!i.image_url;
       });
 
+      if (!items.length) {
+        const secretFor: Record<string, string> = {
+          pexels: "PEXELS_API_KEY",
+          unsplash: "UNSPLASH_ACCESS_KEY",
+          pixabay: "PIXABAY_API_KEY",
+        };
+        const present: Record<string, boolean> = {
+          pexels: !!PEXELS_KEY,
+          unsplash: !!UNSPLASH_KEY,
+          pixabay: !!PIXABAY_KEY,
+        };
+        const missing = providers.filter((provider) => !present[provider]).map((provider) => secretFor[provider] ?? provider);
+        if (missing.length) return json({ error: `Missing ${missing.join(", ")}. Nothing was imported.` }, 501);
+        return json({ imported: 0, skipped: 0, message: "The providers returned no photos for those queries." });
+      }
+
+      const lookupSources = [...new Set([...providers, ...items.map((item) => item.provider).filter(Boolean)])];
       const { data: existing } = await admin
         .from("templates")
         .select("source, source_id")
-        .in("source", providers)
+        .in("source", lookupSources)
         .in("source_id", items.map((i) => i.source_id));
       const existingKeys = new Set((existing ?? []).map((e: any) => `${e.source}:${e.source_id}`));
 

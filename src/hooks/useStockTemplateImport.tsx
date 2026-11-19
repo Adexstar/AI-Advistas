@@ -41,7 +41,7 @@ export const useSeedStarterPack = () => {
       invalidate(qc);
       toast.success(
         r.imported
-          ? `Seeded ${r.imported} pending templates${r.skipped ? ` (${r.skipped} skipped)` : ''}`
+          ? `Published ${r.imported} starter template${r.imported === 1 ? '' : 's'} to the library${r.skipped ? ` (${r.skipped} already existed)` : ''}`
           : r.message ?? 'Starter pack already imported',
       );
     },

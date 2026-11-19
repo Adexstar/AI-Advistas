@@ -31,10 +31,10 @@ Create `.env` from `.env.example` and set the three `VITE_SUPABASE_*` values for
 | `RUNWARE_API_KEY` | Supabase secret | Video generation in AI Studio |
 | `LEONARDO_API_KEY` | Supabase secret | Leonardo image generation |
 | `IDEOGRAM_API_KEY` | Supabase secret | Ideogram image generation |
-| `PEXELS_API_KEY` | Supabase secret | Pexels stock search and template import |
-| `PIXABAY_API_KEY` | Supabase secret | Pixabay stock search and template import |
-| `UNSPLASH_ACCESS_KEY` | Supabase secret | Unsplash stock search and template import |
-| `FREEPIK_API_KEY` | Supabase secret | Freepik template search |
+| `PEXELS_API_KEY` | Supabase secret, or a key saved in Admin → Imports | Pexels stock search and template import |
+| `PIXABAY_API_KEY` | Supabase secret, or a key saved in Admin → Imports | Pixabay stock search and template import |
+| `UNSPLASH_ACCESS_KEY` | Supabase secret, or a key saved in Admin → Imports | Unsplash stock search and template import |
+| `FREEPIK_API_KEY` | Supabase secret, or a key saved in Admin → Imports | Freepik template search |
 | `BRANDFETCH_API_KEY` | Supabase secret | Import a public brand into a brand kit |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Supabase secrets | Media upload and hosted template previews |
 | `FLUTTERWAVE_SECRET_KEY`, `FLUTTERWAVE_SECRET_HASH` | Supabase secrets | Paid plan checkout and the payment webhook |
@@ -47,6 +47,26 @@ Create `.env` from `.env.example` and set the three `VITE_SUPABASE_*` values for
 If a key is missing, the screen that needs it shows the failure. It does not fill in sample copy, sample images, or a successful payment.
 
 Admin → Providers lists which secrets are present and can run a live check. Settings does not issue a personal API key.
+
+Admin → Imports can save a Pexels, Pixabay, Unsplash, Freepik, or Lovable key on the signed-in admin account. That saved key is what “Test saved key” and “Fetch with saved key” call. “Fetch with project secret” calls the edge function, which still reads the Supabase secret. Import stores the photos you already fetched, then leaves them pending. Approve them in the same gallery and they show on Templates. Lovable returns copy and is not stored as a library template. The Templates page lists approved, active rows only.
+
+A saved key is not written into the Supabase secret. Redeploy `import-stock-templates` and `search-freepik-templates` before the updated missing-key responses from those functions are live. Until then, the Imports page still names a missing stock secret from the flags the current function returns.
+
+Lovable template generation also calls `consume_quota`. That function is in `supabase/migrations/20261113140000_server_quota_and_payments.sql`. If the hosted database has not applied it, Lovable returns “Could not check your plan limit” before it uses `LOVABLE_API_KEY`. Apply that migration in the SQL editor. A key saved on the account can still be tested directly against the Lovable gateway.
+
+## Making an account an admin
+
+The app cannot grant the first admin. `user_roles` only lets an existing admin insert a role. In the Supabase SQL editor, signed in as the database owner:
+
+```sql
+insert into public.user_roles (user_id, role)
+select id, 'admin'::public.app_role
+from auth.users
+where email = 'you@example.com'
+on conflict (user_id, role) do nothing;
+```
+
+Sign out and back in, then open `/admin`. A user without that row is sent back to the dashboard.
 
 ## What is not finished
 
