@@ -1,6 +1,6 @@
 // Search over the templates library. Queries Supabase directly for now; the
 // same signature will front the future `template-search` edge function that
-// fans out to third-party providers (Freepik, Canva, Bannerbear, ...).
+// fans out to third-party providers (Canva, Bannerbear, ...).
 
 import { supabase } from "@/integrations/supabase/client";
 import type { TemplateRecord } from "./types";

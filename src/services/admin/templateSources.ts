@@ -4,20 +4,19 @@ import type { StockItem } from "@/services/templates/StockImportService";
 
 export const TEMPLATE_SOURCE_PLATFORM = "template-source";
 
-export type TemplateSourceId = "pexels" | "pixabay" | "unsplash" | "freepik" | "lovable";
+export type TemplateSourceId = "pexels" | "pixabay" | "unsplash" | "lovable";
 
 export type TemplateSource = {
   id: TemplateSourceId;
   label: string;
   secret: string;
-  kind: "stock" | "freepik" | "lovable";
+  kind: "stock" | "lovable";
 };
 
 export const TEMPLATE_SOURCES: TemplateSource[] = [
   { id: "pexels", label: "Pexels", secret: "PEXELS_API_KEY", kind: "stock" },
   { id: "pixabay", label: "Pixabay", secret: "PIXABAY_API_KEY", kind: "stock" },
   { id: "unsplash", label: "Unsplash", secret: "UNSPLASH_ACCESS_KEY", kind: "stock" },
-  { id: "freepik", label: "Freepik", secret: "FREEPIK_API_KEY", kind: "freepik" },
   { id: "lovable", label: "Lovable AI", secret: "LOVABLE_API_KEY", kind: "lovable" },
 ];
 
@@ -87,57 +86,6 @@ export function mediaHitsToTemplates(source: TemplateSource, hits: MediaHit[]): 
   });
 }
 
-export function freepikPayloadToTemplates(payload: { data?: unknown; templates?: unknown }): FetchedTemplate[] {
-  const rows = Array.isArray(payload.data) ? payload.data : Array.isArray(payload.templates) ? payload.templates : [];
-  return rows.flatMap((row) => {
-    if (!row || typeof row !== "object") return [];
-    const item = row as {
-      id?: string | number;
-      title?: string;
-      name?: string;
-      image?: { source?: { url?: string }; url?: string };
-      thumbnail?: { url?: string };
-      preview?: { url?: string };
-      preview_url?: string;
-      thumbnail_url?: string;
-    };
-    const image = item.image?.source?.url || item.image?.url || item.preview?.url || item.preview_url || "";
-    const thumb = item.thumbnail?.url || item.thumbnail_url || image;
-    if (!image || item.id == null) return [];
-    return [{
-      provider: "freepik" as const,
-      source_id: String(item.id).replace(/^freepik-/, ""),
-      name: String(item.title || item.name || `Freepik ${item.id}`).slice(0, 140),
-      image_url: image,
-      thumbnail_url: thumb,
-      width: 1080,
-      height: 1080,
-      license: "freepik:api",
-    }];
-  });
-}
-
-export function edgeFreepikToTemplates(rows: unknown): FetchedTemplate[] {
-  if (!Array.isArray(rows)) return [];
-  return rows.flatMap((row) => {
-    if (!row || typeof row !== "object") return [];
-    const item = row as { id?: string | number; freepik_id?: string | number; name?: string; title?: string; preview_url?: string; thumbnail_url?: string };
-    const image = item.preview_url || item.thumbnail_url || "";
-    const sourceId = String(item.freepik_id ?? item.id ?? "").replace(/^freepik-/, "");
-    if (!image || !sourceId) return [];
-    return [{
-      provider: "freepik" as const,
-      source_id: sourceId,
-      name: String(item.name || item.title || `Freepik ${sourceId}`).slice(0, 140),
-      image_url: image,
-      thumbnail_url: item.thumbnail_url || image,
-      width: 1080,
-      height: 1080,
-      license: "freepik:api",
-    }];
-  });
-}
-
 export function importableTemplates(items: FetchedTemplate[]): StockItem[] {
   return items.flatMap((item) => {
     if (item.provider === "lovable" || !item.image_url.trim()) return [];
@@ -190,7 +138,7 @@ export async function fetchWithSavedKey(source: TemplateSource, key: string, que
   if (!trimmed) throw new Error(missingKeyMessage(source.secret));
   if (term.length < 2) throw new Error("Enter at least 2 characters to search.");
   if (source.id === "lovable") {
-    throw new Error("Lovable writes copy, not a photo. Use Test saved key, then import from a stock or Freepik result.");
+    throw new Error("Lovable writes copy, not a photo. Use Test saved key, then import from a stock result.");
   }
 
   if (source.id === "pexels") {
@@ -252,11 +200,7 @@ export async function fetchWithSavedKey(source: TemplateSource, key: string, que
     }));
   }
 
-  const response = await fetch(`https://api.freepik.com/v1/resources?term=${encodeURIComponent(term)}&limit=8&page=1`, {
-    headers: { "x-freepik-api-key": trimmed, Accept: "application/json" },
-  });
-  if (!response.ok) throw new Error(keyRejectedMessage(source, response.status));
-  return freepikPayloadToTemplates(await readJson(response));
+  throw new Error(`${source.label} is not a photo source.`);
 }
 
 export async function fetchWithProjectSecret(source: TemplateSource, query: string): Promise<FetchedTemplate[]> {
@@ -289,28 +233,15 @@ export async function fetchWithProjectSecret(source: TemplateSource, query: stri
     }];
   }
 
-  const functionName = source.id === "freepik"
-    ? "search-freepik-templates"
-    : source.id === "pexels"
-      ? "search-pexels"
-      : source.id === "pixabay"
-        ? "search-pixabay"
-        : "search-unsplash";
-  const body = source.id === "freepik" ? { query: term, limit: 8 } : { intent: term, query: term };
-  const { data, error } = await supabase.functions.invoke(functionName, { body });
+  const functionName = source.id === "pexels"
+    ? "search-pexels"
+    : source.id === "pixabay"
+      ? "search-pixabay"
+      : "search-unsplash";
+  const { data, error } = await supabase.functions.invoke(functionName, { body: { intent: term, query: term } });
   if (error) throw new Error(await readEdgeError(error, missingKeyMessage(source.secret)));
-  if (data?.error && !Array.isArray(data?.results) && !Array.isArray(data?.templates)) {
+  if (data?.error && !Array.isArray(data?.results)) {
     throw new Error(String(data.error));
-  }
-  if (source.id === "freepik") {
-    if (data?.fallback || (typeof data?.error === "string" && !Array.isArray(data?.templates))) {
-      const detail = typeof data.error === "string" ? data.error : typeof data.message === "string" ? data.message : "";
-      if (/auth|api key|FREEPIK_API_KEY|rejected/i.test(detail)) throw new Error(keyRejectedMessage(source, 401));
-      throw new Error(detail || keyRejectedMessage(source, 401));
-    }
-    const fromEdge = edgeFreepikToTemplates(data?.templates);
-    if (fromEdge.length) return fromEdge;
-    return freepikPayloadToTemplates(data ?? {});
   }
   const results = Array.isArray(data?.results) ? data.results as MediaHit[] : [];
   return mediaHitsToTemplates(source, results);

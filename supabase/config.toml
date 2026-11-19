@@ -65,15 +65,6 @@ verify_jwt = true
 [functions.auto-fill-template]
 verify_jwt = true
 
-[functions.search-freepik-templates]
-verify_jwt = true
-
-[functions.get-freepik-template]
-verify_jwt = true
-
-[functions.process-freepik-psd]
-verify_jwt = true
-
 [functions.generate-ad-draft]
 verify_jwt = true
 

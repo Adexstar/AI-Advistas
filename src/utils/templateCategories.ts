@@ -50,7 +50,7 @@ export const CATEGORY_DESCRIPTIONS: Record<string, string> = {
   [TEMPLATE_CATEGORIES.SOCIAL_MEDIA]: 'Templates optimized for social media platforms',
   [TEMPLATE_CATEGORIES.BUSINESS]: 'Professional business and corporate templates',
   [TEMPLATE_CATEGORIES.AGENCY_MARKETING]: 'Marketing agency and promotional templates',
-  [TEMPLATE_CATEGORIES.FREEPIK]: 'Premium templates from Freepik',
+  [TEMPLATE_CATEGORIES.FREEPIK]: 'Imported library templates',
   [TEMPLATE_CATEGORIES.INTERNAL]: 'Uploaded file-based templates',
   [TEMPLATE_CATEGORIES.BEAUTY]: 'Beauty and skincare campaigns',
   [TEMPLATE_CATEGORIES.FASHION]: 'Fashion and apparel launches',
@@ -129,7 +129,6 @@ const CATEGORY_ALIASES: Record<string, string> = {
   'business and marketing': 'business',
   'social media': 'social_media',
   'social media marketing': 'social_media',
-  freepik: 'freepik',
   internal: 'internal',
 };
 
@@ -150,7 +149,6 @@ const CATEGORY_KEYWORDS = [
   [/seasonal|holiday|black friday|christmas|summer|winter/, 'seasonal'],
   [/business|corporate|b2b|professional/, 'business'],
   [/social media|social_media|socialmedia/, 'social_media'],
-  [/freepik|premium/, 'freepik'],
   [/internal|uploaded|custom/, 'internal'],
 ] as const;
 
@@ -176,6 +174,7 @@ export function normalizeTemplateCategory(value?: string | null): string {
 }
 
 export function getCategoryLabel(category: string): string {
+  if (category === TEMPLATE_CATEGORIES.FREEPIK) return 'Imported';
   return CATEGORY_LABELS[category] || category;
 }
 

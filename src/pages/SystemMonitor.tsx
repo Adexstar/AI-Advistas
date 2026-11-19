@@ -25,7 +25,9 @@ async function loadMonitor() {
   if (status.error) {
     providerError = await readEdgeError(status.error, "Provider status could not be loaded.");
   } else {
-    providers = (status.data?.providers ?? []) as ProviderRow[];
+    providers = ((status.data?.providers ?? []) as ProviderRow[]).filter(
+      (provider) => provider.id !== "freepik" && !provider.envStatus.some((item) => item.name === "FREEPIK_API_KEY"),
+    );
   }
 
   return {
@@ -46,12 +48,8 @@ const SystemMonitor = () => {
   const data = query.data;
 
   return (
-    <div className="page-container space-y-6 py-4 md:py-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">System Monitor</h1>
-          <p className="text-muted-foreground">Checks this workspace can actually run: the database, recent jobs, and which provider keys are present.</p>
-        </div>
+    <div className="space-y-5">
+      <div className="flex justify-end">
         <Button variant="outline" onClick={() => void query.refetch()} disabled={query.isFetching}>
           {query.isFetching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           Check again
@@ -59,11 +57,9 @@ const SystemMonitor = () => {
       </div>
 
       {query.isError && (
-        <Card>
-          <CardContent className="p-4 text-sm text-destructive">
-            {query.error instanceof Error ? query.error.message : "The monitor could not run."}
-          </CardContent>
-        </Card>
+        <p className="rounded-xl border border-destructive/30 bg-card px-4 py-8 text-center text-sm text-destructive">
+          {query.error instanceof Error ? query.error.message : "The monitor could not run."}
+        </p>
       )}
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -140,7 +136,7 @@ const SystemMonitor = () => {
               <span className="capitalize">{job.status}</span>
             </div>
           ))}
-          {data && data.jobs.length === 0 && !data.jobsError && <p className="text-muted-foreground">Nothing to list.</p>}
+          {data && data.jobs.length === 0 && !data.jobsError && <p className="text-muted-foreground">No AI jobs are stored for this account.</p>}
         </CardContent>
       </Card>
     </div>

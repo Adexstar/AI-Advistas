@@ -60,13 +60,6 @@ const PROVIDERS: Provider[] = [
     docsUrl: "https://unsplash.com/developers",
   },
   {
-    id: "freepik", label: "Freepik / Magnific", category: "search", envVars: ["FREEPIK_API_KEY"],
-    testFn: "search-freepik-templates", testBody: { query: "banner" },
-    playgroundFn: "search-freepik-templates", playgroundKind: "search",
-    playgroundFields: [{ key: "query", label: "Query", type: "text", default: "instagram banner" }],
-    docsUrl: "https://freepik.com/api",
-  },
-  {
     id: "brandfetch", label: "Brandfetch", category: "brand", envVars: ["BRANDFETCH_API_KEY"],
     testFn: "brandfetch-import", testBody: { url: "https://apple.com" },
     playgroundFn: "brandfetch-import", playgroundKind: "json",

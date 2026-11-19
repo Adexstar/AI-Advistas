@@ -19,12 +19,13 @@ import {
   useAdminTemplates, useReviewTemplates, useSaveTemplate, useToggleTemplateActive, type AdminTemplate,
 } from '@/hooks/useAdminTemplates';
 import { isPublishedTemplate, reviewQueue } from '@/services/templates/review';
+import { AdminMessage } from '@/components/admin/adminChrome';
 import { validateStructure } from '@/services/templates/qa';
 
 const SOURCE_LABELS: Record<string, string> = {
   advista_original: 'AdVista Original',
-  freepik_api: 'Freepik',
-  freepik: 'Freepik',
+  freepik_api: 'Imported',
+  freepik: 'Imported',
   canva: 'Canva',
   cloudinary: 'Cloudinary',
   manual: 'Manual',
@@ -249,7 +250,7 @@ export default function AdminTemplates() {
           {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-40 w-full" />)}
         </div>
       ) : filtered.length === 0 ? (
-        <p className="text-muted-foreground">No templates match these filters.</p>
+        <AdminMessage>No templates match these filters.</AdminMessage>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {filtered.map((t) => (
@@ -408,11 +409,11 @@ export default function AdminTemplates() {
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label>Source</Label>
-                  <Input value={form.source} onChange={(e) => set('source', e.target.value)} placeholder="freepik_api" />
+                  <Input value={form.source} onChange={(e) => set('source', e.target.value)} placeholder="pexels" />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Source ID</Label>
-                  <Input value={form.source_id} onChange={(e) => set('source_id', e.target.value)} placeholder="fp_12345" />
+                  <Input value={form.source_id} onChange={(e) => set('source_id', e.target.value)} placeholder="source id" />
                 </div>
                 <div className="space-y-1.5">
                   <Label>License</Label>

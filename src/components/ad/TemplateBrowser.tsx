@@ -3,17 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertTriangle, Clock, Download, FileText, Gauge, Heart, History, Layers3, Megaphone, RefreshCcw, Rocket, Search, Sparkles, Target, Zap } from 'lucide-react';
+import { AlertTriangle, Clock, FileText, Gauge, Heart, History, Layers3, Megaphone, RefreshCcw, Rocket, Search, Sparkles, Target, Zap } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
 import { useTemplates, useTrackTemplateUsage } from '@/hooks/useTemplates';
-import { useCombinedTemplates } from '@/hooks/useUnifiedTemplates';
 import { generateDefaultCanvasData } from '@/utils/canvasHelpers';
 import { setPendingEditorTemplate } from '@/lib/templateEditorSession';
-import { toast } from 'sonner';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { TemplatePreviewDialog, type TemplatePreviewLike } from '@/components/templates/TemplatePreviewDialog';
 import { Eye } from 'lucide-react';
@@ -53,18 +49,10 @@ const labelize = (value: string) =>
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (character) => character.toUpperCase());
 
-const getSourceTheme = (source: 'internal' | 'freepik') =>
-  source === 'internal'
-    ? {
-        panel: 'border-sky-500/20 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.22),_transparent_55%),linear-gradient(135deg,rgba(14,165,233,0.12),rgba(15,23,42,0.02))]',
-        accent: 'bg-sky-500 text-white',
-        button: 'bg-sky-600 text-white hover:bg-sky-700',
-      }
-    : {
-        panel: 'border-amber-500/20 bg-[radial-gradient(circle_at_top_left,_rgba(245,158,11,0.22),_transparent_55%),linear-gradient(135deg,rgba(245,158,11,0.14),rgba(127,29,29,0.03))]',
-        accent: 'bg-amber-500 text-amber-950',
-        button: 'bg-amber-500 text-amber-950 hover:bg-amber-400',
-      };
+const sourceTheme = {
+  panel: 'border-sky-500/20 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.22),_transparent_55%),linear-gradient(135deg,rgba(14,165,233,0.12),rgba(15,23,42,0.02))]',
+  accent: 'bg-sky-500 text-white',
+};
 
 const TemplateBrowser = ({
   onTemplateSelect,
@@ -72,39 +60,23 @@ const TemplateBrowser = ({
   showHeader = true,
 }: TemplateBrowserProps) => {
   const navigate = useNavigate();
-  const { data: internalTemplates, isLoading: isLoadingInternal, error } = useTemplates();
-  const { 
-    freepikTemplates, 
-    isLoading: isLoadingFreepik,
-    searchAllTemplates,
-    processFreepikPSD,
-    isProcessingPSD 
-  } = useCombinedTemplates();
+  const { data: internalTemplates, isLoading, error, refetch } = useTemplates();
   const trackUsage = useTrackTemplateUsage();
   const [search, setSearch] = useState('');
   const [filterGoal, setFilterGoal] = useState('all');
   const [filterIndustry, setFilterIndustry] = useState('all');
   const [filterDifficulty, setFilterDifficulty] = useState('all');
-  const [filterSource, setFilterSource] = useState<'all' | 'internal' | 'freepik'>('all');
-  const [importingTemplateId, setImportingTemplateId] = useState<string | null>(null);
-  const [importProgress, setImportProgress] = useState(0);
   const [favoriteTemplateKeys, setFavoriteTemplateKeys] = useState<string[]>(() => readStoredTemplateKeys(TEMPLATE_FAVORITES_KEY));
   const [recentTemplateKeys, setRecentTemplateKeys] = useState<string[]>(() => readStoredTemplateKeys(TEMPLATE_RECENTS_KEY));
   const [previewTpl, setPreviewTpl] = useState<TemplatePreviewLike | null>(null);
   
-  useEffect(() => {
-    searchAllTemplates({ query: '', page: 1, limit: 20 });
-  }, [searchAllTemplates]);
-  
-  const isLoading = isLoadingInternal || isLoadingFreepik;
-
   const browserCopy =
     mode === 'library'
       ? {
           eyebrow: 'Template workspace',
           title: 'Browse templates that are ready to adapt, import, and launch.',
           subtitle:
-            'Compare internal systems and imported creative in one place, then open the best fit in the customizer.',
+            'Compare the library in one place, then open the best fit in the customizer.',
           actionLabel: 'Open in Customizer',
         }
       : {
@@ -116,17 +88,9 @@ const TemplateBrowser = ({
         };
 
   const allTemplates = useMemo(
-    () => [
-      ...(internalTemplates || []).map((template) => ({ ...template, source: 'internal' as const })),
-      ...freepikTemplates.map((template) => ({ ...template, source: 'freepik' as const })),
-    ],
-    [freepikTemplates, internalTemplates]
+    () => (internalTemplates || []).map((template) => ({ ...template, source: 'internal' as const })),
+    [internalTemplates]
   );
-
-  const sourceCounts = {
-    internal: allTemplates.filter((template) => template.source === 'internal').length,
-    freepik: allTemplates.filter((template) => template.source === 'freepik').length,
-  };
 
   const goalOptions = useMemo(
     () => Array.from(new Set(allTemplates.map((template: any) => template.goal).filter(Boolean))).sort(),
@@ -154,9 +118,8 @@ const TemplateBrowser = ({
           const matchesGoal = filterGoal === 'all' || template.goal === filterGoal;
           const matchesIndustry = filterIndustry === 'all' || template.industry === filterIndustry;
           const matchesDifficulty = filterDifficulty === 'all' || template.difficulty_level === filterDifficulty;
-          const matchesSource = filterSource === 'all' || template.source === filterSource;
 
-          return matchesSearch && matchesGoal && matchesIndustry && matchesDifficulty && matchesSource;
+          return matchesSearch && matchesGoal && matchesIndustry && matchesDifficulty;
         })
         .sort((a: any, b: any) => {
           const aScore = a.performance_score || 0;
@@ -171,15 +134,14 @@ const TemplateBrowser = ({
           if (!aPopular && bPopular) return 1;
           return a.name.localeCompare(b.name);
         }),
-    [allTemplates, filterDifficulty, filterGoal, filterIndustry, filterSource, search]
+    [allTemplates, filterDifficulty, filterGoal, filterIndustry, search]
   );
 
   const stats = useMemo(
     () => ({
       total: allTemplates.length,
       highPerformers: allTemplates.filter((template: any) => (template.performance_score || 0) >= 90).length,
-      readyNow: allTemplates.filter((template: any) => template.source === 'internal' || template.canvas_data).length,
-      imported: allTemplates.filter((template: any) => template.source === 'freepik').length,
+      readyNow: allTemplates.filter((template: any) => template.canvas_data || template.preview_url || template.thumbnail_url).length,
       favorites: favoriteTemplateKeys.length,
     }),
     [allTemplates, favoriteTemplateKeys.length]
@@ -190,7 +152,6 @@ const TemplateBrowser = ({
     filterGoal !== 'all',
     filterIndustry !== 'all',
     filterDifficulty !== 'all',
-    filterSource !== 'all',
   ].filter(Boolean).length;
 
   const favoriteTemplates = useMemo(
@@ -240,7 +201,6 @@ const TemplateBrowser = ({
     setFilterGoal('all');
     setFilterIndustry('all');
     setFilterDifficulty('all');
-    setFilterSource('all');
   };
 
   const openTemplate = (template: any) => {
@@ -261,38 +221,8 @@ const TemplateBrowser = ({
     navigate('/visual-editor');
   };
 
-  const handleTemplateClick = async (template: any) => {
-    if (template.source === 'freepik' && !template.canvas_data) {
-      setImportingTemplateId(template.id);
-      setImportProgress(10);
-      
-      toast.info('Downloading PSD...');
-      setImportProgress(30);
-      
-      const success = await processFreepikPSD(template.id, template.freepik_download_url);
-      
-      setImportProgress(70);
-      
-      if (!success) {
-        toast.error('Failed to import template');
-        setImportingTemplateId(null);
-        setImportProgress(0);
-        return;
-      }
-      
-      setImportProgress(100);
-      toast.success('Template imported successfully!');
-      
-      searchAllTemplates({ query: '', page: 1, limit: 20 });
-      setImportingTemplateId(null);
-      setImportProgress(0);
-      return;
-    }
-    
-    if (template.source === 'internal') {
-      trackUsage.mutate(template.id);
-    }
-
+  const handleTemplateClick = (template: any) => {
+    trackUsage.mutate(template.id);
     openTemplate(template);
   };
 
@@ -334,7 +264,7 @@ const TemplateBrowser = ({
         </p>
         <Button 
           variant="outline" 
-          onClick={() => searchAllTemplates({ query: '', page: 1, limit: 20 })}
+          onClick={() => { void refetch(); }}
         >
           Retry
         </Button>
@@ -366,7 +296,6 @@ const TemplateBrowser = ({
 
   const renderTemplateCard = (template: any) => {
     const isFavorite = favoriteTemplateKeys.includes(getTemplateStorageKey(template));
-    const sourceTheme = getSourceTheme(template.source);
     const performanceScore = (template as any).performance_score || 0;
     const platformCount = Array.isArray((template as any).platforms) ? (template as any).platforms.length : 0;
     const primaryPlatform = platformCount > 0 ? (template as any).platforms[0] : 'Cross-channel';
@@ -421,7 +350,7 @@ const TemplateBrowser = ({
                 <Heart className={`h-4 w-4 ${isFavorite ? 'fill-current text-primary' : 'text-muted-foreground'}`} />
               </Button>
               <Badge variant="outline" className="rounded-full border-border/80 bg-background/70 text-[11px] uppercase tracking-[0.18em]">
-                {template.source === 'internal' ? 'Internal' : 'Freepik'}
+                Library
               </Badge>
             </div>
           </div>
@@ -499,49 +428,24 @@ const TemplateBrowser = ({
           </div>
 
           <div className="mt-auto">
-            {importingTemplateId === template.id ? (
-              <div className="space-y-2 rounded-[24px] border border-border/70 bg-background p-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Importing template...</span>
-                  <span className="font-medium">{importProgress}%</span>
-                </div>
-                <Progress value={importProgress} className="h-2" />
-                <p className="text-xs text-muted-foreground">
-                  {importProgress < 30
-                    ? 'Downloading PSD...'
-                    : importProgress < 70
-                      ? 'Processing layers...'
-                      : 'Finalizing import...'}
-                </p>
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setPreviewTpl(template as TemplatePreviewLike)}
-                  className="rounded-[24px]"
-                  aria-label={`Preview ${template.name}`}
-                >
-                  <Eye className="mr-2 h-4 w-4" /> Preview
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => handleTemplateClick(template)}
-                  className={`flex-1 rounded-[24px] ${template.source !== 'internal' && !template.canvas_data ? sourceTheme.button : ''}`}
-                  disabled={isProcessingPSD}
-                >
-                  {template.source !== 'internal' && !template.canvas_data ? (
-                    <>
-                      <Download className="mr-2 h-4 w-4" />
-                      Import & Use Template
-                    </>
-                  ) : (
-                    browserCopy.actionLabel
-                  )}
-                </Button>
-              </div>
-            )}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPreviewTpl(template as TemplatePreviewLike)}
+                className="rounded-[24px]"
+                aria-label={`Preview ${template.name}`}
+              >
+                <Eye className="mr-2 h-4 w-4" /> Preview
+              </Button>
+              <Button
+                type="button"
+                onClick={() => handleTemplateClick(template)}
+                className="flex-1 rounded-[24px]"
+              >
+                {browserCopy.actionLabel}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -595,12 +499,6 @@ const TemplateBrowser = ({
                     <p className="mt-2 text-2xl font-semibold">{stats.readyNow}</p>
                   </CardContent>
                 </Card>
-                <Card className="border-border/70 bg-background/85 shadow-none backdrop-blur-sm">
-                  <CardContent className="p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">External</p>
-                    <p className="mt-2 text-2xl font-semibold">{stats.imported}</p>
-                  </CardContent>
-                </Card>
                 <Card className="border-border/70 bg-background/85 shadow-none backdrop-blur-sm sm:col-span-2">
                   <CardContent className="flex items-center justify-between gap-4 p-4">
                     <div>
@@ -624,7 +522,7 @@ const TemplateBrowser = ({
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Creative filters</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Narrow by campaign objective, industry context, or import source to reach the right creative faster.
+                  Narrow by campaign objective, industry, or difficulty to reach the right creative faster.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -639,14 +537,6 @@ const TemplateBrowser = ({
                 )}
               </div>
             </div>
-
-            <Tabs value={filterSource} onValueChange={(value) => setFilterSource(value as typeof filterSource)}>
-              <TabsList className="grid h-auto w-full grid-cols-1 gap-1 rounded-2xl bg-secondary/60 p-1 sm:grid-cols-3">
-                <TabsTrigger value="all" className="min-w-0 whitespace-normal">All ({allTemplates.length})</TabsTrigger>
-                <TabsTrigger value="internal" className="min-w-0 whitespace-normal">Internal ({sourceCounts.internal})</TabsTrigger>
-                <TabsTrigger value="freepik" className="min-w-0 whitespace-normal">Freepik ({sourceCounts.freepik})</TabsTrigger>
-              </TabsList>
-            </Tabs>
 
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))]">
               <div className="relative">
@@ -708,8 +598,7 @@ const TemplateBrowser = ({
                 <span>{filteredTemplates.length} template{filteredTemplates.length === 1 ? '' : 's'} match your current filters.</span>
               </div>
               <div className="flex flex-wrap gap-2 text-xs">
-                <Badge variant="outline" className="rounded-full border-border/80 bg-background/70">{sourceCounts.internal} internal</Badge>
-                <Badge variant="outline" className="rounded-full border-border/80 bg-background/70">{sourceCounts.freepik} external</Badge>
+                <Badge variant="outline" className="rounded-full border-border/80 bg-background/70">{allTemplates.length} in the library</Badge>
                 <Badge variant="outline" className="rounded-full border-border/80 bg-background/70">{stats.highPerformers} score-led</Badge>
               </div>
             </div>
@@ -743,7 +632,7 @@ const TemplateBrowser = ({
                           </p>
                         </div>
                         <Badge variant="outline" className="rounded-full border-border/80 bg-background/70 text-[11px] uppercase tracking-[0.18em]">
-                          {template.source === 'internal' ? 'Internal' : 'Freepik'}
+                          Library
                         </Badge>
                       </button>
                     ))}
@@ -779,7 +668,7 @@ const TemplateBrowser = ({
                           </p>
                         </div>
                         <Badge variant="outline" className="rounded-full border-border/80 bg-background/70 text-[11px] uppercase tracking-[0.18em]">
-                          {template.source === 'internal' ? 'Internal' : 'Freepik'}
+                          Library
                         </Badge>
                       </button>
                     ))}

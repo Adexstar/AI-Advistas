@@ -85,12 +85,6 @@ const PROVIDER_CATALOG: ProviderCatalogItem[] = [
     docsUrl: "https://unsplash.com/developers",
   },
   {
-    id: "freepik", label: "Freepik / Magnific", category: "search", envVars: ["FREEPIK_API_KEY"],
-    testFn: "search-freepik-templates", playgroundFn: "search-freepik-templates", playgroundKind: "search",
-    playgroundFields: [{ key: "query", label: "Query", type: "text", default: "instagram banner" }],
-    docsUrl: "https://freepik.com/api",
-  },
-  {
     id: "brandfetch", label: "Brandfetch", category: "brand", envVars: ["BRANDFETCH_API_KEY"],
     testFn: "brandfetch-import", playgroundFn: "brandfetch-import", playgroundKind: "json",
     playgroundFields: [{ key: "url", label: "Domain URL", type: "text", default: "https://apple.com" }],
@@ -175,6 +169,10 @@ const PROVIDER_CATALOG: ProviderCatalogItem[] = [
   { id: "lovable", label: "Lovable AI Gateway", category: "ai", envVars: ["LOVABLE_API_KEY"], testFn: "ai-gateway" },
 ];
 
+function withoutRetiredProviders(list: Provider[]): Provider[] {
+  return list.filter((provider) => provider.id !== "freepik" && provider.testFn !== "search-freepik-templates");
+}
+
 const FALLBACK_PROVIDERS: Provider[] = PROVIDER_CATALOG.map((provider) => ({
   ...provider,
   envStatus: provider.envVars.map((name) => ({ name, present: false })),
@@ -203,11 +201,11 @@ export default function AdminProviders() {
       const nextProviders = Array.isArray(data?.providers) && data.providers.length > 0
         ? data.providers
         : FALLBACK_PROVIDERS;
-      setProviders(nextProviders);
+      setProviders(withoutRetiredProviders(nextProviders));
     } catch (e: any) {
       const msg = await readInvokeError(e);
       setLoadError(msg);
-      setProviders(FALLBACK_PROVIDERS);
+      setProviders(withoutRetiredProviders(FALLBACK_PROVIDERS));
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -224,8 +222,15 @@ export default function AdminProviders() {
       });
       const result: TestResult = error ? { ok: false, error: await readInvokeError(error) } : data;
       setResults((r) => ({ ...r, [id]: result }));
-      if (result.ok) toast.success(`${id}: API key is working${result.durationMs ? ` (${result.durationMs}ms)` : ""}`);
-      else toast.error(`${id}: ${result.error ?? "failed"}`);
+      if (result.ok) {
+        const detail = result.note
+          ? result.note
+          : `The key responded${result.durationMs ? ` in ${result.durationMs}ms` : ""}.`;
+        toast.success(`${id}: ${detail}`);
+      } else {
+        const missing = Array.isArray(result.missing) ? result.missing.filter(Boolean).join(", ") : "";
+        toast.error(`${id}: ${result.error ?? "The check failed."}${missing ? ` Missing ${missing}.` : ""}`);
+      }
     } catch (e: any) {
       const result = { ok: false, error: e?.message || "Test failed" };
       setResults((r) => ({ ...r, [id]: result }));
@@ -249,14 +254,7 @@ export default function AdminProviders() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <p className="text-sm text-muted-foreground">
-          Keys live in Edge Function secrets.{" "}
-          <a
-            href="https://supabase.com/dashboard/project/mvfmasacpbjnyfakdwfp/settings/functions"
-            target="_blank" rel="noreferrer" className="underline"
-          >
-            Manage keys
-          </a>
-          . A prompt test sends a short request. Image and video checks run a real generation when the key is set. Publishing checks only confirm the secrets are present. Try it sends the prompt you type, and AI tests name the provider.
+          A check calls the provider with the project secret. Publishing only confirms the secrets are present and does not send an ad. Runway, Kling, and Veo stay unimplemented.
         </p>
         <Button variant="outline" size="sm" onClick={load} disabled={loading} className="shrink-0">
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} /> Refresh
@@ -265,7 +263,7 @@ export default function AdminProviders() {
 
       {loadError && (
         <Alert variant="destructive">
-          <AlertDescription>Couldn't reach provider-status: {loadError}</AlertDescription>
+          <AlertDescription>Provider status couldn’t be loaded. {loadError}</AlertDescription>
         </Alert>
       )}
 
@@ -277,7 +275,7 @@ export default function AdminProviders() {
         const list = grouped[cat];
         return (
         <div key={cat} className="space-y-3">
-          <h2 className="text-lg font-semibold text-muted-foreground">{CATEGORY_LABEL[cat] ?? cat}</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{CATEGORY_LABEL[cat] ?? cat}</h2>
           <div className="grid gap-4 md:grid-cols-2">
             {list.map((p) => {
               const r = results[p.id];

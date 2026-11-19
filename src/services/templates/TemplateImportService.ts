@@ -2,10 +2,9 @@
 // this service, which routes through Supabase edge functions. Each adapter
 // normalizes provider payloads into AdVista's Fabric JSON + layer format.
 
-import { supabase } from "@/integrations/supabase/client";
 import type { FabricTemplateJSON } from "./types";
 
-export type TemplateProvider = "freepik" | "canva" | "bannerbear";
+export type TemplateProvider = "canva" | "bannerbear";
 
 export interface ImportResult {
   name: string;
@@ -15,25 +14,11 @@ export interface ImportResult {
 }
 
 export const TemplateImportService = {
-  async search(provider: TemplateProvider, query: string, opts: Record<string, unknown> = {}) {
-    if (provider === "freepik") {
-      const { data, error } = await supabase.functions.invoke("search-freepik-templates", {
-        body: { query, ...opts },
-      });
-      if (error) throw error;
-      return data;
-    }
+  async search(provider: TemplateProvider, _query: string, _opts: Record<string, unknown> = {}) {
     throw new Error(`Provider ${provider} not yet available`);
   },
 
-  async import(provider: TemplateProvider, externalId: string): Promise<ImportResult> {
-    if (provider === "freepik") {
-      const { data, error } = await supabase.functions.invoke("get-freepik-template", {
-        body: { freepikId: externalId },
-      });
-      if (error) throw error;
-      return data as ImportResult;
-    }
+  async import(provider: TemplateProvider, _externalId: string): Promise<ImportResult> {
     throw new Error(`Provider ${provider} not yet available`);
   },
 };

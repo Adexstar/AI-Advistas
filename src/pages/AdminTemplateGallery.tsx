@@ -27,12 +27,18 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { CATEGORY_OPTIONS } from '@/utils/templateCategories';
 import { TemplateSourcePanel } from '@/components/admin/TemplateSourcePanel';
+import { AdminMessage } from '@/components/admin/adminChrome';
 import { missingStockSecrets } from '@/services/admin/templateSources';
 
 const CATEGORIES = CATEGORY_OPTIONS.map((category) => category.label);
 
-const providerLabel = (s: string) =>
-  s === 'pexels' ? 'Pexels' : s === 'unsplash' ? 'Unsplash' : s === 'pixabay' ? 'Pixabay' : s;
+const providerLabel = (s: string) => {
+  if (s === 'pexels') return 'Pexels';
+  if (s === 'unsplash') return 'Unsplash';
+  if (s === 'pixabay') return 'Pixabay';
+  if (s === 'freepik' || s === 'freepik_api') return 'Imported';
+  return s;
+};
 
 const Thumb = ({ src, alt }: { src?: string | null; alt: string }) => {
   const [failed, setFailed] = useState(false);
@@ -269,9 +275,9 @@ export default function AdminTemplateGallery() {
               {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="aspect-[4/5] w-full rounded-lg" />)}
             </div>
           ) : list.length === 0 ? (
-            <Card><CardContent className="p-10 text-center text-sm text-muted-foreground">
-              {tab === 'pending' ? 'Nothing waiting for review. Import or seed some templates above.' : 'No approved templates yet.'}
-            </CardContent></Card>
+            <AdminMessage>
+              {tab === 'pending' ? 'Nothing is waiting for review. Import a template above, then approve it here.' : 'No approved templates yet.'}
+            </AdminMessage>
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {list.map((t) => (

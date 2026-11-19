@@ -1,14 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Settings2 } from 'lucide-react';
 import { formatBytes, useAdminUserDetail, useAdminUsers, type AdminUserRow } from '@/hooks/admin/useAdminData';
+import { AdminLoadingRows, AdminMessage, AdminPager, AdminToolbar } from '@/components/admin/adminChrome';
 
 const PAGE_SIZE = 25;
 
@@ -30,11 +30,10 @@ export default function AdminUsers() {
 
   const total = rows[0]?.total_count ? Number(rows[0].total_count) : 0;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const start = useMemo(() => (total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1), [page, total]);
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
+      <AdminToolbar>
         <div className="relative min-w-0 flex-[1_1_220px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -43,7 +42,7 @@ export default function AdminUsers() {
               setSearch(e.target.value);
               setPage(1);
             }}
-            placeholder="Search users..."
+            placeholder="Search users…"
             className="pl-9"
           />
         </div>
@@ -52,8 +51,9 @@ export default function AdminUsers() {
           <SelectContent>
             <SelectItem value="all">All plans</SelectItem>
             <SelectItem value="free">Free</SelectItem>
-            <SelectItem value="starter">Starter</SelectItem>
             <SelectItem value="pro">Pro</SelectItem>
+            <SelectItem value="enterprise">Enterprise</SelectItem>
+            <SelectItem value="starter">Starter</SelectItem>
             <SelectItem value="agency">Agency</SelectItem>
           </SelectContent>
         </Select>
@@ -66,19 +66,17 @@ export default function AdminUsers() {
             <SelectItem value="past_due">Past due</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+      </AdminToolbar>
 
+      {isError ? (
+        <AdminMessage>Accounts couldn’t be loaded.</AdminMessage>
+      ) : isLoading ? (
+        <Card><CardContent className="p-0"><AdminLoadingRows /></CardContent></Card>
+      ) : rows.length === 0 ? (
+        <AdminMessage>No users match these filters.</AdminMessage>
+      ) : (
       <Card>
         <CardContent className="p-0">
-          {isError ? (
-            <p className="p-8 text-center text-sm text-muted-foreground">Accounts couldn’t be loaded.</p>
-          ) : isLoading ? (
-            <div className="space-y-2 p-4">
-              {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-lg" />)}
-            </div>
-          ) : rows.length === 0 ? (
-            <p className="p-8 text-center text-sm text-muted-foreground">No users match these filters.</p>
-          ) : (
             <div className="divide-y divide-border">
               {rows.map((u) => (
                 <div key={u.user_id} className="grid grid-cols-1 gap-3 p-4 md:grid-cols-[2fr_repeat(4,1fr)_auto] md:items-center">
@@ -111,20 +109,11 @@ export default function AdminUsers() {
                 </div>
               ))}
             </div>
-          )}
         </CardContent>
       </Card>
+      )}
 
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>
-          Showing {start}-{Math.min(page * PAGE_SIZE, total)} of {total.toLocaleString()} users
-        </span>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</Button>
-          <span className="px-2 py-1">{page} / {pages}</span>
-          <Button size="sm" variant="outline" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>Next</Button>
-        </div>
-      </div>
+      <AdminPager page={page} pages={pages} total={total} pageSize={PAGE_SIZE} noun="users" onPage={setPage} />
 
       <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-md">

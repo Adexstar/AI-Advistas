@@ -1,11 +1,10 @@
 // TemplateService — AdVista's orchestration layer for templates.
 // Pages must never call template edge functions directly; use this service.
-// Sources: (1) AI Template Generator (proprietary), (2) Supabase library,
-// (3) Freepik import. Canva is optional productivity, not a source.
+// Sources: (1) AI Template Generator (proprietary), (2) Supabase library.
+// Canva is optional productivity, not a source.
 import { supabase } from "@/integrations/supabase/client";
 import { BrandService, type BrandIdentity } from "@/services/ai/BrandService";
 import { CategoryService } from "@/services/ai/CategoryService";
-import { withProviderCache } from "@/services/media/cache";
 
 export interface TemplateGenContext {
   brand?: BrandIdentity | null;
@@ -59,24 +58,6 @@ export const TemplateService = {
         targetAudience: ctx.targetAudience,
         brandGuardrails: guardrails,
       },
-    });
-    if (error) throw error;
-    return data;
-  },
-
-  async importFromFreepik(query: string, opts: { category?: string; platform?: string } = {}) {
-    return withProviderCache("template-search:freepik", { query, ...opts }, async () => {
-      const { data, error } = await supabase.functions.invoke("search-freepik-templates", {
-        body: { query, ...opts },
-      });
-      if (error) throw error;
-      return data;
-    });
-  },
-
-  async fetchFreepikAsset(freepikId: string) {
-    const { data, error } = await supabase.functions.invoke("get-freepik-template", {
-      body: { freepikId },
     });
     if (error) throw error;
     return data;

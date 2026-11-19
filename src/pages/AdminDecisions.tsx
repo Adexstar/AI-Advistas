@@ -1,12 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChevronDown, ChevronRight, Search } from 'lucide-react';
 import { useAdminDecisions } from '@/hooks/admin/useAdminData';
+import { AdminLoadingRows, AdminMessage, AdminPager, AdminToolbar } from '@/components/admin/adminChrome';
 
 const PAGE_SIZE = 50;
 
@@ -29,10 +28,11 @@ export default function AdminDecisions() {
   const [page, setPage] = useState(1);
   const [expanded, setExpanded] = useState<string | null>(null);
 
+  const since = useMemo(() => rangeToDate(range), [range]);
   const { data: rows = [], isLoading, isError } = useAdminDecisions({
     search,
     status: status === 'all' ? null : status,
-    since: rangeToDate(range),
+    since,
     page,
     pageSize: PAGE_SIZE,
   });
@@ -42,13 +42,13 @@ export default function AdminDecisions() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
+      <AdminToolbar>
         <div className="relative min-w-0 flex-[1_1_220px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Search actions, signals, reasoning..."
+            placeholder="Search actions, signals, reasoning…"
             className="pl-9"
           />
         </div>
@@ -70,19 +70,17 @@ export default function AdminDecisions() {
             <SelectItem value="all">All time</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+      </AdminToolbar>
 
+      {isError ? (
+        <AdminMessage>Decisions couldn’t be loaded.</AdminMessage>
+      ) : isLoading ? (
+        <Card><CardContent className="p-0"><AdminLoadingRows /></CardContent></Card>
+      ) : rows.length === 0 ? (
+        <AdminMessage>No AI decisions recorded for this filter.</AdminMessage>
+      ) : (
       <Card>
         <CardContent className="p-0">
-          {isError ? (
-            <p className="p-8 text-center text-sm text-muted-foreground">Decisions couldn’t be loaded.</p>
-          ) : isLoading ? (
-            <div className="space-y-2 p-4">
-              {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}
-            </div>
-          ) : rows.length === 0 ? (
-            <p className="p-8 text-center text-sm text-muted-foreground">No AI decisions recorded for this filter.</p>
-          ) : (
             <div className="divide-y divide-border">
               {rows.map((d) => {
                 const open = expanded === d.id;
@@ -122,19 +120,12 @@ export default function AdminDecisions() {
                 );
               })}
             </div>
-          )}
         </CardContent>
       </Card>
+      )}
 
       {!isLoading && !isError && (
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>{total.toLocaleString()} decisions</span>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</Button>
-          <span className="px-2 py-1">{page} / {pages}</span>
-          <Button size="sm" variant="outline" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>Next</Button>
-        </div>
-      </div>
+        <AdminPager page={page} pages={pages} total={total} pageSize={PAGE_SIZE} noun="decisions" onPage={setPage} />
       )}
     </div>
   );
