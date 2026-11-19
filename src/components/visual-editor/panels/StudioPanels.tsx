@@ -359,7 +359,11 @@ export const TemplatesPanel: React.FC<{
         )}
         {error && <EmptyState>Couldn’t load templates. Check your connection and try again.</EmptyState>}
         {!isLoading && !error && filtered.length === 0 && (
-          <EmptyState>No templates match “{q || cat}”. Try another search or category.</EmptyState>
+          <EmptyState>
+            {q || cat !== 'All'
+              ? `No templates match “${q || cat}”. Try another search or category.`
+              : 'No templates in the library yet. Describe a design above, or ask an admin to add starter templates.'}
+          </EmptyState>
         )}
 
         {shownRecent.length > 0 && (
@@ -1145,23 +1149,18 @@ export const AIStudioPanel: React.FC<{
 
         {activeTab === 'images' && (
           <>
-            <div className="mb-4 flex gap-2">
-              <button className="flex h-[34px] items-center gap-2 rounded-lg border border-[#555555] px-3 text-xs text-white">🖼 Styles</button>
-              <button className="flex h-[34px] items-center gap-2 rounded-lg border border-[#555555] px-3 text-xs text-white">⊡ Square</button>
-            </div>
-
-            <p className="mb-2 mt-4 text-xs font-semibold text-white">Created by AI Studio</p>
-            <div className="flex gap-2 overflow-x-auto no-scrollbar">
-              {results.length > 0
-                ? results.slice(0, 3).map((url) => (
+            <p className="mb-2 text-xs font-semibold text-white">Created in this session</p>
+            {results.length > 0 ? (
+              <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                {results.slice(0, 3).map((url) => (
                   <button key={url} onClick={() => placeResult(url)} className="h-20 min-w-[80px] flex-1 overflow-hidden rounded-lg">
                     <img src={url} alt="" className="h-full w-full object-cover" />
                   </button>
-                ))
-                : [1, 2, 3].map((i) => (
-                  <div key={i} className="h-20 min-w-[80px] flex-1 rounded-lg bg-gradient-to-br from-primary to-primary-glow" />
                 ))}
-            </div>
+              </div>
+            ) : (
+              <p className="rounded-lg border border-dashed border-[#555555] px-3 py-4 text-xs text-[#AAAAAA]">Images you generate show up here. Nothing is filled in before you ask.</p>
+            )}
           </>
         )}
 

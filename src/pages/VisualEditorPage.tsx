@@ -19,7 +19,7 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { toast } from '@/hooks/use-toast';
 import {
   Layout, Image as ImageIcon, Type, Shapes, Sparkles, Upload, Layers as LayersIcon,
-  FolderOpen, Settings, Moon, HelpCircle, Bell, ChevronLeft, Edit3, Check,
+  FolderOpen, Settings, Moon, ChevronLeft, Edit3, Check,
   Undo2, Redo2, Play, Download, Send, Grid3x3, Maximize2, Minus, Plus,
   Wand2, MoveUp, MoveDown, AlignVerticalJustifyCenter, Lock, Unlock,
   AlignLeft, AlignCenter, AlignRight, AlignJustify, Bold, Italic, Underline,
@@ -37,6 +37,7 @@ import { ensureContrastScrim, placeContrastScrim, prepareLoadedScrims } from '@/
 import { supabase } from '@/integrations/supabase/client';
 import { useAIContext } from '@/contexts/AIContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CreativeService, creativeDocument } from '@/services/creative/CreativeService';
 import {
@@ -90,7 +91,10 @@ const INSTA_STORY = [
 ];
 
 /* ---------- Left Icon Rail ---------- */
-const IconRail: React.FC<{ active: string; onChange: (id: string) => void }> = ({ active, onChange }) => (
+const IconRail: React.FC<{ active: string; onChange: (id: string) => void }> = ({ active, onChange }) => {
+  const navigate = useNavigate();
+  const { theme, setTheme } = useAppTheme();
+  return (
   <aside className="studio-tool-rail hidden md:flex h-full w-[64px] shrink-0 flex-col items-stretch border-r">
     <div className="flex items-center justify-center py-3 border-b border-white/5">
       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-lg">
@@ -125,16 +129,16 @@ const IconRail: React.FC<{ active: string; onChange: (id: string) => void }> = (
       <div className="mx-auto mb-1 flex h-5 w-5 items-center justify-center rounded-lg bg-primary/90 text-primary-foreground">
         <Zap className="h-3 w-3" />
       </div>
-      <p className="text-[8px] font-semibold text-white leading-tight">Pro</p>
-      <Button size="sm" className="mt-1 h-5 w-full rounded-lg bg-primary hover:bg-primary/90 text-[8px] px-1">Upgrade</Button>
+      <p className="text-[8px] font-semibold text-white leading-tight">Plans</p>
+      <Button size="sm" className="mt-1 h-5 w-full rounded-lg bg-primary hover:bg-primary/90 text-[8px] px-1" onClick={() => navigate('/billing')}>Plans</Button>
     </div>
     <div className="flex items-center justify-around border-t border-white/5 py-1.5 text-white/50">
-      <button className="rounded-lg p-1 hover:bg-white/5 hover:text-white"><Settings className="h-3.5 w-3.5" /></button>
-      <button className="rounded-lg p-1 hover:bg-white/5 hover:text-white"><Moon className="h-3.5 w-3.5" /></button>
-      <button className="rounded-lg p-1 hover:bg-white/5 hover:text-white"><HelpCircle className="h-3.5 w-3.5" /></button>
+      <button type="button" aria-label="Settings" className="rounded-lg p-1 hover:bg-white/5 hover:text-white" onClick={() => navigate('/settings')}><Settings className="h-3.5 w-3.5" /></button>
+      <button type="button" aria-label={theme === 'dark' ? 'Use light appearance' : 'Use dark appearance'} className="rounded-lg p-1 hover:bg-white/5 hover:text-white" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}><Moon className="h-3.5 w-3.5" /></button>
     </div>
   </aside>
-);
+  );
+};
 
 /* ---------- Top Toolbar ---------- */
 const TopToolbar: React.FC<{
@@ -162,7 +166,9 @@ const TopToolbar: React.FC<{
   onBack?: () => void;
 }> = ({ projectName, setProjectName, zoom, setZoom, onExport, onUndo, onRedo, canUndo, canRedo, onToggleLeft, onToggleRight, isMobile, showGrid, onToggleGrid, onFit, onPreview, onPublish, artboardLabel, onSave, saveStatus, returnToCreate = false, onBack }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [editing, setEditing] = useState(false);
+  const initial = (user?.email || user?.user_metadata?.name || '').trim().charAt(0).toUpperCase();
 
   if (isMobile) {
     return (
@@ -259,14 +265,11 @@ const TopToolbar: React.FC<{
         <Send className="h-3.5 w-3.5" /> {returnToCreate ? 'Continue' : 'Publish'}
       </Button>
 
-      <Button variant="ghost" size="icon" className="hidden md:inline-flex h-9 w-9 relative">
-        <HelpCircle className="h-4 w-4" />
-      </Button>
-      <button className="hidden md:inline-flex relative h-9 w-9 items-center justify-center rounded-full hover:bg-muted">
-        <Bell className="h-4 w-4" />
-        <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-semibold text-primary-foreground">2</span>
-      </button>
-      <div className="hidden md:flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-[11px] font-semibold text-white">U</div>
+      {initial && (
+        <div className="hidden md:flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-[11px] font-semibold text-white" title={user?.email || undefined}>
+          {initial}
+        </div>
+      )}
 
       <Button variant="ghost" size="icon" className="lg:hidden h-9 w-9" onClick={onToggleRight}>
         <PanelRight className="h-4 w-4" />
