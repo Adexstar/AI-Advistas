@@ -29,6 +29,7 @@ import {
   Plug,
   Plus,
   Settings,
+  Server,
   Shield,
   Sparkles,
   Store,
@@ -107,6 +108,7 @@ const adminNavItems: NavItem[] = [
   { name: "Playbooks", href: "/admin/playbooks", icon: Target },
   { name: "Providers", href: "/admin/providers", icon: Plug },
   { name: "Settings", href: "/admin/settings", icon: SlidersHorizontal },
+  { name: "System", href: "/system", icon: Server },
 ];
 
 
@@ -126,16 +128,16 @@ const pageMeta: { match: (p: string) => boolean; title: string; description: str
   { match: (p) => p.startsWith("/team"), title: "Team Workspace", description: "Members, roles, permissions and approvals." },
   { match: (p) => p.startsWith("/marketplace"), title: "Asset Marketplace", description: "Templates, stock and brand packs." },
   { match: (p) => p.startsWith("/developer"), title: "Developer Center", description: "API keys, webhooks and SDKs." },
-  { match: (p) => p.startsWith("/system"), title: "System Monitor", description: "Admin-only infrastructure health." },
-  { match: (p) => p.startsWith("/admin/users"), title: "Users", description: "Every account, plan and usage in one place." },
-  { match: (p) => p.startsWith("/admin/templates/gallery"), title: "Imports", description: "Bring templates in. They stay pending until you approve them." },
-  { match: (p) => p.startsWith("/admin/templates"), title: "Template review", description: "Approve templates to publish them on the library." },
-  { match: (p) => p.startsWith("/admin/decisions"), title: "Decisions", description: "Every AI action, filterable and explainable." },
-  { match: (p) => p.startsWith("/admin/analytics"), title: "Analytics", description: "Growth, usage patterns and category trends." },
-  { match: (p) => p.startsWith("/admin/providers"), title: "Providers", description: "Provider health, quotas and key management." },
-  { match: (p) => p.startsWith("/admin/playbooks"), title: "Playbooks", description: "Tune AI behaviour per industry." },
-  { match: (p) => p.startsWith("/admin/settings"), title: "Settings", description: "Global configuration." },
-  { match: (p) => p.startsWith("/admin"), title: "Overview", description: "System health and the review queue." },
+  { match: (p) => p.startsWith("/system"), title: "System", description: "Database, recent jobs, and which provider secrets are present." },
+  { match: (p) => p.startsWith("/admin/users"), title: "Users", description: "Accounts, plans, and usage." },
+  { match: (p) => p.startsWith("/admin/templates/gallery"), title: "Imports", description: "Save a source key, fetch templates, then approve them." },
+  { match: (p) => p.startsWith("/admin/templates"), title: "Template review", description: "Approve a template and it appears in the library." },
+  { match: (p) => p.startsWith("/admin/decisions"), title: "Decisions", description: "AI actions recorded for this workspace." },
+  { match: (p) => p.startsWith("/admin/analytics"), title: "Analytics", description: "Growth and category trends from the live tables." },
+  { match: (p) => p.startsWith("/admin/providers"), title: "Providers", description: "Which secrets are set, and whether a live check succeeds." },
+  { match: (p) => p.startsWith("/admin/playbooks"), title: "Playbooks", description: "Category guidance the ad writer is asked to follow." },
+  { match: (p) => p.startsWith("/admin/settings"), title: "Settings", description: "Workspace values. Some are stored and not enforced yet." },
+  { match: (p) => p.startsWith("/admin"), title: "Overview", description: "Live counts and the review queue." },
 
 ];
 
@@ -410,7 +412,7 @@ const DashboardShell = () => {
 
   const activePage = pageMeta.find((item) => item.match(location.pathname)) || pageMeta[0];
   const library = location.pathname === "/templates";
-  const admin = location.pathname === "/admin" || location.pathname.startsWith("/admin/");
+  const admin = location.pathname === "/admin" || location.pathname.startsWith("/admin/") || location.pathname.startsWith("/system");
   const createAd = location.pathname === "/create-ad" || location.pathname.startsWith("/create-ad/");
 
   useEffect(() => {

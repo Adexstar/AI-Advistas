@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { readEdgeError } from "@/services/edgeError";
 
 export type StockProvider = "pexels" | "unsplash" | "pixabay";
-export type ImportProvider = StockProvider | "freepik";
+export type ImportProvider = StockProvider;
 
 export interface StockItem {
   provider: ImportProvider;

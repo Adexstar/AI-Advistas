@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Download } from 'lucide-react';
 import {
   formatBytes,
@@ -10,6 +9,7 @@ import {
   useAdminDecisionStats,
   useAdminOverview,
 } from '@/hooks/admin/useAdminData';
+import { AdminLoadingRows, AdminMessage } from '@/components/admin/adminChrome';
 
 const Stat = ({ label, value, change }: { label: string; value: string; change?: number }) => (
   <Card>
@@ -51,21 +51,9 @@ export default function AdminAnalytics() {
     URL.revokeObjectURL(url);
   };
 
-  if (isError) {
-    return (
-      <p className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
-        Analytics couldn’t be loaded. Sign in as an admin and try again.
-      </p>
-    );
-  }
+  if (isError) return <AdminMessage>Analytics couldn’t be loaded.</AdminMessage>;
 
-  if (isLoading) {
-    return (
-      <div className="grid gap-4 sm:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
-      </div>
-    );
-  }
+  if (isLoading) return <AdminLoadingRows count={3} />;
 
   return (
     <div className="space-y-5">

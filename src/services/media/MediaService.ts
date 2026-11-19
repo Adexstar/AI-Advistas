@@ -1,10 +1,9 @@
 // MediaService — one entry point for all media in AdVista.
-// Pages never touch Cloudinary, Freepik, OpenAI Images, etc. directly.
+// Pages never touch Cloudinary, OpenAI Images, or stock APIs directly.
 // External providers are infrastructure; the UI never knows which was used.
 import { supabase } from "@/integrations/supabase/client";
 import { cloudinaryProvider } from "./providers/cloudinary";
 import { openaiImagesProvider } from "./providers/openai";
-import { freepikProvider } from "./providers/freepik";
 import { ideogramProvider } from "./providers/ideogram";
 import { leonardoProvider } from "./providers/leonardo";
 import { pexelsProvider } from "./providers/pexels";
@@ -18,7 +17,6 @@ import { AIGateway } from "@/services/ai/AIGateway";
 import type { MediaAsset, MediaSearchContext, MediaProvider } from "./types";
 
 const searchProviders: MediaProvider[] = [
-  freepikProvider,
   pexelsProvider,
   pixabayProvider,
   unsplashProvider,
@@ -161,7 +159,6 @@ export const MediaService = {
       openaiImagesProvider,
       ideogramProvider,
       leonardoProvider,
-      freepikProvider,
       pexelsProvider,
       pixabayProvider,
       unsplashProvider,

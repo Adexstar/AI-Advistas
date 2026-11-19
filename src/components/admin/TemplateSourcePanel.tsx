@@ -115,7 +115,7 @@ export function TemplateSourcePanel() {
         <div>
           <h2 className="text-base font-semibold">Template sources</h2>
           <p className="text-sm text-muted-foreground">
-            Pexels, Pixabay, Unsplash, Freepik, and Lovable. A key saved here is tested and used to fetch from this browser. The project secret is the key already stored for the edge functions. Imported photos stay pending until you approve them, then they show on Templates.
+            Pexels, Pixabay, Unsplash, and Lovable. A key saved here is tested and used to fetch from this browser. The project secret is the key already stored for the edge functions. Imported photos stay pending until you approve them, then they show on Templates.
           </p>
         </div>
         {projectError && <p className="text-sm text-destructive">{projectError}</p>}

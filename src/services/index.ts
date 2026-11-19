@@ -1,6 +1,6 @@
 // AdVista service layer entrypoint. Import from "@/services".
 //
-// External providers (Freepik, Pexels, Pixabay, Unsplash, Leonardo, Ideogram,
+// External providers (Pexels, Pixabay, Unsplash, Leonardo, Ideogram,
 // Runway, Kling, Veo, Cloudinary, Meta/TikTok/Google Ads, Brandfetch)
 // are infrastructure. Pages, hooks, the AI Brain, and the Visual Editor must
 // only talk to the four service entry points below:

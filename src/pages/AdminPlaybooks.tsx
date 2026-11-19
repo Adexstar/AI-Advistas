@@ -4,10 +4,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { usePlaybooks, useSavePlaybook } from '@/hooks/admin/useAdminData';
+import { AdminLoadingRows, AdminMessage } from '@/components/admin/adminChrome';
 
 const asList = (value: any): string[] => {
   if (!value) return [];
@@ -21,27 +21,12 @@ export default function AdminPlaybooks() {
   const save = useSavePlaybook();
   const [editing, setEditing] = useState<any | null>(null);
 
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)}
-      </div>
-    );
-  }
+  if (isLoading) return <AdminLoadingRows count={3} />;
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Category prompts used when the product writes ads. Hooks, headlines, and calls to action are the patterns the writer is asked to follow.
-      </p>
-      {isError && (
-        <p className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
-          Playbooks couldn’t be loaded.
-        </p>
-      )}
-      {playbooks.length === 0 && !isError && (
-        <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">No category playbooks yet.</CardContent></Card>
-      )}
+      {isError && <AdminMessage>Playbooks couldn’t be loaded.</AdminMessage>}
+      {playbooks.length === 0 && !isError && <AdminMessage>No category playbooks yet.</AdminMessage>}
 
       {playbooks.map((pb: any) => (
         <Card key={pb.id}>

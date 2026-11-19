@@ -111,14 +111,16 @@ async function searchPixabay(query: string, limit: number, orientation?: string)
     key: PIXABAY_KEY,
     q: query,
     image_type: "all",
-    per_page: String(Math.min(limit, 200)),
+    per_page: String(Math.min(Math.max(limit, 3), 200)),
   });
   if (orientation === "landscape") params.set("orientation", "horizontal");
   if (orientation === "portrait" || orientation === "story") params.set("orientation", "vertical");
   const res = await fetch(`https://pixabay.com/api/?${params}`);
   if (!res.ok) {
-    console.error("pixabay search failed", res.status, await res.text());
-    return [];
+    const detail = res.status === 400 || res.status === 401 || res.status === 403
+      ? "Pixabay rejected PIXABAY_API_KEY."
+      : `Pixabay returned HTTP ${res.status}.`;
+    throw new Error(detail);
   }
   const body = await res.json();
   return ((body?.hits ?? []) as any[]).map((image) => ({
@@ -133,16 +135,20 @@ async function searchPixabay(query: string, limit: number, orientation?: string)
     author: image.user,
     page_url: image.pageURL,
     tags: String(image.tags ?? "").split(",").map((tag: string) => tag.trim()).filter(Boolean).slice(0, 8),
-  })).filter((item) => item.image_url);
+  })).filter((item) => item.image_url).slice(0, limit);
 }
 
 async function searchProviders(providers: string[], query: string, limit: number, orientation?: string) {
-  const jobs: Promise<StockItem[]>[] = [];
-  if (providers.includes("pexels")) jobs.push(searchPexels(query, limit, orientation).catch(() => []));
-  if (providers.includes("unsplash")) jobs.push(searchUnsplash(query, limit, orientation).catch(() => []));
-  if (providers.includes("pixabay")) jobs.push(searchPixabay(query, limit, orientation).catch(() => []));
-  const out = await Promise.all(jobs);
-  return out.flat();
+  const jobs: Promise<{ items: StockItem[]; error: Error | null }>[] = [];
+  const track = (job: Promise<StockItem[]>) => jobs.push(job.then((items) => ({ items, error: null })).catch((error) => ({ items: [], error })));
+  if (providers.includes("pexels")) track(searchPexels(query, limit, orientation));
+  if (providers.includes("unsplash")) track(searchUnsplash(query, limit, orientation));
+  if (providers.includes("pixabay")) track(searchPixabay(query, limit, orientation));
+  const settled = await Promise.all(jobs);
+  const items = settled.flatMap((result) => result.items);
+  const failure = settled.find((result) => result.error)?.error;
+  if (!items.length && failure) throw failure;
+  return items;
 }
 
 // ---------- cache ----------

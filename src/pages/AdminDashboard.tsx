@@ -16,6 +16,7 @@ import {
   useAdminTopTemplates,
   useAdminUserGrowth,
 } from '@/hooks/admin/useAdminData';
+import { AdminMessage } from '@/components/admin/adminChrome';
 
 const RANGES = [
   { label: '7d', days: 7 },
@@ -106,9 +107,7 @@ export default function AdminDashboard() {
     return (
       <div className="space-y-5">
         {sections}
-        <p className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
-          System stats couldn’t be loaded. Template review, imports, users, and providers are still available above.
-        </p>
+        <AdminMessage>System stats couldn’t be loaded. Template review, imports, users, and providers are still available above.</AdminMessage>
       </div>
     );
   }
@@ -147,12 +146,13 @@ export default function AdminDashboard() {
           />
           <Kpi
             icon={TrendingUp}
-            label="Revenue (30d)"
+            label="Campaign revenue (30d)"
             value={`$${Number(stats?.revenue_30d ?? 0).toLocaleString()}`}
             change={pctChange(Number(stats?.revenue_30d ?? 0), Number(stats?.revenue_prev_30d ?? 0))}
           />
           <Kpi icon={Sparkles} label="Published templates" value={(stats?.templates_active ?? 0).toLocaleString()} />
         </div>
+        <p className="mt-2 text-xs text-muted-foreground">Campaign revenue is the sum of campaigns.revenue. It is not money collected in Billing.</p>
       </section>
 
       {sections}
@@ -206,7 +206,8 @@ export default function AdminDashboard() {
                 </div>
               );
             })}
-            <p className="pt-2 text-sm font-semibold">MRR: ${Number(stats?.mrr ?? 0).toLocaleString()}/mo</p>
+            <p className="pt-2 text-sm font-semibold">Recorded plan value: ${Number(stats?.mrr ?? 0).toLocaleString()}/mo</p>
+            <p className="text-xs text-muted-foreground">Active subscriptions are priced here as starter $19, pro $49, and agency $99. Billing charges Free $0, Pro $29, and Enterprise $99.</p>
           </CardContent>
         </Card>
       </div>
@@ -260,7 +261,7 @@ export default function AdminDashboard() {
             <CardTitle className="text-base">Top templates</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {top.length === 0 && <p className="text-sm text-muted-foreground">No templates yet.</p>}
+            {top.length === 0 && <p className="text-sm text-muted-foreground">No templates have been used yet.</p>}
             {top.map((t: any, i: number) => (
               <div key={t.id} className="flex items-center gap-3">
                 <span className="w-4 text-sm text-muted-foreground">{i + 1}</span>

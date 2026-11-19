@@ -4,9 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSystemSettings, useUpdateSystemSettings, type SystemSettings } from '@/hooks/admin/useAdminData';
+import { AdminLoadingRows, AdminMessage } from '@/components/admin/adminChrome';
 
 export default function AdminSettings() {
   const { data, isLoading, isError } = useSystemSettings();
@@ -17,29 +17,11 @@ export default function AdminSettings() {
     if (data) setForm(data);
   }, [data]);
 
-  if (isError) {
-    return (
-      <p className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
-        Settings couldn’t be loaded.
-      </p>
-    );
-  }
+  if (isError) return <AdminMessage>Settings couldn’t be loaded.</AdminMessage>;
 
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-44 rounded-xl" />)}
-      </div>
-    );
-  }
+  if (isLoading) return <AdminLoadingRows count={3} />;
 
-  if (!form) {
-    return (
-      <p className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
-        No system settings are stored yet.
-      </p>
-    );
-  }
+  if (!form) return <AdminMessage>No system settings are stored yet.</AdminMessage>;
 
   const set = (patch: Partial<SystemSettings>) => setForm({ ...form, ...patch } as SystemSettings);
 
@@ -57,11 +39,12 @@ export default function AdminSettings() {
             <Select value={form.default_plan} onValueChange={(v) => set({ default_plan: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {['free', 'starter', 'pro', 'agency'].map((p) => (
-                  <SelectItem key={p} value={p} className="capitalize">{p}</SelectItem>
+                {[form.default_plan, 'free', 'pro', 'enterprise'].filter((plan, index, list) => plan && list.indexOf(plan) === index).map((plan) => (
+                  <SelectItem key={plan} value={plan} className="capitalize">{plan}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">Billing offers Free, Pro, and Enterprise. A stored starter or agency value stays selectable until you change it.</p>
           </div>
           <div className="flex items-center justify-between">
             <Label htmlFor="signups">Signups open</Label>
@@ -71,6 +54,7 @@ export default function AdminSettings() {
             <Label htmlFor="maintenance">Maintenance mode</Label>
             <Switch id="maintenance" checked={form.maintenance_mode} onCheckedChange={(v) => set({ maintenance_mode: v })} />
           </div>
+          <p className="text-xs text-muted-foreground">Signups, maintenance, the default plan, credits, and retention are saved on this row. The rest of the app does not read them yet.</p>
         </CardContent>
       </Card>
 
@@ -128,8 +112,8 @@ export default function AdminSettings() {
       <Card>
         <CardHeader className="pb-3"><CardTitle className="text-base">Pricing (read-only)</CardTitle></CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>Free: $0 · Starter: $19 · Pro: $49 · Agency: $99</p>
-          <p>Plan pricing is managed by the payment provider.</p>
+          <p>Free $0 · Pro $29 · Enterprise $99</p>
+          <p>These are the prices on Billing. Saving settings does not change them.</p>
         </CardContent>
       </Card>
 

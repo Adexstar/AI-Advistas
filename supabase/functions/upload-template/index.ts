@@ -59,25 +59,7 @@ serve(async (req) => {
       .from('ad_templates')
       .getPublicUrl(fileName);
 
-    // Process PSD if it's a PSD file
-    let processedData = null;
-    if (file.type === 'application/x-photoshop' || file.name.toLowerCase().endsWith('.psd')) {
-      try {
-        // Call PSD processing function
-        const { data: psdData, error: psdError } = await supabaseClient.functions.invoke('process-freepik-psd', {
-          body: {
-            templateId: 'temp',
-            freepikDownloadUrl: urlData.publicUrl
-          }
-        });
-
-        if (!psdError && psdData) {
-          processedData = psdData.processedData;
-        }
-      } catch (error) {
-        console.log('PSD processing failed, continuing without processed data:', error);
-      }
-    }
+    const processedData = null;
 
     // Create template record
     const templateData = {

@@ -31,40 +31,6 @@ export interface ProcessedPSDData {
   };
 }
 
-export interface ProcessPSDRequest {
-  templateId: string;
-  freepikDownloadUrl: string;
-}
-
-export interface ProcessPSDResponse {
-  success: boolean;
-  processedData: ProcessedPSDData;
-  message: string;
-}
-
-export const useProcessPSD = () => {
-  return useMutation<ProcessPSDResponse, Error, ProcessPSDRequest>({
-    mutationFn: async (request) => {
-      const { data, error } = await supabase.functions.invoke('process-freepik-psd', {
-        body: request
-      });
-
-      if (error) {
-        throw new Error(error.message || 'Failed to process PSD');
-      }
-
-      return data;
-    },
-    onSuccess: (data) => {
-      toast.success('PSD template processed successfully!');
-    },
-    onError: (error) => {
-      console.error('PSD processing error:', error);
-      toast.error(`Failed to process PSD: ${error.message}`);
-    },
-  });
-};
-
 export const useAutoFillPSDTemplate = () => {
   return useMutation({
     mutationFn: async (request: {
