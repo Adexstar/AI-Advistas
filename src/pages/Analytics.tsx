@@ -37,7 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ChartSkeleton, MetricCardSkeleton } from "@/components/ui/loading";
 import { cn } from "@/lib/utils";
 import { useAnalytics, type AnalyticsRange } from "@/hooks/useAnalytics";
 
@@ -114,7 +114,7 @@ const Analytics = () => {
           return (
             <div key={k.label} className="card">
               {loading ? (
-                <div className="space-y-2"><Skeleton className="h-10 w-10 rounded-full" /><Skeleton className="h-6 w-16" /><Skeleton className="h-4 w-20" /><Skeleton className="h-3 w-24" /></div>
+                <MetricCardSkeleton />
               ) : (
                 <>
                   {/* Icon row */}
@@ -178,6 +178,7 @@ const Analytics = () => {
             ))}
           </div>
           <div className="h-[260px] w-full">
+            {loading ? <ChartSkeleton height={260} /> : (
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={performanceSeries} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
                 <defs>
@@ -208,6 +209,7 @@ const Analytics = () => {
                 <Area type="monotone" dataKey="revenue" stroke="#f43f5e" strokeWidth={2} fill="url(#g4)" />
               </AreaChart>
             </ResponsiveContainer>
+            )}
           </div>
         </Card>
 
@@ -241,7 +243,7 @@ const Analytics = () => {
         <div className="space-y-4 xl:col-span-3">
           <Card className="rounded-2xl border-border p-5 shadow-sm">
             <h3 className="mb-3 text-base font-semibold text-foreground">Export Statistics</h3>
-            <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center">
+            <div className="flex flex-col items-center gap-4">
               <div className="relative h-[140px] w-[140px] shrink-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -263,8 +265,8 @@ const Analytics = () => {
                 {exportStats.map((e) => (
                   <div key={e.name} className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full" style={{ background: e.color }} />
-                    <span className="text-foreground">{e.name}</span>
-                    <span className="ml-auto shrink-0 text-muted-foreground">
+                    <span className="min-w-0 truncate text-foreground">{e.name}</span>
+                    <span className="ml-auto shrink-0 whitespace-nowrap text-muted-foreground">
                       {e.value.toLocaleString()} ({totalExports > 0 ? Math.round((e.value / totalExports) * 100) : 0}%)
                     </span>
                   </div>
