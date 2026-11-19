@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -87,10 +88,15 @@ const Settings = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const [tab, setTab] = useState(requestedTab || "profile");
   const [displayName, setDisplayName] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
   const [passwords, setPasswords] = useState({ next: "", confirm: "" });
   const [updatingPassword, setUpdatingPassword] = useState(false);
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [savingWebhook, setSavingWebhook] = useState(false);
   const [notifications, setNotifications] = useState(() => {
     try {
       const saved = localStorage.getItem(NOTIFICATION_KEY);
@@ -119,6 +125,15 @@ const Settings = () => {
     enabled: !!user?.id,
     queryFn: () => PlatformConnectionService.list(),
   });
+
+  useEffect(() => {
+    if (requestedTab) setTab(requestedTab);
+  }, [requestedTab]);
+
+  useEffect(() => {
+    const storedWebhook = user?.user_metadata?.webhook_url;
+    if (typeof storedWebhook === "string") setWebhookUrl(storedWebhook);
+  }, [user?.id, user?.user_metadata?.webhook_url]);
 
   useEffect(() => {
     const stored = profileQuery.data?.display_name;
@@ -196,7 +211,7 @@ const Settings = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-6">
+      <Tabs value={tab} onValueChange={setTab} className="space-y-6">
         <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-2xl bg-secondary/55 p-2 sm:grid-cols-4 xl:grid-cols-9">
           <TabsTrigger value="profile" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">General</TabsTrigger>
           <TabsTrigger value="workspace" className="min-w-0 whitespace-normal px-3 py-2 text-xs sm:text-sm">Workspace</TabsTrigger>
@@ -433,7 +448,7 @@ const Settings = () => {
                     <p className="font-medium">Enable 2FA</p>
                     <p className="text-sm text-muted-foreground">Add a second layer of protection before anyone can access the workspace.</p>
                   </div>
-                  <Button variant="outline" onClick={() => toast({ title: "Two-factor authentication is not available", description: "This workspace has no authenticator setup, so nothing was enabled." })}>Setup 2FA</Button>
+                  <Button variant="outline" disabled>Not available</Button>
                 </div>
               </div>
 
@@ -510,21 +525,54 @@ const Settings = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="apiKey">API Key</Label>
-                <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-                  <Input id="apiKey" value="" placeholder="No API key has been issued" readOnly />
-                  <Button variant="outline" onClick={() => toast({ title: "API keys are not issued here", description: "Regenerate does not create a key." })}>Regenerate</Button>
-                </div>
+                <Label htmlFor="apiKey">Provider keys</Label>
+                <p id="apiKey" className="mt-2 text-sm text-muted-foreground">
+                  This account does not get a personal API key. AI, stock media, billing, and uploads use secrets on the Supabase project. An admin can see which ones are set under Admin → Providers.
+                </p>
               </div>
               <div>
                 <Label htmlFor="webhookUrl">Webhook URL</Label>
-                <Input 
-                  id="webhookUrl" 
-                  placeholder="https://your-app.com/webhook" 
+                <Input
+                  id="webhookUrl"
+                  value={webhookUrl}
+                  onChange={(event) => setWebhookUrl(event.target.value)}
+                  placeholder="https://your-app.com/webhook"
                   className="mt-2"
                 />
+                <p className="mt-2 text-xs text-muted-foreground">Saved on your account. Test sends one JSON event from this browser. The destination must allow this site or the request is blocked.</p>
               </div>
-              <Button variant="outline" onClick={() => toast({ title: "Webhook delivery is not connected", description: "The URL is not sent anywhere from this screen." })}>Test Webhook</Button>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" disabled={savingWebhook || !user} onClick={async () => {
+                  let parsed: URL;
+                  try {
+                    parsed = new URL(webhookUrl);
+                  } catch {
+                    toast({ title: "Enter a full https URL", variant: "destructive" });
+                    return;
+                  }
+                  if (parsed.protocol !== "https:") {
+                    toast({ title: "Use an https URL", variant: "destructive" });
+                    return;
+                  }
+                  setSavingWebhook(true);
+                  const { error } = await supabase.auth.updateUser({ data: { webhook_url: parsed.toString() } });
+                  setSavingWebhook(false);
+                  if (error) toast({ title: "Could not save the webhook", description: error.message, variant: "destructive" });
+                  else toast({ title: "Webhook URL saved" });
+                }}>{savingWebhook ? "Saving..." : "Save webhook"}</Button>
+                <Button variant="outline" disabled={!webhookUrl} onClick={async () => {
+                  try {
+                    const response = await fetch(webhookUrl, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ source: "advista", event: "webhook.test", sentAt: new Date().toISOString() }),
+                    });
+                    toast({ title: response.ok ? "Webhook accepted the test" : "Webhook responded with an error", description: `HTTP ${response.status}` });
+                  } catch (error: unknown) {
+                    toast({ title: "The test did not reach the webhook", description: error instanceof Error ? error.message : "The browser blocked the request.", variant: "destructive" });
+                  }
+                }}>Test webhook</Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

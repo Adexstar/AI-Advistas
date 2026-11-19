@@ -220,6 +220,7 @@ const Analytics = () => {
             <button type="button" onClick={() => navigate("/campaigns")} className="shrink-0 text-xs font-medium text-primary hover:underline">View all</button>
           </div>
           <div className="space-y-3">
+            {topCampaigns.length === 0 && <p className="text-sm text-muted-foreground">Campaign rankings appear after you create a campaign.</p>}
             {topCampaigns.map((c) => (
               <div key={c.name} className="flex items-center gap-3">
                 {c.img ? <img src={c.img} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" /> : <div className="h-12 w-12 shrink-0 rounded-lg bg-muted" />}
@@ -242,7 +243,8 @@ const Analytics = () => {
         {/* Export stats + integrations */}
         <div className="space-y-4 xl:col-span-3">
           <Card className="rounded-2xl border-border p-5 shadow-sm">
-            <h3 className="mb-3 text-base font-semibold text-foreground">Export Statistics</h3>
+            <h3 className="mb-1 text-base font-semibold text-foreground">Media library</h3>
+            <p className="mb-3 text-xs text-muted-foreground">Files saved in your library, grouped by type.</p>
             <div className="flex flex-col items-center gap-4">
               <div className="relative h-[140px] w-[140px] shrink-0">
                 <ResponsiveContainer width="100%" height="100%">
@@ -257,7 +259,7 @@ const Analytics = () => {
                 <div className="pointer-events-none absolute inset-0 grid place-items-center text-center">
                   <div>
                     <p className="text-lg font-bold text-foreground">{totalExports.toLocaleString()}</p>
-                    <p className="text-[10px] text-muted-foreground">Total Exports</p>
+                    <p className="text-[10px] text-muted-foreground">Files</p>
                   </div>
                 </div>
               </div>
@@ -290,7 +292,7 @@ const Analytics = () => {
                     <p className="truncate text-sm font-semibold text-foreground">{i.name}</p>
                   </div>
                   <Badge variant="secondary" className="rounded-full bg-muted text-[10px] text-muted-foreground">
-                    Coming Soon
+                    Not connected
                   </Badge>
                 </div>
               ))}
@@ -384,7 +386,8 @@ const Analytics = () => {
       {/* Brand Kit + Recent Activity + Insights */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Card className="rounded-2xl border-border p-5 shadow-sm xl:col-span-3">
-          <h3 className="mb-4 text-base font-semibold text-foreground">Brand Kit Performance</h3>
+          <h3 className="mb-1 text-base font-semibold text-foreground">Brand kit completeness</h3>
+          <p className="mb-4 text-xs text-muted-foreground">Counts what is saved on the kit. This is not ad performance.</p>
           <div className="flex items-center gap-4">
             <div className="relative grid h-24 w-24 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5">
               <div className="grid h-20 w-20 place-items-center rounded-full bg-card">
@@ -415,9 +418,10 @@ const Analytics = () => {
         <Card className="rounded-2xl border-border p-5 shadow-sm xl:col-span-5">
           <div className="mb-4 flex items-center justify-between gap-2">
             <h3 className="min-w-0 text-base font-semibold text-foreground">Recent Activity</h3>
-            <button type="button" onClick={() => navigate("/notifications")} className="shrink-0 text-xs font-medium text-primary hover:underline">View all</button>
+            <button type="button" onClick={() => navigate("/campaigns")} className="shrink-0 text-xs font-medium text-primary hover:underline">Open campaigns</button>
           </div>
           <div className="space-y-3">
+            {activityItems.length === 0 && <p className="text-sm text-muted-foreground">Activity appears after you create or update a campaign.</p>}
             {activityItems.map((a, i) => (
               <div key={i} className="flex items-start gap-3">
                 <div className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">

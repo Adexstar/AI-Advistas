@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CampaignAutomationService } from '@/services/campaign/CampaignAutomationService';
+import { CampaignService } from '@/services/campaign/CampaignService';
+import { budgetAfterAction, checkRule, signalsFromMetrics } from '@/services/campaign/automationMatch';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import type { AutomationRuleConfig } from '@/services/campaign/types';
@@ -32,13 +34,15 @@ const ACTION_OPTIONS = [
   { value: 'increase_budget', label: 'Increase Budget' },
   { value: 'decrease_budget', label: 'Decrease Budget' },
   { value: 'notify', label: 'Send Notification' },
-  { value: 'generate_creatives', label: 'Generate New Creatives' },
+  { value: 'generate_creatives', label: 'Flag that new creatives are needed' },
 ];
 
 export function CampaignAutomationRules({ campaignId }: Props) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [checkNotes, setCheckNotes] = useState<string[]>([]);
   const [newRule, setNewRule] = useState({
     name: '',
     triggerType: 'cpa_exceeded',
@@ -74,6 +78,44 @@ export function CampaignAutomationRules({ campaignId }: Props) {
     }
   };
 
+  const handleCheck = async () => {
+    if (!user) return;
+    setChecking(true);
+    try {
+      const campaign = await CampaignService.get(campaignId);
+      const signals = signalsFromMetrics(campaign);
+      const notes: string[] = [];
+      for (const rule of rules ?? []) {
+        const result = checkRule(rule, signals);
+        notes.push(`${rule.name}: ${result.detail}`);
+        if (!result.matched) continue;
+        if (rule.action.type === 'pause_campaign' && campaign.status !== 'paused') {
+          await CampaignService.updateStatus(campaignId, user.id, 'paused');
+          notes[notes.length - 1] += ' Campaign paused.';
+        } else if (rule.action.type === 'increase_budget' || rule.action.type === 'decrease_budget') {
+          const next = budgetAfterAction(Number(campaign.budget || 0), rule.action);
+          if (next == null) notes[notes.length - 1] += ' Set an amount on the rule before the budget can change.';
+          else {
+            await CampaignService.updateBudget(campaignId, user.id, next);
+            notes[notes.length - 1] += ` Budget is now ${next}.`;
+          }
+        } else if (rule.action.type === 'notify') {
+          await CampaignAutomationService.enqueueAction(campaignId, user.id, rule.id, 'notify', {}, result.detail);
+          notes[notes.length - 1] += ' A note was added to this campaign.';
+        } else if (rule.action.type === 'generate_creatives') {
+          notes[notes.length - 1] += ' Creative generation is not started from this check.';
+        }
+      }
+      if (!notes.length) notes.push('Add a rule before checking this campaign.');
+      setCheckNotes(notes);
+      toast.success('Rules checked against the saved metrics');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not check the rules');
+    } finally {
+      setChecking(false);
+    }
+  };
+
   const handleCreate = async () => {
     if (!user) return;
     try {
@@ -98,11 +140,16 @@ export function CampaignAutomationRules({ campaignId }: Props) {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-bold">Automation Rules</h3>
-          <p className="text-sm text-muted-foreground">Set rules for autonomous campaign optimization.</p>
+          <p className="text-sm text-muted-foreground">Rules are saved on your account and run only when you check this campaign. Nothing runs in the background.</p>
         </div>
-        <Button onClick={() => setShowCreate(true)} className="gap-1.5 rounded-xl">
-          <Plus className="h-4 w-4" /> Add Rule
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => void handleCheck()} disabled={checking} className="rounded-xl">
+            {checking ? 'Checking…' : 'Check this campaign'}
+          </Button>
+          <Button onClick={() => setShowCreate(true)} className="gap-1.5 rounded-xl">
+            <Plus className="h-4 w-4" /> Add Rule
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -116,7 +163,7 @@ export function CampaignAutomationRules({ campaignId }: Props) {
             <Sparkles className="mx-auto h-8 w-8 text-muted-foreground" />
             <p className="mt-3 font-semibold">No automation rules yet</p>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Create rules to automate campaign optimization — pause on high CPA, scale on strong ROAS, and more.
+              A rule can pause the campaign, change its budget, or record a note when you run the check and the saved metrics match.
             </p>
             <Button variant="outline" className="mt-4 gap-1.5" onClick={() => setShowCreate(true)}>
               <Plus className="h-4 w-4" /> Add Your First Rule
@@ -125,6 +172,13 @@ export function CampaignAutomationRules({ campaignId }: Props) {
         </Card>
       ) : (
         <div className="space-y-2">
+          {checkNotes.length > 0 && (
+            <Card className="rounded-xl border-border/60">
+              <CardContent className="space-y-1 p-4 text-sm">
+                {checkNotes.map((note) => <p key={note}>{note}</p>)}
+              </CardContent>
+            </Card>
+          )}
           {rules.map((rule) => {
             const triggerLabel = TRIGGER_OPTIONS.find((t) => t.value === rule.trigger.type)?.label || rule.trigger.type;
             return (
