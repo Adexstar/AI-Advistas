@@ -722,10 +722,8 @@ export default function CreateAd() {
                 </>
               )}
             </div>
-            <div className="flex gap-2 mt-2">
+            <div className="mt-2">
               <button type="button" onClick={() => setLibraryOpen(true)} className="text-xs font-medium text-primary hover:underline">From library</button>
-              <span className="text-border">|</span>
-              <button type="button" onClick={() => toast.message('Image generation unavailable', { description: 'Upload a file or pick one from your library.' })} className="text-xs font-medium text-muted-foreground hover:underline">Generate</button>
             </div>
             <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
           </Field>
