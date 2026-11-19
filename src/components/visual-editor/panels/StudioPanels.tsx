@@ -360,7 +360,11 @@ export const TemplatesPanel: React.FC<{
         )}
         {error && <EmptyState>Couldn’t load templates. Check your connection and try again.</EmptyState>}
         {!isLoading && !error && filtered.length === 0 && (
-          <EmptyState>No templates match “{q || cat}”. Try another search or category.</EmptyState>
+          <EmptyState>
+            {q || cat !== 'All'
+              ? `No templates match “${q || cat}”. Try another search or category.`
+              : 'No templates in the library yet. Describe a design above, or ask an admin to add starter templates.'}
+          </EmptyState>
         )}
 
         {shownRecent.length > 0 && (
@@ -1146,7 +1150,7 @@ export const AIStudioPanel: React.FC<{
             ))}
           </div>
         ) : (
-          <p className="rounded-lg bg-[#2D2D2D] p-3 text-xs text-[#AAAAAA]">
+          <p className="rounded-lg border border-dashed border-[#555555] px-3 py-4 text-xs text-[#AAAAAA]">
             {activeTab === 'videos'
               ? 'Videos you generate show up here. This calls the video function and needs RUNWARE_API_KEY.'
               : 'Images you generate show up here. This calls OpenAI and needs OPENAI_API_KEY.'}
