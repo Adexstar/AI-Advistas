@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { readEdgeError } from "@/services/edgeError";
 import type { MediaAsset, MediaProvider, MediaSearchContext } from "../types";
 
 export const freepikProvider: MediaProvider = {
@@ -8,7 +9,7 @@ export const freepikProvider: MediaProvider = {
     const { data, error } = await supabase.functions.invoke("search-freepik-templates", {
       body: { query: ctx.intent, category: ctx.category, platform: ctx.platform },
     });
-    if (error) return [];
+    if (error) throw new Error(await readEdgeError(error, "Freepik search is unavailable. Add FREEPIK_API_KEY as a Supabase secret."));
     const items = (data?.results ?? data?.data ?? []) as any[];
     return items.map((i) => ({
       id: String(i.id ?? crypto.randomUUID()),

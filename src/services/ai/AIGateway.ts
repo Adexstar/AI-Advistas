@@ -1,6 +1,9 @@
 import { supabase } from '@/integrations/supabase/client';
+import { readEdgeError } from '@/services/edgeError';
 
-export type AIProvider = 'edge_function' | 'mock' | string;
+export type AIProvider = 'edge_function' | string;
+
+const UNAVAILABLE = 'AI is unavailable. Add GROQ_API_KEY, OPENAI_API_KEY, GOOGLE_GEMINI_API_KEY, or ANTHROPIC_API_KEY as a Supabase secret.';
 
 export interface AIRequest {
   systemPrompt: string;
@@ -37,68 +40,32 @@ export const AIGateway = {
       return this.providers.get(provider)!(request);
     }
 
-    switch (provider) {
-      case 'edge_function':
-        return this.callEdgeFunction(request);
-      case 'mock':
-        return this.mockResponse(request);
-      default:
-        return this.callEdgeFunction(request);
-    }
+    return this.callEdgeFunction(request, provider === 'edge_function' ? undefined : provider);
   },
 
-  async callEdgeFunction(request: AIRequest): Promise<AIResponse> {
+  async callEdgeFunction(request: AIRequest, preferredProvider?: string): Promise<AIResponse> {
     const start = performance.now();
-    const functionName = this.mapSpecialistToFunction(request.specialist);
-
-    try {
-      const { data, error } = await supabase.functions.invoke(functionName, {
-        body: {
-          systemPrompt: request.systemPrompt,
-          userPrompt: request.userPrompt,
-          temperature: request.temperature ?? 0.7,
-          maxTokens: request.maxTokens ?? 500,
-          schema: request.schema,
-        },
-      });
-      if (error) throw error;
-      const content = data?.content ?? data?.output ?? JSON.stringify(data);
-      return {
-        content,
-        provider: `supabase:${functionName}`,
-        model: 'edge-function',
-        latency: Math.round(performance.now() - start),
-      };
-    } catch (e) {
-      return this.fallback(request, String(e));
+    const { data, error } = await supabase.functions.invoke('ai-gateway', {
+      body: {
+        systemPrompt: request.systemPrompt,
+        userPrompt: request.userPrompt,
+        specialist: request.specialist,
+        temperature: request.temperature ?? 0.7,
+        maxTokens: request.maxTokens ?? 500,
+        schema: request.schema,
+        preferredProvider,
+      },
+    });
+    if (error) throw new Error(await readEdgeError(error, UNAVAILABLE));
+    const payload = data && typeof data === 'object' ? data as { content?: unknown; error?: unknown; provider?: unknown; model?: unknown } : {};
+    const content = typeof payload.content === 'string' ? payload.content.trim() : '';
+    if (!content || payload.provider === 'error') {
+      throw new Error(typeof payload.error === 'string' && payload.error.trim() ? payload.error : UNAVAILABLE);
     }
-  },
-
-  mapSpecialistToFunction(specialist: string): string {
-    const map: Record<string, string> = {
-      creative_strategist: 'generate-ad-copy',
-      design_advisor: 'suggest-ad-style',
-      campaign_optimizer: 'generate-ai-campaign',
-      analytics_expert: 'analyze-performance',
-      brand_guardian: 'generate-ad-copy',
-      publishing_advisor: 'generate-ad-copy',
-      general: 'generate-ad-copy',
-    };
-    return map[specialist] ?? 'generate-ad-copy';
-  },
-
-  async fallback(_request: AIRequest, error: string): Promise<AIResponse> {
-    console.warn(`AIGateway fallback: ${error}`);
-    return this.mockResponse(_request);
-  },
-
-  mockResponse(request: AIRequest): AIResponse {
-    const start = performance.now();
-    const content = `[AI ${request.specialist}] Generated response for: ${request.userPrompt.slice(0, 60)}...`;
     return {
       content,
-      provider: 'mock',
-      model: 'mock-v1',
+      provider: typeof payload.provider === 'string' ? payload.provider : 'ai-gateway',
+      model: typeof payload.model === 'string' ? payload.model : 'edge-function',
       latency: Math.round(performance.now() - start),
     };
   },
