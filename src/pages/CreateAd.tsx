@@ -211,6 +211,7 @@ export default function CreateAd() {
   const [startOpen, setStartOpen] = useState(false);
   const [endOpen, setEndOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const stepScrollRef = useRef<HTMLDivElement>(null);
 
   const { register, watch, control, handleSubmit, setValue, reset } = useForm<FormValues>({
     defaultValues: {
@@ -271,18 +272,18 @@ export default function CreateAd() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, user?.id, reset]);
 
+  useEffect(() => {
+    stepScrollRef.current?.scrollTo({ top: 0 });
+  }, [step]);
 
-  /* ---------- Reach estimation ---------- */
-  const reachEstimate = useMemo(() => {
-    const amt = values.budgetAmount || 0;
+
+  const spendPlan = useMemo(() => {
+    const amount = Number(values.budgetAmount) || 0;
+    const money = `$${amount.toFixed(2)}`;
     if (values.budgetType === 'daily') {
-      const low = amt * 840;
-      const high = amt * 1680;
-      return { label: 'Est. daily reach', low, high };
+      return { label: 'Daily spend', value: money, detail: 'This is the most the campaign can spend each day. Reach is counted after it runs.' };
     }
-    const low = amt * 840;
-    const high = amt * 1680;
-    return { label: 'Est. campaign reach', low, high };
+    return { label: 'Campaign cap', value: money, detail: 'This is the most the campaign can spend in total. Reach is counted after it runs.' };
   }, [values.budgetAmount, values.budgetType]);
 
   const setInterestList = (next: string[]) => {
@@ -332,11 +333,6 @@ export default function CreateAd() {
       setWriting(null);
     }
   };
-
-  const reachPercent = useMemo(() => {
-    const high = reachEstimate.high || 1;
-    return Math.min((reachEstimate.low / high) * 100, 100);
-  }, [reachEstimate]);
 
   const runDays = useMemo(() => {
     if (values.runType === 'continuous' || !values.endDate) return null;
@@ -672,9 +668,9 @@ export default function CreateAd() {
             {/* Link preview card */}
             <div className="border-t border-[#DADDE1]">
               <div className="px-3 pt-2 pb-1">
-                <p className="text-[11px] text-[#65676B] uppercase tracking-wide">{(() => { try { return values.websiteUrl ? new URL(values.websiteUrl).hostname : 'yourwebsite.com'; } catch { return 'yourwebsite.com'; } })()}</p>
-                <p className="text-[14px] font-semibold leading-tight text-[#050505] mt-0.5">{values.headline || 'Natural Skincare for You'}</p>
-                <p className="text-[12px] text-[#65676B] leading-snug mt-0.5">{values.descriptionCopy || 'Hydrating. Clean. Effective.'}</p>
+                <p className="text-[11px] text-[#65676B] uppercase tracking-wide">{(() => { try { return values.websiteUrl ? new URL(values.websiteUrl).hostname : 'Add a website'; } catch { return 'Add a website'; } })()}</p>
+                <p className="text-[14px] font-semibold leading-tight text-[#050505] mt-0.5">{values.headline || 'Your headline'}</p>
+                <p className="text-[12px] text-[#65676B] leading-snug mt-0.5">{values.descriptionCopy || 'A short line under the headline'}</p>
               </div>
               <div className="px-3 pb-2 pt-1">
                 <span className="inline-flex items-center justify-center h-9 px-5 text-[13px] font-semibold text-white bg-[#1B74E4] rounded-md hover:bg-[#1A6ED8] cursor-pointer">{values.cta || 'Shop Now'}</span>
@@ -899,16 +895,9 @@ export default function CreateAd() {
 
         {/* Estimated Reach Card */}
         <div className="bg-card border border-border rounded-xl p-4 mb-5">
-          <p className="text-xs font-semibold text-foreground">{reachEstimate.label}</p>
-          <p className="text-2xl font-extrabold text-foreground mt-1">
-            {reachEstimate.low.toLocaleString()} – {reachEstimate.high.toLocaleString()}
-          </p>
-          <div className="h-1.5 bg-muted rounded mt-3 overflow-hidden">
-            <div className="h-full rounded bg-gradient-to-r from-primary to-primary-glow" style={{ width: `${reachPercent}%` }} />
-          </div>
-          <p className="mt-2 text-[10px] text-muted-foreground">
-            Estimate based on budget and platforms. Actual reach may vary.
-          </p>
+          <p className="text-xs font-semibold text-foreground">{spendPlan.label}</p>
+          <p className="text-2xl font-extrabold text-foreground mt-1">{spendPlan.value}</p>
+          <p className="mt-2 text-[11px] text-muted-foreground">{spendPlan.detail}</p>
         </div>
 
         {/* Schedule Section */}
@@ -999,13 +988,12 @@ export default function CreateAd() {
         <div className="mt-4 rounded-xl border border-border bg-background p-4">
           <p className="mb-3 text-xs font-semibold text-foreground">Summary</p>
           <div className="space-y-2">
-            <SummaryRow label={`${values.budgetType === 'daily' ? 'Daily' : 'Total'} budget`} value={`$${values.budgetAmount.toFixed(2)}`} />
-            <SummaryRow label={reachEstimate.label} value={`${reachEstimate.low.toLocaleString()} – ${reachEstimate.high.toLocaleString()}`} />
+            <SummaryRow label={spendPlan.label} value={spendPlan.value} />
             <SummaryRow label="Start" value={format(values.startDate, 'MMM d, yyyy')} />
             <SummaryRow label="Duration" value={values.runType === 'continuous' ? 'Continuous' : runDays ? `${runDays} days` : '—'} />
-            {values.runType === 'end_date' && runDays && (
-              <SummaryRow label="Est. total spend" value={`$${(values.budgetAmount * runDays).toFixed(2)}`} />
-            )}
+            {values.budgetType === 'daily' && values.runType === 'end_date' && runDays ? (
+              <SummaryRow label="Spend across the dates" value={`$${(values.budgetAmount * runDays).toFixed(2)}`} />
+            ) : null}
           </div>
         </div>
       </StepSection>
@@ -1035,6 +1023,8 @@ export default function CreateAd() {
           ]} />
           <ReviewCard title="Creative" rows={[
             ['Headline', values.headline || '—'],
+            ['Primary text', values.primaryText || '—'],
+            ['Website', values.websiteUrl || '—'],
             ['CTA', values.cta],
             ['Media', values.mediaUrl ? 'Uploaded' : 'None'],
           ]} />
@@ -1042,6 +1032,7 @@ export default function CreateAd() {
             ['Location', values.location || '—'],
             ['Age', `${values.ageMin}–${values.ageMax}`],
             ['Gender', values.gender],
+            ['Interests', interests.join(', ') || '—'],
           ]} />
           <ReviewCard title="Budget & Schedule" rows={[
             [values.budgetType === 'daily' ? 'Daily' : 'Total', `$${values.budgetAmount.toFixed(2)}`],
@@ -1140,7 +1131,7 @@ export default function CreateAd() {
       </div>
 
       {/* Only this pane scrolls — content cannot pass under the chrome */}
-      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+      <div ref={stepScrollRef} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         <div className="mx-auto w-full max-w-3xl px-4 py-5 sm:px-6 sm:py-6">
           <AnimatePresence mode="wait">
             <motion.div

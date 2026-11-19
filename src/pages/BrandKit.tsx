@@ -605,9 +605,8 @@ export default function BrandKitPage() {
           <div className="grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-primary"><PaletteIcon className="h-6 w-6" /></div>
           <h3 className="text-xl font-bold">No Brand Kits Yet</h3>
           <p className="max-w-md text-sm text-muted-foreground">Create a brand kit to manage your logos, colors and fonts across every campaign.</p>
-          <div className="mt-2 flex gap-2">
+          <div className="mt-2">
             <Button onClick={() => setDialog({ open: true, editing: null })}><Plus className="mr-2 h-4 w-4" />Create Brand Kit</Button>
-            <Button variant="outline"><Upload className="mr-2 h-4 w-4" />Import Brand Assets</Button>
           </div>
         </Card>
       ) : active ? (
