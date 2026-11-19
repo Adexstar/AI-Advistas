@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useBrandKits, useBrandColors, useBrandFonts } from '@/hooks/useBrandKit';
 import { useAutoSave } from '@/hooks/useAutoSave';
@@ -1389,7 +1390,7 @@ const ContextualToolbar: React.FC<{
   active: string | null;
   onToolTap: (id: string) => void;
 }> = ({ tools, active, onToolTap }) => (
-  <nav className="studio-tool-rail z-40 flex min-h-[66px] shrink-0 items-center gap-0.5 overflow-x-auto border-t px-2 py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+  <nav className="studio-tool-rail z-[60] flex min-h-[66px] shrink-0 items-center gap-0.5 overflow-x-auto border-t px-2 py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
     {tools.map((t) => {
       const Icon = t.icon;
       const isActive = active === t.id;
@@ -1441,7 +1442,7 @@ const SelectionBar: React.FC<{
     );
   }
   return (
-    <nav data-selection-bar="dock" className="studio-tool-rail z-40 flex min-h-[66px] shrink-0 items-center gap-0.5 border-t px-1.5 py-1">
+    <nav data-selection-bar="dock" className="studio-tool-rail z-[60] flex min-h-[66px] shrink-0 items-center gap-0.5 border-t px-1.5 py-1">
       {buttons}
       <button type="button" onClick={onDone} aria-label="Done editing" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
         <Check className="h-4 w-4" />
@@ -1913,55 +1914,72 @@ const renderToolSheet = (toolId: string, selected: any, canvas: FabricCanvas | n
   }
 };
 
-/* ---------- Bottom Sheet (mobile, slide-up) ---------- */
+/* ---------- Bottom Sheet (mobile) ----------
+   Half-open: inline split so the artboard shrinks.
+   Drag up: sheet grows over the canvas — artboard size stays the same. */
 const MobileBottomSheet: React.FC<{
   open: boolean;
+  full: boolean;
+  onFullChange: (full: boolean) => void;
   fill?: boolean;
   padded?: boolean;
   onClose: () => void;
   children: React.ReactNode;
   label: string;
-}> = ({ open, fill = false, padded = false, onClose, children, label }) => {
-  const [full, setFull] = useState(false);
+}> = ({ open, full, onFullChange, fill = false, padded = false, onClose, children, label }) => {
   const startY = useRef(0);
+  const overlay = open && (fill || full);
 
-  useEffect(() => { if (open) setFull(false); }, [open]);
-
-  const handleTouchStart = (e: React.TouchEvent) => { startY.current = e.touches[0].clientY; };
+  const handleTouchStart = (e: React.TouchEvent) => {
+    startY.current = e.touches[0].clientY;
+  };
   const handleTouchEnd = (e: React.TouchEvent) => {
     const delta = startY.current - e.changedTouches[0].clientY;
     if (delta < -80) {
-      if (full && !fill) setFull(false);
+      if (full && !fill) onFullChange(false);
       else onClose();
     }
-    if (delta > 80) setFull(true);
+    if (delta > 80) onFullChange(true);
   };
-
-  const expanded = open && (fill || full);
 
   return (
     <section
-      className={`studio-panel flex min-h-0 flex-col overflow-hidden border-t shadow-[var(--shadow-studio-tray)] transition-[flex-grow,height] duration-300 ease-out ${
-        open
-          ? 'min-h-0 flex-1 rounded-t-2xl'
-          : 'h-0 flex-none border-transparent'
-      }`}
+      className={cn(
+        'studio-panel flex flex-col overflow-hidden border-t shadow-[var(--shadow-studio-tray)] transition-[height,flex-grow] duration-300 ease-out',
+        !open && 'h-0 flex-none border-transparent',
+        open && !overlay && 'relative min-h-0 flex-1 rounded-t-2xl',
+        // Expanded: cover more of the stage without shrinking the artboard further
+        open && overlay && 'absolute inset-x-0 bottom-0 top-[8%] z-50 min-h-0 rounded-t-2xl',
+      )}
       onTouchStart={open ? handleTouchStart : undefined}
       onTouchEnd={open ? handleTouchEnd : undefined}
       aria-hidden={!open}
     >
       {open && (
         <>
-          <button type="button" className="flex w-full shrink-0 items-center justify-center bg-studio-panel py-2" onClick={() => (fill ? onClose() : setFull((value) => !value))} aria-label={expanded ? 'Collapse panel' : 'Expand panel'}>
-            <span className="h-1 w-10 rounded-full bg-studio-muted/50" />
+          <button
+            type="button"
+            className="flex w-full shrink-0 flex-col items-center justify-center gap-1 bg-studio-panel py-2"
+            onClick={() => (fill ? onClose() : onFullChange(!full))}
+            aria-label={overlay ? 'Collapse panel' : 'Expand panel'}
+          >
+            <span className="h-1.5 w-12 rounded-full bg-studio-muted/50" />
+            <span className="text-[10px] text-studio-muted">
+              {fill ? 'Close' : full ? 'Drag down to half' : 'Drag up for more'}
+            </span>
           </button>
           <div className="flex shrink-0 items-center justify-between px-4 pb-2">
             <span className="editor-heading text-sm font-semibold text-studio-text">{label}</span>
-            <button onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-lg text-studio-muted hover:bg-studio-panel-raised hover:text-studio-text" aria-label="Close panel">
+            <button
+              type="button"
+              onClick={onClose}
+              className="grid h-7 w-7 place-items-center rounded-lg text-studio-muted hover:bg-studio-panel-raised hover:text-studio-text"
+              aria-label="Close panel"
+            >
               <X className="h-4 w-4" />
             </button>
           </div>
-          <div className={`min-h-0 flex-1 ${padded ? 'overflow-y-auto px-4 pb-4' : 'overflow-hidden'}`}>
+          <div className={cn('min-h-0 flex-1', padded ? 'overflow-y-auto px-4 pb-4' : 'overflow-y-auto px-3 pb-3')}>
             {children}
           </div>
         </>
@@ -2369,6 +2387,7 @@ const EditorInner: React.FC = () => {
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(() => searchParams.get('selectTemplate') === '1');
+  const [sheetFull, setSheetFull] = useState(false);
   const [pendingUploads, setPendingUploads] = useState<File[] | null>(null);
   const cameraRollRef = useRef<HTMLInputElement>(null);
   const [timelineOpen, setTimelineOpen] = useState(true);
@@ -2953,10 +2972,14 @@ const EditorInner: React.FC = () => {
   const openSelectionTool = (id: string) => {
     if (activeTool === id) {
       setActiveTool(null);
-      if (isMobile) setSheetExpanded(false);
+      if (isMobile) {
+        setSheetExpanded(false);
+        setSheetFull(false);
+      }
       return;
     }
     setActiveTool(id);
+    setSheetFull(false);
     setSheetExpanded(true);
   };
 
@@ -3364,25 +3387,29 @@ const EditorInner: React.FC = () => {
         />
       </div>
 
-      {/* Mobile layout: Top Bar → Canvas → Bottom Sheet → Contextual Toolbar */}
+      {/* Mobile layout: artboard shrinks when the sheet opens (half / nearly full) */}
       {isMobile ? (
         <>
-          {/* The artboard keeps a real slice of the stage. Sheets sit under it instead of covering it. */}
           <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-            <div className={`editor-canvas-area relative min-w-0 overflow-hidden ${
-              sheetExpanded && !activeTool && (activeTab === 'uploads' || activeTab === 'media')
-                ? 'hidden'
-                : sheetExpanded
+            <div
+              className={cn(
+                'editor-canvas-area relative min-w-0 overflow-hidden transition-[height] duration-300 ease-out',
+                // Half-open (and expanded): artboard keeps the same shrunk height — expand overlays instead of shrinking further
+                sheetExpanded
                   ? 'flex h-[min(46vh,420px)] w-full shrink-0 flex-col'
-                  : 'flex min-h-0 w-full flex-1 flex-col'
-            }`}>
+                  : 'flex min-h-0 w-full flex-1 flex-col',
+              )}
+            >
               {renderCanvas()}
             </div>
+
             <MobileBottomSheet
               open={sheetExpanded}
+              full={sheetFull}
+              onFullChange={setSheetFull}
               fill={!activeTool && (activeTab === 'uploads' || activeTab === 'media')}
-              padded={!!activeTool}
-              onClose={() => { setSheetExpanded(false); setActiveTool(null); }}
+              padded={!!activeTool || activeTab === 'tools' || activeTab === 'templates' || activeTab === 'elements' || activeTab === 'text' || activeTab === 'brand' || activeTab === 'projects' || activeTab === 'layers' || activeTab === 'ai-studio' || activeTab === 'background'}
+              onClose={() => { setSheetExpanded(false); setSheetFull(false); setActiveTool(null); }}
               label={activeTool ? (currentTools.find(t => t.id === activeTool)?.label || activeTool) : (CREATE_TOOLS.find(t => t.id === activeTab)?.label || EDITOR_TOOLS.find(t => t.id === activeTab)?.label || LEFT_TABS.find(t => t.id === activeTab)?.label || 'Create')}
             >
               {activeTool && selected
@@ -3391,7 +3418,6 @@ const EditorInner: React.FC = () => {
             </MobileBottomSheet>
           </div>
 
-          {/* Contextual Toolbar — auto-switches based on selection */}
           {selected && currentTools !== CREATE_TOOLS ? (
             <SelectionBar tools={currentTools} active={activeTool} onTool={openSelectionTool} onDone={clearSelection} variant="dock" />
           ) : (
@@ -3403,16 +3429,19 @@ const EditorInner: React.FC = () => {
                 cameraRollRef.current?.click();
                 setActiveTab('camera');
                 setActiveTool(null);
+                setSheetFull(false);
                 setSheetExpanded(true);
                 return;
               }
               const panel = panelForCreateTool(id);
               if (activeTab === panel && sheetExpanded && !activeTool) {
                 setSheetExpanded(false);
+                setSheetFull(false);
                 return;
               }
               setActiveTab(panel);
               setActiveTool(null);
+              setSheetFull(false);
               setSheetExpanded(true);
             }}
           />
