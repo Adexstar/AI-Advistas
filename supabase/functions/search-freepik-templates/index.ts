@@ -1,7 +1,6 @@
 import { requireUser } from "../_shared/guard.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,8 +8,6 @@ const corsHeaders = {
 };
 
 const freepikApiKey = Deno.env.get('FREEPIK_API_KEY');
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -24,12 +21,10 @@ serve(async (req) => {
     const { query, page = 1, limit = 20 } = await req.json();
     
     if (!freepikApiKey) {
-      console.error('Freepik API key not configured');
-      return new Response(JSON.stringify({ 
-        error: 'Freepik API key not configured',
-        fallback: true 
+      return new Response(JSON.stringify({
+        error: 'FREEPIK_API_KEY is not set.',
       }), {
-        status: 500,
+        status: 501,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -64,41 +59,28 @@ serve(async (req) => {
       console.error('Freepik API error:', freepikApiResponse.status, freepikApiResponse.statusText, errorText);
       
       // Check for authentication error
-      if (freepikApiResponse.status === 401) {
-        console.error('Freepik API key is invalid or expired');
-        return new Response(JSON.stringify({ 
-          templates: [],
-          fallback: true,
-          message: 'Freepik API authentication failed. Please check API key configuration. Showing internal templates only.',
-          error: 'Authentication failed'
+      if (freepikApiResponse.status === 401 || freepikApiResponse.status === 403) {
+        return new Response(JSON.stringify({
+          error: 'Freepik rejected FREEPIK_API_KEY.',
         }), {
-          status: 200, // Return 200 to allow fallback
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      
-      // Check rate limit
-      const rateLimitRemaining = freepikApiResponse.headers.get('x-ratelimit-remaining');
-      if (freepikApiResponse.status === 429 || rateLimitRemaining === '0') {
-        console.log('Rate limit hit, falling back to internal templates');
-        return new Response(JSON.stringify({ 
-          templates: [],
-          fallback: true,
-          message: 'Rate limit reached, showing internal templates only'
-        }), {
-          status: 200,
+          status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      // Return graceful fallback for other errors
-      return new Response(JSON.stringify({ 
-        templates: [],
-        fallback: true,
-        message: 'Freepik API temporarily unavailable. Showing internal templates only.',
-        error: `API Error: ${freepikApiResponse.status}`
+      if (freepikApiResponse.status === 429) {
+        return new Response(JSON.stringify({
+          error: 'Freepik accepted FREEPIK_API_KEY and then rate-limited the request.',
+        }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      return new Response(JSON.stringify({
+        error: `Freepik returned HTTP ${freepikApiResponse.status}.`,
       }), {
-        status: 200,
+        status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -106,10 +88,7 @@ serve(async (req) => {
     const freepikData = await freepikApiResponse.json();
     console.log(`Found ${freepikData.data?.length || 0} Freepik templates`);
 
-    // Create Supabase client
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Transform and cache results
+    // Transform results. Saving into the library happens through import-stock-templates.
     const templates = await Promise.all(
       (freepikData.data || []).map(async (item: any) => {
         const template = {
@@ -133,24 +112,6 @@ serve(async (req) => {
           updated_at: new Date().toISOString(),
         };
 
-        // Cache template in database (upsert)
-        try {
-          const { error } = await supabase
-            .from('templates')
-            .upsert(template, { 
-              onConflict: 'freepik_id',
-              ignoreDuplicates: false 
-            });
-
-          if (error) {
-            console.error('Error caching template:', error);
-          } else {
-            console.log(`Cached template: ${template.name}`);
-          }
-        } catch (cacheError) {
-          console.error('Cache error:', cacheError);
-        }
-
         return template;
       })
     );
@@ -172,14 +133,10 @@ serve(async (req) => {
     console.error('Error in search-freepik-templates function:', error);
     console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
     
-    // Return graceful fallback instead of throwing error
-    return new Response(JSON.stringify({ 
-      templates: [],
-      fallback: true,
-      message: 'Error accessing Freepik API. Showing internal templates only.',
-      error: error instanceof Error ? error.message : 'Unknown error'
+    return new Response(JSON.stringify({
+      error: error instanceof Error ? error.message : 'Freepik search failed.',
     }), {
-      status: 200, // Return 200 so the client can use fallback
+      status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

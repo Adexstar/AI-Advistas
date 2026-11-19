@@ -26,6 +26,8 @@ import type { TemplateRecord } from '@/services/templates/types';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { CATEGORY_OPTIONS } from '@/utils/templateCategories';
+import { TemplateSourcePanel } from '@/components/admin/TemplateSourcePanel';
+import { missingStockSecrets } from '@/services/admin/templateSources';
 
 const CATEGORIES = CATEGORY_OPTIONS.map((category) => category.label);
 
@@ -113,7 +115,10 @@ export default function AdminTemplateGallery() {
         onSuccess: (r) => {
           setResults(r.results);
           setPicked(new Set());
-          if (!r.results.length) toast.info('No results — try another term');
+          const missing = r.missing?.length ? r.missing : missingStockSecrets(r.providers);
+          if (!r.results.length && missing.length) toast.error(`No templates. Missing ${missing.join(', ')}.`);
+          else if (!r.results.length) toast.info('No results. Try another term.');
+          else if (missing.length) toast.message(`Skipped providers with missing keys: ${missing.join(', ')}.`);
         },
       },
     );
@@ -140,6 +145,7 @@ export default function AdminTemplateGallery() {
 
   return (
     <div className="space-y-6">
+      <TemplateSourcePanel />
       {/* Import panel */}
       <Card>
         <CardContent className="space-y-4 p-4 sm:p-6">

@@ -13,6 +13,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2, XCircle, Loader2, ExternalLink, RefreshCw, Play, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { readEdgeError } from "@/services/edgeError";
 
 type EnvStatus = { name: string; present: boolean };
 type PlaygroundField = {
@@ -180,17 +181,8 @@ const FALLBACK_PROVIDERS: Provider[] = PROVIDER_CATALOG.map((provider) => ({
   configured: false,
 }));
 
-async function readInvokeError(error: any): Promise<string> {
-  const context = error?.context;
-  if (context && typeof context.json === "function") {
-    try {
-      const body = await context.json();
-      return body?.error || error?.message || "Request failed";
-    } catch {
-      return error?.message || "Request failed";
-    }
-  }
-  return error?.message || "Request failed";
+function readInvokeError(error: unknown): Promise<string> {
+  return readEdgeError(error, "Request failed");
 }
 
 export default function AdminProviders() {
@@ -408,7 +400,9 @@ function PlaygroundDialog({ provider, onClose }: { provider: Provider | null; on
     const { data, error } = await supabase.functions.invoke("provider-status", {
       body: { action: "playground", id: provider.id, input },
     });
-    const r: TestResult = error ? { ok: false, error: error.message } : data;
+    const r: TestResult = error
+      ? { ok: false, error: await readInvokeError(error) }
+      : data;
     setResult(r);
     setBusy(false);
     if (r.ok) toast.success(`${provider.label}: OK (${r.durationMs ?? 0}ms)`);

@@ -4,11 +4,13 @@
 // results are cached 24h. Selected imports stay pending. Seed and catalog
 // publish approved rows so the public library can show them.
 import { supabase } from "@/integrations/supabase/client";
+import { readEdgeError } from "@/services/edgeError";
 
 export type StockProvider = "pexels" | "unsplash" | "pixabay";
+export type ImportProvider = StockProvider | "freepik";
 
 export interface StockItem {
-  provider: StockProvider;
+  provider: ImportProvider;
   source_id: string;
   name: string;
   image_url: string;
@@ -26,6 +28,7 @@ export interface StockItem {
 export interface StockSearchResponse {
   results: StockItem[];
   providers: Record<StockProvider, boolean>;
+  missing?: string[];
 }
 
 export interface ImportResponse {
@@ -36,8 +39,14 @@ export interface ImportResponse {
 
 async function call<T>(body: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke("import-stock-templates", { body });
-  if (error) throw new Error(error.message);
-  if ((data as any)?.error) throw new Error((data as any).error);
+  if (error) {
+    const message = await readEdgeError(error, "The template import failed.");
+    if (message === "Admin only") {
+      throw new Error("Only an admin can import templates. This account does not have the admin role.");
+    }
+    throw new Error(message);
+  }
+  if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
   return data as T;
 }
 
