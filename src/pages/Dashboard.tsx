@@ -194,8 +194,10 @@ const Dashboard = () => {
                   {loading ? (
                     <ChartSkeleton height={240} />
                   ) : perfSeries.length === 0 ? (
-                    <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                      No performance data yet.
+                    <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
+                      <p className="text-sm font-medium text-foreground">Results show up after a campaign runs</p>
+                      <p className="max-w-sm text-xs text-muted-foreground">Clicks, conversions, and revenue land here once a campaign has activity. Nothing is estimated.</p>
+                      <Button size="sm" className="mt-1" onClick={() => navigate("/create-ad")}>Create a campaign</Button>
                     </div>
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
@@ -237,8 +239,8 @@ const Dashboard = () => {
                 </div>
                 <div className="relative mx-auto h-[160px] w-full">
                   {platformSpend.length === 0 ? (
-                    <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-                      No platform data yet
+                    <div className="flex h-full flex-col items-center justify-center px-4 text-center text-xs text-muted-foreground">
+                      Spend by channel appears after a campaign is live.
                     </div>
                   ) : (
                     <>
@@ -289,7 +291,14 @@ const Dashboard = () => {
               {loading ? (
                 <TableSkeleton rows={4} cols={8} />
               ) : campaigns.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">No campaigns yet.</p>
+                <div className="flex flex-col items-center gap-3 py-8 text-center">
+                  <p className="text-sm font-medium text-foreground">Your first campaign starts here</p>
+                  <p className="max-w-sm text-xs text-muted-foreground">Open a template or write the offer yourself. Drafts stay on this account.</p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <Button size="sm" onClick={() => navigate("/create-ad")}>Create a campaign</Button>
+                    <Button size="sm" variant="outline" onClick={() => navigate("/templates")}>Browse templates</Button>
+                  </div>
+                </div>
               ) : (
                 <>
                   {/* Desktop table */}
