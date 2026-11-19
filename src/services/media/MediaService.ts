@@ -118,8 +118,16 @@ export const MediaService = {
   async search(ctx: MediaSearchContext): Promise<MediaAsset[]> {
     return withProviderCache("media-search", ctx, async () => {
       const active = searchProviders.filter((p) => p.isConfigured() && p.search);
-      const results = await Promise.all(active.map((p) => p.search!(ctx).catch(() => [])));
-      return rankResults(results.flat(), ctx);
+      const settled = await Promise.allSettled(active.map((p) => p.search!(ctx)));
+      const found = settled.flatMap((result) => (result.status === "fulfilled" ? result.value : []));
+      if (found.length === 0) {
+        const reasons = settled
+          .filter((result): result is PromiseRejectedResult => result.status === "rejected")
+          .map((result) => (result.reason instanceof Error ? result.reason.message : String(result.reason)))
+          .filter(Boolean);
+        if (reasons.length) throw new Error(Array.from(new Set(reasons)).join(" "));
+      }
+      return rankResults(found, ctx);
     });
   },
 
@@ -128,16 +136,21 @@ export const MediaService = {
   // de-duplicated and ranked. The UI never learns which provider replied.
   async smartSearch(ctx: MediaSearchContext): Promise<MediaAsset[]> {
     const terms = await expandIntent(ctx);
-    const batches = await Promise.all(
-      terms.map((intent) => this.search({ ...ctx, intent }).catch(() => [] as MediaAsset[])),
-    );
+    const batches = await Promise.allSettled(terms.map((intent) => this.search({ ...ctx, intent })));
     const seen = new Set<string>();
     const merged: MediaAsset[] = [];
-    for (const asset of batches.flat()) {
-      const key = asset.url || `${asset.provider}:${asset.id}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      merged.push(asset);
+    for (const batch of batches) {
+      if (batch.status !== "fulfilled") continue;
+      for (const asset of batch.value) {
+        const key = asset.url || `${asset.provider}:${asset.id}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        merged.push(asset);
+      }
+    }
+    if (!merged.length) {
+      const failure = batches.find((batch): batch is PromiseRejectedResult => batch.status === "rejected");
+      if (failure) throw failure.reason;
     }
     return rankResults(merged, ctx);
   },

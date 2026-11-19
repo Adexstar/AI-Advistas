@@ -1,78 +1,150 @@
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Activity, Database, ListChecks, ServerCog, ShieldAlert, Webhook, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Database, Loader2, ServerCog } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { readEdgeError } from "@/services/edgeError";
 
-const services = [
-  { name: "OpenAI", status: "healthy" },
-  { name: "Canva", status: "healthy" },
-  { name: "Freepik", status: "healthy" },
-  { name: "Supabase", status: "healthy" },
-] as const;
-
-const statusColor: Record<string, string> = {
-  healthy: "bg-emerald-500/10 text-emerald-500 border-emerald-500/30",
-  degraded: "bg-amber-500/10 text-amber-500 border-amber-500/30",
-  down: "bg-rose-500/10 text-rose-500 border-rose-500/30",
+type ProviderRow = {
+  id: string;
+  label: string;
+  category: string;
+  configured: boolean;
+  envStatus: { name: string; present: boolean }[];
 };
 
-const SystemMonitor = () => (
-  <div className="page-container space-y-6 py-4 md:py-6">
-    <div>
-      <h1 className="text-3xl font-bold tracking-tight">System Monitor</h1>
-      <p className="text-muted-foreground">Admin-only maintenance surface for AdVista infrastructure.</p>
-    </div>
+async function loadMonitor() {
+  const database = await supabase.from("campaigns").select("id", { count: "exact", head: true });
+  const jobs = await supabase.from("ai_jobs").select("id, status").order("created_at", { ascending: false }).limit(20);
+  const publishing = await supabase.from("publishing_jobs").select("id, status").order("created_at", { ascending: false }).limit(20);
 
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {services.map((s) => (
-        <Card key={s.name}>
+  let providers: ProviderRow[] = [];
+  let providerError = "";
+  const status = await supabase.functions.invoke("provider-status", { body: { action: "list" } });
+  if (status.error) {
+    providerError = await readEdgeError(status.error, "Provider status could not be loaded.");
+  } else {
+    providers = (status.data?.providers ?? []) as ProviderRow[];
+  }
+
+  return {
+    databaseOk: !database.error,
+    databaseError: database.error?.message ?? "",
+    campaignCount: database.count ?? 0,
+    jobs: jobs.error ? [] : jobs.data ?? [],
+    jobsError: jobs.error?.message ?? "",
+    publishing: publishing.error ? [] : publishing.data ?? [],
+    publishingError: publishing.error?.message ?? "",
+    providers,
+    providerError,
+  };
+}
+
+const SystemMonitor = () => {
+  const query = useQuery({ queryKey: ["system-monitor"], queryFn: loadMonitor });
+  const data = query.data;
+
+  return (
+    <div className="page-container space-y-6 py-4 md:py-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">System Monitor</h1>
+          <p className="text-muted-foreground">Checks this workspace can actually run: the database, recent jobs, and which provider keys are present.</p>
+        </div>
+        <Button variant="outline" onClick={() => void query.refetch()} disabled={query.isFetching}>
+          {query.isFetching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          Check again
+        </Button>
+      </div>
+
+      {query.isError && (
+        <Card>
+          <CardContent className="p-4 text-sm text-destructive">
+            {query.error instanceof Error ? query.error.message : "The monitor could not run."}
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
           <CardHeader className="pb-2">
-            <CardDescription>{s.name}</CardDescription>
+            <CardDescription>Database</CardDescription>
             <CardTitle className="flex items-center justify-between text-lg">
-              API Health
-              <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusColor[s.status]}`}>{s.status}</span>
+              Supabase
+              <Badge variant="secondary">{data?.databaseOk ? "Reachable" : query.isLoading ? "Checking" : "Unavailable"}</Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-xs text-muted-foreground">Last checked: just now</CardContent>
+          <CardContent className="text-sm text-muted-foreground">
+            {data?.databaseOk
+              ? `${data.campaignCount.toLocaleString()} campaigns visible to this account.`
+              : data?.databaseError || "Waiting for the first check."}
+          </CardContent>
         </Card>
-      ))}
-    </div>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>AI jobs</CardDescription>
+            <CardTitle className="text-lg">{data ? data.jobs.length : "—"} recent</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            {data?.jobsError || (data && data.jobs.length === 0 ? "No AI jobs are stored for this account." : "Statuses come from the ai_jobs table.")}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Publishing jobs</CardDescription>
+            <CardTitle className="text-lg">{data ? data.publishing.length : "—"} recent</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            {data?.publishingError || (data && data.publishing.length === 0 ? "No publishing jobs are stored." : "Statuses come from publishing_jobs.")}
+          </CardContent>
+        </Card>
+      </div>
 
-    <div className="grid gap-6 lg:grid-cols-2">
-      {[
-        { icon: Zap, title: "AI Jobs", desc: "Currently processing jobs and their runtimes." },
-        { icon: ListChecks, title: "Queue Status", desc: "Backlog length, oldest item age, throughput." },
-        { icon: ShieldAlert, title: "Failed Jobs", desc: "Error traces from failed AI executions." },
-        { icon: Webhook, title: "Webhook Logs", desc: "Inbound and outbound webhook history." },
-        { icon: Activity, title: "Rate Limits", desc: "Per-provider quota usage in real time." },
-        { icon: Database, title: "Database Health", desc: "Query latency, connection pool, replication." },
-      ].map((s) => {
-        const Icon = s.icon;
-        return (
-          <Card key={s.title}>
-            <CardHeader>
-              <div className="mb-2 grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary">
-                <Icon className="h-5 w-5" />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ServerCog className="h-5 w-5 text-primary" /> Provider keys
+          </CardTitle>
+          <CardDescription>Present means the secret exists on the Supabase project. It does not mean a live call succeeded.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {data?.providerError && <p className="text-sm text-destructive">{data.providerError}</p>}
+          {!data?.providerError && data && data.providers.length === 0 && !query.isLoading && (
+            <p className="text-sm text-muted-foreground">The provider list came back empty.</p>
+          )}
+          <div className="grid gap-2">
+            {(data?.providers ?? []).map((provider) => (
+              <div key={provider.id} className="flex flex-col gap-1 rounded-xl border border-border px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">{provider.label}</p>
+                  <p className="truncate text-xs text-muted-foreground">{provider.envStatus.map((item) => `${item.name} ${item.present ? "set" : "missing"}`).join(" · ")}</p>
+                </div>
+                <Badge variant="secondary" className="w-fit">{provider.configured ? "Configured" : "Missing key"}</Badge>
               </div>
-              <CardTitle className="text-base">{s.title}</CardTitle>
-              <CardDescription>{s.desc}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Badge variant="secondary">Live view coming soon</Badge>
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <ServerCog className="h-5 w-5 text-primary" /> Maintenance surface
-        </CardTitle>
-        <CardDescription>Not visible in sidebar — reachable only to administrators.</CardDescription>
-      </CardHeader>
-    </Card>
-  </div>
-);
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Database className="h-5 w-5 text-primary" /> Recent job statuses
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          {(data?.jobs ?? []).slice(0, 8).map((job) => (
+            <div key={job.id} className="flex items-center justify-between gap-3">
+              <span className="truncate text-muted-foreground">{job.id}</span>
+              <span className="capitalize">{job.status}</span>
+            </div>
+          ))}
+          {data && data.jobs.length === 0 && !data.jobsError && <p className="text-muted-foreground">Nothing to list.</p>}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 
 export default SystemMonitor;

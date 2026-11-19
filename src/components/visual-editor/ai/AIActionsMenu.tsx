@@ -9,17 +9,13 @@ import { useAIStatus } from "@/contexts/AIStatusContext";
 import { useAuth } from "@/hooks/useAuth";
 import { DecisionService } from "@/services/ai/DecisionService";
 import { resolveSuggestion } from "@/services/ai/resolveSuggestion";
+import { requestTextRewrite } from "@/services/ai/requestTextRewrite";
+import { toast } from "sonner";
 import { AIPreviewDialog } from "./AIPreviewDialog";
 import {
   AISuggestion,
-  IMAGE_ACTIONS,
-  LAYOUT_ACTIONS,
   TEXT_ACTIONS,
-  VIDEO_ACTIONS,
-  buildImageSuggestion,
-  buildLayoutSuggestion,
   buildTextSuggestion,
-  buildVideoSuggestion,
 } from "./aiSuggestions";
 
 type ObjectKind = "text" | "image" | "video" | "layout" | "none";
@@ -63,28 +59,31 @@ export const AIActionsMenu: React.FC<Props> = ({ selected, canvas, trigger, alig
 
   if (kind === "none") return null;
 
-  const actions =
-    kind === "text"
-      ? TEXT_ACTIONS
-      : kind === "image"
-      ? IMAGE_ACTIONS
-      : kind === "video"
-      ? VIDEO_ACTIONS
-      : LAYOUT_ACTIONS;
+  const actions = kind === "text" ? TEXT_ACTIONS : [];
 
-  const label = kind === "text" ? "Text AI" : kind === "image" ? "Image AI" : kind === "video" ? "Video AI" : "Layout AI";
+  const label = kind === "text" ? "Rewrite copy" : kind === "image" ? "Image" : kind === "video" ? "Video" : "Layout";
 
-  const handleRun = (action: string) => {
+  const handleRun = async (action: string) => {
+    if (kind !== "text") return;
     setOpen(false);
     setStatus("working", action);
-    const currentText = selected?.text ?? "";
-    let s: AISuggestion;
-    if (kind === "text") s = buildTextSuggestion(action, currentText, ctxInput);
-    else if (kind === "image") s = buildImageSuggestion(action, ctxInput);
-    else if (kind === "video") s = buildVideoSuggestion(action, ctxInput);
-    else s = buildLayoutSuggestion(action, ctxInput);
-    setSuggestion(s);
-    setStatus("approval", "Review AI suggestion");
+    const currentText = String(selected?.text ?? "");
+    try {
+      const rewritten = await requestTextRewrite(action, currentText);
+      const preview = buildTextSuggestion(action, currentText, ctxInput);
+      setSuggestion({
+        ...preview,
+        confidence: 0,
+        estImprovement: undefined,
+        reason: "Returned by the AI gateway. Nothing is applied until you confirm.",
+        before: { type: "text", value: currentText || "(empty)" },
+        after: { type: "text", value: rewritten },
+      });
+      setStatus("approval", "Review the rewrite");
+    } catch (error) {
+      setStatus("ready");
+      toast.error(error instanceof Error ? error.message : "Copy generation is unavailable.");
+    }
   };
 
   const applySuggestion = async (s: AISuggestion) => {
@@ -147,10 +146,18 @@ export const AIActionsMenu: React.FC<Props> = ({ selected, canvas, trigger, alig
           </div>
           <ScrollArea className="max-h-72">
             <div className="p-1.5">
-              {actions.map((a) => (
+              {actions.length === 0 ? (
+                <p className="px-2 py-3 text-[12px] leading-5 text-muted-foreground">
+                  {kind === "image"
+                    ? "Image changes are made in AI Studio. That panel calls the image provider and does not invent a preview here."
+                    : kind === "video"
+                    ? "Video changes are made in AI Studio. That panel calls the video provider."
+                    : "Layout changes are made with the canvas tools. There is no model call for this selection."}
+                </p>
+              ) : actions.map((a) => (
                 <button
                   key={a}
-                  onClick={() => handleRun(a)}
+                  onClick={() => void handleRun(a)}
                   className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12px] hover:bg-muted"
                 >
                   <Sparkles className="h-3 w-3 text-primary/70 shrink-0" />
@@ -160,7 +167,7 @@ export const AIActionsMenu: React.FC<Props> = ({ selected, canvas, trigger, alig
             </div>
           </ScrollArea>
           <div className="border-t px-3 py-2 text-[10px] text-muted-foreground">
-            Uses {brand?.name ?? "Brand Kit"} · {playbook?.category ?? "Category"} · Previewed before apply
+            {kind === "text" ? "Rewrite calls the AI gateway. Nothing changes until you apply it." : "No automatic change is applied from this menu."}
           </div>
         </PopoverContent>
       </Popover>

@@ -235,8 +235,8 @@ Deno.serve(async (req) => {
 
     if (p.category === "publishing") {
       return new Response(JSON.stringify({
-        ok: true,
-        note: "Credentials are set. This check does not publish an ad.",
+        ok: false,
+        error: "Credentials are set, but publishing is not implemented. This check does not send an ad.",
       }), { headers: jsonHeaders });
     }
 

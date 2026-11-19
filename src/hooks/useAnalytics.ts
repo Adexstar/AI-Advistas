@@ -118,14 +118,17 @@ export function useAnalytics(range: AnalyticsRange = 'daily') {
     }));
   }, [analyticsRows, range]);
 
-  const topCampaigns = useMemo(() =>
-    [...campaigns].sort((a: any, b: any) => Number(b.roas || 0) - Number(a.roas || 0)).slice(0, 4).map((c: any) => ({
+  const topCampaigns = useMemo(() => {
+    const rows = [...campaigns].sort((a: any, b: any) => Number(b.roas || 0) - Number(a.roas || 0)).slice(0, 4);
+    const maxRoas = Math.max(0, ...rows.map((c: any) => Number(c.roas || 0)));
+    return rows.map((c: any) => ({
       name: c.name, status: c.status || 'Active',
       reach: c.reach ? `${c.reach >= 1000 ? `${(c.reach / 1000).toFixed(0)}K` : c.reach}` : '0',
       ctr: c.ctr ? `${Number(c.ctr).toFixed(1)}%` : '0%',
-      pct: Math.min(Math.round((Number(c.roas || 0) / 6) * 100), 100),
+      pct: maxRoas ? Math.round((Number(c.roas || 0) / maxRoas) * 100) : 0,
       img: c.thumbnail_url || '',
-    })), [campaigns]);
+    }));
+  }, [campaigns]);
 
   const campaignRows = useMemo(() =>
     campaigns.slice(0, 5).map((c: any) => ({
@@ -136,22 +139,28 @@ export function useAnalytics(range: AnalyticsRange = 'daily') {
       roas: c.roas ? `${Number(c.roas).toFixed(2)}x` : '0x',
     })), [campaigns]);
 
-  const bestTemplates = useMemo(() =>
-    templates.slice(0, 4).map((t: any) => ({
+  const bestTemplates = useMemo(() => {
+    const rows = templates.slice(0, 4);
+    const maxUsage = Math.max(0, ...rows.map((t: any) => Number(t.usage_count || 0)));
+    return rows.map((t: any) => ({
       name: t.name,
       usage: t.usage_count ? `${t.usage_count >= 1000 ? `${(t.usage_count / 1000).toFixed(1)}K` : t.usage_count}` : '—',
       ctr: t.ctr ? `${Number(t.ctr).toFixed(1)}%` : '—',
-      pct: t.usage_count ? Math.min(Math.round((t.usage_count / 10) * 100), 100) : 0,
+      pct: maxUsage ? Math.round((Number(t.usage_count || 0) / maxUsage) * 100) : 0,
       img: t.thumbnail_url || '',
-    })), [templates]);
+    }));
+  }, [templates]);
 
-  const mediaAssets = useMemo(() =>
-    mediaRows.slice(0, 4).map((m: any) => ({
+  const mediaAssets = useMemo(() => {
+    const rows = mediaRows.slice(0, 4);
+    const maxUsage = Math.max(0, ...rows.map((m: any) => Number(m.usage_count || 0)));
+    return rows.map((m: any) => ({
       name: m.name,
       usage: m.usage_count ? `Used in ${m.usage_count} ads` : 'Usage not tracked',
-      pct: m.usage_count ? Math.min(Math.round((m.usage_count / 60) * 100), 100) : 0,
+      pct: maxUsage ? Math.round((Number(m.usage_count || 0) / maxUsage) * 100) : 0,
       icon: m.type === 'video' ? 'Video' : 'Image',
-    })), [mediaRows]);
+    }));
+  }, [mediaRows]);
 
   const brandScores = useMemo(() => {
     const kit = brandKits[0];
@@ -165,15 +174,15 @@ export function useAnalytics(range: AnalyticsRange = 'daily') {
     const colors = Array.isArray(kit.colors) ? kit.colors.length : 0;
     const fonts = Array.isArray(kit.fonts) ? kit.fonts.length : 0;
     return [
-      { label: 'Logo Usage', value: logos > 0 ? 'High' : 'None', pct: Math.min(logos * 25, 100) },
-      { label: 'Color Consistency', value: colors >= 3 ? 'Good' : colors > 0 ? 'Fair' : 'None', pct: Math.min(colors * 20, 100) },
-      { label: 'Font Usage', value: fonts >= 2 ? 'Good' : fonts > 0 ? 'Fair' : 'None', pct: Math.min(fonts * 30, 100) },
-      { label: 'Brand Compliance', value: logos > 0 && colors >= 3 ? 'Great' : 'Needs Work', pct: Math.round((logos * 25 + Math.min(colors, 5) * 15 + Math.min(fonts, 3) * 10) / 50 * 100) },
+      { label: 'Logos saved', value: String(logos), pct: Math.min(logos * 25, 100) },
+      { label: 'Colors saved', value: String(colors), pct: Math.min(colors * 20, 100) },
+      { label: 'Fonts saved', value: String(fonts), pct: Math.min(fonts * 30, 100) },
+      { label: 'Kit completeness', value: logos > 0 && colors >= 3 && fonts > 0 ? 'Ready' : 'Incomplete', pct: Math.round((Math.min(logos, 1) * 40 + Math.min(colors, 3) * 15 + Math.min(fonts, 1) * 15)) },
     ];
   }, [brandKits]);
 
   const brandScore = useMemo(() => Math.round(brandScores.reduce((a, b) => a + b.pct, 0) / brandScores.length), [brandScores]);
-  const brandLabel = useMemo(() => brandScore >= 80 ? 'Great' : brandScore >= 60 ? 'Good' : brandScore >= 40 ? 'Fair' : 'Needs Work', [brandScore]);
+  const brandLabel = useMemo(() => brandScore >= 80 ? 'Kit is filled in' : 'Add the missing brand files', [brandScore]);
 
   const activityItems = useMemo(() =>
     activities.slice(0, 10).map((a: any) => ({ text: a.description || a.action, time: formatRelativeTime(a.created_at) })),

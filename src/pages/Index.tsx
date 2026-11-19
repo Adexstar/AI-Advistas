@@ -69,7 +69,7 @@ const proofPoints = [
   },
   {
     value: "Built-in operations",
-    label: "Pause, duplicate, export, and status control from one surface",
+    label: "Pause, duplicate, and status control from one surface",
   },
 ] as const;
 
@@ -92,7 +92,7 @@ const plans = [
     name: "Enterprise",
     price: "$99",
     description: "For teams managing larger creative systems, approvals, and higher launch volume.",
-    features: ["Unlimited campaign operations", "Unlimited AI drafts", "Admin template workflows", "API access"],
+    features: ["Unlimited campaign operations", "Unlimited AI drafts", "Admin template workflows", "Provider keys on your Supabase project"],
     emphasis: false,
   },
 ] as const;
@@ -194,7 +194,7 @@ const Index = () => {
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/55">Command surface</p>
                     <h2 className="mt-1 text-2xl font-semibold text-white">From brief to live campaign</h2>
                   </div>
-                  <Badge className="rounded-full border border-white/15 bg-white/10 text-white">Live preview</Badge>
+                  <Badge className="rounded-full border border-white/15 bg-white/10 text-white">Illustration</Badge>
                 </div>
 
                 <div className="space-y-4">
@@ -205,7 +205,7 @@ const Index = () => {
                       </div>
                       <div className="min-w-0 space-y-1">
                         <p className="font-medium text-white">Campaign brief, already moving</p>
-                        <p className="text-sm leading-6 text-white/68">Offer, audience, and message angle are prefilled so the team starts with momentum instead of a blank form.</p>
+                        <p className="text-sm leading-6 text-white/68">Offer, audience, and message stay on the brief you write. The form starts empty until you fill it.</p>
                       </div>
                     </CardContent>
                   </Card>

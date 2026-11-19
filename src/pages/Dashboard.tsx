@@ -10,6 +10,7 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis, Legend,
 } from "recharts";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChartSkeleton, MetricCardSkeleton, TableSkeleton } from "@/components/ui/loading";
@@ -51,12 +52,12 @@ interface KPIProps {
   value: string;
   delta?: number | null;
   positive?: boolean;
-  spark: { x: number; v: number }[];
+  spark?: { x: number; v: number }[];
   color: string;
   loading?: boolean;
 }
 
-const KpiCard = ({ icon: Icon, label, value, delta, positive = true, spark, color, loading }: KPIProps) => (
+const KpiCard = ({ icon: Icon, label, value, delta, positive = true, spark = [], color, loading }: KPIProps) => (
   <div className={cn("card", !loading && "adv-fade-in")}>
     {loading ? (
       <MetricCardSkeleton />
@@ -67,13 +68,15 @@ const KpiCard = ({ icon: Icon, label, value, delta, positive = true, spark, colo
           <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
             <Icon className="h-4 w-4" />
           </div>
-          <div className="h-8 w-20">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={spark}>
-                <Line type="monotone" dataKey="v" stroke={color} strokeWidth={2} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          {spark.some((point) => point.v) ? (
+            <div className="h-8 w-20" aria-hidden>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={spark}>
+                  <Line type="monotone" dataKey="v" stroke={color} strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : <span className="text-[10px] text-muted-foreground">No trend yet</span>}
         </div>
         {/* Value — large number */}
         <p className="metric-value">{value || '0'}</p>
@@ -163,10 +166,10 @@ const Dashboard = () => {
 
       {/* 2. KPI cards — metric-cards-grid handles all breakpoints */}
       <div className="metric-cards-grid">
-        <KpiCard icon={Megaphone} label="Total Campaigns" value={compact(totals.campaigns)} delta={null} spark={spark("clicks")} color="hsl(252 83% 61%)" loading={loading} />
-        <KpiCard icon={DollarSign} label="Total Spend" value={money(totalSpend)} delta={null} spark={spark("revenue")} color="hsl(320 78% 58%)" loading={loading} />
+        <KpiCard icon={Megaphone} label="Total Campaigns" value={compact(totals.campaigns)} delta={null} color="hsl(252 83% 61%)" loading={loading} />
+        <KpiCard icon={DollarSign} label="Total Spend" value={money(totalSpend)} delta={null} color="hsl(320 78% 58%)" loading={loading} />
         <KpiCard icon={ShoppingCart} label="Conversions" value={compact(totals.conversions)} delta={null} spark={spark("conversions")} color="hsl(142 71% 45%)" loading={loading} />
-        <KpiCard icon={TrendingUp} label="ROAS" value={`${totals.roas.toFixed(2)}x`} delta={null} spark={spark("revenue")} color="hsl(30 95% 55%)" loading={loading} />
+        <KpiCard icon={TrendingUp} label="ROAS" value={`${totals.roas.toFixed(2)}x`} delta={null} color="hsl(30 95% 55%)" loading={loading} />
       </div>
 
       {/* 3 + 4 + right column — fixed min width on the AI rail so badges/table don't crush */}
@@ -312,7 +315,6 @@ const Dashboard = () => {
                           <TableHead className="text-right">CTR</TableHead>
                           <TableHead className="text-right">Conversions</TableHead>
                           <TableHead className="text-right">ROAS</TableHead>
-                          <TableHead>Trend</TableHead>
                           <TableHead className="w-10" />
                         </TableRow>
                       </TableHeader>
@@ -327,16 +329,19 @@ const Dashboard = () => {
                             <TableCell className="text-right">{Number(c.ctr).toFixed(2)}%</TableCell>
                             <TableCell className="text-right">{compact((c as any).conversions || 0)}</TableCell>
                             <TableCell className="text-right font-semibold text-primary">{Number(c.roas).toFixed(2)}x</TableCell>
-                            <TableCell>
-                              <div className="h-6 w-20">
-                                <ResponsiveContainer width="100%" height="100%">
-                                  <LineChart data={spark("conversions")}>
-                                    <Line type="monotone" dataKey="v" stroke="hsl(252 83% 61%)" strokeWidth={1.5} dot={false} />
-                                  </LineChart>
-                                </ResponsiveContainer>
-                              </div>
+                            <TableCell onClick={(event) => event.stopPropagation()}>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Open actions for ${c.name}`}>
+                                    <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => navigate(`/campaigns/${c.id}`)}>Open campaign</DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => navigate(`/create-ad?campaignId=${c.id}`)}>Edit in Create Ad</DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
-                            <TableCell><MoreHorizontal className="h-4 w-4 text-muted-foreground" /></TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

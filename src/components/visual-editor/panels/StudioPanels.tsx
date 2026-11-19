@@ -9,6 +9,7 @@ import { loadLibraryTemplates } from '@/services/templates/publishLibrary';
 import { signedMediaUrl } from '@/lib/mediaUrl';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
+import { readEdgeError } from '@/services/edgeError';
 import { placeFittedImage, replaceImageKeepingFrame } from '@/components/visual-editor/canvasImagePlacement';
 import { isOverlayScrim } from '@/services/templates/loadIntoCanvas';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -1032,18 +1033,14 @@ export const BackgroundPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?
 /* ============================ AI STUDIO ============================ */
 const AI_TABS = [
   { id: 'images', label: 'Images' },
-  { id: 'graphics', label: 'Graphics' },
   { id: 'videos', label: 'Videos' },
-  { id: '3d', label: '3D' },
 ] as const;
 
 type AITabId = (typeof AI_TABS)[number]['id'];
 
 const GENERATE_LABEL: Record<AITabId, string> = {
-  images: 'Generate images',
-  graphics: 'Generate graphics',
+  images: 'Generate image',
   videos: 'Generate video',
-  '3d': 'Generate 3D',
 };
 
 export const AIStudioPanel: React.FC<{
@@ -1064,30 +1061,24 @@ export const AIStudioPanel: React.FC<{
     if (!canGenerate) return;
     setBusy(true);
     try {
-      if (activeTab === 'videos') {
-        const { data, error } = await supabase.functions.invoke('generate-ad-video', {
-          body: {
-            product: prompt.trim(),
-            platform: (platform || 'instagram').toLowerCase(),
-            adContent: { headline: prompt.trim() },
-          },
-        });
-        if (error) throw error;
-        const url = data?.videoUrl || data?.url || data?.video || data?.data?.[0]?.url;
-        if (!url) throw new Error('No video returned');
-        setResults((r) => [url, ...r].slice(0, 6));
-      } else {
-        const { data, error } = await supabase.functions.invoke('generate-ad-image', {
-          body: { product: prompt.trim(), platform: (platform || 'instagram').toLowerCase(), adContent: { headline: prompt.trim() } },
-        });
-        if (error) throw error;
-        const url = data?.imageUrl || data?.url || data?.image || data?.data?.[0]?.url;
-        if (!url) throw new Error('No image returned');
-        setResults((r) => [url, ...r].slice(0, 6));
-      }
+      const functionName = activeTab === 'videos' ? 'generate-ad-video' : 'generate-ad-image';
+      const missingKey = activeTab === 'videos'
+        ? 'Video generation is unavailable. Add RUNWARE_API_KEY as a Supabase secret.'
+        : 'Image generation is unavailable. Add OPENAI_API_KEY as a Supabase secret.';
+      const { data, error } = await supabase.functions.invoke(functionName, {
+        body: {
+          product: prompt.trim(),
+          platform: (platform || 'instagram').toLowerCase(),
+          adContent: { headline: prompt.trim() },
+        },
+      });
+      if (error) throw new Error(await readEdgeError(error, missingKey));
+      const url = data?.videoUrl || data?.imageUrl || data?.url || data?.video || data?.image || data?.data?.[0]?.url;
+      if (!url) throw new Error(typeof data?.error === 'string' ? data.error : missingKey);
+      setResults((r) => [url, ...r].slice(0, 6));
       toast({ title: activeTab === 'videos' ? 'Video ready' : 'Image ready', description: 'Click it to place it on the canvas.' });
     } catch (e: any) {
-      toast({ title: 'Generation failed', description: e?.message ?? 'Try a more descriptive prompt.', variant: 'destructive' });
+      toast({ title: 'Generation failed', description: e?.message ?? 'The provider did not return a file.', variant: 'destructive' });
     } finally {
       setBusy(false);
     }
@@ -1127,8 +1118,8 @@ export const AIStudioPanel: React.FC<{
       <div className="flex-1 min-h-0 overflow-y-auto p-4">
         <div className="mb-2 flex items-center gap-2">
           <p className="text-[13px] font-semibold text-white">Describe what you want to create</p>
-          {(activeTab === 'videos' || activeTab === '3d') && (
-            <span className="rounded bg-[#3D3D3D] px-1.5 py-0.5 text-[10px] text-[#CCCCCC]">Beta</span>
+          {activeTab === 'videos' && (
+            <span className="rounded bg-[#3D3D3D] px-1.5 py-0.5 text-[10px] text-[#CCCCCC]">Needs RUNWARE_API_KEY</span>
           )}
         </div>
 
@@ -1147,32 +1138,23 @@ export const AIStudioPanel: React.FC<{
           </button>
         </div>
 
-        {activeTab === 'images' && (
-          <>
-            <p className="mb-2 text-xs font-semibold text-white">Created in this session</p>
-            {results.length > 0 ? (
-              <div className="flex gap-2 overflow-x-auto no-scrollbar">
-                {results.slice(0, 3).map((url) => (
-                  <button key={url} onClick={() => placeResult(url)} className="h-20 min-w-[80px] flex-1 overflow-hidden rounded-lg">
-                    <img src={url} alt="" className="h-full w-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="rounded-lg border border-dashed border-[#555555] px-3 py-4 text-xs text-[#AAAAAA]">Images you generate show up here. Nothing is filled in before you ask.</p>
-            )}
-          </>
-        )}
-
-        {(activeTab === 'videos' || activeTab === '3d') && (
-          <div className="mt-3 rounded-lg bg-[#2D2D2D] p-3">
-            <p className="text-[13px] font-semibold text-white">🚩 This is experimental new technology</p>
-            <p className="mt-1 text-xs text-[#888888]">
-              {activeTab === 'videos'
-                ? 'Scenes with people or animals may not look quite right.'
-                : 'Some objects may not look quite right.'}
-            </p>
+        <p className="mb-2 text-xs font-semibold text-white">Created in this session</p>
+        {results.length > 0 ? (
+          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            {results.slice(0, 3).map((url) => (
+              <button key={url} onClick={() => placeResult(url)} className="h-20 min-w-[80px] flex-1 overflow-hidden rounded-lg">
+                {activeTab === 'videos'
+                  ? <video src={url} className="h-full w-full object-cover" />
+                  : <img src={url} alt="" className="h-full w-full object-cover" />}
+              </button>
+            ))}
           </div>
+        ) : (
+          <p className="rounded-lg border border-dashed border-[#555555] px-3 py-4 text-xs text-[#AAAAAA]">
+            {activeTab === 'videos'
+              ? 'Videos you generate show up here. This calls the video function and needs RUNWARE_API_KEY.'
+              : 'Images you generate show up here. This calls OpenAI and needs OPENAI_API_KEY.'}
+          </p>
         )}
 
         {results.length > 0 && (

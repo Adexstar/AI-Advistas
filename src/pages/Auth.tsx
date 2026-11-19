@@ -17,6 +17,7 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
+  const [resetSent, setResetSent] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -55,6 +56,30 @@ const Auth = () => {
         variant: "destructive",
         title: "Login failed",
         description: error.message || "An error occurred during login.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+      if (error) throw error;
+      setResetSent(true);
+      toast({
+        title: "Reset email sent",
+        description: "Open the link in that email to choose a new password. If it does not arrive, confirm the address and try again.",
+      });
+    } catch (error: unknown) {
+      toast({
+        variant: "destructive",
+        title: "Could not send reset email",
+        description: error instanceof Error ? error.message : "Supabase Auth did not accept the request.",
       });
     } finally {
       setLoading(false);
@@ -131,7 +156,7 @@ const Auth = () => {
             Back to Home
           </Button>
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-white mb-2">
+            <h1 className="mb-2 text-3xl font-bold text-foreground">
               Welcome to AdVista
             </h1>
             <p className="text-muted-foreground">
@@ -195,12 +220,47 @@ const Auth = () => {
                     </div>
                   </div>
 
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      className="text-sm font-medium text-primary hover:underline"
+                      onClick={() => { setActiveTab("reset"); setResetSent(false); }}
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+
                   <Button
                     type="submit"
                     className="w-full"
                     disabled={loading}
                   >
                     {loading ? "Signing in..." : "Sign In"}
+                  </Button>
+                </form>
+              </TabsContent>
+
+              <TabsContent value="reset">
+                <form onSubmit={handleReset} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email">Email</Label>
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      placeholder="Enter your email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  {resetSent && (
+                    <p className="text-sm text-muted-foreground">If an account exists for that email, a reset link is on its way.</p>
+                  )}
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Sending..." : "Send reset link"}
+                  </Button>
+                  <Button type="button" variant="ghost" className="w-full" onClick={() => setActiveTab("login")}>
+                    Back to sign in
                   </Button>
                 </form>
               </TabsContent>

@@ -19,6 +19,7 @@ const TemplateRouteRedirect = () => {
 };
 
 const Index = lazy(() => import("./pages/Index"));
+const Legal = lazy(() => import("./pages/Legal"));
 const Auth = lazy(() => import("./pages/Auth"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const DashboardLayout = lazy(() => import("./components/DashboardLayout"));
@@ -103,6 +104,7 @@ const AppContent = () => {
             <Route path="/index" element={<Navigate to="/" replace />} />
             <Route path="/home" element={<Navigate to="/" replace />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/legal/:doc" element={<Legal />} />
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <DashboardLayout />

@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { isMobileBrowser } from "@/lib/mobileBrowser";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { LayoutDashboard, Megaphone, LayoutTemplate, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { LayoutDashboard, Megaphone, LayoutTemplate, Plus, CreditCard, Settings, LogOut } from "lucide-react";
 
 const items = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -15,7 +16,8 @@ const items = [
 
 const MobileBottomNav = () => {
   const { pathname } = useLocation();
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
   const mobileBrowser = useState(isMobileBrowser)[0];
 
@@ -98,11 +100,20 @@ const MobileBottomNav = () => {
             <span className="mx-auto grid h-14 w-14 place-items-center rounded-full border border-dashed border-current/30 text-lg font-semibold text-muted-foreground">
               {initial}
             </span>
-            <SheetTitle>Profile</SheetTitle>
-            <SheetDescription>
-              This profile is empty.
-            </SheetDescription>
+            <SheetTitle>{displayName}</SheetTitle>
+            <SheetDescription>{user?.email || "Signed-in account"}</SheetDescription>
           </SheetHeader>
+          <div className="mt-4 grid gap-2">
+            <Button variant="outline" onClick={() => { setProfileOpen(false); navigate("/settings"); }}>
+              <Settings className="mr-2 h-4 w-4" /> Settings
+            </Button>
+            <Button variant="outline" onClick={() => { setProfileOpen(false); navigate("/billing"); }}>
+              <CreditCard className="mr-2 h-4 w-4" /> Billing
+            </Button>
+            <Button variant="outline" onClick={() => { setProfileOpen(false); void signOut(); }}>
+              <LogOut className="mr-2 h-4 w-4" /> Sign out
+            </Button>
+          </div>
         </SheetContent>
       </Sheet>
     </>

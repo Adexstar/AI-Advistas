@@ -1,4 +1,4 @@
-import { Facebook, Instagram, Twitter, Linkedin, Youtube } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   const footerSections = [
@@ -37,14 +37,6 @@ const Footer = () => {
     }
   ];
 
-  const socialLinks = [
-    { icon: Facebook, href: "#", name: "Facebook" },
-    { icon: Instagram, href: "#", name: "Instagram" },
-    { icon: Twitter, href: "#", name: "Twitter" },
-    { icon: Linkedin, href: "#", name: "LinkedIn" },
-    { icon: Youtube, href: "#", name: "YouTube" }
-  ];
-
   return (
     <footer className="relative overflow-hidden border-t border-white/10 bg-gradient-to-br from-primary-900 via-primary-800 to-primary text-background">
       <div className="absolute inset-0 opacity-40">
@@ -67,21 +59,7 @@ const Footer = () => {
               One calmer workspace for AI briefs, reusable creative systems, and day-to-day campaign decisions.
             </p>
             
-            <div className="flex items-center gap-4">
-              {socialLinks.map((social, index) => {
-                const IconComponent = social.icon;
-                return (
-                  <a
-                    key={index}
-                    href={social.href}
-                    className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/15 bg-white/10 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/18"
-                    aria-label={social.name}
-                  >
-                    <IconComponent className="w-5 h-5" />
-                  </a>
-                );
-              })}
-            </div>
+            <p className="text-sm text-white/60">Social accounts are not connected from this site.</p>
           </div>
 
           {footerSections.map((section, index) => (
@@ -90,12 +68,11 @@ const Footer = () => {
               <ul className="space-y-3">
                 {section.links.map((link, linkIndex) => (
                   <li key={linkIndex}>
-                    <a 
-                      href={link.href}
-                      className="text-white/72 transition-colors hover:text-primary"
-                    >
-                      {link.name}
-                    </a>
+                    {link.href.startsWith("/") ? (
+                      <Link to={link.href} className="text-white/72 transition-colors hover:text-primary">{link.name}</Link>
+                    ) : (
+                      <a href={link.href} className="text-white/72 transition-colors hover:text-primary">{link.name}</a>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -110,15 +87,9 @@ const Footer = () => {
             </div>
             
             <div className="flex items-center gap-6 text-sm">
-              <a href="#" className="text-white/55 transition-colors hover:text-primary">
-                Privacy Policy
-              </a>
-              <a href="#" className="text-white/55 transition-colors hover:text-primary">
-                Terms of Service
-              </a>
-              <a href="#" className="text-white/55 transition-colors hover:text-primary">
-                Cookie Policy
-              </a>
+              <Link to="/legal/privacy" className="text-white/55 transition-colors hover:text-primary">Privacy Policy</Link>
+              <Link to="/legal/terms" className="text-white/55 transition-colors hover:text-primary">Terms of Service</Link>
+              <Link to="/legal/cookies" className="text-white/55 transition-colors hover:text-primary">Cookie Policy</Link>
             </div>
           </div>
         </div>

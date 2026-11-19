@@ -52,9 +52,8 @@ const Billing = () => {
         "100 AI drafts per day",
         "50 template exports",
         "Saved templates and recent history",
-        "Priority support",
-        "A/B testing",
-        "Advanced analytics"
+        "Campaign analytics",
+        "Email support"
       ],
       planKey: "pro",
       current: currentPlan === "pro",
@@ -69,11 +68,8 @@ const Billing = () => {
         "Unlimited campaign operations",
         "Unlimited AI drafts",
         "Unlimited template exports",
-        "24/7 phone support",
-        "Custom integrations",
         "Admin template workflows",
-        "White-label options",
-        "API access"
+        "Provider keys on your Supabase project"
       ],
       planKey: "enterprise",
       current: currentPlan === "enterprise",

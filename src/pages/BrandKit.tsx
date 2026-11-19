@@ -243,44 +243,51 @@ const ColorSwatch = ({ hex, label, onCopy, onDelete }: any) => (
   </div>
 );
 
-const BrandPreview = ({ brand }: { brand: BrandKit }) => (
+const PREVIEW_FORMATS = {
+  ig: { label: "Instagram Post", ratio: "aspect-square", headline: "A square post in your colors" },
+  fb: { label: "Facebook Ad", ratio: "aspect-[1.91/1]", headline: "A wide link ad in your colors" },
+  ba: { label: "Banner", ratio: "aspect-[8/1]", headline: "A thin banner in your colors" },
+} as const;
+
+const BrandPreview = ({ brand }: { brand: BrandKit }) => {
+  const [format, setFormat] = useState<keyof typeof PREVIEW_FORMATS>("ig");
+  const frame = PREVIEW_FORMATS[format];
+  return (
   <Card className="overflow-hidden">
     <div className="p-4">
       <p className="text-sm font-semibold">Brand Preview</p>
-      <p className="text-xs text-muted-foreground">See how your brand looks in action</p>
+      <p className="text-xs text-muted-foreground">The frame changes with the format. The words are a sample, not a saved ad.</p>
     </div>
     <div className="px-4">
-      <Select defaultValue="ig">
+      <Select value={format} onValueChange={(value) => setFormat(value as keyof typeof PREVIEW_FORMATS)}>
         <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="ig">Instagram Post</SelectItem>
-          <SelectItem value="fb">Facebook Ad</SelectItem>
-          <SelectItem value="ba">Banner</SelectItem>
+          {Object.entries(PREVIEW_FORMATS).map(([value, item]) => (
+            <SelectItem key={value} value={value}>{item.label}</SelectItem>
+          ))}
         </SelectContent>
       </Select>
     </div>
     <div className="p-4">
       <div
-        className="relative aspect-[4/5] overflow-hidden rounded-xl p-5 text-white"
+        className={cn("relative overflow-hidden rounded-xl p-5 text-white", frame.ratio)}
         style={{ background: `linear-gradient(135deg, ${brand.primary_color} 0%, ${brand.secondary_color} 100%)` }}
       >
         <div className="flex items-center gap-2">
           {brand.logo_url ? <img src={brand.logo_url} alt="" className="h-6 w-6 rounded" /> : <Sparkles className="h-5 w-5" />}
           <span className="text-sm font-semibold">{brand.name}</span>
         </div>
-        <h3 className="mt-6 text-3xl font-extrabold leading-tight">
-          Boost Your<br />Business<br />With <span style={{ color: brand.accent_color }}>Smart Ads</span>
+        <h3 className={cn("font-extrabold leading-tight", format === "ba" ? "mt-2 text-lg" : "mt-6 text-3xl")}>
+          {frame.headline}
         </h3>
-        <p className="mt-3 text-xs opacity-80">Create, manage and optimize ad campaigns that drive results.</p>
-        <Button size="sm" className="mt-4" style={{ background: brand.accent_color }}>Get Started</Button>
-        <p className="absolute bottom-3 left-5 text-[10px] opacity-70">{brand.website || 'www.advista.com'}</p>
-      </div>
-      <div className="mt-3 flex justify-center gap-1">
-        {[0, 1, 2, 3].map((i) => <span key={i} className={cn('h-1 w-6 rounded-full', i === 0 ? 'bg-foreground' : 'bg-muted')} />)}
+        {format !== "ba" && <p className="mt-3 text-xs opacity-80">Colors, logo, and website come from this brand kit.</p>}
+        {format !== "ba" && <Button size="sm" className="mt-4" style={{ background: brand.accent_color, color: "#111" }}>Sample button</Button>}
+        <p className="absolute bottom-3 left-5 text-[10px] opacity-70">{brand.website || "No website saved"}</p>
       </div>
     </div>
   </Card>
-);
+  );
+};
 
 const BrandWorkspace = ({ brand, allKits, onSelect, onEdit }: { brand: BrandKit; allKits: BrandKit[]; onSelect: (id: string) => void; onEdit: () => void }) => {
   const { toast } = useToast();

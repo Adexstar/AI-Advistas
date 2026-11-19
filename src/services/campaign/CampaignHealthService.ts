@@ -4,6 +4,13 @@ import type { Database } from '@/integrations/supabase/types';
 type CampaignRow = Database['public']['Tables']['campaigns']['Row'];
 
 export const CampaignHealthService = {
+  hasActivity(campaign: Pick<CampaignRow, 'spend' | 'impressions' | 'clicks' | 'conversions'>): boolean {
+    return Number(campaign.spend || 0) > 0
+      || Number(campaign.impressions || 0) > 0
+      || Number(campaign.clicks || 0) > 0
+      || Number(campaign.conversions || 0) > 0;
+  },
+
   calculate(campaign: CampaignRow): CampaignHealth {
     const budgetEfficiency = this.calculateBudgetEfficiency(campaign);
     const creativeQuality = this.calculateCreativeQuality(campaign);
@@ -25,33 +32,32 @@ export const CampaignHealthService = {
   },
 
   calculateBudgetEfficiency(campaign: CampaignRow): number {
-    if (campaign.budget <= 0) return 80;
+    if (!this.hasActivity(campaign) || campaign.budget <= 0) return 0;
     const utilization = Number(campaign.spend) / Number(campaign.budget);
-    if (utilization < 0.1) return 90;
-    if (utilization > 0.95) return 70;
-    const roasScore = Math.min(Number(campaign.roas || 0) / 6, 1) * 30;
-    return Math.round(Math.min(1, utilization) * 50 + roasScore + 20);
+    const roasScore = Math.min(Number(campaign.roas || 0) / 4, 1) * 40;
+    return Math.round(Math.min(1, utilization) * 60 + roasScore);
   },
 
   calculateCreativeQuality(campaign: CampaignRow): number {
-    const ctrScore = Math.min(Number(campaign.ctr || 0) / 5, 1) * 40;
-    const convScore = Math.min((campaign.conversions || 0) / 500, 1) * 30;
-    return Math.round(ctrScore + convScore + 30);
+    if (!this.hasActivity(campaign)) return 0;
+    const ctrScore = Math.min(Number(campaign.ctr || 0) / 5, 1) * 60;
+    const convScore = Math.min((campaign.conversions || 0) / 100, 1) * 40;
+    return Math.round(ctrScore + convScore);
   },
 
   calculateAudienceMatch(campaign: CampaignRow): number {
-    const roasScore = Math.min(Number(campaign.roas || 0) / 6, 1) * 40;
-    const ctrScore = Math.min(Number(campaign.ctr || 0) / 5, 1) * 30;
-    return Math.round(roasScore + ctrScore + 30);
+    if (!this.hasActivity(campaign)) return 0;
+    const roasScore = Math.min(Number(campaign.roas || 0) / 4, 1) * 60;
+    const ctrScore = Math.min(Number(campaign.ctr || 0) / 5, 1) * 40;
+    return Math.round(roasScore + ctrScore);
   },
 
   calculateOptimizationLevel(campaign: CampaignRow): number {
-    let score = 50;
-    if (campaign.start_date) score += 10;
-    if (campaign.end_date) score += 10;
-    if (campaign.objective && campaign.objective !== 'awareness') score += 10;
-    if ((campaign as any).platforms && (campaign as any).platforms.length > 1) score += 10;
-    if (campaign.budget > 0) score += 10;
+    let score = 0;
+    if (campaign.start_date) score += 25;
+    if (campaign.end_date) score += 25;
+    if (campaign.objective) score += 25;
+    if (campaign.budget > 0) score += 25;
     return Math.min(100, score);
   },
 

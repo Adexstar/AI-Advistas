@@ -271,12 +271,13 @@ const TemplateGenerate = () => {
     );
   };
 
-  const getInsightTags = () => [
-    { label: 'Matches your brand style', bg: '#DCFCE7', color: '#16A34A' },
-    { label: `Optimized for ${goal}`, bg: '#DBEAFE', color: '#2563EB' },
-    { label: `Proven to perform in ${category}`, bg: '#FEF3C7', color: '#D97706' },
-    { label: `Perfect for ${platform} Feed`, bg: '#FCE7F3', color: '#DB2777' },
-  ];
+  const insightTags = [
+    platform && `Platform: ${platform}`,
+    category && `Category: ${category}`,
+    goal && `Goal: ${goal}`,
+    visualStyle && `Style: ${visualStyle}`,
+    toneOfVoice && `Tone: ${toneOfVoice}`,
+  ].filter((tag): tag is string => Boolean(tag));
 
   const displayTemplates = useMemo(() => {
     let list = [...generatedTemplates];
@@ -554,7 +555,7 @@ const TemplateGenerate = () => {
                         className="relative overflow-hidden rounded-xl bg-card"
                         style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
                       >
-                        {idx === 0 && (
+                        {idx === 0 && t.confidence > 0 && t.confidence === Math.max(...displayTemplates.map((item) => item.confidence)) && (
                           <span
                             className="absolute left-3 top-3 z-10 rounded px-2 py-1 text-[10px] font-extrabold tracking-wider"
                             style={{ background: '#6E56F5', color: 'white' }}
@@ -614,19 +615,18 @@ const TemplateGenerate = () => {
 
                 {/* SECTION 4 — Generation Insights */}
                 <section>
-                  <h3 className="text-base font-bold" style={{ color: 'hsl(var(--foreground))' }}>4. Generation Insights</h3>
+                  <h3 className="text-base font-bold" style={{ color: 'hsl(var(--foreground))' }}>4. What you asked for</h3>
                   <p className="mt-0.5 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                    Why these templates were recommended
+                    These are the choices sent with the generation. They are not a performance prediction.
                   </p>
                   <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-start">
                     <div className="flex flex-1 flex-wrap gap-2">
-                      {getInsightTags().map((tag) => (
+                      {insightTags.map((tag) => (
                         <span
-                          key={tag.label}
-                          className="inline-block rounded-full px-3 py-1.5 text-xs font-medium"
-                          style={{ background: tag.bg, color: tag.color }}
+                          key={tag}
+                          className="inline-block rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-foreground"
                         >
-                          {tag.label}
+                          {tag}
                         </span>
                       ))}
                     </div>
@@ -634,12 +634,12 @@ const TemplateGenerate = () => {
                       className="w-full rounded-xl border bg-card p-4 text-center sm:w-[160px]"
                       style={{ borderColor: 'hsl(var(--border))' }}
                     >
-                      <p className="text-[11px] font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Confidence Score</p>
+                      <p className="text-[11px] font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Generator score</p>
                       <p className="my-1 text-4xl font-extrabold" style={{ color: 'hsl(var(--foreground))' }}>
-                        {Math.round((generatedTemplates[0]?.confidence ?? 0.96) * 100)}%
+                        {generatedTemplates[0]?.confidence ? `${Math.round(generatedTemplates[0].confidence * (generatedTemplates[0].confidence <= 1 ? 100 : 1))}%` : '—'}
                       </p>
-                      <p className="text-[11px] font-medium" style={{ color: '#22C55E' }}>
-                        High match for your campaign
+                      <p className="text-[11px] font-medium text-muted-foreground">
+                        {generatedTemplates[0]?.confidence ? 'Returned with the first result' : 'The generator did not score this run'}
                       </p>
                     </div>
                   </div>

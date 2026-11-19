@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import {
   CommandDialog,
   CommandEmpty,
@@ -46,6 +47,24 @@ const groups = [
 
 export const GlobalSearch = ({ open, onOpenChange }: GlobalSearchProps) => {
   const navigate = useNavigate();
+  const [campaigns, setCampaigns] = useState<{ id: string; name: string }[]>([]);
+  const [campaignError, setCampaignError] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    supabase.from("campaigns").select("id, name").order("updated_at", { ascending: false }).limit(20).then(({ data, error }) => {
+      if (cancelled) return;
+      if (error) {
+        setCampaigns([]);
+        setCampaignError(error.message);
+        return;
+      }
+      setCampaignError("");
+      setCampaigns((data ?? []).filter((row) => row.name));
+    });
+    return () => { cancelled = true; };
+  }, [open]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -65,9 +84,22 @@ export const GlobalSearch = ({ open, onOpenChange }: GlobalSearchProps) => {
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput placeholder="Search campaigns, templates, brands, decisions..." />
+      <CommandInput placeholder="Search pages and your campaigns" />
       <CommandList>
-        <CommandEmpty>No matching pages.</CommandEmpty>
+        <CommandEmpty>No matching pages or campaigns.</CommandEmpty>
+        <CommandGroup heading="Your campaigns">
+          {campaignError ? (
+            <CommandItem disabled value="campaign-error">{campaignError}</CommandItem>
+          ) : campaigns.length === 0 ? (
+            <CommandItem disabled value="no-campaigns">No campaigns saved yet.</CommandItem>
+          ) : campaigns.map((campaign) => (
+            <CommandItem key={campaign.id} value={`${campaign.name} campaign`} onSelect={() => go(`/campaigns/${campaign.id}`)}>
+              <Megaphone className="mr-2 h-4 w-4" />
+              <span>{campaign.name}</span>
+            </CommandItem>
+          ))}
+        </CommandGroup>
+        <CommandSeparator />
         {groups.map((g, i) => (
           <div key={g.heading}>
             {i > 0 && <CommandSeparator />}

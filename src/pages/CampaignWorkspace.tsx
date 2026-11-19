@@ -1,10 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useUpdateCampaign, useDuplicateCampaign, useDeleteCampaign, type CampaignRow } from '@/hooks/useCampaigns';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -30,7 +32,7 @@ import { CampaignEventService } from '@/services/campaign/CampaignEventService';
 import { useToast } from '@/hooks/use-toast';
 import { createAdPath, isDraftStatus, isPausedStatus, isRunningStatus, pauseResumePatch } from '@/lib/campaignStatus';
 import {
-  ArrowLeft, MoreHorizontal, Edit3, Copy, PauseCircle, PlayCircle,
+  ArrowLeft, MoreHorizontal, Copy, PauseCircle, PlayCircle,
   Archive, Trash2, BarChart3, LayoutTemplate, Users, Wallet, Send,
   ChartLine, Sparkles, GitBranch, FileText, StickyNote, Clock,
   TrendingUp, DollarSign, Target, Eye, RotateCcw,
@@ -66,8 +68,9 @@ const CampaignWorkspace = () => {
   const duplicateCampaign = useDuplicateCampaign();
   const deleteCampaign = useDeleteCampaign();
   const [activeTab, setActiveTab] = useState('overview');
+  const [audience, setAudience] = useState({ location: '', ageMin: 18, ageMax: 55, gender: 'All', interests: '' });
 
-  const { data: rawCampaign, isLoading } = useQuery({
+  const { data: rawCampaign, isLoading, isError, error } = useQuery({
     queryKey: ['campaign', id],
     enabled: !!id,
     queryFn: async () => {
@@ -79,6 +82,48 @@ const CampaignWorkspace = () => {
   });
   const campaign = rawCampaign as any;
   useContextOverride(campaign ? { source: 'campaign', label: campaign.name, patch: { current_campaign_id: campaign.id, current_goal: campaign.objective } } : null);
+
+  useEffect(() => {
+    const raw = campaign?.target_audience;
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return;
+    const row = raw as Record<string, unknown>;
+    setAudience({
+      location: String(row.location ?? ''),
+      ageMin: Number(row.age_min ?? 18),
+      ageMax: Number(row.age_max ?? 55),
+      gender: String(row.gender ?? 'All'),
+      interests: Array.isArray(row.interests) ? row.interests.join(', ') : String(row.interests ?? ''),
+    });
+  }, [campaign?.id, campaign?.updated_at, campaign?.target_audience]);
+
+  const saveAudience = () => {
+    if (!campaign) return;
+    if (audience.ageMin > audience.ageMax) {
+      toast({ title: 'The minimum age cannot be higher than the maximum age', variant: 'destructive' });
+      return;
+    }
+    updateCampaign.mutate(
+      {
+        id: campaign.id,
+        updates: {
+          target_audience: {
+            location: audience.location.trim(),
+            age_min: audience.ageMin,
+            age_max: audience.ageMax,
+            gender: audience.gender,
+            interests: audience.interests.trim(),
+          },
+        },
+      },
+      {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: ['campaign', campaign.id] });
+          toast({ title: 'Audience saved' });
+        },
+        onError: (saveError) => toast({ title: 'Audience was not saved', description: saveError instanceof Error ? saveError.message : undefined, variant: 'destructive' }),
+      },
+    );
+  };
 
   const health = useMemo(() => {
     if (!campaign) return { overall: 0, creative_quality: 0, audience_match: 0, budget_efficiency: 0, optimization_level: 0 };
@@ -134,6 +179,16 @@ const CampaignWorkspace = () => {
         <PageHeaderSkeleton />
         <Skeleton className="h-32 w-full rounded-2xl" />
         <Skeleton className="h-64 w-full rounded-2xl" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="page-container py-20 text-center">
+        <h2 className="text-xl font-bold">Could not load this campaign</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{error instanceof Error ? error.message : "The campaign request failed."}</p>
+        <Button onClick={() => navigate('/campaigns')} className="mt-4">Back to Campaigns</Button>
       </div>
     );
   }
@@ -224,7 +279,7 @@ const CampaignWorkspace = () => {
           <MetricCard icon={Eye} label="CTR" value={`${(campaign.ctr || 0).toFixed(1)}%`} />
           <MetricCard icon={BarChart3} label="ROAS" value={`${(campaign.roas || 0).toFixed(1)}x`} />
           <MetricCard icon={Target} label="Conversions" value={(campaign.conversions || 0).toLocaleString()} />
-          <MetricCard icon={Sparkles} label="Health" value={`${health.overall}%`} sub="From campaign health" />
+          <MetricCard icon={Sparkles} label="Health" value={CampaignHealthService.hasActivity(campaign) ? `${health.overall}%` : '—'} sub={CampaignHealthService.hasActivity(campaign) ? 'From recorded results' : 'No results yet'} />
         </div>
 
         {/* Tabs */}
@@ -249,7 +304,14 @@ const CampaignWorkspace = () => {
 
           {/* OVERVIEW */}
           <TabsContent value="overview" className="space-y-6 mt-0">
-            <CampaignHealthDashboard health={health} />
+            {CampaignHealthService.hasActivity(campaign) ? (
+              <CampaignHealthDashboard health={health} />
+            ) : (
+              <section className="rounded-2xl border border-dashed p-6">
+                <h3 className="text-lg font-bold">Campaign Health</h3>
+                <p className="mt-2 max-w-xl text-sm text-muted-foreground">Scores appear after this campaign records spend, clicks, or conversions. Nothing on this page is estimated.</p>
+              </section>
+            )}
             <CampaignAIBrain campaign={campaign} />
             <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <QuickMetric label="Reach" value={(campaign.reach || 0).toLocaleString()} />
@@ -274,17 +336,32 @@ const CampaignWorkspace = () => {
               <h3 className="text-lg font-bold mb-1">Target Audience</h3>
               <p className="text-sm text-muted-foreground mb-4">Define who your campaign reaches.</p>
               <Card className="rounded-2xl">
-                <CardContent className="p-6">
-                  {(campaign as any).target_audience && Object.keys((campaign as any).target_audience || {}).length > 0 ? (
-                    <pre className="text-sm">{JSON.stringify((campaign as any).target_audience, null, 2)}</pre>
-                  ) : (
-                    <div className="text-center py-8">
-                      <Users className="mx-auto h-8 w-8 text-muted-foreground" />
-                      <p className="mt-3 font-semibold">No audience defined</p>
-                      <p className="text-sm text-muted-foreground">Set targeting criteria for your campaign.</p>
-                      <Button variant="outline" className="mt-4 rounded-xl">Define Audience</Button>
-                    </div>
-                  )}
+                <CardContent className="grid gap-4 p-6 sm:grid-cols-2">
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="audience-location">Location</Label>
+                    <Input id="audience-location" value={audience.location} onChange={(event) => setAudience((current) => ({ ...current, location: event.target.value }))} placeholder="City or country" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="audience-age-min">Minimum age</Label>
+                    <Input id="audience-age-min" type="number" min={13} max={65} value={audience.ageMin} onChange={(event) => setAudience((current) => ({ ...current, ageMin: Number(event.target.value) }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="audience-age-max">Maximum age</Label>
+                    <Input id="audience-age-max" type="number" min={13} max={65} value={audience.ageMax} onChange={(event) => setAudience((current) => ({ ...current, ageMax: Number(event.target.value) }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="audience-gender">Gender</Label>
+                    <select id="audience-gender" value={audience.gender} onChange={(event) => setAudience((current) => ({ ...current, gender: event.target.value }))} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                      {['All', 'Men', 'Women'].map((option) => <option key={option}>{option}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="audience-interests">Interests</Label>
+                    <Input id="audience-interests" value={audience.interests} onChange={(event) => setAudience((current) => ({ ...current, interests: event.target.value }))} placeholder="Separate interests with commas" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Button onClick={saveAudience} disabled={updateCampaign.isPending}>Save audience</Button>
+                  </div>
                 </CardContent>
               </Card>
             </section>
@@ -320,10 +397,7 @@ const CampaignWorkspace = () => {
                 </Card>
               </div>
             </section>
-            <section>
-              <h3 className="text-lg font-bold mb-4">Automation Rules</h3>
-              <CampaignAutomationRules campaignId={campaign.id} />
-            </section>
+            <CampaignAutomationRules campaignId={campaign.id} />
           </TabsContent>
 
           {/* PUBLISHING */}
@@ -331,7 +405,7 @@ const CampaignWorkspace = () => {
             <section>
               <h3 className="text-lg font-bold mb-1">Publishing & Distribution</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Choose platforms and schedule. AdVista's Publishing Engine validates, dispatches, and tracks every job.
+                A publishing job is saved on this campaign. Live delivery needs a connected ad account, and that connection is not set up.
               </p>
               <CampaignPublishingTab campaign={campaign} />
             </section>
