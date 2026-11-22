@@ -27,7 +27,7 @@ import {
   Copy, Trash2, MoreHorizontal, Search, Filter, Video, Music, Square as SquareIcon, Link,
   Circle as CircleIcon, MousePointer, Volume2, X, Menu, ChevronDown, PanelRight,
   Palette, Sun, Zap, Eye, EyeOff, Pause, ChevronRight, RefreshCw, GripVertical, Pipette, Box,
-  ChevronUp, Scissors, FlipHorizontal2,
+  ChevronUp, Scissors, FlipHorizontal2, Mic, Captions,
 } from 'lucide-react';
 import { AIActionsMenu } from '@/components/visual-editor/ai/AIActionsMenu';
 import { AIQuickActionsMenu } from '@/components/visual-editor/ai/AIQuickActionsMenu';
@@ -59,6 +59,13 @@ import { CanvasStageSkeleton } from '@/components/ui/loading';
 import { selectionToolSet, SELECTION_ACTIONS, type ToolSetId } from '@/components/visual-editor/editorTools';
 import { CREATE_RAIL, EDITOR_TOOLS, FONT_COMBOS, TEXT_STYLES, matchTextStyle, panelForCreateTool } from '@/components/visual-editor/createRail';
 import { applyImageFilters, neutralImageAdjustments, type ImageAdjustments, type ImagePreset } from '@/components/visual-editor/imageAdjustments';
+import { StudioTimeline } from '@/components/visual-editor/StudioTimeline';
+import { AnimatePresets, AudioAddSheet, DurationPanel, ElementMenu, FadePanel, KeySlot, TrimPanel, VolumePanel } from '@/components/visual-editor/EditorSheets';
+import { addTimelineAudio, addTimelinePhoto, addTimelineVideo, detachFrame, isFrameTarget, writeClip } from '@/components/visual-editor/placeMedia';
+import { splitClip, projectDuration } from '@/components/visual-editor/videoTimeline';
+import { syncMedia } from '@/components/visual-editor/playback';
+import { recordCanvas } from '@/components/visual-editor/exportTimeline';
+import { speechProviders } from '@/components/visual-editor/speechProvider';
 
 /* ---------- Constants ---------- */
 const LEFT_TABS = [
@@ -788,7 +795,7 @@ const CanvasSubToolbar: React.FC<{
 /* ---------- Canvas Stage ---------- */
 const CANVAS_WIDTH = 1080;
 const CANVAS_HEIGHT = 1920;
-const SERIALIZED_CANVAS_PROPS = ['id', 'name', 'mediaFit', 'variableKey', 'brandReplaceable', 'aiReplaceable', 'brandCompliant', 'perPixelTargetFind'];
+const SERIALIZED_CANVAS_PROPS = ['id', 'name', 'mediaFit', 'variableKey', 'brandReplaceable', 'aiReplaceable', 'brandCompliant', 'perPixelTargetFind', 'advistaClip', 'advistaKind', 'advistaFrame', 'advistaId', 'advistaName'];
 
 const MIN_ZOOM = 10;
 const MAX_ZOOM = 400;
@@ -1299,6 +1306,10 @@ const CREATE_TOOL_ICONS = {
   brand: Sparkles,
   uploads: Upload,
   tools: Grid3x3,
+  background: Palette,
+  'studio-slot': Wand2,
+  'ai-voice': Mic,
+  captions: Captions,
 } as const;
 
 const CREATE_TOOLS: ToolItem[] = CREATE_RAIL.map((tool) => ({
@@ -1323,6 +1334,19 @@ const ACTION_ICONS: Record<string, React.FC<{ className?: string }>> = {
   border: SquareIcon,
   radius: Box,
   align: AlignVerticalJustifyCenter,
+  split: Scissors,
+  delete: Trash2,
+  duration: Play,
+  filters: Filter,
+  animate: Zap,
+  layers: LayersIcon,
+  format: Bold,
+  spacing: AlignJustify,
+  effects: Sun,
+  volume: Volume2,
+  fade: Volume2,
+  trim: Scissors,
+  'bg-remove': Wand2,
 };
 
 const toolsForSet = (set: ToolSetId): ToolItem[] => {
@@ -1396,7 +1420,7 @@ const ContextualToolbar: React.FC<{
       const isActive = active === t.id;
       return (
         <button key={t.id} type="button" onClick={() => onToolTap(t.id)}
-          className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-lg px-0.5 py-1.5 transition-colors ${
+          className={`flex w-[4.6rem] shrink-0 flex-col items-center gap-0.5 rounded-lg px-0.5 py-1.5 transition-colors ${
             isActive ? 'text-primary' : 'text-inherit hover:bg-studio-panel'
           }`}>
           <span className={`grid h-8 w-8 place-items-center rounded-lg ${isActive ? 'bg-primary text-primary-foreground' : ''}`}>
@@ -1423,7 +1447,7 @@ const SelectionBar: React.FC<{
       <button key={tool.id} type="button" onClick={() => onTool(tool.id)}
         className={variant === 'float'
           ? `flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ${on ? 'bg-white text-neutral-900' : 'text-white/90 hover:bg-white/10'}`
-          : `flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-lg px-0.5 py-1.5 text-[9px] font-medium leading-tight ${on ? 'text-primary' : 'text-inherit'}`}>
+          : `flex w-[4.6rem] shrink-0 flex-col items-center gap-0.5 rounded-lg px-0.5 py-1.5 text-[9px] font-medium leading-tight ${on ? 'text-primary' : 'text-inherit'}`}>
         <Icon className={variant === 'float' ? 'h-3.5 w-3.5' : 'h-5 w-5'} />
         <span className={variant === 'float' ? '' : 'w-full truncate text-center'}>{tool.label}</span>
       </button>
@@ -1442,7 +1466,7 @@ const SelectionBar: React.FC<{
     );
   }
   return (
-    <nav data-selection-bar="dock" className="studio-tool-rail z-[60] flex min-h-[66px] shrink-0 items-center gap-0.5 border-t px-1.5 py-1">
+    <nav data-selection-bar="dock" className="studio-tool-rail z-[60] flex min-h-[66px] shrink-0 items-center gap-0.5 overflow-x-auto border-t px-1.5 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {buttons}
       <button type="button" onClick={onDone} aria-label="Done editing" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
         <Check className="h-4 w-4" />
@@ -1487,11 +1511,8 @@ const ColorToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> =
   );
 };
 
-const AnimateToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = () => (
-  <UnavailableTool
-    title="Animation is not applied yet"
-    detail="Entrance presets are listed in the design, but this editor does not write animation onto the canvas. Nothing on the artboard changes from this panel."
-  />
+const AnimateToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null; onChanged?: () => void }> = ({ selected, canvas, onChanged }) => (
+  <AnimatePresets selected={selected} canvas={canvas} onChanged={onChanged ?? (() => undefined)} />
 );
 
 const paintObject = (selected: any, canvas: FabricCanvas | null, props: Record<string, unknown>) => {
@@ -1873,12 +1894,17 @@ const AlignToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> =
   </div>
 );
 
-const renderToolSheet = (toolId: string, selected: any, canvas: FabricCanvas | null): React.ReactNode => {
+const renderToolSheet = (toolId: string, selected: any, canvas: FabricCanvas | null, onChanged: () => void = () => undefined): React.ReactNode => {
   const props = { selected, canvas };
   switch (toolId) {
     case 'font': return <FontToolPanel {...props} />;
     case 'colour': case 'fill': return <ColorToolPanel {...props} />;
-    case 'animate': return <AnimateToolPanel {...props} />;
+    case 'animate': return <AnimateToolPanel {...props} onChanged={onChanged} />;
+    case 'format': return <TextStyleToolPanel {...props} />;
+    case 'duration': return <DurationPanel selected={selected} canvas={canvas} onChanged={onChanged} />;
+    case 'volume': return <VolumePanel selected={selected} onChanged={onChanged} />;
+    case 'fade': return <FadePanel selected={selected} onChanged={onChanged} />;
+    case 'trim': return <TrimPanel selected={selected} onChanged={onChanged} />;
     case 'effects': return <EffectsToolPanel {...props} />;
     case 'position': return <PositionToolPanel {...props} />;
     case 'spacing': return <SpacingToolPanel {...props} />;
@@ -1888,7 +1914,40 @@ const renderToolSheet = (toolId: string, selected: any, canvas: FabricCanvas | n
     case 'opacity': return <OpacityToolPanel {...props} />;
     case 'border': return <StrokeToolPanel {...props} />;
     case 'flip': return <FlipToolPanel {...props} />;
-    case 'replace': return <ReplaceImageToolPanel {...props} />;
+    case 'replace':
+      if (selected?.advistaKind === 'video' || selected?.advistaKind === 'audio') {
+        return (
+          <label className="flex h-10 cursor-pointer items-center justify-center rounded-lg bg-[#2D2D2D] text-xs font-semibold text-white">
+            Choose a replacement file
+            <input
+              type="file"
+              accept={selected.advistaKind === 'audio' ? 'audio/*' : 'video/*'}
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = '';
+                if (!file) return;
+                const url = URL.createObjectURL(file);
+                const media = document.createElement(selected.advistaKind === 'audio' ? 'audio' : 'video') as HTMLMediaElement;
+                media.src = url;
+                media.preload = 'auto';
+                if (media instanceof HTMLVideoElement) {
+                  if (!url.startsWith('blob:')) media.crossOrigin = 'anonymous';
+                  media.muted = true;
+                  media.playsInline = true;
+                  selected.setElement?.(media);
+                  selected.advistaMedia = media;
+                } else {
+                  selected.advistaAudio = media;
+                }
+                canvas?.requestRenderAll();
+                onChanged();
+              }}
+            />
+          </label>
+        );
+      }
+      return <ReplaceImageToolPanel {...props} />;
     case 'crop': return <CropToolPanel {...props} />;
     case 'filters': return <ImageFilterToolPanel {...props} mode="filters" />;
     case 'adjust': return <ImageFilterToolPanel {...props} mode="adjust" />;
@@ -1900,12 +1959,12 @@ const renderToolSheet = (toolId: string, selected: any, canvas: FabricCanvas | n
     case 'duplicate': return <MoreObjectToolPanel {...props} />;
     case 'lock': return <MoreObjectToolPanel {...props} />;
     case 'bg-remove':
+      return <KeySlot title="Background remover" detail="Background removal needs REMOVE_BG_API_KEY. The picture on the canvas is left unchanged." />;
     case 'ai-enhance':
-      return <UnavailableTool title="This image action needs a provider" detail="Background removal and AI enhance are not connected to an image provider. The picture on the canvas is left unchanged." />;
-    case 'trim':
-    case 'split':
+      return <KeySlot title="This image action needs a provider" detail="AI enhance is not connected to an image provider. The picture on the canvas is left unchanged." />;
     case 'speed':
     case 'captions':
+      return <KeySlot title="Captions" detail="Captions need a speech-to-text key. Add OPENAI_API_KEY. No captions are written from this button." />;
     case 'transitions':
     case 'group':
     case 'distribute':
@@ -2390,6 +2449,13 @@ const EditorInner: React.FC = () => {
   const [sheetFull, setSheetFull] = useState(false);
   const [pendingUploads, setPendingUploads] = useState<File[] | null>(null);
   const cameraRollRef = useRef<HTMLInputElement>(null);
+  const mediaInputRef = useRef<HTMLInputElement>(null);
+  const playheadRef = useRef(0);
+  const [exporting, setExporting] = useState(false);
+  const [elementMenu, setElementMenu] = useState<{ x: number; y: number } | null>(null);
+  const styleRef = useRef<Record<string, unknown> | null>(null);
+  const styleSource = useRef<any>(null);
+  const styleArmed = useRef(false);
   const [timelineOpen, setTimelineOpen] = useState(true);
   const [toolbarPos, setToolbarPos] = useState<{ left: number; top: number } | null>(null);
   const [canvasWrapperEl, setCanvasWrapperEl] = useState<HTMLDivElement | null>(null);
@@ -2676,6 +2742,7 @@ const EditorInner: React.FC = () => {
   const duplicateSelected = useCallback(async () => {
     if (!selected || !canvas) return;
     const clone = await duplicateObject(canvas, selected);
+    if (clone?.advistaClip) writeClip(clone, { ...clone.advistaClip, id: crypto.randomUUID() });
     if (clone) setSelected(clone);
     forceUpdate(n => n + 1);
   }, [selected, canvas]);
@@ -2692,11 +2759,49 @@ const EditorInner: React.FC = () => {
     if (!canvas || !clipboardRef.current) return;
     const clone: any = await clipboardRef.current.clone();
     clone.set({ left: (clone.left || 0) + 20, top: (clone.top || 0) + 20 });
+    if (clone.advistaClip) writeClip(clone, { ...clone.advistaClip, id: crypto.randomUUID() });
     canvas.add(clone);
     canvas.setActiveObject(clone);
     canvas.requestRenderAll();
     setSelected(clone);
     forceUpdate(n => n + 1);
+  }, [canvas]);
+
+  useEffect(() => {
+    if (!styleArmed.current || !selected || !styleRef.current || selected === styleSource.current) return;
+    selected.set(styleRef.current);
+    styleArmed.current = false;
+    canvas?.requestRenderAll();
+    markChanged();
+    toast({ title: 'Style applied', description: 'The copied fill, type and shadow are on this layer.' });
+  }, [selected, canvas, markChanged]);
+
+  useEffect(() => {
+    const upper = (canvas as any)?.upperCanvasEl as HTMLCanvasElement | undefined;
+    if (!upper) return undefined;
+    let timer = 0;
+    const open = (x: number, y: number) => setElementMenu({ x, y });
+    const onContext = (event: MouseEvent) => {
+      event.preventDefault();
+      open(event.clientX, event.clientY);
+    };
+    const onDown = (event: PointerEvent) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => open(event.clientX, event.clientY), 550);
+    };
+    const clear = () => window.clearTimeout(timer);
+    upper.addEventListener('contextmenu', onContext);
+    upper.addEventListener('pointerdown', onDown);
+    upper.addEventListener('pointerup', clear);
+    upper.addEventListener('pointermove', clear);
+    return () => {
+      clear();
+      upper.removeEventListener('contextmenu', onContext);
+      upper.removeEventListener('pointerdown', onDown);
+      upper.removeEventListener('pointerup', clear);
+      upper.removeEventListener('pointermove', clear);
+    };
   }, [canvas]);
 
   useKeyboardShortcuts({
@@ -2969,7 +3074,38 @@ const EditorInner: React.FC = () => {
     setActiveTool(null);
   };
 
+  const splitSelected = async () => {
+    if (!canvas || !selected?.advistaClip) {
+      toast({ title: 'Select a clip', description: 'Split runs at the playhead, so a clip has to be selected first.' });
+      return;
+    }
+    const parts = splitClip(selected.advistaClip, playheadRef.current, crypto.randomUUID());
+    if (!parts) {
+      toast({ title: 'Move the playhead', description: 'Put the playhead inside the clip, clear of either end, then split.' });
+      return;
+    }
+    writeClip(selected, parts[0]);
+    const clone = await selected.clone();
+    writeClip(clone, parts[1]);
+    clone.advistaKind = selected.advistaKind;
+    clone.advistaMedia = selected.advistaMedia;
+    clone.advistaAudio = selected.advistaAudio;
+    clone.advistaFrame = selected.advistaFrame;
+    canvas.add(clone);
+    canvas.requestRenderAll();
+    markChanged();
+    toast({ title: 'Clip split', description: 'The right half starts at the playhead.' });
+  };
+
   const openSelectionTool = (id: string) => {
+    if (id === 'delete') {
+      deleteSelected();
+      return;
+    }
+    if (id === 'split') {
+      void splitSelected();
+      return;
+    }
     if (activeTool === id) {
       setActiveTool(null);
       if (isMobile) {
@@ -2983,12 +3119,112 @@ const EditorInner: React.FC = () => {
     setSheetExpanded(true);
   };
 
+  const addFilesToTimeline = async (files: File[]) => {
+    if (!canvas) return;
+    let preferred = isFrameTarget(selected) ? selected : null;
+    for (const file of files) {
+      if (!file.size) {
+        toast({ title: 'Could not read that file', description: `${file.name || 'The file'} was empty, so it was not added.`, variant: 'destructive' });
+        continue;
+      }
+      const live = canvas.getObjects() as any[];
+      const frame = preferred && live.includes(preferred) ? preferred : live.find((object) => isFrameTarget(object)) ?? null;
+      preferred = null;
+      const url = URL.createObjectURL(file);
+      if (file.type.startsWith('video/')) await addTimelineVideo(canvas, url, frame);
+      else if (file.type.startsWith('audio/')) await addTimelineAudio(canvas, url, file.name);
+      else await addTimelinePhoto(canvas, url, frame);
+    }
+    markChanged();
+  };
+
+  const exportTimelineVideo = async () => {
+    const element = (canvas as any)?.lowerCanvasEl as HTMLCanvasElement | undefined;
+    if (!canvas || !element) return;
+    const objects = canvas.getObjects() as any[];
+    const clips = objects.map((object) => object.advistaClip).filter(Boolean);
+    const length = projectDuration(clips);
+    setExporting(true);
+    try {
+      const audio = objects
+        .map((object) => object.advistaAudio || object.advistaMedia)
+        .filter((item): item is HTMLMediaElement => item instanceof HTMLMediaElement);
+      const blob = await recordCanvas(element, Math.min(length, 20), (time) => {
+        playheadRef.current = time;
+        syncMedia(canvas, time, true);
+      }, audio);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${projectName || 'advista'}.webm`;
+      link.click();
+      toast({ title: 'Video exported', description: 'WebM of the picture, recorded in real time. The soundtrack is not in the file, and a cross-origin clip can block it.' });
+    } catch (error) {
+      toast({
+        title: 'Video export failed',
+        description: error instanceof Error ? error.message : 'The canvas could not be recorded. A cross-origin clip without CORS is the usual cause.',
+        variant: 'destructive',
+      });
+    } finally {
+      syncMedia(canvas, playheadRef.current, false);
+      setExporting(false);
+    }
+  };
+
+  const runElementAction = (id: string) => {
+    if (id === 'copy') { void copySelected(); return; }
+    if (id === 'paste') { void pasteClipboard(); return; }
+    if (id === 'duplicate') { void duplicateSelected(); return; }
+    if (id === 'delete') { deleteSelected(); return; }
+    if (id === 'lock') { setLocked(canvas, selected, !isLocked(selected)); markChanged(); return; }
+    if (id === 'up') { moveLayer(canvas, selected, 'up'); markChanged(); return; }
+    if (id === 'down') { moveLayer(canvas, selected, 'down'); markChanged(); return; }
+    if (id === 'align') { setActiveTool('align'); setSheetExpanded(true); return; }
+    if (id === 'detach') { detachFrame(selected); canvas?.requestRenderAll(); markChanged(); return; }
+    if (id === 'style' && selected) {
+      styleRef.current = {
+        fill: selected.fill,
+        fontFamily: selected.fontFamily,
+        fontWeight: selected.fontWeight,
+        fontSize: selected.fontSize,
+        opacity: selected.opacity,
+        shadow: selected.shadow,
+        stroke: selected.stroke,
+        strokeWidth: selected.strokeWidth,
+        textAlign: selected.textAlign,
+      };
+      styleSource.current = selected;
+      styleArmed.current = true;
+      toast({ title: 'Style copied', description: 'Select another layer and the style is applied once.' });
+    }
+  };
+
+  const openCreateTool = (id: string) => {
+    if (id === 'uploads') {
+      mediaInputRef.current?.click();
+    }
+    const panel = panelForCreateTool(id);
+    if (activeTab === panel && sheetExpanded && !activeTool) {
+      setSheetExpanded(false);
+      setSheetFull(false);
+      return;
+    }
+    setActiveTab(panel);
+    setActiveTool(null);
+    setSheetFull(false);
+    setSheetExpanded(true);
+  };
+
   const addText = (text: string, size: number, weight: string, fontFamily = 'Outfit') => {
     if (!canvas) return;
     const bgFill = String(canvas.backgroundColor || '#ffffff').toLowerCase();
     const darkBg = !['#ffffff', '#fff', 'white', ''].includes(bgFill);
     const w = Math.min(320, (canvas.getWidth?.() || 360) - 48);
-    const tb = new Textbox(text, { left: 24, top: 60, fontSize: size, fontWeight: weight, fill: darkBg ? '#ffffff' : '#111111', fontFamily, width: w });
+    const already = canvas.getObjects().filter((object) => {
+      const type = String(object.type || '');
+      return type === 'textbox' || type === 'i-text' || type === 'text';
+    }).length;
+    const tb = new Textbox(text, { left: 36, top: 860 + already * (size + 16), fontSize: size, fontWeight: weight, fill: darkBg ? '#ffffff' : '#111111', fontFamily, width: w });
     canvas.add(tb); canvas.setActiveObject(tb); canvas.renderAll();
     setSelected(tb); forceUpdate((n) => n + 1);
   };
@@ -3181,6 +3417,28 @@ const EditorInner: React.FC = () => {
         />
       );
       case 'background': return <StudioBackgroundPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} brandColors={brandPalette} selected={selected} />;
+      case 'studio-slot': return (
+        <div className={isMobile ? '' : 'p-4'}>
+          <KeySlot
+            title="AI Studio"
+            detail="This slot is reserved for the next update. On a wide screen the panel is the dock beside the canvas. On a phone it stays in this sheet. Nothing is generated from this button."
+          />
+        </div>
+      );
+      case 'ai-voice': return (
+        <KeySlot
+          title="AI Voice"
+          detail={`Text to speech needs ${speechProviders.map((provider) => provider.secret).join(' or ')}. No speech is created from this button. The provider interface is in place for when a key is added.`}
+        />
+      );
+      case 'captions': return (
+        <KeySlot title="Captions" detail="Captions need a speech-to-text key. Add OPENAI_API_KEY. No captions are written from this button." />
+      );
+      case 'audio': return (
+        <div className="p-4">
+          <AudioAddSheet onAdd={(url, name) => { if (!canvas) return; void addTimelineAudio(canvas, url, name).then(() => markChanged()); }} />
+        </div>
+      );
       case 'ai-studio': return <StudioAIPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} platform={(effectiveContext as any)?.active_platform ?? null} category={effectiveContext?.active_category ?? null} selected={selected} />;
       case 'text': return <TextPanel onAdd={addText} onMagicWrite={magicWrite} />;
       case 'elements': return <StudioElementsPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} brandColors={brandPalette} selected={selected} />;
@@ -3331,7 +3589,7 @@ const EditorInner: React.FC = () => {
       <input
         ref={cameraRollRef}
         type="file"
-        accept="image/*"
+        accept="image/*,video/*,audio/*"
         multiple
         className="hidden"
         onChange={(event) => {
@@ -3342,6 +3600,19 @@ const EditorInner: React.FC = () => {
             setActiveTab('camera');
             setSheetExpanded(true);
           }
+        }}
+      />
+      <input
+        ref={mediaInputRef}
+        data-testid="timeline-media"
+        type="file"
+        accept="image/*,video/*,audio/*"
+        multiple
+        className="hidden"
+        onChange={(event) => {
+          const files = event.target.files ? Array.from(event.target.files) : [];
+          event.target.value = '';
+          if (files.length) void addFilesToTimeline(files);
         }}
       />
       {/* Editor Top Bar */}
@@ -3403,17 +3674,31 @@ const EditorInner: React.FC = () => {
               {renderCanvas()}
             </div>
 
+            <StudioTimeline
+              canvas={canvas}
+              version={tick}
+              selectedId={selected?.advistaId ?? selected?.advistaClip?.id ?? null}
+              onSelect={(object) => { canvas?.setActiveObject(object); setSelected(object); }}
+              onChanged={markChanged}
+              onAddElements={() => openCreateTool('elements')}
+              onAddMedia={() => mediaInputRef.current?.click()}
+              onAddAudio={() => openCreateTool('audio')}
+              onExportVideo={() => void exportTimelineVideo()}
+              exporting={exporting}
+              onTime={(time) => { playheadRef.current = time; }}
+            />
+
             <MobileBottomSheet
               open={sheetExpanded}
               full={sheetFull}
               onFullChange={setSheetFull}
               fill={!activeTool && (activeTab === 'uploads' || activeTab === 'media')}
-              padded={!!activeTool || activeTab === 'tools' || activeTab === 'templates' || activeTab === 'elements' || activeTab === 'text' || activeTab === 'brand' || activeTab === 'projects' || activeTab === 'layers' || activeTab === 'ai-studio' || activeTab === 'background'}
+              padded={!!activeTool || activeTab === 'tools' || activeTab === 'templates' || activeTab === 'elements' || activeTab === 'text' || activeTab === 'brand' || activeTab === 'projects' || activeTab === 'layers' || activeTab === 'ai-studio' || activeTab === 'background' || activeTab === 'audio' || activeTab === 'studio-slot' || activeTab === 'ai-voice' || activeTab === 'captions'}
               onClose={() => { setSheetExpanded(false); setSheetFull(false); setActiveTool(null); }}
               label={activeTool ? (currentTools.find(t => t.id === activeTool)?.label || activeTool) : (CREATE_TOOLS.find(t => t.id === activeTab)?.label || EDITOR_TOOLS.find(t => t.id === activeTab)?.label || LEFT_TABS.find(t => t.id === activeTab)?.label || 'Create')}
             >
               {activeTool && selected
-                ? renderToolSheet(activeTool, selected, canvas)
+                ? renderToolSheet(activeTool, selected, canvas, markChanged)
                 : renderLeftPanel()}
             </MobileBottomSheet>
           </div>
@@ -3423,27 +3708,8 @@ const EditorInner: React.FC = () => {
           ) : (
           <ContextualToolbar
             tools={CREATE_TOOLS}
-            active={activeTool ? null : activeTab === 'uploads' ? 'uploads' : activeTab}
-            onToolTap={(id) => {
-              if (id === 'camera') {
-                cameraRollRef.current?.click();
-                setActiveTab('camera');
-                setActiveTool(null);
-                setSheetFull(false);
-                setSheetExpanded(true);
-                return;
-              }
-              const panel = panelForCreateTool(id);
-              if (activeTab === panel && sheetExpanded && !activeTool) {
-                setSheetExpanded(false);
-                setSheetFull(false);
-                return;
-              }
-              setActiveTab(panel);
-              setActiveTool(null);
-              setSheetFull(false);
-              setSheetExpanded(true);
-            }}
+            active={activeTool ? null : activeTab}
+            onToolTap={openCreateTool}
           />
           )}
         </>
@@ -3455,7 +3721,7 @@ const EditorInner: React.FC = () => {
             {/* Left: Icon Rail + Panel */}
             <div className="editor-left-panel flex h-full overflow-hidden">
               <IconRail active={activeTab} onChange={selectTab} />
-              <div className="editor-panel-content studio-panel hidden h-full w-[280px] shrink-0 flex-col overflow-hidden border-r md:flex">
+              <div className={`editor-panel-content studio-panel hidden h-full shrink-0 flex-col overflow-hidden border-r md:flex ${activeTab === 'studio-slot' ? 'w-[360px]' : 'w-[280px]'}`}>
                 <div key={activeTool || activeTab} className="flex h-full min-h-0 flex-col">
                   {activeTool && selected ? (
                     <div className="flex h-full min-h-0 flex-col">
@@ -3466,7 +3732,7 @@ const EditorInner: React.FC = () => {
                         <h2 className="text-sm font-semibold text-white">{currentTools.find((tool) => tool.id === activeTool)?.label || 'Edit'}</h2>
                       </div>
                       <div className="min-h-0 flex-1 overflow-y-auto p-4">
-                        {renderToolSheet(activeTool, selected, canvas)}
+                        {renderToolSheet(activeTool, selected, canvas, markChanged)}
                       </div>
                     </div>
                   ) : renderLeftPanel()}
@@ -3476,9 +3742,6 @@ const EditorInner: React.FC = () => {
 
             {/* Canvas Area */}
             <div className="editor-canvas-area relative flex flex-1 min-w-0 flex-col overflow-hidden">
-              {selected && currentTools !== CREATE_TOOLS && (
-                <SelectionBar tools={currentTools} active={activeTool} onTool={openSelectionTool} onDone={clearSelection} variant="float" />
-              )}
               {renderCanvas()}
             </div>
 
@@ -3490,11 +3753,23 @@ const EditorInner: React.FC = () => {
             )}
           </div>
 
-          {/* Timeline — only for video */}
-          {(isVideo || (canvas?.getObjects()?.length ?? 0) > 0) && (
-            <div className={`editor-timeline flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out ${timelineOpen ? 'max-h-[240px]' : 'max-h-0'}`}>
-              <Timeline canvas={canvas} selected={selected} onSelect={setSelected} version={tick} />
-            </div>
+          <StudioTimeline
+            canvas={canvas}
+            version={tick}
+            selectedId={selected?.advistaId ?? selected?.advistaClip?.id ?? null}
+            onSelect={(object) => { canvas?.setActiveObject(object); setSelected(object); }}
+            onChanged={markChanged}
+            onAddElements={() => openCreateTool('elements')}
+            onAddMedia={() => mediaInputRef.current?.click()}
+            onAddAudio={() => openCreateTool('audio')}
+            onExportVideo={() => void exportTimelineVideo()}
+            exporting={exporting}
+            onTime={(time) => { playheadRef.current = time; }}
+          />
+          {selected && currentTools !== CREATE_TOOLS ? (
+            <SelectionBar tools={currentTools} active={activeTool} onTool={openSelectionTool} onDone={clearSelection} variant="dock" />
+          ) : (
+            <ContextualToolbar tools={CREATE_TOOLS} active={activeTool ? null : activeTab} onToolTap={openCreateTool} />
           )}
         </>
       )}
@@ -3528,6 +3803,10 @@ const EditorInner: React.FC = () => {
       </Sheet>
 
       {/* Preview — a read-only render of the current page */}
+      {elementMenu && (
+        <ElementMenu x={elementMenu.x} y={elementMenu.y} onAction={runElementAction} onClose={() => setElementMenu(null)} />
+      )}
+
       {previewUrl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6" onClick={() => setPreviewUrl(null)}>
           <div className="flex max-h-full flex-col items-center gap-3" onClick={(e) => e.stopPropagation()}>

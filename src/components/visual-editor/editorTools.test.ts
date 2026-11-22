@@ -18,13 +18,23 @@ describe('selection tool sets', () => {
     expect(selectionToolSet({ type: 'activeSelection' })).toBe('multi');
     expect(selectionToolSet({ type: 'group' })).toBe('multi');
     expect(selectionToolSet({ type: 'line' })).toBe('shape');
+    expect(selectionToolSet({ type: 'image', advistaKind: 'video' })).toBe('video');
+    expect(selectionToolSet({ type: 'rect', advistaKind: 'audio' })).toBe('audio');
   });
 
   it('keeps the selection bar to actions that edit the layer', () => {
-    expect(SELECTION_ACTIONS.image.map((item) => item.label)).toEqual(['Replace', 'Flip', 'Crop', 'Adjust', 'Position', 'Opacity']);
-    expect(SELECTION_ACTIONS.text.map((item) => item.label)).toEqual(['Edit', 'Font', 'Styles', 'Size', 'Colour', 'Opacity']);
+    expect(SELECTION_ACTIONS.image.map((item) => item.label)).toEqual([
+      'Replace', 'Split', 'Delete', 'Duration', 'Crop', 'Flip', 'Adjust', 'Filters',
+      'Animate', 'Transparency', 'Layers', 'Position', 'Align', 'BG Remover',
+    ]);
+    expect(SELECTION_ACTIONS.video.map((item) => item.id)).toEqual(SELECTION_ACTIONS.image.map((item) => item.id));
+    expect(SELECTION_ACTIONS.text.map((item) => item.label)).toEqual([
+      'Edit', 'Font', 'Size', 'Colour', 'Format', 'Spacing', 'Effects', 'Animate',
+    ]);
+    expect(SELECTION_ACTIONS.audio.map((item) => item.label)).toEqual([
+      'Volume', 'Fade', 'Split', 'Trim', 'Replace', 'Delete',
+    ]);
     expect(SELECTION_ACTIONS.shape.map((item) => item.id)).toContain('border');
-    expect(SELECTION_ACTIONS.image.map((item) => item.id)).not.toContain('animate');
   });
 });
 

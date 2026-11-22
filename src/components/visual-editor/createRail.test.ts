@@ -16,10 +16,12 @@ describe('create rail', () => {
       'Templates',
       'Elements',
       'Text',
-      'Camera Roll',
-      'Brand',
       'Uploads',
-      'Tools',
+      'Brand',
+      'Background',
+      'AI Studio',
+      'AI Voice',
+      'Captions',
     ]);
   });
 
@@ -39,7 +41,9 @@ describe('create rail', () => {
   it('only offers element categories that have a canvas action or the photo library', () => {
     const ids = ELEMENT_CATEGORIES.flatMap((category) => category.items);
     expect(ids.every((id) => ELEMENT_LABELS[id])).toBe(true);
-    expect(ELEMENT_CATEGORIES.map((category) => category.id)).toEqual(['shapes', 'frames', 'grids', 'photos']);
+    expect(ELEMENT_CATEGORIES.map((category) => category.id)).toEqual([
+      'videos', 'photos', 'graphics', 'shapes', 'frames', 'grids', 'mockups', 'animations',
+    ]);
     expect(EDITOR_TOOLS.map((tool) => tool.id)).toContain('background');
   });
 });

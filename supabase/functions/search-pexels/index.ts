@@ -35,10 +35,11 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const query = String(body.intent ?? body.query ?? "").trim();
+    const kind = body.kind === "video" ? "video" : "image";
     if (!query) throw new Error("intent required");
 
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const ck = await cacheKey({ p: "pexels", q: query });
+    const ck = await cacheKey({ p: "pexels", q: query, kind });
 
     const { data: cached } = await supabase
       .from("provider_search_cache").select("results, expires_at")
@@ -49,21 +50,39 @@ Deno.serve(async (req) => {
       });
     }
 
-    const res = await fetch(`https://api.pexels.com/v1/search?per_page=24&query=${encodeURIComponent(query)}`, {
-      headers: { Authorization: key },
-    });
+    const endpoint = kind === "video"
+      ? `https://api.pexels.com/videos/search?per_page=18&query=${encodeURIComponent(query)}`
+      : `https://api.pexels.com/v1/search?per_page=24&query=${encodeURIComponent(query)}`;
+    const res = await fetch(endpoint, { headers: { Authorization: key } });
     if (!res.ok) throw new Error(`Pexels ${res.status}`);
     const json = await res.json();
-    const results: MediaAsset[] = (json.photos ?? []).map((p: any) => ({
-      id: `pexels-${p.id}`,
-      url: p.src?.large2x ?? p.src?.original,
-      thumbnailUrl: p.src?.medium,
-      provider: "pexels",
-      kind: "image",
-      width: p.width, height: p.height,
-      tags: [query],
-      meta: { photographer: p.photographer, link: p.url },
-    }));
+    const results: MediaAsset[] = kind === "video"
+      ? (json.videos ?? []).map((video: any) => {
+        const files = Array.isArray(video.video_files) ? video.video_files : [];
+        const file = files.find((item: any) => item.file_type === "video/mp4" && item.width && item.width <= 1280)
+          ?? files.find((item: any) => item.file_type === "video/mp4")
+          ?? files[0];
+        return {
+          id: `pexels-video-${video.id}`,
+          url: file?.link,
+          thumbnailUrl: video.image,
+          provider: "pexels",
+          kind: "video" as const,
+          width: file?.width, height: file?.height,
+          tags: [query],
+          meta: { user: video.user?.name, link: video.url, duration: video.duration },
+        };
+      }).filter((item: MediaAsset) => item.url)
+      : (json.photos ?? []).map((p: any) => ({
+        id: `pexels-${p.id}`,
+        url: p.src?.large2x ?? p.src?.original,
+        thumbnailUrl: p.src?.medium,
+        provider: "pexels",
+        kind: "image" as const,
+        width: p.width, height: p.height,
+        tags: [query],
+        meta: { photographer: p.photographer, link: p.url },
+      }));
 
     await supabase.from("provider_search_cache").upsert({
       provider: "pexels", cache_key: ck, results,

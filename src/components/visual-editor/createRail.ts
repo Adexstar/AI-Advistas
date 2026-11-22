@@ -1,12 +1,14 @@
-/** Mobile create rail. Each id opens a sheet that changes the canvas or a saved design. */
+/** Bottom create rail. Uploads opens the device picker. AI entries are reserved slots. */
 export const CREATE_RAIL = [
   { id: 'templates', label: 'Templates' },
   { id: 'elements', label: 'Elements' },
   { id: 'text', label: 'Text' },
-  { id: 'camera', label: 'Camera Roll' },
-  { id: 'brand', label: 'Brand' },
   { id: 'uploads', label: 'Uploads' },
-  { id: 'tools', label: 'Tools' },
+  { id: 'brand', label: 'Brand' },
+  { id: 'background', label: 'Background' },
+  { id: 'studio-slot', label: 'AI Studio' },
+  { id: 'ai-voice', label: 'AI Voice' },
+  { id: 'captions', label: 'Captions' },
 ] as const;
 
 export type CreateToolId = (typeof CREATE_RAIL)[number]['id'];
@@ -49,7 +51,7 @@ export function matchTextStyle(query: string, item: TextStyle) {
   return [item.label, item.text, item.fontFamily].some((part) => part.toLowerCase().includes(q));
 }
 
-/** Camera roll and Tools are sheet entry points, not separate canvas object types. */
+/** Camera roll and Tools stay as aliases so older entry points still open a real panel. */
 export function panelForCreateTool(id: string) {
   if (id === 'camera') return 'uploads';
   if (id === 'tools') return 'tools';
@@ -57,10 +59,14 @@ export function panelForCreateTool(id: string) {
 }
 
 export const ELEMENT_CATEGORIES = [
-  { id: 'shapes', label: 'Shapes', items: ['rectangle', 'rounded', 'circle', 'triangle', 'line', 'star'] },
-  { id: 'frames', label: 'Frames', items: ['frame', 'badge'] },
-  { id: 'grids', label: 'Grids', items: ['grid-2', 'grid-3', 'grid-hero'] },
+  { id: 'videos', label: 'Videos', items: [] as string[] },
   { id: 'photos', label: 'Photos', items: [] as string[] },
+  { id: 'graphics', label: 'Graphics', items: ['star', 'badge', 'blob'] },
+  { id: 'shapes', label: 'Shapes', items: ['rectangle', 'rounded', 'circle', 'triangle', 'line'] },
+  { id: 'frames', label: 'Frames', items: ['frame-square', 'frame-circle', 'frame-torn', 'frame-blob', 'frame-device', 'frame-arch'] },
+  { id: 'grids', label: 'Grids', items: ['grid-2', 'grid-3', 'grid-4', 'grid-6', 'grid-8', 'grid-9'] },
+  { id: 'mockups', label: 'Mockups', items: ['mock-phone', 'mock-browser'] },
+  { id: 'animations', label: 'Animations', items: ['anim-fade', 'anim-rise', 'anim-pop'] },
 ] as const;
 
 export const ELEMENT_LABELS: Record<string, string> = {
@@ -71,8 +77,22 @@ export const ELEMENT_LABELS: Record<string, string> = {
   line: 'Line',
   star: 'Star',
   badge: 'Badge bar',
-  frame: 'Frame',
-  'grid-2': 'Two columns',
-  'grid-3': 'Three columns',
-  'grid-hero': 'Hero and caption',
+  blob: 'Blob',
+  'frame-square': 'Square frame',
+  'frame-circle': 'Circle frame',
+  'frame-torn': 'Torn paper',
+  'frame-blob': 'Blob frame',
+  'frame-device': 'Device frame',
+  'frame-arch': 'Arch frame',
+  'grid-2': '2 slots',
+  'grid-3': '3 slots',
+  'grid-4': '4 slots',
+  'grid-6': '6 slots',
+  'grid-8': '8 slots',
+  'grid-9': '9 slots',
+  'mock-phone': 'Phone',
+  'mock-browser': 'Browser',
+  'anim-fade': 'Fade',
+  'anim-rise': 'Rise',
+  'anim-pop': 'Pop',
 };
