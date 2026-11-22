@@ -22,10 +22,11 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const query = String(body.intent ?? body.query ?? "").trim();
+    const kind = body.kind === "video" ? "video" : "image";
     if (!query) throw new Error("intent required");
 
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const ck = await cacheKey({ p: "pixabay", q: query });
+    const ck = await cacheKey({ p: "pixabay", q: query, kind });
     const { data: cached } = await supabase
       .from("provider_search_cache").select("results, expires_at")
       .eq("provider", "pixabay").eq("cache_key", ck).maybeSingle();
@@ -35,18 +36,31 @@ Deno.serve(async (req) => {
       });
     }
 
-    const res = await fetch(`https://pixabay.com/api/?key=${key}&per_page=24&q=${encodeURIComponent(query)}`);
+    const endpoint = kind === "video"
+      ? `https://pixabay.com/api/videos/?key=${key}&per_page=18&q=${encodeURIComponent(query)}`
+      : `https://pixabay.com/api/?key=${key}&per_page=24&q=${encodeURIComponent(query)}`;
+    const res = await fetch(endpoint);
     if (!res.ok) throw new Error(`Pixabay ${res.status}`);
     const json = await res.json();
-    const results = (json.hits ?? []).map((h: any) => ({
-      id: `pixabay-${h.id}`,
-      url: h.largeImageURL ?? h.webformatURL,
-      thumbnailUrl: h.previewURL,
-      provider: "pixabay", kind: "image",
-      width: h.imageWidth, height: h.imageHeight,
-      tags: String(h.tags ?? "").split(",").map((s: string) => s.trim()),
-      meta: { user: h.user, pageURL: h.pageURL },
-    }));
+    const results = kind === "video"
+      ? (json.hits ?? []).map((h: any) => ({
+        id: `pixabay-video-${h.id}`,
+        url: h.videos?.small?.url ?? h.videos?.tiny?.url ?? h.videos?.medium?.url,
+        thumbnailUrl: `https://i.vimeocdn.com/video/${h.picture_id}_295x166.jpg`,
+        provider: "pixabay", kind: "video",
+        width: h.videos?.small?.width, height: h.videos?.small?.height,
+        tags: String(h.tags ?? "").split(",").map((s: string) => s.trim()),
+        meta: { user: h.user, pageURL: h.pageURL, duration: h.duration },
+      })).filter((item: { url?: string }) => item.url)
+      : (json.hits ?? []).map((h: any) => ({
+        id: `pixabay-${h.id}`,
+        url: h.largeImageURL ?? h.webformatURL,
+        thumbnailUrl: h.previewURL,
+        provider: "pixabay", kind: "image",
+        width: h.imageWidth, height: h.imageHeight,
+        tags: String(h.tags ?? "").split(",").map((s: string) => s.trim()),
+        meta: { user: h.user, pageURL: h.pageURL },
+      }));
 
     await supabase.from("provider_search_cache").upsert({
       provider: "pixabay", cache_key: ck, results,

@@ -14,6 +14,9 @@ import { placeFittedImage, replaceImageKeepingFrame } from '@/components/visual-
 import { isOverlayScrim } from '@/services/templates/loadIntoCanvas';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ELEMENT_CATEGORIES, ELEMENT_LABELS } from '@/components/visual-editor/createRail';
+import { StockBrowser } from '@/components/visual-editor/StockBrowser';
+import { addFrame, addGrid, ensureObjectClip, frameMaskById, gridCountFromId, writeClip } from '@/components/visual-editor/placeMedia';
+import { maskPoints, scalePoints } from '@/components/visual-editor/frames';
 import {
   Search, Upload, Loader2, ImageIcon, Video, Music, FileText, Pipette, Plus, X, Info,
   Sparkles, Mic, ChevronDown, Heart, ChevronLeft,
@@ -794,6 +797,37 @@ export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: 
 
   const add = (id: string) => {
     if (!canvas) return;
+    const mask = frameMaskById(id);
+    if (mask) {
+      addFrame(canvas, mask, fill);
+      onChanged?.();
+      return;
+    }
+    const slots = gridCountFromId(id);
+    if (slots) {
+      addGrid(canvas, slots, fill);
+      onChanged?.();
+      return;
+    }
+    if (id === 'mock-phone' || id === 'mock-browser') {
+      const frame = addFrame(canvas, id === 'mock-phone' ? 'device' : 'square', fill);
+      if (id === 'mock-browser') frame.set({ width: 280, height: 168 });
+      onChanged?.();
+      return;
+    }
+    if (id.startsWith('anim-')) {
+      if (!selected) {
+        toast({ title: 'Select a layer first', description: 'Fade, rise and pop are written onto the selected layer. Nothing was added.' });
+        return;
+      }
+      const clip = ensureObjectClip(selected);
+      const animateIn = id === 'anim-fade' ? 'fade-in' : id === 'anim-rise' ? 'rise' : 'pop';
+      writeClip(selected, { ...clip, animateIn });
+      canvas.requestRenderAll();
+      onChanged?.();
+      toast({ title: 'Animation set', description: `${animateIn} plays while this layer is on screen.` });
+      return;
+    }
     let obj: any;
     switch (id) {
       case 'rectangle': obj = new Rect({ left: 80, top: 80, width: 200, height: 120, fill }); break;
@@ -803,12 +837,15 @@ export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: 
       case 'line': obj = new Line([0, 0, 240, 0], { left: 80, top: 140, stroke: fill, strokeWidth: 6 }); break;
       case 'badge': obj = new Rect({ left: 80, top: 80, width: 220, height: 48, rx: 24, ry: 24, fill }); break;
       case 'frame': obj = new Rect({ left: 80, top: 80, width: 220, height: 220, fill: 'transparent', stroke: fill, strokeWidth: 6 }); break;
-      case 'star': {
-        const pts = Array.from({ length: 10 }, (_, i) => {
-          const r = i % 2 === 0 ? 70 : 30;
-          const a = (Math.PI / 5) * i - Math.PI / 2;
-          return { x: Math.cos(a) * r, y: Math.sin(a) * r };
-        });
+      case 'star':
+      case 'blob': {
+        const pts = id === 'blob'
+          ? scalePoints(maskPoints('blob') || [], 140, 120)
+          : Array.from({ length: 10 }, (_, i) => {
+            const r = i % 2 === 0 ? 70 : 30;
+            const a = (Math.PI / 5) * i - Math.PI / 2;
+            return { x: Math.cos(a) * r, y: Math.sin(a) * r };
+          });
         obj = new Polygon(pts, { left: 80, top: 80, fill });
         break;
       }
@@ -875,27 +912,22 @@ export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: 
                 className="rounded-xl bg-[#3D3D3D] px-3 py-4 text-left text-sm font-semibold text-white hover:bg-[#4D4D4D]">
                 {entry.label}
                 <span className="mt-1 block text-[11px] font-normal text-[#AAAAAA]">
-                  {entry.id === 'photos' ? 'From your library' : `${entry.items.length} to place`}
+                  {entry.id === 'photos' || entry.id === 'videos' ? 'Search or upload' : `${entry.items.length} to place`}
                 </span>
               </button>
             ))}
           </div>
         )}
-        {category === 'photos' && !query && (
-          photos.data?.length ? (
-            <div className="grid grid-cols-3 gap-2">
-              {photos.data.filter((row) => row.file_url).map((row) => (
-                <button key={row.id} type="button" onClick={() => addImageToCanvas(canvas, row.file_url as string, onChanged)}
-                  className="aspect-square overflow-hidden rounded-lg bg-[#3D3D3D]">
-                  <img src={row.thumbnail_url || row.file_url} alt={row.name} className="h-full w-full object-cover" />
-                </button>
-              ))}
-            </div>
-          ) : (
-            <EmptyState>{photos.isLoading ? 'Loading your photos…' : 'No photos yet. Use Camera Roll to add one.'}</EmptyState>
-          )
+        {(category === 'photos' || category === 'videos') && !query && (
+          <StockBrowser
+            kind={category === 'videos' ? 'video' : 'image'}
+            canvas={canvas}
+            selected={selected}
+            library={category === 'photos' ? (photos.data ?? []) : []}
+            onChanged={onChanged}
+          />
         )}
-        {(query || (activeCategory && activeCategory.id !== 'photos')) && (
+        {(query || (activeCategory && activeCategory.id !== 'photos' && activeCategory.id !== 'videos')) && (
           <>
             <div className="mb-3 flex flex-wrap gap-1.5">
               {swatches.map((c) => (
