@@ -2,7 +2,21 @@ export type ToolSetId = 'create' | 'text' | 'image' | 'video' | 'audio' | 'shape
 
 type Selectable = { type?: string; advistaKind?: string } | null | undefined;
 
-const MEDIA_ACTIONS = [
+const PHOTO_IMAGE_ACTIONS = [
+  { id: 'edit-image', label: 'Edit' },
+  { id: 'replace', label: 'Replace' },
+  { id: 'bg-remove', label: 'BG Remover' },
+  { id: 'eraser', label: 'Eraser' },
+  { id: 'crop', label: 'Crop' },
+  { id: 'flip', label: 'Flip' },
+  { id: 'border', label: 'Border' },
+  { id: 'radius', label: 'Corner' },
+  { id: 'opacity', label: 'Transparency' },
+  { id: 'animate', label: 'Animate' },
+  { id: 'more', label: 'More' },
+];
+
+const VIDEO_ACTIONS = [
   { id: 'replace', label: 'Replace' },
   { id: 'split', label: 'Split' },
   { id: 'delete', label: 'Delete' },
@@ -40,15 +54,19 @@ export const SELECTION_ACTIONS: Record<Exclude<ToolSetId, 'create'>, { id: strin
   text: [
     { id: 'edit-text', label: 'Edit' },
     { id: 'font', label: 'Font' },
-    { id: 'font-size', label: 'Size' },
+    { id: 'font-size', label: 'Font size' },
     { id: 'colour', label: 'Colour' },
     { id: 'format', label: 'Format' },
+    { id: 'case', label: 'Case' },
+    { id: 'align', label: 'Align' },
     { id: 'spacing', label: 'Spacing' },
+    { id: 'opacity', label: 'Transparency' },
     { id: 'effects', label: 'Effects' },
     { id: 'animate', label: 'Animate' },
+    { id: 'position', label: 'Position' },
   ],
-  image: MEDIA_ACTIONS,
-  video: MEDIA_ACTIONS,
+  image: PHOTO_IMAGE_ACTIONS,
+  video: VIDEO_ACTIONS,
   audio: [
     { id: 'volume', label: 'Volume' },
     { id: 'fade', label: 'Fade' },
@@ -60,11 +78,12 @@ export const SELECTION_ACTIONS: Record<Exclude<ToolSetId, 'create'>, { id: strin
   shape: [
     { id: 'fill', label: 'Colour' },
     { id: 'border', label: 'Stroke' },
+    { id: 'line-style', label: 'Style' },
+    { id: 'flip', label: 'Flip' },
+    { id: 'radius', label: 'Corners' },
     { id: 'opacity', label: 'Transparency' },
-    { id: 'layers', label: 'Layers' },
     { id: 'position', label: 'Position' },
-    { id: 'align', label: 'Align' },
-    { id: 'delete', label: 'Delete' },
+    { id: 'layers', label: 'Layers' },
   ],
   multi: [
     { id: 'position', label: 'Position' },

@@ -24,12 +24,14 @@ describe('selection tool sets', () => {
 
   it('keeps the selection bar to actions that edit the layer', () => {
     expect(SELECTION_ACTIONS.image.map((item) => item.label)).toEqual([
-      'Replace', 'Split', 'Delete', 'Duration', 'Crop', 'Flip', 'Adjust', 'Filters',
-      'Animate', 'Transparency', 'Layers', 'Position', 'Align', 'BG Remover',
+      'Edit', 'Replace', 'BG Remover', 'Eraser', 'Crop', 'Flip', 'Border', 'Corner',
+      'Transparency', 'Animate', 'More',
     ]);
-    expect(SELECTION_ACTIONS.video.map((item) => item.id)).toEqual(SELECTION_ACTIONS.image.map((item) => item.id));
+    expect(SELECTION_ACTIONS.image.map((item) => item.id)).not.toContain('split');
+    expect(SELECTION_ACTIONS.video.map((item) => item.id)).toContain('duration');
     expect(SELECTION_ACTIONS.text.map((item) => item.label)).toEqual([
-      'Edit', 'Font', 'Size', 'Colour', 'Format', 'Spacing', 'Effects', 'Animate',
+      'Edit', 'Font', 'Font size', 'Colour', 'Format', 'Case', 'Align', 'Spacing',
+      'Transparency', 'Effects', 'Animate', 'Position',
     ]);
     expect(SELECTION_ACTIONS.audio.map((item) => item.label)).toEqual([
       'Volume', 'Fade', 'Split', 'Trim', 'Replace', 'Delete',

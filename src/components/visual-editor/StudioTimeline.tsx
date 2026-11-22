@@ -126,7 +126,7 @@ export const StudioTimeline: React.FC<Props> = ({
   const rowClips = (trackId: string) => (trackId === 'mixed' ? clips : clips.filter((clip) => clip.trackId === trackId));
 
   return (
-    <div className="border-t border-[#3D3D3D] bg-[#161616] text-white">
+    <div data-testid="studio-timeline" className="border-t border-[#3D3D3D] bg-[#161616] text-white">
       <div className="flex items-center gap-2 px-3 py-2">
         <button type="button" onClick={onAddElements} className="rounded-full bg-[#2D2D2D] px-3 py-1.5 text-[11px] font-semibold text-[#DDDDDD]">
           Add elements
