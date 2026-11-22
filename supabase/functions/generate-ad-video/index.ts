@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
 async function start(key: string, prompt: string, body: Record<string, unknown>) {
   const width = snap(Number(body.width) || 768);
   const height = snap(Number(body.height) || 768);
-  const duration = [5, 8, 10].includes(Number(body.duration)) ? Number(body.duration) : 5;
+  const duration = [5, 8, 10, 15].includes(Number(body.duration)) ? Number(body.duration) : 5;
   const taskUUID = crypto.randomUUID();
   const first = firstHttp(body.firstFrame) || firstHttp(body.references);
   const last = typeof body.lastFrame === "string" && body.lastFrame.startsWith("http") ? body.lastFrame : "";

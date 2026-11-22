@@ -3,9 +3,11 @@ import { Download, Loader2, Plus, Sparkles, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { readEdgeError } from '@/services/edgeError';
 import { StockBrowser } from '@/components/visual-editor/StockBrowser';
+import type { DirectorSequence } from '@/components/visual-editor/placeMedia';
+import { AdVideoFlow } from './AdVideoFlow';
 import { DIRECTOR_CATEGORIES, type DirectorCategory } from './directorPrompt';
 import {
-  ASPECTS, INSPIRATIONS, OUTPUT_COUNTS, RESOLUTIONS, STUDIO_MODELS, VIDEO_DURATIONS,
+  ASPECTS, INSPIRATIONS, OUTPUT_COUNTS, RESOLUTIONS, STUDIO_MODELS,
   creditCost, frameSize, initialDraft, modelsFor, pickModel, slotLimits,
   type StudioAspect, type StudioDraft, type StudioMode, type StudioResolution,
 } from './studioState';
@@ -29,9 +31,10 @@ export const AIStudioDock: React.FC<{
   selectedUrl?: string | null;
   onAddImage: (url: string) => void;
   onAddVideo: (url: string) => void;
+  onPlaceSequence?: (sequence: DirectorSequence) => Promise<void> | void;
   onClose?: () => void;
   onExpand?: () => void;
-}> = ({ canvasWidth, canvasHeight, compact = false, embedded = false, selectedUrl, onAddImage, onAddVideo, onClose, onExpand }) => {
+}> = ({ canvasWidth, canvasHeight, compact = false, embedded = false, selectedUrl, onAddImage, onAddVideo, onPlaceSequence, onClose, onExpand }) => {
   const [draft, setDraft] = useState<StudioDraft>(() => initialDraft(canvasWidth, canvasHeight));
   const [configured, setConfigured] = useState<Record<string, boolean>>({});
   const [images, setImages] = useState<SlotItem[]>([]);
@@ -190,15 +193,23 @@ export const AIStudioDock: React.FC<{
         </div>
       )}
 
-      {!compact && (
+      <div className="flex gap-1 rounded-lg bg-[#1A1A1A] p-1">
+        {(['image', 'video'] as StudioMode[]).map((mode) => (
+          <button key={mode} type="button" onClick={() => switchMode(mode)} className={`h-8 flex-1 rounded-md text-xs font-semibold capitalize ${draft.mode === mode ? 'bg-[#6E56F5] text-white' : 'text-[#CCCCCC]'}`}>
+            {mode === 'video' ? 'Ad video' : 'Image'}
+          </button>
+        ))}
+      </div>
+      {draft.mode === 'video' && (
+        <AdVideoFlow
+          compact={compact}
+          selectedUrl={selectedUrl}
+          configured={configured}
+          onPlace={(sequence) => onPlaceSequence?.(sequence)}
+        />
+      )}
+      {draft.mode === 'image' && !compact && (
         <>
-          <div className="flex gap-1 rounded-lg bg-[#1A1A1A] p-1">
-            {(['image', 'video'] as StudioMode[]).map((mode) => (
-              <button key={mode} type="button" onClick={() => switchMode(mode)} className={`h-8 flex-1 rounded-md text-xs font-semibold capitalize ${draft.mode === mode ? 'bg-[#6E56F5] text-white' : 'text-[#CCCCCC]'}`}>
-                {mode}
-              </button>
-            ))}
-          </div>
           <label className="block text-[11px] text-[#AAAAAA]">
             Model
             <select
@@ -247,6 +258,7 @@ export const AIStudioDock: React.FC<{
         </>
       )}
 
+      {draft.mode === 'image' && (
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[11px] text-[#AAAAAA]">Prompt</span>
@@ -261,7 +273,7 @@ export const AIStudioDock: React.FC<{
                   set('category', category);
                   set('prompt', INSPIRATIONS[category]);
                 }}
-                className="h-7 rounded-md border border-[#555555] bg-[#2D2D2D] px-1 text-[11px] text-white"
+                className="h-7 max-w-[9rem] rounded-md border border-[#555555] bg-[#2D2D2D] px-1 text-[11px] text-white"
               >
                 <option value="">Inspirations</option>
                 {DIRECTOR_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
@@ -288,8 +300,9 @@ export const AIStudioDock: React.FC<{
           </select>
         )}
       </div>
+      )}
 
-      {!compact && (
+      {draft.mode === 'image' && !compact && (
         <div className="flex flex-wrap gap-1.5">
           {ASPECTS.map((aspect) => (
             <Chip key={aspect} active={draft.aspect === aspect} onClick={() => set('aspect', aspect as StudioAspect)}>{aspect}</Chip>
@@ -297,25 +310,21 @@ export const AIStudioDock: React.FC<{
           {RESOLUTIONS.map((resolution) => (
             <Chip key={resolution} active={draft.resolution === resolution} onClick={() => set('resolution', resolution as StudioResolution)}>{resolution}</Chip>
           ))}
-          {draft.mode === 'video' && VIDEO_DURATIONS.map((duration) => (
-            <Chip key={duration} active={draft.duration === duration} onClick={() => set('duration', duration)}>{duration}s</Chip>
-          ))}
           {OUTPUT_COUNTS.map((count) => (
             <Chip key={count} active={draft.outputs === count} onClick={() => set('outputs', count)}>{count}×</Chip>
           ))}
-          {draft.mode === 'video' && slots.audio > 0 && (
-            <Chip active={draft.audio} onClick={() => set('audio', !draft.audio)}>Audio</Chip>
-          )}
         </div>
       )}
 
+      {draft.mode === 'image' && (
       <button type="button" data-testid="studio-create" onClick={() => void create()} disabled={busy !== null} className={`h-11 rounded-xl bg-[#6E56F5] text-sm font-semibold text-white disabled:opacity-60 ${compact ? 'sticky bottom-0' : ''}`}>
         {busy === 'create' ? 'Working…' : `Create · ${cost} ${cost === 1 ? 'credit' : 'credits'}`}
       </button>
-      {status && <p className="text-xs text-[#C8BEFF]">{status}</p>}
-      {error && <p data-testid="studio-error" className="rounded-lg border border-[#6B3A3A] bg-[#2A1A1A] px-3 py-2 text-xs leading-snug text-[#F3C7C7]">{error}</p>}
+      )}
+      {draft.mode === 'image' && status && <p className="text-xs text-[#C8BEFF]">{status}</p>}
+      {draft.mode === 'image' && error && <p data-testid="studio-error" className="rounded-lg border border-[#6B3A3A] bg-[#2A1A1A] px-3 py-2 text-xs leading-snug text-[#F3C7C7]">{error}</p>}
 
-      {results.length > 0 && (
+      {draft.mode === 'image' && results.length > 0 && (
         <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
           {results.map((result) => (
             <div key={result.id} className="rounded-lg border border-[#3D3D3D] bg-[#1A1A1A] p-2">

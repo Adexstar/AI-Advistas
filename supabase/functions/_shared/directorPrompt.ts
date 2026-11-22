@@ -24,7 +24,7 @@ export const CAMERA_MOVES = [
   'reveal',
 ] as const;
 
-const CATEGORY_SETTING: Record<DirectorCategory, string> = {
+export const CATEGORY_SETTING: Record<DirectorCategory, string> = {
   'fashion/sneakers': 'a clean studio floor with a single hard shadow and a soft paper sweep',
   'beauty/perfume': 'a marble vanity with one glass highlight and a quiet dark background',
   'food & drink': 'a short tabletop with one plate, one glass, and a linen fold',
@@ -36,7 +36,7 @@ const CATEGORY_SETTING: Record<DirectorCategory, string> = {
   generic: 'a simple set that does not add products, people, or signage',
 };
 
-const CATEGORY_LIGHT: Record<DirectorCategory, string> = {
+export const CATEGORY_LIGHT: Record<DirectorCategory, string> = {
   'fashion/sneakers': 'soft key from the left, a small rim on the sole, no colour gel',
   'beauty/perfume': 'soft beauty light, a single specular on glass, no colour cast',
   'food & drink': 'warm practical light, steam only if the product already has it',
