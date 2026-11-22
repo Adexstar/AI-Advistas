@@ -13,7 +13,8 @@ export const StockBrowser: React.FC<{
   selected?: any;
   library?: LibraryRow[];
   onChanged?: () => void;
-}> = ({ kind, canvas, selected, library = [], onChanged }) => {
+  onPick?: (url: string) => void;
+}> = ({ kind, canvas, selected, library = [], onChanged, onPick }) => {
   const [query, setQuery] = useState(kind === 'video' ? 'city' : 'portrait');
   const [hits, setHits] = useState<StockHit[]>([]);
   const [note, setNote] = useState<string | null>(null);
@@ -33,6 +34,10 @@ export const StockBrowser: React.FC<{
   };
 
   const place = async (url: string) => {
+    if (onPick) {
+      onPick(url);
+      return;
+    }
     if (!canvas) return;
     const frame = isFrameTarget(selected) ? selected : null;
     try {

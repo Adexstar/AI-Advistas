@@ -65,49 +65,8 @@ export const useRealTimeAdGenerator = () => {
         hashtags: textContent.hashtags
       };
 
-      // If image ad, also generate image
-      if (request.adType === 'image') {
-        console.log('Generating ad image...');
-        
-        const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-ad-image', {
-          body: {
-            product: request.product,
-            platform: request.platform,
-            adContent: textContent
-          }
-        });
-
-        if (!imageError && imageData?.success) {
-          finalContent.imageUrl = imageData.imageUrl;
-          console.log('Generated image URL:', imageData.imageUrl);
-        } else {
-          console.warn('Failed to generate image:', imageError || imageData?.error);
-          // Continue without image rather than failing completely
-        }
-      }
-
-      // If video ad, also generate video
-      if (request.adType === 'video') {
-        console.log('Generating ad video...');
-        
-        const { data: videoData, error: videoError } = await supabase.functions.invoke('generate-ad-video', {
-          body: {
-            product: request.product,
-            platform: request.platform,
-            adContent: textContent
-          }
-        });
-
-        if (!videoError && videoData?.success) {
-          finalContent.videoUrl = videoData.videoUrl;
-          finalContent.thumbnailUrl = videoData.thumbnailUrl;
-          finalContent.aspectRatio = videoData.aspectRatio;
-          finalContent.duration = videoData.duration;
-          console.log('Generated video URL:', videoData.videoUrl);
-        } else {
-          console.warn('Failed to generate video:', videoError || videoData?.error);
-          // Continue without video rather than failing completely
-        }
+      if (request.adType === 'image' || request.adType === 'video') {
+        throw new Error('Image and video are made in AI Studio. Open the editor and use Send to Studio.');
       }
 
       setGeneratedContent(finalContent);

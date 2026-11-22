@@ -24,6 +24,7 @@ import { AITemplateGeneratorService, type GeneratedTemplate } from '@/services/t
 import { DecisionService } from '@/services/ai';
 import { useAuth } from '@/hooks/useAuth';
 import { setPendingEditorTemplate } from '@/lib/templateEditorSession';
+import { QuickTemplateGenerator } from '@/components/templates/QuickTemplateGenerator';
 import {
   Sparkles,
   RefreshCw,
@@ -344,6 +345,8 @@ const TemplateGenerate = () => {
             </Button>
           </div>
         </header>
+
+        <QuickTemplateGenerator />
 
         {/* MAIN LAYOUT */}
         <div className="flex flex-col gap-8 lg:flex-row">
