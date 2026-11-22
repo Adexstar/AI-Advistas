@@ -195,7 +195,7 @@ export const StudioTimeline: React.FC<Props> = ({
                       className="absolute inset-y-0 left-0 w-2 cursor-ew-resize bg-white/40"
                       onPointerDown={(event) => beginTrim(clip, 'start', event)}
                     />
-                    <span className="truncate pl-2">{clip.kind}</span>
+                    <span className="truncate pl-2">{labelForClip(objects, clip)}</span>
                     <span
                       aria-label={`Trim end ${clip.id}`}
                       className="absolute inset-y-0 right-0 w-2 cursor-ew-resize bg-white/40"
@@ -212,3 +212,9 @@ export const StudioTimeline: React.FC<Props> = ({
     </div>
   );
 };
+
+function labelForClip(objects: Array<{ advistaClip?: { id?: string }; advistaName?: string }>, clip: { id: string; kind: string }) {
+  const object = objects.find((item) => item.advistaClip?.id === clip.id);
+  const name = typeof object?.advistaName === 'string' ? object.advistaName.trim() : '';
+  return name || clip.kind;
+}

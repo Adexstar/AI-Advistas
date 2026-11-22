@@ -1,6 +1,8 @@
 export {
   DIRECTOR_CATEGORIES,
   CAMERA_MOVES,
+  CATEGORY_SETTING,
+  CATEGORY_LIGHT,
   ENHANCE_SECRETS,
   shotPlan,
   buildDirectorPrompt,

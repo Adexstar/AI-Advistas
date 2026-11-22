@@ -60,7 +60,7 @@ import { CREATE_RAIL, EDITOR_TOOLS, FONT_COMBOS, TEXT_STYLES, matchTextStyle, pa
 import { applyImageFilters, neutralImageAdjustments, type ImageAdjustments, type ImagePreset } from '@/components/visual-editor/imageAdjustments';
 import { StudioTimeline } from '@/components/visual-editor/StudioTimeline';
 import { AnimatePresets, AudioAddSheet, DurationPanel, ElementMenu, FadePanel, KeySlot, TrimPanel, VolumePanel } from '@/components/visual-editor/EditorSheets';
-import { addTimelineAudio, addTimelinePhoto, addTimelineVideo, detachFrame, isFrameTarget, writeClip } from '@/components/visual-editor/placeMedia';
+import { addTimelineAudio, addTimelinePhoto, addTimelineVideo, detachFrame, isFrameTarget, placeDirectorSequence, writeClip, type DirectorSequence } from '@/components/visual-editor/placeMedia';
 import { splitClip, projectDuration } from '@/components/visual-editor/videoTimeline';
 import { syncMedia } from '@/components/visual-editor/playback';
 import { recordCanvas } from '@/components/visual-editor/exportTimeline';
@@ -3476,6 +3476,10 @@ const EditorInner: React.FC = () => {
       selectedUrl={selectionMediaUrl(selected)}
       onAddImage={(url) => placeStudioResult(url, 'image')}
       onAddVideo={(url) => placeStudioResult(url, 'video')}
+      onPlaceSequence={(sequence: DirectorSequence) => {
+        if (!canvas) return;
+        void placeDirectorSequence(canvas, sequence).then(() => markChanged());
+      }}
       onExpand={() => setSheetFull(true)}
       onClose={() => {
         setDockOpen(false);

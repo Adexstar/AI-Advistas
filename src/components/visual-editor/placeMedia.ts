@@ -1,4 +1,4 @@
-import { Circle, FabricImage, Polygon, Rect, type Canvas as FabricCanvas } from 'fabric';
+import { Circle, FabricImage, Polygon, Rect, Textbox, type Canvas as FabricCanvas } from 'fabric';
 import { placeFittedImage } from './canvasImagePlacement';
 import { FRAME_MASKS, gridCountFromId, gridSlots, maskPoints, scalePoints, type FrameMask } from './frames';
 import { defaultClip, kindFromObject, type TimelineClip } from './videoTimeline';
@@ -259,3 +259,74 @@ export function detachFrame(object: AnyObj | null | undefined) {
 export const frameMaskById = (id: string) => FRAME_MASKS.find((frame) => frame.id === id)?.mask ?? null;
 
 export { gridCountFromId };
+
+export interface TimedMedia {
+  url: string;
+  start: number;
+  duration: number;
+}
+
+export interface DirectorSequence {
+  videos: TimedMedia[];
+  stills: TimedMedia[];
+  titles: Array<{ text: string; start: number; duration: number }>;
+}
+
+/** Puts real clips and the shot-list titles on the timeline. A missing url is skipped. */
+export async function placeDirectorSequence(canvas: FabricCanvas, sequence: DirectorSequence) {
+  const width = canvas.getWidth?.() || 1080;
+  const height = canvas.getHeight?.() || 1350;
+  for (const video of sequence.videos) {
+    if (!video.url) continue;
+    try {
+      const object = await addTimelineVideo(canvas, video.url) as AnyObj;
+      const clip = ensureObjectClip(object);
+      const duration = Math.min(video.duration, clip.sourceDuration || video.duration);
+      writeClip(object, { ...clip, kind: 'video', start: video.start, duration: Math.max(0.4, duration) });
+      object.set?.({ left: 48, top: 80 });
+    } catch {
+      /* This file did not load. The titles still go down. */
+    }
+  }
+  for (const still of sequence.stills) {
+    if (!still.url) continue;
+    try {
+      const object = await addTimelinePhoto(canvas, still.url) as AnyObj;
+      const clip = ensureObjectClip(object);
+      writeClip(object, { ...clip, kind: 'image', start: still.start, duration: still.duration, sourceDuration: 600 });
+      object.set?.({ left: 48, top: 80 });
+    } catch {
+      /* A still that fails to load is left off the timeline. */
+    }
+  }
+  sequence.titles.forEach((title, index) => {
+    const text = title.text.trim();
+    if (!text) return;
+    const box = new Textbox(text, {
+      left: 36,
+      top: Math.round(height * 0.72),
+      width: Math.max(120, width - 72),
+      fontSize: Math.max(18, Math.round(width * 0.046)),
+      fontWeight: '700',
+      fill: '#ffffff',
+      backgroundColor: 'rgba(12,12,12,0.72)',
+      padding: 8,
+      fontFamily: 'Inter',
+      textAlign: 'center',
+    });
+    const clip = ensureObjectClip(box);
+    writeClip(box, {
+      ...clip,
+      kind: 'text',
+      trackId: 'text',
+      start: title.start,
+      duration: title.duration,
+      sourceDuration: 600,
+    });
+    (box as AnyObj).advistaKind = 'text';
+    (box as AnyObj).advistaName = text;
+    canvas.add(box);
+    if (index === 0) canvas.setActiveObject(box);
+  });
+  canvas.requestRenderAll();
+}

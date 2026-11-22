@@ -3,6 +3,7 @@ import { buildDirectorPrompt, ENHANCE_SECRETS } from "../_shared/directorPrompt.
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const SYSTEM = "You write one production prompt for an ad. Follow the brief exactly. Return only the prompt, with the same headings. Do not add a preamble.";
+const SHOTS_SYSTEM = "Return only JSON. No markdown. Shape: {\"look\":\"\",\"lighting\":\"\",\"musicMood\":\"\",\"shots\":[{\"camera\":\"\",\"action\":\"\",\"onScreenText\":\"\",\"transition\":\"cut\"}]}. Three to six shots. onScreenText is at most six words. transition is cut, dissolve, or match cut.";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -23,9 +24,13 @@ Deno.serve(async (req) => {
   const references = Array.isArray(body.references)
     ? body.references.filter((url: unknown) => typeof url === "string" && url.startsWith("http")).slice(0, 4)
     : [];
+  const system = body.format === "shots" ? SHOTS_SYSTEM : SYSTEM;
+  const ask = body.format === "shots"
+    ? `${brief}\n\nReturn the JSON shot list for this brief. The shots together last ${Number(body.duration) || 10} seconds.`
+    : brief;
 
   try {
-    const result = await complete(brief, references);
+    const result = await complete(ask, references, system);
     return json({ prompt: result.text, provider: result.provider });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Enhance failed";
@@ -34,17 +39,17 @@ Deno.serve(async (req) => {
   }
 });
 
-async function complete(brief: string, references: string[]): Promise<{ text: string; provider: string }> {
-  if (Deno.env.get("GROQ_API_KEY")) return { text: await chat("https://api.groq.com/openai/v1/chat/completions", Deno.env.get("GROQ_API_KEY")!, "openai/gpt-oss-120b", brief, []), provider: "groq" };
-  if (Deno.env.get("OPENAI_API_KEY")) return { text: await chat("https://api.openai.com/v1/chat/completions", Deno.env.get("OPENAI_API_KEY")!, "gpt-4o-mini", brief, references), provider: "openai" };
+async function complete(brief: string, references: string[], system = SYSTEM): Promise<{ text: string; provider: string }> {
+  if (Deno.env.get("GROQ_API_KEY")) return { text: await chat("https://api.groq.com/openai/v1/chat/completions", Deno.env.get("GROQ_API_KEY")!, "openai/gpt-oss-120b", brief, [], system), provider: "groq" };
+  if (Deno.env.get("OPENAI_API_KEY")) return { text: await chat("https://api.openai.com/v1/chat/completions", Deno.env.get("OPENAI_API_KEY")!, "gpt-4o-mini", brief, references, system), provider: "openai" };
   const gemini = Deno.env.get("GOOGLE_GEMINI_API_KEY") || Deno.env.get("GEMINI_API_KEY");
-  if (gemini) return { text: await geminiChat(gemini, brief, references), provider: "gemini" };
-  if (Deno.env.get("ANTHROPIC_API_KEY")) return { text: await claude(Deno.env.get("ANTHROPIC_API_KEY")!, brief), provider: "anthropic" };
-  if (Deno.env.get("LOVABLE_API_KEY")) return { text: await chat("https://ai.gateway.lovable.dev/v1/chat/completions", Deno.env.get("LOVABLE_API_KEY")!, "google/gemini-3.6-flash", brief, []), provider: "lovable" };
+  if (gemini) return { text: await geminiChat(gemini, brief, references, system), provider: "gemini" };
+  if (Deno.env.get("ANTHROPIC_API_KEY")) return { text: await claude(Deno.env.get("ANTHROPIC_API_KEY")!, brief, system), provider: "anthropic" };
+  if (Deno.env.get("LOVABLE_API_KEY")) return { text: await chat("https://ai.gateway.lovable.dev/v1/chat/completions", Deno.env.get("LOVABLE_API_KEY")!, "google/gemini-3.6-flash", brief, [], system), provider: "lovable" };
   throw new Error("not configured");
 }
 
-async function chat(url: string, key: string, model: string, brief: string, images: string[]): Promise<string> {
+async function chat(url: string, key: string, model: string, brief: string, images: string[], system = SYSTEM): Promise<string> {
   const user = images.length
     ? [
       { type: "text", text: brief },
@@ -57,7 +62,7 @@ async function chat(url: string, key: string, model: string, brief: string, imag
     body: JSON.stringify({
       model,
       messages: [
-        { role: "system", content: SYSTEM },
+        { role: "system", content: system },
         { role: "user", content: user },
       ],
       temperature: 0.4,
@@ -72,8 +77,8 @@ async function chat(url: string, key: string, model: string, brief: string, imag
   return text.trim();
 }
 
-async function geminiChat(key: string, brief: string, images: string[]): Promise<string> {
-  const parts: Array<Record<string, unknown>> = [{ text: `${SYSTEM}\n\n${brief}` }];
+async function geminiChat(key: string, brief: string, images: string[], system = SYSTEM): Promise<string> {
+  const parts: Array<Record<string, unknown>> = [{ text: `${system}\n\n${brief}` }];
   for (const url of images) {
     parts.push({ fileData: { mimeType: "image/jpeg", fileUri: url } });
   }
@@ -93,13 +98,13 @@ async function geminiChat(key: string, brief: string, images: string[]): Promise
   return text.trim();
 }
 
-async function claude(key: string, brief: string): Promise<string> {
+async function claude(key: string, brief: string, system = SYSTEM): Promise<string> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "Content-Type": "application/json" },
     body: JSON.stringify({
       model: "claude-3-haiku-20240307",
-      system: SYSTEM,
+      system,
       messages: [{ role: "user", content: brief }],
       max_tokens: 900,
       temperature: 0.4,
