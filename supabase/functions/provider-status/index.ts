@@ -118,6 +118,13 @@ const PROVIDERS: Provider[] = [
     docsUrl: "https://runwayml.com/api",
   },
   {
+    id: "runware", label: "Runware", category: "generate-image", envVars: ["RUNWARE_API_KEY"],
+    testFn: "generate-ad-image", testBody: { prompt: "a grey square", provider: "runware" },
+    playgroundFn: "generate-ad-image", playgroundKind: "image",
+    playgroundFields: [{ key: "prompt", label: "Prompt", type: "textarea", default: "a product on a paper sweep" }],
+    docsUrl: "https://runware.ai/docs",
+  },
+  {
     id: "kling", label: "Kling", category: "generate-video", envVars: ["KLING_API_KEY"],
     testFn: "generate-kling", testBody: { prompt: "a simple test — a static shot of a blue wall" },
     playgroundFn: "generate-kling", playgroundKind: "video",

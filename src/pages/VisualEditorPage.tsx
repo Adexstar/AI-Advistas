@@ -47,7 +47,6 @@ import {
   UploadsPanel as StudioUploadsPanel,
   ElementsPanel as StudioElementsPanel,
   BackgroundPanel as StudioBackgroundPanel,
-  AIStudioPanel as StudioAIPanel,
   type StudioTemplate,
 } from '@/components/visual-editor/panels/StudioPanels';
 import {
@@ -66,6 +65,20 @@ import { splitClip, projectDuration } from '@/components/visual-editor/videoTime
 import { syncMedia } from '@/components/visual-editor/playback';
 import { recordCanvas } from '@/components/visual-editor/exportTimeline';
 import { speechProviders } from '@/components/visual-editor/speechProvider';
+import { AIStudioDock } from '@/components/visual-editor/studio/AIStudioDock';
+
+function selectionMediaUrl(selected: any): string | null {
+  if (!selected) return null;
+  try {
+    if (typeof selected.getSrc === 'function') {
+      const src = selected.getSrc();
+      if (typeof src === 'string' && src.length > 0) return src;
+    }
+  } catch { /* Fabric throws when the element has no source. */ }
+  const element = selected.getElement?.();
+  if (element && typeof element.currentSrc === 'string' && element.currentSrc) return element.currentSrc;
+  return null;
+}
 
 /* ---------- Constants ---------- */
 const LEFT_TABS = [
@@ -2447,6 +2460,10 @@ const EditorInner: React.FC = () => {
   const [rightOpen, setRightOpen] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(() => searchParams.get('selectTemplate') === '1');
   const [sheetFull, setSheetFull] = useState(false);
+  const [dockOpen, setDockOpen] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return new URLSearchParams(window.location.search).get('studio') === '1';
+  });
   const [pendingUploads, setPendingUploads] = useState<File[] | null>(null);
   const cameraRollRef = useRef<HTMLInputElement>(null);
   const mediaInputRef = useRef<HTMLInputElement>(null);
@@ -2483,6 +2500,19 @@ const EditorInner: React.FC = () => {
   const [pageIdx, setPageIdx] = useState(0);
   const artboard = (preset === 'custom' && customArtboard) ? customArtboard : (ARTBOARD_PRESETS[preset] ?? ARTBOARD_PRESETS.instagramPortrait);
   const isMobile = useIsMobile();
+  const studioBoot = useRef(false);
+  useEffect(() => {
+    if (studioBoot.current) return;
+    const fromQuery = searchParams.get('studio') === '1';
+    const fromDraft = typeof window !== 'undefined' && window.sessionStorage.getItem('advista.studio.draft');
+    if (!fromQuery && !fromDraft) return;
+    studioBoot.current = true;
+    setDockOpen(true);
+    if (isMobile) {
+      setActiveTab('studio-slot');
+      setSheetExpanded(true);
+    }
+  }, [isMobile, searchParams]);
   const { videoUrl } = useVisualEditor();
   const isVideo = !!videoUrl;
 
@@ -3204,6 +3234,24 @@ const EditorInner: React.FC = () => {
       mediaInputRef.current?.click();
     }
     const panel = panelForCreateTool(id);
+    if (panel === 'studio-slot') {
+      const open = isMobile ? activeTab === 'studio-slot' && sheetExpanded : dockOpen;
+      if (open) {
+        setDockOpen(false);
+        setSheetExpanded(false);
+        setSheetFull(false);
+        if (activeTab === 'studio-slot') setActiveTab('templates');
+        return;
+      }
+      setDockOpen(true);
+      if (isMobile) {
+        setActiveTab('studio-slot');
+        setActiveTool(null);
+        setSheetFull(false);
+        setSheetExpanded(true);
+      }
+      return;
+    }
     if (activeTab === panel && sheetExpanded && !activeTool) {
       setSheetExpanded(false);
       setSheetFull(false);
@@ -3328,9 +3376,18 @@ const EditorInner: React.FC = () => {
   }, [activeTab]);
 
   const selectTab = useCallback((id: string) => {
+    if (id === 'ai-studio') {
+      setDockOpen(true);
+      setActiveTool(null);
+      if (isMobile) {
+        setActiveTab('studio-slot');
+        setSheetExpanded(true);
+      }
+      return;
+    }
     setActiveTab(id);
     setActiveTool(null);
-  }, []);
+  }, [isMobile]);
 
   // ---- Preview / Publish / Pages ----
   const openPreview = useCallback(() => {
@@ -3403,6 +3460,32 @@ const EditorInner: React.FC = () => {
     forceUpdate((n) => n + 1);
   }, [canvas, pages, pageIdx]);
 
+  const placeStudioResult = (url: string, kind: 'image' | 'video') => {
+    if (!canvas) return;
+    const frame = isFrameTarget(selected) ? selected : null;
+    const placed = kind === 'video' ? addTimelineVideo(canvas, url, frame) : addTimelinePhoto(canvas, url, frame);
+    void placed.then(() => markChanged());
+  };
+
+  const studioDock = (compact: boolean) => (
+    <AIStudioDock
+      canvasWidth={artboard.width}
+      canvasHeight={artboard.height}
+      compact={compact}
+      embedded={isMobile}
+      selectedUrl={selectionMediaUrl(selected)}
+      onAddImage={(url) => placeStudioResult(url, 'image')}
+      onAddVideo={(url) => placeStudioResult(url, 'video')}
+      onExpand={() => setSheetFull(true)}
+      onClose={() => {
+        setDockOpen(false);
+        setSheetExpanded(false);
+        setSheetFull(false);
+        if (activeTab === 'studio-slot' || activeTab === 'ai-studio') setActiveTab('templates');
+      }}
+    />
+  );
+
   const renderLeftPanel = () => {
     switch (activeTab) {
       case 'templates': return (
@@ -3417,14 +3500,7 @@ const EditorInner: React.FC = () => {
         />
       );
       case 'background': return <StudioBackgroundPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} brandColors={brandPalette} selected={selected} />;
-      case 'studio-slot': return (
-        <div className={isMobile ? '' : 'p-4'}>
-          <KeySlot
-            title="AI Studio"
-            detail="This slot is reserved for the next update. On a wide screen the panel is the dock beside the canvas. On a phone it stays in this sheet. Nothing is generated from this button."
-          />
-        </div>
-      );
+      case 'studio-slot': return studioDock(isMobile && !sheetFull);
       case 'ai-voice': return (
         <KeySlot
           title="AI Voice"
@@ -3439,7 +3515,7 @@ const EditorInner: React.FC = () => {
           <AudioAddSheet onAdd={(url, name) => { if (!canvas) return; void addTimelineAudio(canvas, url, name).then(() => markChanged()); }} />
         </div>
       );
-      case 'ai-studio': return <StudioAIPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} platform={(effectiveContext as any)?.active_platform ?? null} category={effectiveContext?.active_category ?? null} selected={selected} />;
+      case 'ai-studio': return studioDock(isMobile && !sheetFull);
       case 'text': return <TextPanel onAdd={addText} onMagicWrite={magicWrite} />;
       case 'elements': return <StudioElementsPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} brandColors={brandPalette} selected={selected} />;
       case 'brand': return (
@@ -3534,7 +3610,7 @@ const EditorInner: React.FC = () => {
           style={{ left: toolbarPos.left, top: toolbarPos.top, transform: 'translateX(-50%)' }}>
           <div className="flex items-center gap-0.5 px-2 py-1.5 rounded-full shadow-lg" style={{ backgroundColor: '#2D2D2D', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
             <button title="AI suggestions for this layer"
-              onClick={() => { setActiveTab('ai-studio'); setSheetExpanded(true); }}
+              onClick={() => { setDockOpen(true); if (isMobile) { setActiveTab('studio-slot'); setSheetExpanded(true); } }}
               className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-white/10 text-white">
               <Sparkles className="h-3.5 w-3.5 text-primary" />
               <span className="text-xs font-semibold">AI</span>
@@ -3708,7 +3784,7 @@ const EditorInner: React.FC = () => {
           ) : (
           <ContextualToolbar
             tools={CREATE_TOOLS}
-            active={activeTool ? null : activeTab}
+            active={dockOpen ? 'studio-slot' : activeTool ? null : activeTab}
             onToolTap={openCreateTool}
           />
           )}
@@ -3721,7 +3797,7 @@ const EditorInner: React.FC = () => {
             {/* Left: Icon Rail + Panel */}
             <div className="editor-left-panel flex h-full overflow-hidden">
               <IconRail active={activeTab} onChange={selectTab} />
-              <div className={`editor-panel-content studio-panel hidden h-full shrink-0 flex-col overflow-hidden border-r md:flex ${activeTab === 'studio-slot' ? 'w-[360px]' : 'w-[280px]'}`}>
+              <div className="editor-panel-content studio-panel hidden h-full w-[280px] shrink-0 flex-col overflow-hidden border-r md:flex">
                 <div key={activeTool || activeTab} className="flex h-full min-h-0 flex-col">
                   {activeTool && selected ? (
                     <div className="flex h-full min-h-0 flex-col">
@@ -3746,7 +3822,11 @@ const EditorInner: React.FC = () => {
             </div>
 
             {/* Desktop right panel — opened from the top bar */}
-            {selected && rightOpen && (
+            {dockOpen ? (
+              <aside className="studio-panel flex h-full w-[360px] shrink-0 flex-col overflow-y-auto border-l p-3">
+                {studioDock(false)}
+              </aside>
+            ) : selected && rightOpen && (
                <div className="editor-right-panel studio-panel hidden w-[260px] shrink-0 overflow-y-auto border-l lg:flex">
                 <RightPanel selected={selected} canvas={canvas} onClose={() => setRightOpen(false)} preset={preset} customArtboard={customArtboard} onPresetChange={changeArtboardPreset} />
               </div>
@@ -3769,7 +3849,7 @@ const EditorInner: React.FC = () => {
           {selected && currentTools !== CREATE_TOOLS ? (
             <SelectionBar tools={currentTools} active={activeTool} onTool={openSelectionTool} onDone={clearSelection} variant="dock" />
           ) : (
-            <ContextualToolbar tools={CREATE_TOOLS} active={activeTool ? null : activeTab} onToolTap={openCreateTool} />
+            <ContextualToolbar tools={CREATE_TOOLS} active={dockOpen ? 'studio-slot' : activeTool ? null : activeTab} onToolTap={openCreateTool} />
           )}
         </>
       )}

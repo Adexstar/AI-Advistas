@@ -1,153 +1,104 @@
-import { consumeAiQuota, requireUser } from "../_shared/guard.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { consumeAiQuota, json, requireUser } from "../_shared/guard.ts";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Runware video is asynchronous. This function submits the job, polls for
+// a short window, and returns the task id when the clip is still rendering.
+// The client polls the same function with taskUUID. Sending the task again
+// would start a second paid generation.
+const RUNWARE_VIDEO_MODEL = "bytedance:1@1";
 
-const RUNWARE_API_ENDPOINT = "https://api.runware.ai/v1";
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const gate = await requireUser(req);
   if (gate instanceof Response) return gate;
 
-  try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
+  const key = Deno.env.get("RUNWARE_API_KEY");
+  if (!key) return json({ success: false, error: "Add RUNWARE_API_KEY." }, 501);
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    // Verify user authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      console.error('Auth error:', authError);
-      throw new Error('Unauthorized');
-    }
-
-    const { product, platform, adContent } = await req.json();
-    
-    if (!product || !platform || !adContent) {
-      throw new Error('Missing required fields: product, platform, and adContent are required');
-    }
-
-    const runwareApiKey = Deno.env.get('RUNWARE_API_KEY');
-    if (!runwareApiKey) {
-      throw new Error('RunAI API key not configured');
-    }
+  const body = await req.json().catch(() => ({}));
+  const taskUUID = typeof body.taskUUID === "string" ? body.taskUUID : "";
+  if (!taskUUID) {
     const denied = await consumeAiQuota(gate.client);
     if (denied) return denied;
+  }
 
-    console.log('Generating video for product:', product, 'platform:', platform);
-
-    // Create video prompt based on platform and product
-    let aspectRatio = "16:9"; // Default YouTube horizontal
-    let videoDuration = 30; // seconds
-    
-    if (platform === 'tiktok' || platform === 'instagram-story') {
-      aspectRatio = "9:16"; // Vertical for TikTok/Stories
-      videoDuration = 15;
-    } else if (platform === 'instagram-post') {
-      aspectRatio = "1:1"; // Square for Instagram posts
-      videoDuration = 15;
+  try {
+    if (taskUUID) {
+      const row = await poll(key, taskUUID);
+      return json(row);
     }
-
-    // Enhanced video prompt incorporating the ad content
-    const videoPrompt = `Create a professional product showcase video for ${product}. 
-    Style: Modern, clean, dynamic with smooth transitions. 
-    Content: Show the product prominently with lifestyle shots. 
-    Text overlay: "${adContent.headline}" as main title.
-    Mood: Engaging and premium, suitable for ${platform}.
-    Quality: High-definition, commercial-grade.
-    Duration: ${videoDuration} seconds.
-    No people faces, focus on product and lifestyle elements.`;
-
-    console.log('Video generation prompt:', videoPrompt);
-
-    // Generate video using RunAI video model
-    const videoResponse = await fetch(RUNWARE_API_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify([
-        {
-          taskType: "authentication",
-          apiKey: runwareApiKey
-        },
-        {
-          taskType: "videoInference",
-          taskUUID: crypto.randomUUID(),
-          positivePrompt: videoPrompt,
-          width: aspectRatio === "9:16" ? 720 : aspectRatio === "1:1" ? 1080 : 1920,
-          height: aspectRatio === "9:16" ? 1280 : aspectRatio === "1:1" ? 1080 : 1080,
-          model: "runware:video@1", // Assuming this is the video model
-          numberResults: 1,
-          duration: videoDuration,
-          outputFormat: "MP4",
-          quality: "high"
-        }
-      ])
-    });
-
-    if (!videoResponse.ok) {
-      const errorText = await videoResponse.text();
-      console.error('RunAI API error:', videoResponse.status, errorText);
-      throw new Error(`RunAI API error: ${videoResponse.status}`);
-    }
-
-    const videoData = await videoResponse.json();
-    console.log('RunAI video response:', videoData);
-
-    // Extract video URL from response
-    const videoResult = videoData.data?.find((item: any) => item.taskType === 'videoInference');
-    if (!videoResult || !videoResult.videoURL) {
-      console.error('No video URL in response:', videoData);
-      throw new Error('Failed to generate video - no URL returned');
-    }
-
-    const videoUrl = videoResult.videoURL;
-    console.log('Generated video URL:', videoUrl);
-
-    // Create thumbnail from first frame (simplified approach)
-    const thumbnailUrl = videoUrl.replace('.mp4', '_thumbnail.jpg'); // Assuming RunAI provides thumbnails
-
-    const result = {
-      success: true,
-      videoUrl: videoUrl,
-      thumbnailUrl: thumbnailUrl,
-      aspectRatio: aspectRatio,
-      duration: videoDuration,
-      platform: platform,
-      prompt: videoPrompt
-    };
-
-    console.log('Video generation successful:', result);
-
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-
+    const prompt = String(body.prompt || body.product || "").trim();
+    if (!prompt) return json({ success: false, error: "A prompt is required" }, 400);
+    const started = await start(key, prompt, body);
+    return json(started);
   } catch (error) {
-    console.error('Error generating video:', error);
-    
-    // Return a fallback response for development
-    return new Response(JSON.stringify({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'An error occurred',
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    const message = error instanceof Error ? error.message : "Video generation failed";
+    return json({ success: false, error: message }, 500);
   }
 });
+
+async function start(key: string, prompt: string, body: Record<string, unknown>) {
+  const width = snap(Number(body.width) || 768);
+  const height = snap(Number(body.height) || 768);
+  const duration = [5, 8, 10].includes(Number(body.duration)) ? Number(body.duration) : 5;
+  const taskUUID = crypto.randomUUID();
+  const first = firstHttp(body.firstFrame) || firstHttp(body.references);
+  const last = typeof body.lastFrame === "string" && body.lastFrame.startsWith("http") ? body.lastFrame : "";
+  const task: Record<string, unknown> = {
+    taskType: "videoInference",
+    taskUUID,
+    deliveryMethod: "async",
+    model: RUNWARE_VIDEO_MODEL,
+    positivePrompt: prompt,
+    width,
+    height,
+    duration,
+    outputType: "URL",
+    outputFormat: "MP4",
+  };
+  if (first) task.frameImages = [{ inputImage: first, frame: "first" }, ...(last ? [{ inputImage: last, frame: "last" }] : [])];
+  if (body.audio === true) task.providerSettings = { audio: true };
+  const data = await runware(key, [task]);
+  const ready = data.find((row) => typeof row.videoURL === "string");
+  if (ready?.videoURL) return { success: true, videoUrl: ready.videoURL, provider: "runware", pending: false };
+  const status = await poll(key, taskUUID, 4);
+  return status.videoUrl ? status : { success: true, pending: true, taskUUID, provider: "runware" };
+}
+
+async function poll(key: string, taskUUID: string, attempts = 1) {
+  for (let i = 0; i < attempts; i++) {
+    if (i > 0) await new Promise((resolve) => setTimeout(resolve, 2500));
+    const data = await runware(key, [{ taskType: "getResponse", taskUUID }]);
+    const ready = data.find((row) => typeof row.videoURL === "string");
+    if (ready?.videoURL) return { success: true, pending: false, videoUrl: ready.videoURL, taskUUID, provider: "runware" };
+    const failed = data.find((row) => row.status === "error");
+    if (failed) throw new Error(failed.message || "Runware video failed");
+  }
+  return { success: true, pending: true, taskUUID, provider: "runware" };
+}
+
+async function runware(key: string, tasks: unknown[]): Promise<Array<Record<string, string>>> {
+  const res = await fetch("https://api.runware.ai/v1", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify(tasks),
+  });
+  const payload = await res.json().catch(() => ({}));
+  const errors = Array.isArray(payload?.errors) ? payload.errors : [];
+  if (!res.ok || errors.length) {
+    throw new Error(errors[0]?.message || payload?.error || `Runware failed (${res.status})`);
+  }
+  return Array.isArray(payload?.data) ? payload.data : [];
+}
+
+function snap(value: number): number {
+  const n = Number.isFinite(value) ? value : 768;
+  return Math.max(256, Math.min(1280, Math.round(n / 64) * 64));
+}
+
+function firstHttp(value: unknown): string | null {
+  if (typeof value === "string" && value.startsWith("http")) return value;
+  if (!Array.isArray(value)) return null;
+  const url = value.find((item) => typeof item === "string" && item.startsWith("http"));
+  return typeof url === "string" ? url : null;
+}

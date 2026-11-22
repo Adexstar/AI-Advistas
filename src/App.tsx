@@ -31,6 +31,7 @@ const Billing = lazy(() => import("./pages/Billing"));
 const Settings = lazy(() => import("./pages/Settings"));
 const VisualEditorPage = lazy(() => import("./pages/VisualEditorPage"));
 const TemplateGenerate = lazy(() => import("./pages/TemplateGenerate"));
+const AIAssistantPage = lazy(() => import("./pages/AIVideoGenerator"));
 const Templates = lazy(() => import("./pages/Templates"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminProviders = lazy(() => import("./pages/AdminProviders"));
@@ -217,6 +218,13 @@ const AppContent = () => {
             <Route path="/ai-editor" element={<Navigate to="/create-ad" replace />} />
             <Route path="/simulator" element={<Navigate to="/create-ad" replace />} />
             <Route path="/visual-editor" element={<ProtectedRoute><VisualEditorPage /></ProtectedRoute>} />
+            <Route path="/ai-video-generator" element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<AIAssistantPage />} />
+            </Route>
 
             <Route path="/admin" element={
               <ProtectedRoute>
