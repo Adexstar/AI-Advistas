@@ -19,8 +19,9 @@ import { addFrame, addGrid, ensureObjectClip, frameMaskById, gridCountFromId, wr
 import { maskPoints, scalePoints } from '@/components/visual-editor/frames';
 import {
   Search, Upload, Loader2, ImageIcon, Video, Music, FileText, Pipette, Plus, X, Info,
-  Sparkles, Mic, ChevronDown, Heart, ChevronLeft,
+  Sparkles, Mic, ChevronDown, Heart, ChevronLeft, Play, SlidersHorizontal,
 } from 'lucide-react';
+import { templateIsVideo, visibleTemplates } from '@/components/visual-editor/editorMode';
 
 const PANEL = 'studio-panel flex h-full min-h-0 flex-col';
 const HEAD = 'px-4 py-3 border-b border-[#454545]';
@@ -93,6 +94,7 @@ export type StudioTemplate = {
   width?: number | null;
   height?: number | null;
   popularity_score?: number | null;
+  format?: string | null;
 };
 
 const RECENT_KEY = 'advista.editor.recentTemplateIds';
@@ -114,9 +116,15 @@ export const TemplatesPanel: React.FC<{
   platform?: string | null;
   onAttach?: () => void;
   onWriteCopy?: (text: string) => void;
-}> = ({ onUse, embedded = false, canvas, onChanged, platform, onAttach, onWriteCopy }) => {
+  formatLabel?: string;
+  onSearchFocus?: (focused: boolean) => void;
+}> = ({ onUse, embedded = false, canvas, onChanged, platform, onAttach, onWriteCopy, formatLabel = 'Instagram Post (4:5)', onSearchFocus }) => {
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('All');
+  const [videoOnly, setVideoOnly] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => readIds('advista.editor.recentSearches'));
   const [prompt, setPrompt] = useState('');
   const [needPrompt, setNeedPrompt] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -141,13 +149,9 @@ export const TemplatesPanel: React.FC<{
   }, [data]);
 
   const filtered = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    return (data ?? []).filter((t) => {
-      if (cat !== 'All' && t.category !== cat) return false;
-      if (!term) return true;
-      return `${t.name} ${t.description ?? ''} ${t.category ?? ''} ${t.platform ?? ''}`.toLowerCase().includes(term);
-    });
-  }, [data, q, cat]);
+    const matched = visibleTemplates(data ?? [], q, videoOnly);
+    return matched.filter((t) => cat === 'All' || t.category === cat);
+  }, [data, q, cat, videoOnly]);
 
   const recent = useMemo(() => {
     const byId = new Map((filtered ?? []).map((t) => [t.id, t]));
@@ -198,10 +202,27 @@ export const TemplatesPanel: React.FC<{
     }
   };
 
+  const rememberSearch = (value: string) => {
+    const term = value.trim();
+    if (!term) return;
+    setRecentSearches((prev) => {
+      const next = [term, ...prev.filter((item) => item.toLowerCase() !== term.toLowerCase())].slice(0, 6);
+      try { localStorage.setItem('advista.editor.recentSearches', JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  };
+
   const onSearch = () => {
-    if (!requireBrief()) return;
-    setQ(prompt.trim());
+    const term = prompt.trim();
+    if (!term) {
+      setQ('');
+      return;
+    }
+    rememberSearch(term);
+    setQ(term);
     setCat('All');
+    setSearchFocused(false);
+    onSearchFocus?.(false);
   };
 
   const onGenerate = async () => {
@@ -257,6 +278,11 @@ export const TemplatesPanel: React.FC<{
             {t.name}
           </div>
         )}
+        {templateIsVideo(t) && (
+          <span className="absolute left-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-black/70 text-white" aria-label="Video template">
+            <Play className="h-3 w-3 fill-white" />
+          </span>
+        )}
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-2 py-1.5">
           <span className="block truncate text-[10px] font-medium text-white">{t.name}</span>
         </div>
@@ -273,72 +299,46 @@ export const TemplatesPanel: React.FC<{
         </div>
       )}
       <div className="flex-1 min-h-0 overflow-y-auto p-4">
-        <div className="mb-3 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {[
-            { id: 'ask', label: 'Ask AI', run: () => promptRef.current?.focus() },
-            { id: 'generate', label: 'Generate Design', run: () => { setGenMode('design'); void onGenerate(); } },
-            { id: 'replace', label: 'Replace Image', run: () => onAttach?.() },
-            { id: 'copy', label: 'Write Copy', run: () => { setGenMode('copy'); if (prompt.trim()) onWriteCopy?.(prompt.trim()); else { setNeedPrompt(true); promptRef.current?.focus(); } } },
-          ].map((chip, index) => (
-            <button
-              key={chip.id}
-              onClick={chip.run}
-              className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-xs ${
-                index === 0 ? 'bg-primary/20 text-white' : 'border border-[#555555] text-[#CCCCCC] hover:bg-[#3D3D3D]'
-              }`}
-            >
-              {index === 0 && <Sparkles className="mr-1 inline h-3.5 w-3.5 text-[#8B74F8]" />}
-              {chip.label}
+        <div className="relative mb-3">
+          <div className="flex h-11 items-center gap-2 rounded-full border border-[#555555] bg-[#2A2A2A] px-3">
+            <Search className="h-4 w-4 shrink-0 text-[#888888]" />
+            <input
+              ref={promptRef}
+              value={prompt}
+              onChange={(e) => { setPrompt(e.target.value); setQ(e.target.value); if (e.target.value.trim()) setNeedPrompt(false); }}
+              onFocus={() => { setSearchFocused(true); onSearchFocus?.(true); }}
+              onBlur={() => { window.setTimeout(() => { setSearchFocused(false); onSearchFocus?.(false); }, 180); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') onSearch(); }}
+              placeholder={`Search ${formatLabel} templates`}
+              aria-label={`Search ${formatLabel} templates`}
+              className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-[#888888]"
+            />
+            <button type="button" aria-label="Template filters" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((open) => !open)} className={`grid h-7 w-7 shrink-0 place-items-center rounded-full ${videoOnly ? 'bg-[#6E56F5] text-white' : 'text-[#CCCCCC] hover:text-white'}`}>
+              <SlidersHorizontal className="h-4 w-4" />
             </button>
-          ))}
-        </div>
-
-        <div className="mb-3 flex h-11 items-center gap-2 rounded-full border border-[#555555] bg-[#2A2A2A] px-3">
-          <button type="button" onClick={() => onAttach?.()} aria-label="Add a reference image" className="text-[#CCCCCC] hover:text-white">
-            <Plus className="h-4 w-4" />
-          </button>
-          <input
-            ref={promptRef}
-            value={prompt}
-            onChange={(e) => { setPrompt(e.target.value); if (e.target.value.trim()) setNeedPrompt(false); }}
-            onKeyDown={(e) => { if (e.key === 'Enter') onSearch(); }}
-            placeholder="Describe your ideal design"
-            className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-[#888888]"
-          />
-          <button type="button" onClick={listen} aria-label="Describe your design by voice" className="text-[#CCCCCC] hover:text-white">
-            <Mic className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="mb-2 flex gap-2">
-          <div className="relative flex h-11 min-w-0 flex-1 overflow-visible rounded-xl border border-[#555555]">
-            <button type="button" onClick={() => void onGenerate()} disabled={busy} className="flex min-w-0 flex-1 items-center justify-center gap-1.5 text-sm font-medium text-white disabled:opacity-60">
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-[#8B74F8]" />}
-              Generate
-            </button>
-            <button type="button" aria-label="Generation options" aria-expanded={genOpen} onClick={() => setGenOpen((v) => !v)} className="flex w-9 items-center justify-center border-l border-[#555555] text-[#CCCCCC]">
-              <ChevronDown className="h-4 w-4" />
-            </button>
-            {genOpen && (
-              <div className="absolute left-0 top-12 z-20 w-full overflow-hidden rounded-xl border border-[#555555] bg-[#1E2227] shadow-lg">
-                {([
-                  ['design', 'Generate design'],
-                  ['copy', 'Write copy'],
-                ] as const).map(([id, label]) => (
-                  <button
-                    key={id}
-                    onClick={() => { setGenMode(id); setGenOpen(false); }}
-                    className={`block w-full px-3 py-2 text-left text-xs ${genMode === id ? 'bg-primary/20 text-white' : 'text-[#CCCCCC] hover:bg-[#2A2A2A]'}`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
-          <button type="button" onClick={onSearch} className="h-11 min-w-0 flex-1 rounded-xl bg-primary text-sm font-semibold text-primary-foreground hover:bg-[#5E48E6]">
-            Search
-          </button>
+          {filtersOpen && (
+            <div className="absolute right-0 top-12 z-20 w-52 overflow-hidden rounded-xl border border-[#555555] bg-[#1E2227] shadow-lg">
+              <button type="button" onClick={() => { setVideoOnly(false); setFiltersOpen(false); }} className={`block w-full px-3 py-2 text-left text-xs ${!videoOnly ? 'bg-primary/20 text-white' : 'text-[#CCCCCC] hover:bg-[#2A2A2A]'}`}>Photos</button>
+              <button type="button" onClick={() => { setVideoOnly(true); setFiltersOpen(false); }} className={`block w-full px-3 py-2 text-left text-xs ${videoOnly ? 'bg-primary/20 text-white' : 'text-[#CCCCCC] hover:bg-[#2A2A2A]'}`}>Videos</button>
+              <button type="button" onClick={() => { setFiltersOpen(false); setGenMode('design'); void onGenerate(); }} className="block w-full border-t border-[#3D3D3D] px-3 py-2 text-left text-xs text-[#CCCCCC] hover:bg-[#2A2A2A]">{busy ? 'Generating…' : 'Generate a picture'}</button>
+              <button type="button" onClick={() => { setFiltersOpen(false); if (prompt.trim()) onWriteCopy?.(prompt.trim()); else { setNeedPrompt(true); promptRef.current?.focus(); } }} className="block w-full px-3 py-2 text-left text-xs text-[#CCCCCC] hover:bg-[#2A2A2A]">Write this as copy</button>
+              <button type="button" onClick={() => { setFiltersOpen(false); onAttach?.(); }} className="block w-full px-3 py-2 text-left text-xs text-[#CCCCCC] hover:bg-[#2A2A2A]">Use an uploaded image</button>
+            </div>
+          )}
+          {searchFocused && !prompt.trim() && recentSearches.length > 0 && (
+            <div className="mt-2 rounded-xl border border-[#3D3D3D] bg-[#1A1A1A] p-2">
+              <div className="mb-1 flex items-center justify-between">
+                <p className="text-[11px] font-semibold text-[#AAAAAA]">Recent</p>
+                <button type="button" className="text-[11px] text-[#AAAAAA]" onMouseDown={(event) => event.preventDefault()} onClick={() => { setRecentSearches([]); try { localStorage.removeItem('advista.editor.recentSearches'); } catch { /* ignore */ } }}>Clear</button>
+              </div>
+              {recentSearches.map((term) => (
+                <button key={term} type="button" className="block w-full truncate rounded-md px-2 py-1.5 text-left text-xs text-white hover:bg-white/10" onMouseDown={(event) => event.preventDefault()} onClick={() => { setPrompt(term); setQ(term); rememberSearch(term); }}>
+                  {term}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         {needPrompt && <p className="mb-3 text-xs font-medium text-red-400">Describe what you are after to get started</p>}
 

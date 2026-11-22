@@ -27,7 +27,7 @@ import {
   Copy, Trash2, MoreHorizontal, Search, Filter, Video, Music, Square as SquareIcon, Link,
   Circle as CircleIcon, MousePointer, Volume2, X, Menu, ChevronDown, PanelRight,
   Palette, Sun, Zap, Eye, EyeOff, Pause, ChevronRight, RefreshCw, GripVertical, Pipette, Box,
-  ChevronUp, Scissors, FlipHorizontal2, Mic, Captions,
+  ChevronUp, Scissors, FlipHorizontal2, Mic, Captions, MessageSquare,
 } from 'lucide-react';
 import { AIActionsMenu } from '@/components/visual-editor/ai/AIActionsMenu';
 import { AIQuickActionsMenu } from '@/components/visual-editor/ai/AIQuickActionsMenu';
@@ -56,7 +56,8 @@ import {
 import { fitContentToFrame, frameForTemplate, frameFromAspect, measureContentBounds, placeFittedImage, publishArtboard, replaceImageKeepingFrame, scaleImageToCover } from '@/components/visual-editor/canvasImagePlacement';
 import { CanvasStageSkeleton } from '@/components/ui/loading';
 import { selectionToolSet, SELECTION_ACTIONS, type ToolSetId } from '@/components/visual-editor/editorTools';
-import { CREATE_RAIL, EDITOR_TOOLS, FONT_COMBOS, TEXT_STYLES, matchTextStyle, panelForCreateTool } from '@/components/visual-editor/createRail';
+import { designHasVideo, resolveEditorMode, templateIsVideo } from '@/components/visual-editor/editorMode';
+import { CREATE_RAIL, EDITOR_TOOLS, FONT_COMBOS, TEXT_STYLES, VIDEO_RAIL, matchTextStyle, panelForCreateTool } from '@/components/visual-editor/createRail';
 import { applyImageFilters, neutralImageAdjustments, type ImageAdjustments, type ImagePreset } from '@/components/visual-editor/imageAdjustments';
 import { StudioTimeline } from '@/components/visual-editor/StudioTimeline';
 import { AnimatePresets, AudioAddSheet, DurationPanel, ElementMenu, FadePanel, KeySlot, TrimPanel, VolumePanel } from '@/components/visual-editor/EditorSheets';
@@ -83,14 +84,13 @@ function selectionMediaUrl(selected: any): string | null {
 /* ---------- Constants ---------- */
 const LEFT_TABS = [
   { id: 'templates', label: 'Templates', icon: Layout },
-  { id: 'background', label: 'Background', icon: Palette },
-  { id: 'ai-studio', label: 'AI Studio', icon: Wand2 },
-  { id: 'text', label: 'Text', icon: Type },
   { id: 'elements', label: 'Elements', icon: Shapes },
-  { id: 'brand', label: 'Brand Kit', icon: Sparkles },
+  { id: 'text', label: 'Text', icon: Type },
+  { id: 'brand', label: 'Brand', icon: Sparkles },
   { id: 'uploads', label: 'Uploads', icon: Upload },
-  { id: 'media', label: 'Media', icon: ImageIcon },
-  { id: 'layers', label: 'Layers', icon: LayersIcon },
+  { id: 'tools', label: 'Tools', icon: Grid3x3 },
+  { id: 'projects', label: 'Projects', icon: FolderOpen },
+  { id: 'ai-studio', label: 'AI Studio', icon: Wand2 },
 ] as const;
 
 const TEMPLATE_CATEGORIES = ['All', 'Social Media', 'Ads', 'Stories', 'Video'];
@@ -185,53 +185,67 @@ const TopToolbar: React.FC<{
   saveStatus: string;
   returnToCreate?: boolean;
   onBack?: () => void;
-}> = ({ projectName, setProjectName, zoom, setZoom, onExport, onUndo, onRedo, canUndo, canRedo, onToggleLeft, onToggleRight, isMobile, showGrid, onToggleGrid, onFit, onPreview, onPublish, artboardLabel, onSave, saveStatus, returnToCreate = false, onBack }) => {
+  editorMode?: 'photo' | 'video';
+  preset?: string;
+  resizeOptions?: { id: string; label: string }[];
+  onResize?: (id: string) => void;
+  onNotes?: () => void;
+}> = ({ projectName, setProjectName, zoom, setZoom, onExport, onUndo, onRedo, canUndo, canRedo, onToggleLeft, onToggleRight, isMobile, showGrid, onToggleGrid, onFit, onPreview, onPublish, artboardLabel, onSave, saveStatus, returnToCreate = false, onBack, editorMode = 'photo', preset = 'instagramPortrait', resizeOptions = [], onResize, onNotes }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [editing, setEditing] = useState(false);
+  const [menu, setMenu] = useState<null | 'file' | 'resize' | 'more'>(null);
   const initial = (user?.email || user?.user_metadata?.name || '').trim().charAt(0).toUpperCase();
+  const closeMenu = () => setMenu(null);
 
   if (isMobile) {
     return (
-      <header className="flex h-12 shrink-0 items-center gap-0.5 border-b border-black/10 bg-white px-1.5 text-neutral-900">
-        <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0 text-neutral-900 hover:bg-black/5 hover:text-neutral-900" onClick={returnToCreate ? onBack : onToggleLeft} aria-label={returnToCreate ? 'Back to create ad' : 'Back to dashboard'}>
-          {returnToCreate ? <ChevronLeft className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+      <header className="relative flex h-12 shrink-0 items-center gap-0.5 border-b border-black/10 bg-white px-1 text-neutral-900">
+        <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0 text-neutral-900 hover:bg-black/5" onClick={returnToCreate && onBack ? onBack : () => navigate('/dashboard')} aria-label="Home">
+          <ChevronLeft className="h-5 w-5" />
         </Button>
-        <div className="min-w-0 flex-1 px-1">
-          {editing ? (
-            <Input autoFocus value={projectName} onChange={(e) => setProjectName(e.target.value)}
-              onBlur={() => setEditing(false)} onKeyDown={(e) => e.key === 'Enter' && setEditing(false)}
-              className="h-8 border-neutral-300 bg-white px-2 text-sm font-semibold text-neutral-900" />
-          ) : (
-            <button onClick={() => setEditing(true)} className="block w-full truncate text-left text-[15px] font-semibold leading-tight text-neutral-900">
-              {projectName || 'Untitled creative'}
-            </button>
-          )}
-        </div>
-        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-neutral-800 hover:bg-black/5 hover:text-neutral-900" onClick={onUndo} disabled={!canUndo} aria-label="Undo"><Undo2 className={`h-4 w-4 ${canUndo ? '' : 'opacity-30'}`} /></Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-neutral-800 hover:bg-black/5 hover:text-neutral-900" onClick={onRedo} disabled={!canRedo} aria-label="Redo"><Redo2 className={`h-4 w-4 ${canRedo ? '' : 'opacity-30'}`} /></Button>
-        {returnToCreate ? (
-          <Button size="sm" className="h-9 shrink-0 rounded-lg bg-primary px-3 text-primary-foreground hover:bg-primary/90" onClick={onSave}>
-            {saveStatus === 'Saving…' ? 'Saving…' : 'Done'}
-          </Button>
-        ) : (
-          <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-neutral-800 hover:bg-black/5 hover:text-neutral-900" onClick={onSave} aria-label="Save creative" title={saveStatus}><Check className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-neutral-800 hover:bg-black/5" onClick={onUndo} disabled={!canUndo} aria-label="Undo"><Undo2 className={`h-4 w-4 ${canUndo ? '' : 'opacity-30'}`} /></Button>
+        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-neutral-800 hover:bg-black/5" onClick={onRedo} disabled={!canRedo} aria-label="Redo"><Redo2 className={`h-4 w-4 ${canRedo ? '' : 'opacity-30'}`} /></Button>
+        <div className="min-w-0 flex-1" />
+        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-neutral-800 hover:bg-black/5" onClick={() => setMenu(menu === 'more' ? null : 'more')} aria-label="More" aria-expanded={menu === 'more'} title={saveStatus}><MoreHorizontal className="h-4 w-4" /></Button>
+        <Button size="sm" className="h-9 shrink-0 rounded-lg bg-primary px-3 text-primary-foreground hover:bg-primary/90" onClick={onExport}>Export</Button>
+        {menu === 'more' && (
+          <div className="absolute right-2 top-12 z-50 w-44 rounded-xl border border-black/10 bg-white p-1 text-left text-sm shadow-xl">
+            <button type="button" className="block w-full rounded-lg px-3 py-2 text-left hover:bg-black/5" onClick={() => { closeMenu(); onSave(); }}>Save ({saveStatus})</button>
+            <button type="button" className="block w-full rounded-lg px-3 py-2 text-left hover:bg-black/5" onClick={() => { closeMenu(); onPreview(); }}>Preview</button>
+            <button type="button" className="block w-full rounded-lg px-3 py-2 text-left hover:bg-black/5" onClick={() => { closeMenu(); onNotes?.(); }}>Notes</button>
+          </div>
         )}
-        <Button size="icon" className="ml-0.5 h-9 w-9 shrink-0 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90" onClick={onExport} aria-label="Download">
-          <Download className="h-4 w-4" />
-        </Button>
       </header>
     );
   }
 
   return (
     <header className="studio-command-bar flex h-[60px] shrink-0 items-center gap-2 px-2 shadow-lg sm:px-4">
-      <Button variant="ghost" size="icon" className="hidden h-9 w-9 text-inherit hover:bg-primary-foreground/10 hover:text-inherit md:inline-flex" onClick={() => (onBack ? onBack() : navigate('/dashboard'))} aria-label={returnToCreate ? 'Back to create ad' : 'Back to dashboard'}>
+      <Button variant="ghost" size="icon" className="hidden h-9 w-9 shrink-0 text-inherit hover:bg-primary-foreground/10 hover:text-inherit md:inline-flex" onClick={() => (onBack ? onBack() : navigate('/dashboard'))} aria-label={returnToCreate ? 'Back to create ad' : 'Home'}>
         <ChevronLeft className="h-4 w-4" />
       </Button>
+      <div className="relative hidden md:block">
+        <Button variant="ghost" size="sm" className="h-8 text-inherit hover:bg-primary-foreground/10" aria-expanded={menu === 'file'} onClick={() => setMenu(menu === 'file' ? null : 'file')}>File</Button>
+        {menu === 'file' && (
+          <div className="absolute left-0 top-10 z-50 w-44 rounded-xl border border-white/10 bg-[#1A1A1A] p-1 text-sm text-white shadow-xl">
+            <button type="button" className="block w-full rounded-lg px-3 py-2 text-left hover:bg-white/10" onClick={() => { closeMenu(); onSave(); }}>Save</button>
+            <button type="button" className="block w-full rounded-lg px-3 py-2 text-left hover:bg-white/10" onClick={() => { closeMenu(); onPreview(); }}>Preview</button>
+            <button type="button" className="block w-full rounded-lg px-3 py-2 text-left hover:bg-white/10" onClick={() => { closeMenu(); onExport(); }}>Export</button>
+          </div>
+        )}
+      </div>
+      <div className="relative hidden lg:block">
+        <Button variant="ghost" size="sm" className="h-8 text-inherit hover:bg-primary-foreground/10" aria-expanded={menu === 'resize'} onClick={() => setMenu(menu === 'resize' ? null : 'resize')}>Resize</Button>
+        {menu === 'resize' && (
+          <div className="absolute left-0 top-10 z-50 max-h-72 w-64 overflow-y-auto rounded-xl border border-white/10 bg-[#1A1A1A] p-1 text-sm text-white shadow-xl">
+            {resizeOptions.map((option) => (
+              <button key={option.id} type="button" className={`block w-full rounded-lg px-3 py-2 text-left hover:bg-white/10 ${option.id === preset ? 'text-[#C8BEFF]' : ''}`} onClick={() => { closeMenu(); onResize?.(option.id); }}>{option.label}</button>
+            ))}
+          </div>
+        )}
+      </div>
       <div className="flex min-w-0 items-center gap-2">
-        <span className="editor-heading hidden text-lg font-semibold lg:inline">AdVista Studio</span>
-        <span className="hidden h-5 w-px bg-primary-foreground/30 lg:block" />
         {editing ? (
           <Input
             autoFocus
@@ -250,7 +264,10 @@ const TopToolbar: React.FC<{
             <Edit3 className="h-3.5 w-3.5 opacity-0 group-hover:opacity-80" />
           </button>
         )}
-        <span className="hidden text-[11px] text-primary-foreground/70 xl:inline">{artboardLabel}</span>
+        <span className="hidden max-w-[12rem] truncate text-[11px] text-primary-foreground/70 xl:inline">{artboardLabel}</span>
+        <button type="button" data-testid="editor-mode" onClick={() => toast({ title: editorMode === 'photo' ? 'Photo design' : 'Video design', description: editorMode === 'photo' ? 'The timeline stays hidden. Apply a video template or add a video and this design switches to video.' : 'Remove every video from the canvas to return to a photo design.' })} className="hidden h-8 shrink-0 items-center whitespace-nowrap rounded-lg px-2 text-xs font-semibold text-inherit hover:bg-primary-foreground/10 lg:inline-flex">
+          {editorMode === 'photo' ? 'Photo' : 'Video'}
+        </button>
       </div>
 
       <Button variant="ghost" size="sm" onClick={onSave} className="hidden gap-1 text-inherit sm:inline-flex" aria-label={returnToCreate ? 'Save and continue' : 'Save creative'}><Check className="h-3 w-3" />{returnToCreate ? (saveStatus === 'Saving…' ? 'Saving…' : 'Save & continue') : saveStatus}</Button>
@@ -261,19 +278,6 @@ const TopToolbar: React.FC<{
       </div>
 
       <div className="flex-1" />
-
-      <div className="hidden items-center gap-1 rounded-lg border border-primary-foreground/20 bg-primary-foreground/10 px-1 py-1 md:flex">
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoom(Math.max(25, zoom - 10))}>
-          <Minus className="h-3.5 w-3.5" />
-        </Button>
-        <span className="min-w-[42px] text-center text-xs font-medium">{zoom}%</span>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoom(Math.min(400, zoom + 10))}>
-          <Plus className="h-3.5 w-3.5" />
-        </Button>
-      </div>
-
-      <Button variant="ghost" size="icon" className="hidden h-9 w-9 text-inherit hover:bg-primary-foreground/10 hover:text-inherit lg:inline-flex" title="Grid" onClick={onToggleGrid}><Grid3x3 className="h-4 w-4" /></Button>
-      <Button variant="ghost" size="icon" className="hidden h-9 w-9 text-inherit hover:bg-primary-foreground/10 hover:text-inherit lg:inline-flex" title="Fit to screen" onClick={onFit}><Maximize2 className="h-4 w-4" /></Button>
 
       <AIQuickActionsMenu />
       <Button variant="ghost" size="sm" className="hidden h-9 gap-1.5 text-inherit hover:bg-primary-foreground/10 hover:text-inherit sm:inline-flex" onClick={onPreview}>
@@ -1319,6 +1323,7 @@ const CREATE_TOOL_ICONS = {
   brand: Sparkles,
   uploads: Upload,
   tools: Grid3x3,
+  projects: FolderOpen,
   background: Palette,
   'studio-slot': Wand2,
   'ai-voice': Mic,
@@ -1326,6 +1331,12 @@ const CREATE_TOOL_ICONS = {
 } as const;
 
 const CREATE_TOOLS: ToolItem[] = CREATE_RAIL.map((tool) => ({
+  id: tool.id,
+  label: tool.label,
+  icon: CREATE_TOOL_ICONS[tool.id],
+}));
+
+const VIDEO_TOOLS: ToolItem[] = VIDEO_RAIL.map((tool) => ({
   id: tool.id,
   label: tool.label,
   icon: CREATE_TOOL_ICONS[tool.id],
@@ -1743,6 +1754,22 @@ const OpacityToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }>
   );
 };
 
+const CaseToolPanel: React.FC<{ selected: any; canvas: FabricCanvas | null }> = ({ selected, canvas }) => {
+  const apply = (next: string) => {
+    if (!selected || !canvas) return;
+    selected.set('text', next);
+    canvas.requestRenderAll();
+  };
+  const text = String(selected?.text ?? '');
+  return (
+    <div className="grid grid-cols-1 gap-2">
+      <Button variant="outline" onClick={() => apply(text.toUpperCase())}>UPPERCASE</Button>
+      <Button variant="outline" onClick={() => apply(text.toLowerCase())}>lowercase</Button>
+      <Button variant="outline" onClick={() => apply(text.replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()))}>Title Case</Button>
+    </div>
+  );
+};
+
 const UnavailableTool = ({ title, detail }: { title: string; detail: string }) => (
   <div className="rounded-xl border border-dashed p-4">
     <p className="text-sm font-medium">{title}</p>
@@ -1922,6 +1949,11 @@ const renderToolSheet = (toolId: string, selected: any, canvas: FabricCanvas | n
     case 'position': return <PositionToolPanel {...props} />;
     case 'spacing': return <SpacingToolPanel {...props} />;
     case 'edit-text': return <TextEditToolPanel {...props} />;
+    case 'edit-image': return <ImageFilterToolPanel {...props} mode="adjust" />;
+    case 'case': return <CaseToolPanel {...props} />;
+    case 'eraser':
+      return <KeySlot title="Eraser" detail="Erasing part of a picture needs a mask tool. This button does not paint over the image or pretend that it did." />;
+    case 'line-style': return <StrokeToolPanel {...props} />;
     case 'text-style': return <TextStyleToolPanel {...props} />;
     case 'font-size': return <FontSizeToolPanel {...props} />;
     case 'opacity': return <OpacityToolPanel {...props} />;
@@ -2019,9 +2051,9 @@ const MobileBottomSheet: React.FC<{
       className={cn(
         'studio-panel flex flex-col overflow-hidden border-t shadow-[var(--shadow-studio-tray)] transition-[height,flex-grow] duration-300 ease-out',
         !open && 'h-0 flex-none border-transparent',
-        open && !overlay && 'relative min-h-0 flex-1 rounded-t-2xl',
+        open && !overlay && 'relative h-[60vh] max-h-[60vh] shrink-0 rounded-t-2xl',
         // Expanded: cover more of the stage without shrinking the artboard further
-        open && overlay && 'absolute inset-x-0 bottom-0 top-[8%] z-50 min-h-0 rounded-t-2xl',
+        open && overlay && 'absolute inset-x-0 bottom-0 top-0 z-50 min-h-0',
       )}
       onTouchStart={open ? handleTouchStart : undefined}
       onTouchEnd={open ? handleTouchEnd : undefined}
@@ -2474,6 +2506,18 @@ const EditorInner: React.FC = () => {
   const styleSource = useRef<any>(null);
   const styleArmed = useRef(false);
   const [timelineOpen, setTimelineOpen] = useState(true);
+  const [videoIntent, setVideoIntent] = useState(false);
+  const sawVideo = useRef(false);
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [note, setNote] = useState(() => {
+    try { return localStorage.getItem('advista.editor.note') || ''; } catch { return ''; }
+  });
+  const [timerOn, setTimerOn] = useState(false);
+  const [timerSeconds, setTimerSeconds] = useState(0);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [pageMenu, setPageMenu] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [toolbarPos, setToolbarPos] = useState<{ left: number; top: number } | null>(null);
   const [canvasWrapperEl, setCanvasWrapperEl] = useState<HTMLDivElement | null>(null);
   const [showGrid, setShowGrid] = useState(false);
@@ -2515,6 +2559,19 @@ const EditorInner: React.FC = () => {
   }, [isMobile, searchParams]);
   const { videoUrl } = useVisualEditor();
   const isVideo = !!videoUrl;
+  const hasVideo = canvas ? designHasVideo((canvas.getObjects?.() ?? []) as any[]) : false;
+  const editorMode = hasVideo || videoIntent ? 'video' : 'photo';
+  const railTools = editorMode === 'video' ? [...CREATE_TOOLS, ...VIDEO_TOOLS] : CREATE_TOOLS;
+  useEffect(() => {
+    const next = resolveEditorMode(hasVideo, videoIntent, sawVideo.current);
+    sawVideo.current = next.sawVideo;
+    if (next.openedAsVideo !== videoIntent) setVideoIntent(next.openedAsVideo);
+  }, [hasVideo, videoIntent]);
+  useEffect(() => {
+    if (!timerOn) return undefined;
+    const id = window.setInterval(() => setTimerSeconds((value) => value + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [timerOn]);
 
   // A video frame gets the same treatment as a template: the artboard adopts the
   // clip's own aspect ratio so the fit path centres it without cropping.
@@ -2983,6 +3040,11 @@ const EditorInner: React.FC = () => {
 
         canvas.discardActiveObject();
         canvas.requestRenderAll();
+        const openedAsVideo = templateIsVideo(template) || designHasVideo(canvas.getObjects() as any[]);
+        sawVideo.current = designHasVideo(canvas.getObjects() as any[]);
+        setVideoIntent(openedAsVideo);
+        setSheetExpanded(false);
+        setSheetFull(false);
         saveSnapshot(canvas);
         setProjectName(template.name);
         forceUpdate((n) => n + 1);
@@ -3363,9 +3425,11 @@ const EditorInner: React.FC = () => {
 
     const screenX = wrapperRect.left + objCenterX * scale;
     const screenY = wrapperRect.top + objTop * scale;
+    const half = 118;
+    const rawLeft = screenX - containerRect.left;
 
     setToolbarPos({
-      left: screenX - containerRect.left,
+      left: Math.min(Math.max(half, rawLeft), Math.max(half, containerRect.width - half)),
       top: Math.max(8, screenY - containerRect.top - 48),
     });
   }, [selected, canvasWrapperEl, canvas, zoom]);
@@ -3376,6 +3440,7 @@ const EditorInner: React.FC = () => {
   }, [activeTab]);
 
   const selectTab = useCallback((id: string) => {
+    setPanelCollapsed(false);
     if (id === 'ai-studio') {
       setDockOpen(true);
       setActiveTool(null);
@@ -3442,6 +3507,19 @@ const EditorInner: React.FC = () => {
     forceUpdate((n) => n + 1);
   }, [canvas, pageIdx]);
 
+  const duplicatePage = useCallback(() => {
+    if (!canvas) return;
+    const snapshot = (canvas as any).toJSON(SERIALIZED_CANVAS_PROPS);
+    setPages((prev) => {
+      const next = [...prev];
+      next[pageIdx] = snapshot;
+      next.splice(pageIdx + 1, 0, snapshot);
+      setPageIdx(pageIdx + 1);
+      return next;
+    });
+    toast({ title: 'Page duplicated', description: 'The copy is the page you are on now.' });
+  }, [canvas, pageIdx]);
+
   const goToPage = useCallback(async (idx: number) => {
     if (!canvas || idx === pageIdx) return;
     const snapshot = (canvas as any).toJSON(SERIALIZED_CANVAS_PROPS);
@@ -3498,6 +3576,8 @@ const EditorInner: React.FC = () => {
           canvas={canvas}
           platform={(effectiveContext as any)?.active_platform ?? null}
           onUse={(t: StudioTemplate) => loadTemplateRecord(t)}
+          formatLabel={preset === 'instagramPortrait' ? 'Instagram Post (4:5)' : artboard.label.split('·')[0].trim()}
+          onSearchFocus={(focused) => { if (isMobile && focused) setSheetFull(true); }}
           onChanged={() => forceUpdate((n) => n + 1)}
           onAttach={() => { setActiveTab('uploads'); setSheetExpanded(true); }}
           onWriteCopy={(text) => addText(text, 28, '600')}
@@ -3562,7 +3642,15 @@ const EditorInner: React.FC = () => {
         onZoomChange={setZoom}
         seedDefault={!hasPending}
         onCanvasReady={(c) => { setCanvas(c); setCanvasReady(true); }}
-        onSelection={(o) => { setSelected(o); forceUpdate((n) => n + 1); }}
+        onSelection={(o) => {
+          setSelected(o);
+          forceUpdate((n) => n + 1);
+          if (isMobile) {
+            setSheetExpanded(false);
+            setSheetFull(false);
+            setActiveTool(null);
+          }
+        }}
         onCanvasWrapperRef={(el) => setCanvasWrapperEl(el)}
         isMobile={isMobile}
         artboard={artboard}
@@ -3612,32 +3700,28 @@ const EditorInner: React.FC = () => {
       {selected && toolbarPos && (
         <div className="absolute z-30 pointer-events-auto animate-in fade-in"
           style={{ left: toolbarPos.left, top: toolbarPos.top, transform: 'translateX(-50%)' }}>
-          <div className="flex items-center gap-0.5 px-2 py-1.5 rounded-full shadow-lg" style={{ backgroundColor: '#2D2D2D', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
-            <button title="AI suggestions for this layer"
-              onClick={() => { setDockOpen(true); if (isMobile) { setActiveTab('studio-slot'); setSheetExpanded(true); } }}
-              className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-white/10 text-white">
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
-              <span className="text-xs font-semibold">AI</span>
-            </button>
-            <div className="w-px h-4 mx-0.5" style={{ backgroundColor: '#444444' }} />
-            <button title="Edit layer"
-              onClick={() => {
-                if (selectionType === 'text') { canvas?.setActiveObject(selected); (selected as any).enterEditing?.(); canvas?.requestRenderAll(); }
-                else if (selectionType === 'image') { setActiveTab('media'); setSheetExpanded(true); }
-                else { setActiveTab('elements'); setSheetExpanded(true); }
-              }}
-              className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Edit3 className="h-3.5 w-3.5" /></button>
-            <button title="Duplicate" onClick={duplicateSelected}
-              className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Copy className="h-3.5 w-3.5" /></button>
-            <button title="Delete" onClick={deleteSelected}
-              className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><Trash2 className="h-3.5 w-3.5" /></button>
-            <button title={isLocked(selected) ? 'Unlock layer' : 'Lock layer'}
+          <div className="relative flex items-center gap-0.5 rounded-full px-1.5 py-1 shadow-lg" style={{ backgroundColor: '#2D2D2D', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
+            <button type="button" aria-label="Comment" title="Add a note on this design" onClick={() => setNoteOpen(true)} className="flex h-7 w-7 items-center justify-center rounded-md text-white hover:bg-white/10"><MessageSquare className="h-3.5 w-3.5" /></button>
+            <button type="button" aria-label={isLocked(selected) ? 'Unlock' : 'Lock'} title={isLocked(selected) ? 'Unlock layer' : 'Lock layer'}
               onClick={() => { setLocked(canvas, selected, !isLocked(selected)); markChanged(); }}
-              className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white">
+              className="flex h-7 w-7 items-center justify-center rounded-md text-white hover:bg-white/10">
               {isLocked(selected) ? <Lock className="h-3.5 w-3.5 text-amber-400" /> : <Unlock className="h-3.5 w-3.5" />}
             </button>
-            <button title="Bring forward" onClick={() => { moveLayer(canvas, selected, 'up'); markChanged(); }}
-              className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-white/10 text-white"><MoveUp className="h-3.5 w-3.5" /></button>
+            <button type="button" aria-label="Duplicate" title="Duplicate" onClick={duplicateSelected} className="flex h-7 w-7 items-center justify-center rounded-md text-white hover:bg-white/10"><Copy className="h-3.5 w-3.5" /></button>
+            <button type="button" aria-label="Delete" title="Delete" onClick={deleteSelected} className="flex h-7 w-7 items-center justify-center rounded-md text-white hover:bg-white/10"><Trash2 className="h-3.5 w-3.5" /></button>
+            <button type="button" aria-label="More layer actions" title="More" aria-expanded={moreOpen} onClick={() => setMoreOpen((open) => !open)} className="flex h-7 w-7 items-center justify-center rounded-md text-white hover:bg-white/10"><MoreHorizontal className="h-3.5 w-3.5" /></button>
+            {moreOpen && (
+              <div className="absolute right-0 top-10 z-40 w-40 rounded-xl border border-white/10 bg-[#1A1A1A] p-1 text-left text-xs text-white shadow-xl">
+                <button type="button" className="block w-full rounded-lg px-3 py-2 text-left hover:bg-white/10" onClick={() => { setMoreOpen(false); setDockOpen(true); if (isMobile) { setActiveTab('studio-slot'); setSheetExpanded(true); } }}>AI suggestions</button>
+                <button type="button" className="block w-full rounded-lg px-3 py-2 text-left hover:bg-white/10" onClick={() => {
+                  setMoreOpen(false);
+                  if (selectionType === 'text') { canvas?.setActiveObject(selected); (selected as any).enterEditing?.(); canvas?.requestRenderAll(); }
+                  else openSelectionTool(selectionType === 'image' ? 'edit-image' : 'fill');
+                }}>Edit</button>
+                <button type="button" className="block w-full rounded-lg px-3 py-2 text-left hover:bg-white/10" onClick={() => { setMoreOpen(false); moveLayer(canvas, selected, 'up'); markChanged(); }}>Bring forward</button>
+                <button type="button" className="block w-full rounded-lg px-3 py-2 text-left hover:bg-white/10" onClick={() => { setMoreOpen(false); moveLayer(canvas, selected, 'down'); markChanged(); }}>Send backward</button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -3656,10 +3740,28 @@ const EditorInner: React.FC = () => {
             {i + 1}
           </button>
         ))}
-        <button onClick={addPage} className="flex items-center gap-2 h-9 rounded-full px-4 text-xs" style={{ backgroundColor: '#2D2D2D', border: '1px solid #444444', color: '#CCCCCC' }}>
-          <Plus className="h-3.5 w-3.5" /> Add page
-        </button>
+        <div className="relative flex items-center">
+          <button onClick={addPage} className="flex h-9 items-center gap-2 rounded-l-full px-4 text-xs" style={{ backgroundColor: '#2D2D2D', border: '1px solid #444444', color: '#CCCCCC' }}>
+            <Plus className="h-3.5 w-3.5" /> Add page
+          </button>
+          <button type="button" aria-label="Page options" aria-expanded={pageMenu} onClick={() => setPageMenu((open) => !open)} className="flex h-9 items-center rounded-r-full border-y border-r px-2" style={{ backgroundColor: '#2D2D2D', borderColor: '#444444', color: '#CCCCCC' }}>
+            <ChevronDown className="h-3.5 w-3.5" />
+          </button>
+          {pageMenu && (
+            <div className="absolute bottom-11 left-0 z-40 w-44 rounded-xl border border-white/10 bg-[#1A1A1A] p-1 text-xs text-white shadow-xl">
+              <button type="button" className="block w-full rounded-lg px-3 py-2 text-left hover:bg-white/10" onClick={() => { setPageMenu(false); addPage(); }}>Blank page</button>
+              <button type="button" className="block w-full rounded-lg px-3 py-2 text-left hover:bg-white/10" onClick={() => { setPageMenu(false); duplicatePage(); }}>Duplicate this page</button>
+            </div>
+          )}
+        </div>
       </div>
+      )}
+      {noteOpen && (
+        <div className="absolute bottom-16 left-3 z-40 w-64 max-w-[calc(100%-1.5rem)] rounded-xl border border-[#3D3D3D] bg-[#1A1A1A] p-3 shadow-xl">
+          <p className="mb-2 text-xs font-semibold text-white">Notes</p>
+          <textarea aria-label="Design notes" value={note} onChange={(event) => { setNote(event.target.value); try { localStorage.setItem('advista.editor.note', event.target.value); } catch { /* ignore */ } }} className="h-24 w-full resize-none rounded-lg bg-[#2D2D2D] p-2 text-xs text-white outline-none" placeholder="A note for this design" />
+          <button type="button" className="mt-2 text-xs text-[#C8BEFF]" onClick={() => setNoteOpen(false)}>Close</button>
+        </div>
       )}
     </>
   );
@@ -3719,24 +3821,33 @@ const EditorInner: React.FC = () => {
           returnToCreate={returnToCreateAd}
           onBack={returnToCreateAd ? () => void backToCreateAd() : undefined}
           saveStatus={saveStatus}
+          editorMode={editorMode}
+          preset={preset}
+          resizeOptions={[
+            ...(customArtboard ? [{ id: 'custom', label: customArtboard.label }] : []),
+            ...Object.entries(ARTBOARD_PRESETS).map(([id, value]) => ({ id, label: value.label })),
+          ]}
+          onResize={changeArtboardPreset}
+          onNotes={() => setNoteOpen(true)}
           artboardLabel={`${artboard.label} · ${artboard.width}×${artboard.height} px`}
         />
       </div>
 
       {loadError && <div role="alert" className="border-b border-destructive bg-card p-3 text-destructive">{loadError}<Button variant="outline" className="ml-3" onClick={() => window.location.reload()}>Retry</Button></div>}
-      {/* Desktop only: Editor Second Bar */}
-      <div className="editor-second-bar flex-shrink-0">
-        <CanvasSubToolbar
-          canvas={canvas}
-          selected={selected}
-          onChanged={markChanged}
-          preset={preset}
-          onPresetChange={changeArtboardPreset}
-          customArtboard={customArtboard}
-          onOpenAnimate={() => { setActiveTab('ai-studio'); setActiveTool('animate'); }}
-          onOpenPosition={() => { setActiveTab('layers'); setActiveTool('position'); }}
-        />
-      </div>
+      {selected && (
+        <div data-testid="context-toolbar" className="z-20 hidden h-11 shrink-0 items-center gap-1 overflow-x-auto border-b border-[#2A2A2A] bg-[#161616] px-2 md:flex [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {currentTools.map((tool) => {
+            const Icon = tool.icon;
+            const on = activeTool === tool.id;
+            return (
+              <button key={tool.id} type="button" onClick={() => openSelectionTool(tool.id)} className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium ${on ? 'bg-white text-neutral-900' : 'text-white hover:bg-white/10'}`}>
+                <Icon className="h-3.5 w-3.5" />
+                {tool.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Mobile layout: artboard shrinks when the sheet opens (half / nearly full) */}
       {isMobile ? (
@@ -3746,14 +3857,13 @@ const EditorInner: React.FC = () => {
               className={cn(
                 'editor-canvas-area relative min-w-0 overflow-hidden transition-[height] duration-300 ease-out',
                 // Half-open (and expanded): artboard keeps the same shrunk height — expand overlays instead of shrinking further
-                sheetExpanded
-                  ? 'flex h-[min(46vh,420px)] w-full shrink-0 flex-col'
-                  : 'flex min-h-0 w-full flex-1 flex-col',
+                'flex min-h-0 w-full flex-1 flex-col',
               )}
             >
               {renderCanvas()}
             </div>
 
+            {editorMode === 'video' && (
             <StudioTimeline
               canvas={canvas}
               version={tick}
@@ -3767,6 +3877,7 @@ const EditorInner: React.FC = () => {
               exporting={exporting}
               onTime={(time) => { playheadRef.current = time; }}
             />
+            )}
 
             <MobileBottomSheet
               open={sheetExpanded}
@@ -3787,7 +3898,7 @@ const EditorInner: React.FC = () => {
             <SelectionBar tools={currentTools} active={activeTool} onTool={openSelectionTool} onDone={clearSelection} variant="dock" />
           ) : (
           <ContextualToolbar
-            tools={CREATE_TOOLS}
+            tools={railTools}
             active={dockOpen ? 'studio-slot' : activeTool ? null : activeTab}
             onToolTap={openCreateTool}
           />
@@ -3801,7 +3912,10 @@ const EditorInner: React.FC = () => {
             {/* Left: Icon Rail + Panel */}
             <div className="editor-left-panel flex h-full overflow-hidden">
               <IconRail active={activeTab} onChange={selectTab} />
-              <div className="editor-panel-content studio-panel hidden h-full w-[280px] shrink-0 flex-col overflow-hidden border-r md:flex">
+              <div className={`editor-panel-content studio-panel relative hidden h-full w-[300px] shrink-0 flex-col overflow-hidden border-r md:flex ${panelCollapsed ? '!hidden' : ''}`}>
+                <button type="button" onClick={() => setPanelCollapsed(true)} aria-label="Collapse panel" className="absolute right-2 top-3 z-10 grid h-7 w-7 place-items-center rounded-full bg-[#2D2D2D] text-white hover:bg-[#3D3D3D]">
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
                 <div key={activeTool || activeTab} className="flex h-full min-h-0 flex-col">
                   {activeTool && selected ? (
                     <div className="flex h-full min-h-0 flex-col">
@@ -3822,7 +3936,33 @@ const EditorInner: React.FC = () => {
 
             {/* Canvas Area */}
             <div className="editor-canvas-area relative flex flex-1 min-w-0 flex-col overflow-hidden">
+              {panelCollapsed && (
+                <button type="button" onClick={() => setPanelCollapsed(false)} aria-label="Expand panel" className="absolute left-3 top-3 z-20 grid h-8 w-8 place-items-center rounded-full bg-[#2D2D2D] text-white">
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              )}
               {renderCanvas()}
+              <div className="flex h-11 shrink-0 items-center gap-2 overflow-x-auto border-t border-[#2A2A2A] bg-[#121212] px-3 text-[11px] text-[#CCCCCC] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <button type="button" className="shrink-0 rounded-md px-2 py-1 hover:bg-white/10" onClick={() => setNoteOpen((open) => !open)}>Notes</button>
+                <button type="button" className="shrink-0 rounded-md px-2 py-1 hover:bg-white/10" onClick={() => setTimerOn((on) => !on)}>{timerOn ? 'Stop timer' : 'Timer'} {`${Math.floor(timerSeconds / 60)}:${String(timerSeconds % 60).padStart(2, '0')}`}</button>
+                <label className="flex shrink-0 items-center gap-2">
+                  <span className="sr-only">Zoom</span>
+                  <input aria-label="Zoom" type="range" min={25} max={200} value={Math.min(200, Math.max(25, zoom))} onChange={(event) => setZoom(Number(event.target.value))} className="w-24" />
+                  <span className="w-10 tabular-nums">{zoom}%</span>
+                </label>
+                <span className="shrink-0">Pages {pageIdx + 1}/{Math.max(pages.length, 1)}</span>
+                <button type="button" className="shrink-0 rounded-md px-2 py-1 hover:bg-white/10" onClick={() => setShowGrid((value) => !value)}>{showGrid ? 'Hide grid' : 'Grid'}</button>
+                <button type="button" className="shrink-0 rounded-md px-2 py-1 hover:bg-white/10" onClick={() => setFitToken((value) => value + 1)}>Fit</button>
+                <button type="button" className="shrink-0 rounded-md px-2 py-1 hover:bg-white/10" onClick={() => { if (!document.fullscreenElement) void document.documentElement.requestFullscreen?.(); else void document.exitFullscreen?.(); }}>Fullscreen</button>
+                <button type="button" className="shrink-0 rounded-md px-2 py-1 hover:bg-white/10" onClick={() => setHelpOpen(true)}>Help</button>
+              </div>
+              {helpOpen && (
+                <div className="absolute bottom-14 right-3 z-30 w-72 rounded-xl border border-[#3D3D3D] bg-[#1A1A1A] p-3 text-xs leading-relaxed text-[#DDDDDD] shadow-xl">
+                  <p className="font-semibold text-white">Photo design</p>
+                  <p className="mt-1">This opens as a still. The timeline appears when you apply a video template or add a video. Remove every video and it returns to a photo.</p>
+                  <button type="button" className="mt-2 text-[#C8BEFF]" onClick={() => setHelpOpen(false)}>Close</button>
+                </div>
+              )}
             </div>
 
             {/* Desktop right panel — opened from the top bar */}
@@ -3837,6 +3977,7 @@ const EditorInner: React.FC = () => {
             )}
           </div>
 
+          {editorMode === 'video' && (
           <StudioTimeline
             canvas={canvas}
             version={tick}
@@ -3850,10 +3991,6 @@ const EditorInner: React.FC = () => {
             exporting={exporting}
             onTime={(time) => { playheadRef.current = time; }}
           />
-          {selected && currentTools !== CREATE_TOOLS ? (
-            <SelectionBar tools={currentTools} active={activeTool} onTool={openSelectionTool} onDone={clearSelection} variant="dock" />
-          ) : (
-            <ContextualToolbar tools={CREATE_TOOLS} active={dockOpen ? 'studio-slot' : activeTool ? null : activeTab} onToolTap={openCreateTool} />
           )}
         </>
       )}

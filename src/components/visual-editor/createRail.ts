@@ -5,8 +5,14 @@ export const CREATE_RAIL = [
   { id: 'text', label: 'Text' },
   { id: 'uploads', label: 'Uploads' },
   { id: 'brand', label: 'Brand' },
+  { id: 'tools', label: 'Tools' },
+  { id: 'projects', label: 'Projects' },
   { id: 'background', label: 'Background' },
   { id: 'studio-slot', label: 'AI Studio' },
+] as const;
+
+/** Shown on the mobile rail only while the design is a video. */
+export const VIDEO_RAIL = [
   { id: 'ai-voice', label: 'AI Voice' },
   { id: 'captions', label: 'Captions' },
 ] as const;

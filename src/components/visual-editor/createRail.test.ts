@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   CREATE_RAIL,
+  VIDEO_RAIL,
   EDITOR_TOOLS,
   ELEMENT_CATEGORIES,
   ELEMENT_LABELS,
@@ -18,11 +19,12 @@ describe('create rail', () => {
       'Text',
       'Uploads',
       'Brand',
+      'Tools',
+      'Projects',
       'Background',
       'AI Studio',
-      'AI Voice',
-      'Captions',
     ]);
+    expect(VIDEO_RAIL.map((tool) => tool.label)).toEqual(['AI Voice', 'Captions']);
   });
 
   it('routes camera roll into uploads and keeps the other tools on their own panels', () => {
