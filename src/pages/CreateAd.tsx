@@ -193,7 +193,7 @@ export default function CreateAd() {
   const existingCreativeRef = useRef<Record<string, any>>({});
   const hasCanvasRef = useRef(false);
   const saveInFlight = useRef<Promise<string | null> | null>(null);
-  const [restoring, setRestoring] = useState(searchParams.has('campaignId'));
+  const [restoring, setRestoring] = useState(searchParams.has('campaignId') || searchParams.has('adId'));
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
@@ -229,13 +229,30 @@ export default function CreateAd() {
 
   useEffect(() => {
     const id = searchParams.get('campaignId');
-    if (!id || !user) return;
+    const attachedAdId = searchParams.get('adId');
+    if ((!id && !attachedAdId) || !user) return;
     let cancelled = false;
     (async () => {
       try {
+        if (!id && attachedAdId) {
+          const creative = await CreativeService.get(user.id, attachedAdId);
+          if (cancelled || !creative) return;
+          const content = (creative.content ?? {}) as Partial<FormValues> & { templateName?: string };
+          existingCreativeRef.current = content;
+          hasCanvasRef.current = !!creative.canvas_data;
+          setCreativeId(creative.id);
+          creativeIdRef.current = creative.id;
+          setDesignName(creative.name || (typeof content.templateName === 'string' ? content.templateName : 'Attached design'));
+          if (creative.preview_url || content.mediaUrl) {
+            reset({ ...values, mediaUrl: creative.preview_url ?? content.mediaUrl ?? '' });
+          }
+          setStep((current) => (current < 2 ? 2 : current));
+          setRestoring(false);
+          return;
+        }
         const [{ data: campaign, error }, creatives] = await Promise.all([
-          supabase.from('campaigns').select('*').eq('id', id).eq('user_id', user.id).single(),
-          CreativeService.list(user.id, id),
+          supabase.from('campaigns').select('*').eq('id', id!).eq('user_id', user.id).single(),
+          CreativeService.list(user.id, id!),
         ]);
         if (error) throw error;
         if (cancelled || !campaign) return;
@@ -243,7 +260,9 @@ export default function CreateAd() {
           navigate(`/campaigns/${id}`, { replace: true });
           return;
         }
-        const creative = creatives[0];
+        const creative = attachedAdId
+          ? creatives.find((item) => item.id === attachedAdId) ?? await CreativeService.get(user.id, attachedAdId)
+          : creatives[0];
         const content = (creative?.content ?? {}) as Partial<FormValues> & { templateName?: string };
         const copy = content;
         existingCreativeRef.current = copy;
@@ -260,7 +279,7 @@ export default function CreateAd() {
         });
         setCreativeId(creative?.id ?? null);
         creativeIdRef.current = creative?.id ?? null;
-        setDesignName(typeof content.templateName === 'string' ? content.templateName : null);
+        setDesignName(typeof content.templateName === 'string' ? content.templateName : creative?.name ?? null);
         const savedInterests = typeof audience?.interests === 'string' ? audience.interests : '';
         setInterests(savedInterests.split(',').map((item) => item.trim()).filter(Boolean));
       } catch (error) {

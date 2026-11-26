@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Database, Json } from '@/integrations/supabase/types';
+import { asDesignContent, type DesignStatus, type DesignType } from '@/lib/designHome';
 
 export type Creative = Database['public']['Tables']['ads']['Row'];
 type CreativeInput = Database['public']['Tables']['ads']['Insert'];
@@ -25,8 +26,59 @@ export const CreativeService = {
     if (error) throw error;
     return data;
   },
+  async rename(userId: string, id: string, name: string) {
+    const trimmed = name.trim() || 'Untitled design';
+    const { data, error } = await supabase
+      .from('ads')
+      .update({ name: trimmed })
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+  async remove(userId: string, id: string) {
+    const { error } = await supabase.from('ads').delete().eq('id', id).eq('user_id', userId);
+    if (error) throw error;
+  },
+  async duplicate(userId: string, id: string) {
+    const source = await this.get(userId, id);
+    const content = asDesignContent(source.content);
+    const { data, error } = await supabase
+      .from('ads')
+      .insert({
+        user_id: userId,
+        campaign_id: source.campaign_id,
+        template_id: source.template_id,
+        name: `${source.name || 'Untitled design'} (Copy)`,
+        status: 'draft',
+        content: { ...content, designStatus: 'draft' } as Json,
+        canvas_data: source.canvas_data,
+        preview_url: source.preview_url,
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
 };
 
 export function creativeDocument(json: Record<string, unknown>, width: number, height: number, pages: unknown[] = []): Json {
   return JSON.parse(JSON.stringify({ ...json, width, height, pages })) as Json;
+}
+
+export function withDesignMeta(
+  content: Record<string, unknown>,
+  meta: { designType: DesignType; designStatus?: DesignStatus; durationSec?: number | null },
+): Json {
+  const next: Record<string, unknown> = {
+    ...content,
+    designType: meta.designType,
+    designStatus: meta.designStatus ?? (asDesignContent(content).designStatus || 'draft'),
+  };
+  if (meta.durationSec != null && Number.isFinite(meta.durationSec)) {
+    next.durationSec = meta.durationSec;
+  }
+  return JSON.parse(JSON.stringify(next)) as Json;
 }

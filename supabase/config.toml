@@ -51,6 +51,9 @@ verify_jwt = true
 [functions.enhance-prompt]
 verify_jwt = true
 
+[functions.analyze-ad-link]
+verify_jwt = true
+
 [functions.save-generated-ad]
 verify_jwt = true
 

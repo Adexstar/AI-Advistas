@@ -282,7 +282,7 @@ export const AdVideoFlow: React.FC<{
   );
 };
 
-function sequenceFor(plan: AdPlan, videos: Record<string, string>): DirectorSequence {
+export function sequenceFor(plan: AdPlan, videos: Record<string, string>): DirectorSequence {
   let start = 0;
   const sequence: DirectorSequence = { videos: [], stills: [], titles: [] };
   const film = videos[plan.shots[0]?.id || 'film'];
@@ -298,14 +298,14 @@ function sequenceFor(plan: AdPlan, videos: Record<string, string>): DirectorSequ
   return sequence;
 }
 
-function outputSize(aspect: AdAspect, resolution: AdPlan['resolution']) {
+export function outputSize(aspect: AdAspect, resolution: AdPlan['resolution']) {
   const edge = resolution === '720p' ? 720 : 1080;
   if (aspect === '1:1') return { width: edge, height: edge };
   if (aspect === '16:9') return { width: edge, height: Math.round((edge * 9) / 16) };
   return { width: Math.round((edge * 9) / 16), height: edge };
 }
 
-async function renderClip(prompt: string, duration: number, firstFrame: string, lastFrame: string, audio: boolean, size: { width: number; height: number }): Promise<string> {
+export async function renderClip(prompt: string, duration: number, firstFrame: string, lastFrame: string, audio: boolean, size: { width: number; height: number }): Promise<string> {
   const { data, error } = await supabase.functions.invoke('generate-ad-video', {
     body: { prompt, product: prompt, duration, firstFrame, lastFrame, audio, width: size.width, height: size.height },
   });

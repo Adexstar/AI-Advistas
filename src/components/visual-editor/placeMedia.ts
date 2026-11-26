@@ -5,6 +5,18 @@ import { defaultClip, kindFromObject, type TimelineClip } from './videoTimeline'
 
 type AnyObj = Record<string, any>;
 
+let placementClock: () => number = () => 0;
+
+/** The editor registers the playhead here so new media starts where the playhead sits. */
+export function setPlacementClock(clock: () => number) {
+  placementClock = clock;
+}
+
+export const placementTime = () => {
+  const value = Number(placementClock());
+  return Number.isFinite(value) && value > 0 ? Math.round(value * 100) / 100 : 0;
+};
+
 const waitForMedia = (element: HTMLMediaElement) => new Promise<void>((resolve, reject) => {
   if (element.readyState >= 1) {
     resolve();
@@ -127,6 +139,7 @@ export async function addTimelineVideo(canvas: FabricCanvas, url: string, frame?
   writeClip(image, {
     ...clip,
     kind: 'video',
+    start: placementTime(),
     duration: Math.min(10, Math.max(1, video.duration || 5)),
     sourceDuration: video.duration || 10,
   });
@@ -163,6 +176,7 @@ export async function addTimelineAudio(canvas: FabricCanvas, url: string, name =
     ...clip,
     kind: 'audio',
     trackId: 'audio',
+    start: placementTime(),
     duration: Math.min(30, Math.max(0.4, audio.duration || 4)),
     sourceDuration: audio.duration || 8,
   });
@@ -181,7 +195,7 @@ export async function addTimelinePhoto(canvas: FabricCanvas, url: string, frame?
     fitInto(image, boxOf(frame));
     applyFrameMask(image, frame.advistaFrame as FrameMask);
     const clip = ensureObjectClip(image);
-    writeClip(image, { ...clip, kind: 'image' });
+    writeClip(image, { ...clip, kind: 'image', start: placementTime() });
     (image as AnyObj).advistaKind = 'image';
     canvas.remove(frame as never);
     canvas.add(image);
@@ -194,7 +208,7 @@ export async function addTimelinePhoto(canvas: FabricCanvas, url: string, frame?
   const image = objects[objects.length - 1];
   if (image) {
     const clip = ensureObjectClip(image);
-    writeClip(image, { ...clip, kind: 'image' });
+    writeClip(image, { ...clip, kind: 'image', start: placementTime() });
     (image as AnyObj).advistaKind = 'image';
   }
   canvas.requestRenderAll();
@@ -217,7 +231,7 @@ export function addFrame(canvas: FabricCanvas, mask: FrameMask, fill = '#6E56F5'
   });
   (frame as AnyObj).advistaFrame = mask;
   (frame as AnyObj).advistaKind = 'shape';
-  ensureObjectClip(frame);
+  writeClip(frame as AnyObj, { ...ensureObjectClip(frame as AnyObj), start: placementTime() });
   canvas.add(frame);
   canvas.setActiveObject(frame);
   canvas.requestRenderAll();
@@ -241,7 +255,7 @@ export function addGrid(canvas: FabricCanvas, count: number, fill = '#6E56F5') {
     (frame as AnyObj).advistaFrame = 'square';
     (frame as AnyObj).advistaKind = 'shape';
     (frame as AnyObj).advistaGrid = true;
-    ensureObjectClip(frame);
+    writeClip(frame as AnyObj, { ...ensureObjectClip(frame as AnyObj), start: placementTime() });
     canvas.add(frame);
     return frame;
   });

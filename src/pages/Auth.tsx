@@ -26,7 +26,7 @@ const Auth = () => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate("/dashboard");
+        navigate("/create");
       }
     };
     checkAuth();
@@ -49,7 +49,7 @@ const Auth = () => {
           title: "Welcome back!",
           description: "You have been successfully logged in.",
         });
-        navigate("/dashboard");
+        navigate("/create");
       }
     } catch (error: any) {
       toast({
@@ -101,7 +101,7 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const redirectUrl = `${window.location.origin}/dashboard`;
+      const redirectUrl = `${window.location.origin}/create`;
       
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -119,7 +119,7 @@ const Auth = () => {
             title: "Account created!",
             description: "Welcome to AdVista! You can now start creating campaigns.",
           });
-          navigate("/dashboard");
+          navigate("/create");
         } else {
           toast({
             title: "Check your email",

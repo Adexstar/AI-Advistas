@@ -757,11 +757,31 @@ export const UploadsPanel: React.FC<{
 };
 
 /* ============================ ELEMENTS ============================ */
-export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: () => void; brandColors?: string[]; selected?: any }> = ({
-  canvas, onChanged, brandColors = [], selected,
+const RECENT_ELEMENTS_KEY = 'advista.elements.recent';
+
+const readRecentElements = (): string[] => {
+  try {
+    const raw = JSON.parse(localStorage.getItem(RECENT_ELEMENTS_KEY) || '[]');
+    return Array.isArray(raw) ? raw.filter((id): id is string => typeof id === 'string' && !!ELEMENT_LABELS[id]).slice(0, 8) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: () => void; brandColors?: string[]; selected?: any; onOpenAudio?: () => void }> = ({
+  canvas, onChanged, brandColors = [], selected, onOpenAudio,
 }) => {
   const [q, setQ] = useState('');
   const [category, setCategory] = useState<string | null>(null);
+  const [recent, setRecent] = useState<string[]>(readRecentElements);
+
+  const remember = (id: string) => {
+    setRecent((current) => {
+      const next = [id, ...current.filter((item) => item !== id)].slice(0, 8);
+      try { localStorage.setItem(RECENT_ELEMENTS_KEY, JSON.stringify(next)); } catch { /* storage is optional */ }
+      return next;
+    });
+  };
   const [fill, setFill] = useState(brandColors[0] || '#6E56F5');
   const photos = useMediaRows(['image']);
 
@@ -797,6 +817,7 @@ export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: 
 
   const add = (id: string) => {
     if (!canvas) return;
+    if (!id.startsWith('anim-') || selected) remember(id);
     const mask = frameMaskById(id);
     if (mask) {
       addFrame(canvas, mask, fill);
@@ -906,16 +927,38 @@ export const ElementsPanel: React.FC<{ canvas: FabricCanvas | null; onChanged?: 
           </button>
         )}
         {!activeCategory && !query && (
-          <div className="mb-4 grid grid-cols-2 gap-2">
-            {ELEMENT_CATEGORIES.map((entry) => (
-              <button key={entry.id} type="button" onClick={() => setCategory(entry.id)}
-                className="rounded-xl bg-[#3D3D3D] px-3 py-4 text-left text-sm font-semibold text-white hover:bg-[#4D4D4D]">
-                {entry.label}
-                <span className="mt-1 block text-[11px] font-normal text-[#AAAAAA]">
-                  {entry.id === 'photos' || entry.id === 'videos' ? 'Search or upload' : `${entry.items.length} to place`}
-                </span>
-              </button>
-            ))}
+          <div className="mb-4" data-testid="recently-used">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[#888888]">Recently used</p>
+            {recent.length === 0 ? (
+              <p className="rounded-lg bg-[#2A2A2A] px-3 py-2 text-[11px] text-[#999999]">Shapes and frames you add show up here.</p>
+            ) : (
+              <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {recent.map((id) => (
+                  <button key={id} type="button" onClick={() => add(id)}
+                    className="flex h-16 w-16 shrink-0 flex-col items-center justify-center gap-1 rounded-lg bg-[#3D3D3D] text-[10px] text-[#CCCCCC] hover:bg-[#4D4D4D]">
+                    <span className="block h-5 w-5 rounded" style={{ backgroundColor: id.startsWith('frame') || id === 'line' ? 'transparent' : fill, border: id.startsWith('frame') || id === 'line' ? `2px solid ${fill}` : undefined, borderRadius: id === 'circle' ? '9999px' : undefined }} />
+                    <span className="max-w-full truncate px-1">{ELEMENT_LABELS[id]}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {!activeCategory && !query && (
+          <div className="mb-4">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[#888888]">Browse categories</p>
+            <div className="grid grid-cols-2 gap-2">
+              {ELEMENT_CATEGORIES.map((entry) => (
+                <button key={entry.id} type="button"
+                  onClick={() => { if (entry.id === 'audio') onOpenAudio?.(); else setCategory(entry.id); }}
+                  className="rounded-xl bg-[#3D3D3D] px-3 py-4 text-left text-sm font-semibold text-white hover:bg-[#4D4D4D]">
+                  {entry.label}
+                  <span className="mt-1 block text-[11px] font-normal text-[#AAAAAA]">
+                    {entry.id === 'audio' ? 'Music and sound' : entry.id === 'photos' || entry.id === 'videos' ? 'Search or upload' : `${entry.items.length} to place`}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
         {(category === 'photos' || category === 'videos') && !query && (

@@ -198,8 +198,13 @@ All colors MUST be HSL.
   }
 
   .studio-command-bar {
-    background: var(--gradient-studio);
+    background: #151618;
     color: hsl(var(--studio-text));
+    border-bottom: 1px solid #2a2b2d;
+  }
+
+  .studio-timeline {
+    background: #111214;
   }
 
   .studio-panel {
@@ -728,6 +733,74 @@ p  { line-height: 1.6; }
     html.mobile-browser .app-shell.create-ad-surface .page-content {
       padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
     }
+  }
+
+  /* Create home — dark studio surface matching the product mockup. */
+  .app-shell.create-home-surface {
+    --background: 240 10% 5%;
+    --foreground: 0 0% 96%;
+    --card: 240 8% 10%;
+    --card-foreground: 0 0% 96%;
+    --muted: 240 6% 14%;
+    --muted-foreground: 220 8% 62%;
+    --border: 240 6% 16%;
+    --input: 240 6% 16%;
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 240 6% 14%;
+    --accent-foreground: 0 0% 96%;
+    --sidebar-background: 240 12% 6%;
+    --sidebar-foreground: 0 0% 92%;
+    --sidebar-primary: 262 83% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 8% 12%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 240 6% 14%;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  .app-shell.create-home-surface .top-bar {
+    background: hsl(var(--background));
+    border-color: hsl(var(--border));
+  }
+
+  .app-shell.create-home-surface .page-content {
+    max-width: none;
+    background: hsl(var(--background));
+  }
+
+  .app-shell.create-home-surface .create-home-hero-create {
+    background: linear-gradient(105deg, #a78bfa 0%, #8b5cf6 45%, #c084fc 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Ad Studio shares the Create surface. Its gradient matches the plan mockup. */
+  .ad-studio-gradient-text {
+    background: linear-gradient(105deg, #a78bfa 0%, #8b5cf6 45%, #c084fc 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .ad-studio-primary {
+    background: linear-gradient(135deg, #7d5cff 0%, #6a47f2 55%, #7a52f4 100%);
+    box-shadow: 0 10px 28px -10px rgba(124, 92, 250, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    color: #fff;
+  }
+
+  .ad-studio-primary:disabled {
+    background: #23232c;
+    box-shadow: none;
+    color: rgba(255, 255, 255, 0.35);
+  }
+
+  .ad-studio-glow {
+    background:
+      radial-gradient(50% 55% at 50% 38%, rgba(124, 92, 250, 0.24) 0%, rgba(124, 92, 250, 0) 70%),
+      radial-gradient(32% 38% at 80% 30%, rgba(192, 132, 252, 0.11) 0%, rgba(192, 132, 252, 0) 70%);
   }
 
   /* The library keeps its own page header on desktop, so the shell title

@@ -5,20 +5,35 @@ import { useAuth } from "@/hooks/useAuth";
 import { isMobileBrowser } from "@/lib/mobileBrowser";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Megaphone, LayoutTemplate, Plus, CreditCard, Settings, LogOut } from "lucide-react";
+import {
+  Home, LayoutDashboard, Megaphone, LayoutTemplate, MoreHorizontal, Clapperboard,
+  CreditCard, Settings, LogOut, Palette, PenTool, ImageIcon, BarChart3, Plus,
+} from "lucide-react";
 
+// Dashboard lives in More so Ad Studio can take its place in the bar.
 const items = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Create", href: "/create", icon: Home, primary: true },
+  { name: "Ad Studio", href: "/ad-studio", icon: Clapperboard },
   { name: "Campaigns", href: "/campaigns", icon: Megaphone },
-  { name: "Create", href: "/create-ad", icon: Plus, primary: true },
   { name: "Templates", href: "/templates", icon: LayoutTemplate },
+];
+
+const moreLinks = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Create Ad", href: "/create-ad", icon: Plus },
+  { name: "Visual Editor", href: "/visual-editor", icon: PenTool },
+  { name: "Brand Kit", href: "/brand-kit", icon: Palette },
+  { name: "Media Library", href: "/media-library", icon: ImageIcon },
+  { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Plans", href: "/billing", icon: CreditCard },
 ];
 
 const MobileBottomNav = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const [profileOpen, setProfileOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const mobileBrowser = useState(isMobileBrowser)[0];
 
   useEffect(() => {
@@ -28,43 +43,31 @@ const MobileBottomNav = () => {
 
   if (!mobileBrowser) return null;
   const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Profile";
-  const initial = displayName.charAt(0).toUpperCase();
 
   return (
     <>
       <nav className={cn(
         "fixed inset-x-0 bottom-0 z-40 border-t border-border/60 bg-background/95 backdrop-blur-xl lg:hidden"
       )}>
-        <div className="grid w-full grid-cols-5 items-end px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-3">
+        <div className="grid w-full grid-cols-5 items-end px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2">
           {items.map((item) => {
             const Icon = item.icon;
-            const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
-            if (item.primary) {
-              return (
-                <NavLink
-                  key={item.name}
-                  to={item.href}
-                  aria-label={item.name}
-                  className="flex flex-col items-center gap-0.5 pb-1.5 text-[10px] font-medium text-primary"
-                >
-                  <span className="grid h-12 w-12 -translate-y-2 place-items-center rounded-full bg-primary text-white shadow-[0_8px_18px_rgba(110,86,245,0.28)]">
-                    <Plus className="h-5 w-5" />
-                  </span>
-                  <span>Create</span>
-                </NavLink>
-              );
-            }
+            const active = pathname === item.href || (item.href !== "/create" && pathname.startsWith(item.href));
             return (
               <NavLink
                 key={item.name}
                 to={item.href}
+                end={item.href === "/create"}
                 aria-label={item.name}
                 className={cn(
                   "flex min-w-0 flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-medium",
-                  active ? "text-primary" : "text-muted-foreground"
+                  active || (item.primary && pathname === "/create") ? "text-primary" : "text-muted-foreground"
                 )}
               >
-                <span className="grid h-8 w-8 place-items-center">
+                <span className={cn(
+                  "grid h-8 w-8 place-items-center",
+                  item.primary && "rounded-full bg-primary text-primary-foreground",
+                )}>
                   <Icon className="h-5 w-5" />
                 </span>
                 <span className="truncate">{item.name}</span>
@@ -73,44 +76,43 @@ const MobileBottomNav = () => {
           })}
           <button
             type="button"
-            aria-label="Profile"
-            aria-expanded={profileOpen}
-            onClick={() => setProfileOpen(true)}
+            aria-label="More"
+            aria-expanded={moreOpen}
+            onClick={() => setMoreOpen(true)}
             className={cn(
               "flex min-w-0 flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-medium",
-              profileOpen ? "text-primary" : "text-muted-foreground"
+              moreOpen ? "text-primary" : "text-muted-foreground"
             )}
           >
-            <span
-              className={cn(
-                "grid h-8 w-8 place-items-center rounded-full text-[11px] font-bold",
-                profileOpen ? "bg-primary text-white" : "bg-primary/15 text-primary"
-              )}
-            >
-              {initial}
+            <span className="grid h-8 w-8 place-items-center">
+              <MoreHorizontal className="h-5 w-5" />
             </span>
-            <span className="truncate">Profile</span>
+            <span className="truncate">More</span>
           </button>
         </div>
       </nav>
 
-      <Sheet open={profileOpen} onOpenChange={setProfileOpen}>
+      <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl">
-          <SheetHeader className="items-center text-center">
-            <span className="mx-auto grid h-14 w-14 place-items-center rounded-full border border-dashed border-current/30 text-lg font-semibold text-muted-foreground">
-              {initial}
-            </span>
-            <SheetTitle>{displayName}</SheetTitle>
-            <SheetDescription>{user?.email || "Signed-in account"}</SheetDescription>
+          <SheetHeader className="text-left">
+            <SheetTitle>More</SheetTitle>
+            <SheetDescription>{displayName}</SheetDescription>
           </SheetHeader>
           <div className="mt-4 grid gap-2">
-            <Button variant="outline" onClick={() => { setProfileOpen(false); navigate("/settings"); }}>
-              <Settings className="mr-2 h-4 w-4" /> Settings
-            </Button>
-            <Button variant="outline" onClick={() => { setProfileOpen(false); navigate("/billing"); }}>
-              <CreditCard className="mr-2 h-4 w-4" /> Billing
-            </Button>
-            <Button variant="outline" onClick={() => { setProfileOpen(false); void signOut(); }}>
+            {moreLinks.map((link) => {
+              const Icon = link.icon;
+              return (
+                <Button
+                  key={link.href}
+                  variant="outline"
+                  className="justify-start"
+                  onClick={() => { setMoreOpen(false); navigate(link.href); }}
+                >
+                  <Icon className="mr-2 h-4 w-4" /> {link.name}
+                </Button>
+              );
+            })}
+            <Button variant="outline" className="justify-start" onClick={() => { setMoreOpen(false); void signOut(); }}>
               <LogOut className="mr-2 h-4 w-4" /> Sign out
             </Button>
           </div>

@@ -13,6 +13,9 @@ describe("template library filters", () => {
     expect(matchesFormat("story", "story")).toBe(true);
     expect(matchesFormat("feed_horizontal", "landscape")).toBe(true);
     expect(matchesFormat("story", "square")).toBe(false);
+    expect(matchesFormat("post_square", "photo")).toBe(true);
+    expect(matchesFormat("video_reel", "video")).toBe(true);
+    expect(matchesFormat("video_reel", "photo")).toBe(false);
   });
 
   it("counts real categories and ignores empty ones", () => {

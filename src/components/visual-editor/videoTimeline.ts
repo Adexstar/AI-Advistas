@@ -17,7 +17,11 @@ export type TimelineClip = {
   fadeOut: number;
   animateIn: string;
   animateOut: string;
+  /** Row for text and shapes. Each element owns a row until the user drops it onto another. */
+  lane?: number;
 };
+
+export const isElementKind = (kind: ClipKind) => kind === 'text' || kind === 'shape';
 
 const round = (value: number) => Math.round(value * 100) / 100;
 
@@ -96,11 +100,23 @@ export function trimClip(clip: TimelineClip, edge: 'start' | 'end', time: number
 /** Stack overlapping pictures and video onto separate media lanes. Text and audio stay on their own lanes. */
 export function layoutTracks(clips: TimelineClip[]): TimelineClip[] {
   const lanes: TimelineClip[][] = [];
+  // Elements keep an explicit row; anything without one opens a new row after the highest one in use.
+  const validLane = (lane: number | undefined): lane is number => Number.isInteger(lane) && (lane as number) >= 0;
+  const used = clips.filter((clip) => isElementKind(clip.kind)).map((clip) => clip.lane).filter(validLane);
+  let nextLane = used.length ? Math.max(...used) + 1 : 0;
+  const elementLane = new Map<string, number>();
+  clips.forEach((clip) => {
+    if (!isElementKind(clip.kind)) return;
+    elementLane.set(clip.id, validLane(clip.lane) ? clip.lane : nextLane++);
+  });
   return [...clips]
     .sort((a, b) => a.start - b.start || a.id.localeCompare(b.id))
     .map((clip) => {
       if (clip.kind === 'audio') return { ...clip, trackId: 'audio' };
-      if (clip.kind === 'text') return { ...clip, trackId: 'text' };
+      if (isElementKind(clip.kind)) {
+        const lane = elementLane.get(clip.id) ?? 0;
+        return { ...clip, lane, trackId: `element-${lane}` };
+      }
       let lane = lanes.findIndex((row) => row.every((other) => !overlaps(other, clip)));
       if (lane < 0) {
         lane = lanes.length;

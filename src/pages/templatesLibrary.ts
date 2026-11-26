@@ -22,6 +22,8 @@ export const LIBRARY_CATEGORIES = [
 
 export const FORMAT_FILTERS = [
   { id: "All", label: "All formats" },
+  { id: "photo", label: "Photos" },
+  { id: "video", label: "Videos" },
   { id: "square", label: "Post" },
   { id: "story", label: "Story" },
   { id: "landscape", label: "Landscape" },
@@ -35,6 +37,8 @@ export function matchesPlatform(value: string | null | undefined, filter: string
 export function matchesFormat(value: string | null | undefined, filter: string) {
   if (!filter || filter === "All") return true;
   const format = (value || "").trim().toLowerCase();
+  if (filter === "photo") return !format.includes("video") && !format.includes("reel") && !format.includes("motion");
+  if (filter === "video") return format.includes("video") || format.includes("reel") || format.includes("motion");
   if (filter === "square") return format === "square" || format.includes("square") || format === "post";
   if (filter === "story") return format.includes("story");
   if (filter === "landscape") return format.includes("landscape") || format.includes("horizontal") || format.includes("feed");

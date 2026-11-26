@@ -70,11 +70,25 @@ describe('timeline playback window', () => {
     expect(track('v1')).toBe('media-1');
     expect(track('v2')).toBe('media-2');
     expect(track('v3')).toBe('media-3');
-    expect(track('t')).toBe('text');
+    expect(track('t')).toBe('element-0');
     expect(track('s')).toBe('audio');
     expect(projectDuration(laid)).toBe(10);
     expect(formatTimecode(0)).toBe('0:00');
     expect(formatTimecode(65)).toBe('1:05');
+  });
+
+  it('gives each new element its own row and honours rows chosen by the user', () => {
+    const el = (id: string, kind: 'text' | 'shape', lane?: number) => defaultClip({ id, kind, lane });
+    const first = layoutTracks([el('a', 'shape')]);
+    expect(first[0].lane).toBe(0);
+
+    const second = layoutTracks(first.concat(el('b', 'text')));
+    expect(second.find((clip) => clip.id === 'a')?.lane).toBe(0);
+    expect(second.find((clip) => clip.id === 'b')?.lane).toBe(1);
+
+    // Moving b into a's row keeps both on row 0; the next element opens row 1 again.
+    const merged = layoutTracks([el('a', 'shape', 0), el('b', 'text', 0), el('c', 'shape')]);
+    expect(merged.map((clip) => [clip.id, clip.lane])).toEqual([['a', 0], ['b', 0], ['c', 1]]);
   });
 
   it('ramps volume and entrance opacity from the clip settings', () => {

@@ -61,10 +61,13 @@ export function matchTextStyle(query: string, item: TextStyle) {
 export function panelForCreateTool(id: string) {
   if (id === 'camera') return 'uploads';
   if (id === 'tools') return 'tools';
+  // Mobile rail "AI Studio" and desktop left rail share the same left-panel tab.
+  if (id === 'studio-slot') return 'ai-studio';
   return id;
 }
 
 export const ELEMENT_CATEGORIES = [
+  { id: 'audio', label: 'Audio', items: [] as string[] },
   { id: 'videos', label: 'Videos', items: [] as string[] },
   { id: 'photos', label: 'Photos', items: [] as string[] },
   { id: 'graphics', label: 'Graphics', items: ['star', 'badge', 'blob'] },

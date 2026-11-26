@@ -4,6 +4,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const SYSTEM = "You write one production prompt for an ad. Follow the brief exactly. Return only the prompt, with the same headings. Do not add a preamble.";
 const SHOTS_SYSTEM = "Return only JSON. No markdown. Shape: {\"look\":\"\",\"lighting\":\"\",\"musicMood\":\"\",\"shots\":[{\"camera\":\"\",\"action\":\"\",\"onScreenText\":\"\",\"transition\":\"cut\"}]}. Three to six shots. onScreenText is at most six words. transition is cut, dissolve, or match cut.";
+const STYLE_SYSTEM = "You describe the style of a short social ad from its caption and title only. Return only JSON. No markdown. Shape: {\"pacing\":\"fast|steady|slow\",\"textStyle\":\"\",\"sceneOrder\":[\"Product|Benefit|Proof|Offer|Before|After\"],\"direction\":\"\"}. textStyle and direction are one short sentence each. sceneOrder has two to four items.";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -24,6 +25,18 @@ Deno.serve(async (req) => {
   const references = Array.isArray(body.references)
     ? body.references.filter((url: unknown) => typeof url === "string" && url.startsWith("http")).slice(0, 4)
     : [];
+  if (body.format === "style") {
+    // Reads the caption of a public ad post and describes its style. Text only.
+    const text = typeof body.prompt === "string" ? body.prompt.slice(0, 2000) : "";
+    try {
+      const result = await complete(text, [], STYLE_SYSTEM);
+      return json({ prompt: result.text, provider: result.provider });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Style analysis failed";
+      const missing = message.includes("not configured");
+      return json({ error: missing ? `Add ${ENHANCE_SECRETS.join(" or ")}.` : message }, missing ? 501 : 500);
+    }
+  }
   const system = body.format === "shots" ? SHOTS_SYSTEM : SYSTEM;
   const ask = body.format === "shots"
     ? `${brief}\n\nReturn the JSON shot list for this brief. The shots together last ${Number(body.duration) || 10} seconds.`

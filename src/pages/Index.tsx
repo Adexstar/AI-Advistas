@@ -103,7 +103,7 @@ const Index = () => {
 
   const handlePrimaryAction = () => {
     if (user && !loading) {
-      navigate("/dashboard");
+      navigate("/create");
       return;
     }
 
@@ -112,7 +112,7 @@ const Index = () => {
 
   const handleSecondaryAction = () => {
     if (user && !loading) {
-      navigate("/create-ad");
+      navigate("/create");
       return;
     }
 
@@ -122,7 +122,7 @@ const Index = () => {
 
   useEffect(() => {
     if (!loading && user) {
-      navigate("/dashboard");
+      navigate("/create");
     }
   }, [user, loading, navigate]);
 

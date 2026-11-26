@@ -32,6 +32,7 @@ describe('create rail', () => {
     expect(panelForCreateTool('tools')).toBe('tools');
     expect(panelForCreateTool('templates')).toBe('templates');
     expect(panelForCreateTool('brand')).toBe('brand');
+    expect(panelForCreateTool('studio-slot')).toBe('ai-studio');
   });
 
   it('filters text styles by the words a person types', () => {
@@ -44,7 +45,7 @@ describe('create rail', () => {
     const ids = ELEMENT_CATEGORIES.flatMap((category) => category.items);
     expect(ids.every((id) => ELEMENT_LABELS[id])).toBe(true);
     expect(ELEMENT_CATEGORIES.map((category) => category.id)).toEqual([
-      'videos', 'photos', 'graphics', 'shapes', 'frames', 'grids', 'mockups', 'animations',
+      'audio', 'videos', 'photos', 'graphics', 'shapes', 'frames', 'grids', 'mockups', 'animations',
     ]);
     expect(EDITOR_TOOLS.map((tool) => tool.id)).toContain('background');
   });

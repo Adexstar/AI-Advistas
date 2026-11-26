@@ -14,9 +14,11 @@ import {
 
   ChevronLeft,
   ChevronRight,
+  Clapperboard,
   Code2,
   CreditCard,
   Download,
+  Home,
   ImageIcon,
   LayoutDashboard,
   LayoutGrid,
@@ -28,6 +30,7 @@ import {
   PenTool,
   Plug,
   Plus,
+  Search,
   Settings,
   Server,
   Shield,
@@ -44,6 +47,7 @@ import SidebarSearch from "@/components/sidebar/SidebarSearch";
 import GlobalSearch from "@/components/GlobalSearch";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import NotifyBadge from "@/components/ui/NotifyBadge";
+import { CreateNewMenu } from "@/components/CreateNewMenu";
 
 
 type NavItem = {
@@ -62,19 +66,21 @@ const navGroups: NavGroup[] = [
   {
     title: "Creative Workspace",
     items: [
+      { name: "Create", href: "/create", icon: Home },
+      { name: "Ad Studio", href: "/ad-studio", icon: Clapperboard },
       { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { name: "Campaigns", href: "/campaigns", icon: Megaphone },
       { name: "Create Ad", href: "/create-ad", icon: Plus },
       { name: "Templates", href: "/templates", icon: LayoutTemplate },
       { name: "Visual Editor", href: "/visual-editor", icon: PenTool },
       { name: "Brand Kit", href: "/brand-kit", icon: Palette },
-      { name: "Media Library", href: "/media-library", icon: ImageIcon },
-      { name: "Analytics & Reports", href: "/analytics", icon: BarChart3 },
     ],
   },
   {
     title: "Operations",
     items: [
+      { name: "Media Library", href: "/media-library", icon: ImageIcon },
+      { name: "Analytics & Reports", href: "/analytics", icon: BarChart3 },
       { name: "Export Center", href: "/exports", icon: Download, soon: true },
       { name: "Integrations Hub", href: "/integrations", icon: Plug },
       { name: "Notifications", href: "/notifications", icon: Bell, soon: true },
@@ -98,6 +104,11 @@ const navGroups: NavGroup[] = [
   },
 ];
 
+/** Coming-soon pages stay routed but are not listed in the sidebar. */
+const visibleNavGroups: NavGroup[] = navGroups
+  .map((group) => ({ ...group, items: group.items.filter((item) => !item.soon && !item.disabled) }))
+  .filter((group) => group.items.length > 0);
+
 const adminNavItems: NavItem[] = [
   { name: "Overview", href: "/admin", icon: Shield },
   { name: "Users", href: "/admin/users", icon: Users },
@@ -117,7 +128,9 @@ const pageMeta: { match: (p: string) => boolean; title: string; description: str
   { match: (p) => p.startsWith("/campaigns"), title: "Campaigns", description: "Track, pause, and edit running ads." },
   { match: (p) => p.startsWith("/template"), title: "Templates", description: "Browse and customize creative templates." },
   { match: (p) => p.startsWith("/visual-editor") || p.startsWith("/ad-editor"), title: "Visual Editor", description: "Design and edit creatives." },
-  { match: (p) => p.startsWith("/create"), title: "Create ad", description: "Campaign setup" },
+  { match: (p) => p === "/create" || p.startsWith("/create?"), title: "Create", description: "Start a design or continue a draft." },
+  { match: (p) => p.startsWith("/ad-studio"), title: "Ad Studio", description: "Describe an ad, review the plan, build it." },
+  { match: (p) => p.startsWith("/create-ad"), title: "Create ad", description: "Campaign setup" },
   { match: (p) => p.startsWith("/billing"), title: "Billing", description: "Manage your plan and credits." },
   { match: (p) => p.startsWith("/settings"), title: "Settings", description: "Preferences and account details." },
   { match: (p) => p.startsWith("/analytics"), title: "Analytics & Reports", description: "Track performance, analyze results, and grow your advertising impact." },
@@ -187,7 +200,7 @@ const NavItemRow = ({
     <NavLink
       to={item.href}
       onClick={onNavigate}
-      end={item.href === "/dashboard" || item.href === "/admin"}
+      end={item.href === "/dashboard" || item.href === "/admin" || item.href === "/create"}
       aria-disabled={item.soon || undefined}
       tabIndex={item.soon ? -1 : undefined}
       className={({ isActive }) =>
@@ -259,7 +272,7 @@ const SidebarBody = ({
         {/* Sidebar Top — logo + actions */}
         <div className="sidebar-top">
           <div className={cn("flex items-center px-3", collapsed ? "h-auto flex-col gap-1 py-2" : "h-14")}>
-            <NavLink to="/dashboard" onClick={close} className="flex min-w-0 items-center gap-3">
+            <NavLink to="/create" onClick={close} className="flex min-w-0 items-center gap-3">
               <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary">
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
@@ -298,28 +311,26 @@ const SidebarBody = ({
             {collapsed ? (
               <Tooltip delayDuration={100}>
                 <TooltipTrigger asChild>
-                  <Button asChild size="icon" className="h-10 w-full rounded-lg bg-primary text-white shadow-none hover:bg-primary/90">
-                    <NavLink to="/create" onClick={close} aria-label="Create New">
+                  <div>
+                    <CreateNewMenu collapsed onNavigate={close} triggerClassName="flex h-10 w-full items-center justify-center rounded-lg bg-primary text-white shadow-none hover:bg-primary/90">
                       <Plus className="h-5 w-5" />
-                    </NavLink>
-                  </Button>
+                    </CreateNewMenu>
+                  </div>
                 </TooltipTrigger>
                 <TooltipContent side="right">Create New</TooltipContent>
               </Tooltip>
             ) : (
-              <Button asChild className="h-10 w-full justify-center gap-2 rounded-lg bg-primary text-sm font-semibold text-white shadow-none hover:bg-primary/90">
-                <NavLink to="/create" onClick={close}>
-                  <Plus className="h-4 w-4" />
-                  Create New
-                </NavLink>
-              </Button>
+              <CreateNewMenu onNavigate={close} triggerClassName="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary text-sm font-semibold text-white shadow-none hover:bg-primary/90">
+                <Plus className="h-4 w-4" />
+                Create New
+              </CreateNewMenu>
             )}
           </div>
         </div>
 
         {/* Sidebar Nav — scrolls */}
         <nav className="sidebar-nav">
-          {navGroups.map((group, idx) => (
+          {visibleNavGroups.map((group, idx) => (
             <div key={group.title}>
               {!collapsed && group.title !== "Creative Workspace" && (
                 <div className="border-t border-sidebar-border mx-3 my-2" />
@@ -352,7 +363,7 @@ const SidebarBody = ({
               </div>
               <p className="text-[11px] leading-relaxed text-sidebar-foreground/55">Campaign quotas are not connected to billing yet.</p>
               <Button asChild size="sm" className="mt-3 h-8 w-full rounded-lg bg-primary text-white shadow-none hover:bg-primary/90">
-                <NavLink to="/billing" onClick={close}>Upgrade Plan</NavLink>
+                <NavLink to="/billing" onClick={close}>Plans</NavLink>
               </Button>
             </div>
           )}
@@ -402,9 +413,13 @@ const SidebarBody = ({
   );
 };
 
+const COLLAPSE_KEY = "advista.sidebar.collapsed";
+
 const DashboardShell = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem(COLLAPSE_KEY) === "1"; } catch { return false; }
+  });
   const [searchOpen, setSearchOpen] = useState(false);
   const location = useLocation();
   const { signOut, user } = useAuth();
@@ -414,11 +429,21 @@ const DashboardShell = () => {
   const library = location.pathname === "/templates";
   const admin = location.pathname === "/admin" || location.pathname.startsWith("/admin/") || location.pathname.startsWith("/system");
   const createAd = location.pathname === "/create-ad" || location.pathname.startsWith("/create-ad/");
+  const createHome = location.pathname === "/create";
+  const adStudio = location.pathname === "/ad-studio" || location.pathname.startsWith("/ad-studio/");
 
   useEffect(() => {
     document.body.classList.toggle("admin-surface", admin);
     return () => document.body.classList.remove("admin-surface");
   }, [admin]);
+
+  const toggleCollapsed = () => {
+    setCollapsed((current) => {
+      const next = !current;
+      try { localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0"); } catch { /* ignore */ }
+      return next;
+    });
+  };
   const openSearch = () => setSearchOpen(true);
 
   // Prefetch adjacent routes in the background so navigation is instant.
@@ -430,12 +455,13 @@ const DashboardShell = () => {
       import("@/pages/Templates").catch(() => {});
       import("@/pages/Dashboard").catch(() => {});
       import("@/pages/CreateAd").catch(() => {});
+      import("@/pages/AdStudio").catch(() => {});
     });
   }, []);
 
 
   return (
-    <div className={cn("app-shell bg-background", library && "library-surface", admin && "admin-surface", createAd && "create-ad-surface")}>
+    <div className={cn("app-shell bg-background", library && "library-surface", admin && "admin-surface", createAd && "create-ad-surface", (createHome || adStudio) && "create-home-surface")}>
       <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
 
       {/* Top Bar — never scrolls, always visible */}
@@ -451,7 +477,7 @@ const DashboardShell = () => {
             ) : admin ? (
               <span className="text-base font-semibold">{activePage.title}</span>
             ) : (
-            <NavLink to="/dashboard" className="flex items-center gap-2">
+            <NavLink to="/create" className="flex items-center gap-2">
               <div className="grid h-7 w-7 place-items-center rounded-lg bg-primary">
                 <Sparkles className="h-3.5 w-3.5 text-white" />
               </div>
@@ -472,26 +498,49 @@ const DashboardShell = () => {
         </div>
 
         {/* Desktop header */}
-        <div className="hidden h-14 items-center justify-between gap-4 px-6 lg:flex">
-          <div className="min-w-0">
-            <h2 className="font-page-title">{activePage.title}</h2>
-            <p className="font-micro text-muted-foreground">{activePage.description}</p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
+        {createHome ? (
+          <div className="hidden h-14 items-center gap-4 px-6 lg:flex">
+            <div className="w-[9.5rem] shrink-0" aria-hidden />
             <button
               onClick={openSearch}
-              className="flex h-9 w-56 items-center gap-2 rounded-lg border border-border bg-card px-3 text-left text-sm text-muted-foreground transition hover:border-primary/40"
+              className="mx-auto flex h-10 w-full max-w-xl items-center gap-2 rounded-xl border border-white/[0.06] bg-[#14141c] px-3 text-left text-sm text-white/45 transition hover:border-primary/40"
             >
-              <span className="flex-1 text-truncate">Search anything…</span>
-              <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px]">⌘K</kbd>
+              <Search className="h-4 w-4 shrink-0" />
+              <span className="flex-1 truncate">Search templates or start a design</span>
+              <kbd className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-white/50">⌘K</kbd>
             </button>
-            <Button asChild variant="outline" size="icon" className="relative h-9 w-9 rounded-lg">
-              <NavLink to="/notifications" aria-label="Notifications">
-                <Bell className="h-4 w-4" />
-              </NavLink>
-            </Button>
+            <div className="flex shrink-0 items-center gap-2">
+              <div className="grid h-9 w-9 place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
+                {user?.email?.charAt(0).toUpperCase() || "U"}
+              </div>
+              <CreateNewMenu triggerClassName="inline-flex h-9 items-center gap-1.5 rounded-xl bg-primary px-3.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
+                <Plus className="h-4 w-4" />
+                Create design
+              </CreateNewMenu>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="hidden h-14 items-center justify-between gap-4 px-6 lg:flex">
+            <div className="min-w-0">
+              <h2 className="font-page-title">{activePage.title}</h2>
+              <p className="font-micro text-muted-foreground">{activePage.description}</p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                onClick={openSearch}
+                className="flex h-9 w-56 items-center gap-2 rounded-lg border border-border bg-card px-3 text-left text-sm text-muted-foreground transition hover:border-primary/40"
+              >
+                <span className="flex-1 truncate">Search anything…</span>
+                <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px]">⌘K</kbd>
+              </button>
+              <Button asChild variant="outline" size="icon" className="relative h-9 w-9 rounded-lg">
+                <NavLink to="/notifications" aria-label="Notifications">
+                  <Bell className="h-4 w-4" />
+                </NavLink>
+              </Button>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Main Body — only .page-content scrolls */}
@@ -527,7 +576,7 @@ const DashboardShell = () => {
         >
           <SidebarBody
             collapsed={collapsed}
-            onToggleCollapse={() => setCollapsed((c) => !c)}
+            onToggleCollapse={toggleCollapsed}
             user={user}
             isAdmin={isAdmin}
             signOut={signOut}

@@ -27,6 +27,8 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Campaigns = lazy(() => import("./pages/Campaigns"));
 const CampaignWorkspace = lazy(() => import("./pages/CampaignWorkspace"));
 const CreateAd = lazy(() => import("./pages/CreateAd"));
+const CreateHome = lazy(() => import("./pages/CreateHome"));
+const AdStudio = lazy(() => import("./pages/AdStudio"));
 const Billing = lazy(() => import("./pages/Billing"));
 const Settings = lazy(() => import("./pages/Settings"));
 const VisualEditorPage = lazy(() => import("./pages/VisualEditorPage"));
@@ -76,9 +78,9 @@ const AppContent = () => {
         ctrlKey: true,
         shiftKey: true,
         action: () => {
-          window.location.href = '/create-ad';
+          window.location.href = '/create';
         },
-        description: 'Create new ad',
+        description: 'Create home',
         category: 'Navigation'
       },
       {
@@ -121,7 +123,20 @@ const AppContent = () => {
               <Route index element={<Campaigns />} />
               <Route path=":id" element={<CampaignWorkspace />} />
             </Route>
-            <Route path="/create" element={<Navigate to="/create-ad" replace />} />
+            <Route path="/create" element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<CreateHome />} />
+            </Route>
+            <Route path="/ad-studio" element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<AdStudio />} />
+            </Route>
             <Route path="/create-ad" element={
               <ProtectedRoute>
                 <DashboardLayout />

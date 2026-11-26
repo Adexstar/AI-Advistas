@@ -40,7 +40,7 @@ import { useAIContext } from '@/contexts/AIContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CreativeService, creativeDocument } from '@/services/creative/CreativeService';
+import { CreativeService, creativeDocument, withDesignMeta } from '@/services/creative/CreativeService';
 import {
   TemplatesPanel as StudioTemplatesPanel,
   MediaPanel as StudioMediaPanel,
@@ -61,12 +61,14 @@ import { CREATE_RAIL, EDITOR_TOOLS, FONT_COMBOS, TEXT_STYLES, VIDEO_RAIL, matchT
 import { applyImageFilters, neutralImageAdjustments, type ImageAdjustments, type ImagePreset } from '@/components/visual-editor/imageAdjustments';
 import { StudioTimeline } from '@/components/visual-editor/StudioTimeline';
 import { AnimatePresets, AudioAddSheet, DurationPanel, ElementMenu, FadePanel, KeySlot, TrimPanel, VolumePanel } from '@/components/visual-editor/EditorSheets';
-import { addTimelineAudio, addTimelinePhoto, addTimelineVideo, detachFrame, isFrameTarget, placeDirectorSequence, writeClip, type DirectorSequence } from '@/components/visual-editor/placeMedia';
+import { addTimelineAudio, addTimelinePhoto, addTimelineVideo, detachFrame, ensureObjectClip, isFrameTarget, placeDirectorSequence, setPlacementClock, writeClip, type DirectorSequence } from '@/components/visual-editor/placeMedia';
 import { splitClip, projectDuration } from '@/components/visual-editor/videoTimeline';
 import { syncMedia } from '@/components/visual-editor/playback';
 import { recordCanvas } from '@/components/visual-editor/exportTimeline';
 import { speechProviders } from '@/components/visual-editor/speechProvider';
 import { AIStudioDock } from '@/components/visual-editor/studio/AIStudioDock';
+import { takePendingEditorUpload } from '@/lib/designHome';
+import { DesktopContextBar } from '@/components/visual-editor/DesktopContextBar';
 
 function selectionMediaUrl(selected: any): string | null {
   if (!selected) return null;
@@ -111,21 +113,18 @@ const INSTA_STORY = [
   { id: 9, title: 'SPECIAL DISCOUNT 40%', bg: 'from-cyan-500 via-blue-600 to-indigo-700' },
 ];
 
-/* ---------- Left Icon Rail ---------- */
+/* ---------- Left Icon Rail (Canva-style) ---------- */
 const IconRail: React.FC<{ active: string; onChange: (id: string) => void }> = ({ active, onChange }) => {
   const navigate = useNavigate();
   const { theme, setTheme } = useAppTheme();
   return (
-  <aside className="studio-tool-rail hidden md:flex h-full w-[64px] shrink-0 flex-col items-stretch border-r">
-    <div className="flex items-center justify-center py-3 border-b border-white/5">
-      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-lg">
-        <Sparkles className="h-4 w-4 text-primary-foreground" />
-      </div>
+  <aside className="studio-tool-rail hidden md:flex h-full w-[72px] shrink-0 flex-col items-stretch border-r border-[#2a2b2d] bg-[#0f1012]">
+    <div className="flex items-center justify-center py-3">
+      <button type="button" aria-label="AdVista Create home" onClick={() => navigate('/create')} className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#6E56F5]">
+        <Sparkles className="h-4 w-4 text-white" />
+      </button>
     </div>
-    <div className="pt-1 pb-1 text-[8px] font-semibold uppercase tracking-wider text-white/40 text-center leading-tight">
-      AV<br /><span className="text-white/30 font-normal normal-case">Studio</span>
-    </div>
-    <nav className="flex-1 py-2 space-y-0.5 px-1 overflow-y-auto">
+    <nav className="flex-1 space-y-0.5 overflow-y-auto px-1.5 pb-2 pt-1">
       {LEFT_TABS.map((t) => {
         const Icon = t.icon;
         const isActive = active === t.id;
@@ -133,29 +132,22 @@ const IconRail: React.FC<{ active: string; onChange: (id: string) => void }> = (
           <button
             key={t.id}
             onClick={() => onChange(t.id)}
-            className={[
-              'group flex w-full flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 transition-all',
+            className={cn(
+              'flex w-full flex-col items-center gap-1 rounded-xl px-1 py-2 transition-colors',
               isActive
-                ? 'bg-primary/90 text-white shadow-lg shadow-primary/30'
-                : 'text-white/60 hover:bg-white/5 hover:text-white',
-            ].join(' ')}
+                ? 'bg-[#2a2b2f] text-white'
+                : 'text-[#b8b9bd] hover:bg-white/[0.04] hover:text-white',
+            )}
           >
-            <Icon className="h-[16px] w-[16px]" />
-            <span className="text-[9px] font-medium leading-none">{t.label}</span>
+            <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+            <span className="text-[10px] font-medium leading-none tracking-tight">{t.label}</span>
           </button>
         );
       })}
     </nav>
-    <div className="mx-1 mb-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/10 border border-white/10 p-1.5 text-center">
-      <div className="mx-auto mb-1 flex h-5 w-5 items-center justify-center rounded-lg bg-primary/90 text-primary-foreground">
-        <Zap className="h-3 w-3" />
-      </div>
-      <p className="text-[8px] font-semibold text-white leading-tight">Plans</p>
-      <Button size="sm" className="mt-1 h-5 w-full rounded-lg bg-primary hover:bg-primary/90 text-[8px] px-1" onClick={() => navigate('/billing')}>Plans</Button>
-    </div>
-    <div className="flex items-center justify-around border-t border-white/5 py-1.5 text-white/50">
-      <button type="button" aria-label="Settings" className="rounded-lg p-1 hover:bg-white/5 hover:text-white" onClick={() => navigate('/settings')}><Settings className="h-3.5 w-3.5" /></button>
-      <button type="button" aria-label={theme === 'dark' ? 'Use light appearance' : 'Use dark appearance'} className="rounded-lg p-1 hover:bg-white/5 hover:text-white" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}><Moon className="h-3.5 w-3.5" /></button>
+    <div className="flex items-center justify-around border-t border-[#2a2b2d] py-2 text-[#8b8c90]">
+      <button type="button" aria-label="Settings" className="rounded-lg p-1.5 hover:bg-white/5 hover:text-white" onClick={() => navigate('/settings')}><Settings className="h-3.5 w-3.5" /></button>
+      <button type="button" aria-label={theme === 'dark' ? 'Use light appearance' : 'Use dark appearance'} className="rounded-lg p-1.5 hover:bg-white/5 hover:text-white" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}><Moon className="h-3.5 w-3.5" /></button>
     </div>
   </aside>
   );
@@ -201,7 +193,7 @@ const TopToolbar: React.FC<{
   if (isMobile) {
     return (
       <header className="relative flex h-12 shrink-0 items-center gap-0.5 border-b border-black/10 bg-white px-1 text-neutral-900">
-        <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0 text-neutral-900 hover:bg-black/5" onClick={returnToCreate && onBack ? onBack : () => navigate('/dashboard')} aria-label="Home">
+        <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0 text-neutral-900 hover:bg-black/5" onClick={returnToCreate && onBack ? onBack : () => navigate('/create')} aria-label="Home">
           <ChevronLeft className="h-5 w-5" />
         </Button>
         <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-neutral-800 hover:bg-black/5" onClick={onUndo} disabled={!canUndo} aria-label="Undo"><Undo2 className={`h-4 w-4 ${canUndo ? '' : 'opacity-30'}`} /></Button>
@@ -220,13 +212,14 @@ const TopToolbar: React.FC<{
     );
   }
 
+  const ghost = 'text-[#d5d6da] hover:bg-white/10 hover:text-white';
   return (
-    <header className="studio-command-bar flex h-[60px] shrink-0 items-center gap-2 px-2 shadow-lg sm:px-4">
-      <Button variant="ghost" size="icon" className="hidden h-9 w-9 shrink-0 text-inherit hover:bg-primary-foreground/10 hover:text-inherit md:inline-flex" onClick={() => (onBack ? onBack() : navigate('/dashboard'))} aria-label={returnToCreate ? 'Back to create ad' : 'Home'}>
+    <header className="studio-command-bar flex h-14 shrink-0 items-center gap-1.5 px-2 sm:px-3">
+      <Button variant="ghost" size="icon" className={cn('hidden h-9 w-9 shrink-0 md:inline-flex', ghost)} onClick={() => (onBack ? onBack() : navigate('/create'))} aria-label={returnToCreate ? 'Back to create ad' : 'Home'}>
         <ChevronLeft className="h-4 w-4" />
       </Button>
       <div className="relative hidden md:block">
-        <Button variant="ghost" size="sm" className="h-8 text-inherit hover:bg-primary-foreground/10" aria-expanded={menu === 'file'} onClick={() => setMenu(menu === 'file' ? null : 'file')}>File</Button>
+        <Button variant="ghost" size="sm" className={cn('h-8', ghost)} aria-expanded={menu === 'file'} onClick={() => setMenu(menu === 'file' ? null : 'file')}>File</Button>
         {menu === 'file' && (
           <div className="absolute left-0 top-10 z-50 w-44 rounded-xl border border-white/10 bg-[#1A1A1A] p-1 text-sm text-white shadow-xl">
             <button type="button" className="block w-full rounded-lg px-3 py-2 text-left hover:bg-white/10" onClick={() => { closeMenu(); onSave(); }}>Save</button>
@@ -236,7 +229,7 @@ const TopToolbar: React.FC<{
         )}
       </div>
       <div className="relative hidden lg:block">
-        <Button variant="ghost" size="sm" className="h-8 text-inherit hover:bg-primary-foreground/10" aria-expanded={menu === 'resize'} onClick={() => setMenu(menu === 'resize' ? null : 'resize')}>Resize</Button>
+        <Button variant="ghost" size="sm" className={cn('h-8', ghost)} aria-expanded={menu === 'resize'} onClick={() => setMenu(menu === 'resize' ? null : 'resize')}>Resize</Button>
         {menu === 'resize' && (
           <div className="absolute left-0 top-10 z-50 max-h-72 w-64 overflow-y-auto rounded-xl border border-white/10 bg-[#1A1A1A] p-1 text-sm text-white shadow-xl">
             {resizeOptions.map((option) => (
@@ -253,50 +246,50 @@ const TopToolbar: React.FC<{
             onChange={(e) => setProjectName(e.target.value)}
             onBlur={() => setEditing(false)}
             onKeyDown={(e) => e.key === 'Enter' && setEditing(false)}
-            className="h-8 w-40 border-primary-foreground/30 bg-primary-foreground/10 text-sm font-semibold text-inherit sm:w-56"
+            className="h-8 w-40 border-white/20 bg-white/10 text-sm font-semibold text-white sm:w-56"
           />
         ) : (
           <button
             onClick={() => setEditing(true)}
-            className="group flex items-center gap-1.5 rounded-lg px-1.5 py-1 hover:bg-primary-foreground/10"
+            className="group flex items-center gap-1.5 rounded-lg px-1.5 py-1 hover:bg-white/10"
           >
-            <span className="max-w-[140px] truncate text-sm font-semibold sm:max-w-[220px]">{projectName}</span>
-            <Edit3 className="h-3.5 w-3.5 opacity-0 group-hover:opacity-80" />
+            <span className="max-w-[140px] truncate text-sm font-semibold text-white sm:max-w-[220px]">{projectName}</span>
+            <Edit3 className="h-3.5 w-3.5 text-white/50 opacity-0 group-hover:opacity-100" />
           </button>
         )}
-        <span className="hidden max-w-[12rem] truncate text-[11px] text-primary-foreground/70 xl:inline">{artboardLabel}</span>
-        <button type="button" data-testid="editor-mode" onClick={() => toast({ title: editorMode === 'photo' ? 'Photo design' : 'Video design', description: editorMode === 'photo' ? 'The timeline stays hidden. Apply a video template or add a video and this design switches to video.' : 'Remove every video from the canvas to return to a photo design.' })} className="hidden h-8 shrink-0 items-center whitespace-nowrap rounded-lg px-2 text-xs font-semibold text-inherit hover:bg-primary-foreground/10 lg:inline-flex">
+        <span className="hidden max-w-[12rem] truncate text-[11px] text-[#8f9094] xl:inline">{artboardLabel}</span>
+        <button type="button" data-testid="editor-mode" onClick={() => toast({ title: editorMode === 'photo' ? 'Photo design' : 'Video design', description: editorMode === 'photo' ? 'The timeline stays hidden. Apply a video template or add a video and this design switches to video.' : 'Remove every video from the canvas to return to a photo design.' })} className={cn('hidden h-8 shrink-0 items-center whitespace-nowrap rounded-lg px-2 text-xs font-semibold lg:inline-flex', ghost)}>
           {editorMode === 'photo' ? 'Photo' : 'Video'}
         </button>
       </div>
 
-      <Button variant="ghost" size="sm" onClick={onSave} className="hidden gap-1 text-inherit sm:inline-flex" aria-label={returnToCreate ? 'Save and continue' : 'Save creative'}><Check className="h-3 w-3" />{returnToCreate ? (saveStatus === 'Saving…' ? 'Saving…' : 'Save & continue') : saveStatus}</Button>
+      <Button variant="ghost" size="sm" onClick={onSave} className={cn('hidden gap-1 sm:inline-flex', ghost)} aria-label={returnToCreate ? 'Save and continue' : 'Save creative'}><Check className="h-3 w-3" />{returnToCreate ? (saveStatus === 'Saving…' ? 'Saving…' : 'Save & continue') : saveStatus}</Button>
 
-      <div className="ml-1 hidden md:flex items-center gap-1">
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onUndo} disabled={!canUndo}><Undo2 className={`h-4 w-4 ${canUndo ? '' : 'opacity-30'}`} /></Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onRedo} disabled={!canRedo}><Redo2 className={`h-4 w-4 ${canRedo ? '' : 'opacity-30'}`} /></Button>
+      <div className="ml-1 hidden items-center gap-0.5 md:flex">
+        <Button variant="ghost" size="icon" className={cn('h-8 w-8', ghost)} onClick={onUndo} disabled={!canUndo}><Undo2 className={`h-4 w-4 ${canUndo ? '' : 'opacity-30'}`} /></Button>
+        <Button variant="ghost" size="icon" className={cn('h-8 w-8', ghost)} onClick={onRedo} disabled={!canRedo}><Redo2 className={`h-4 w-4 ${canRedo ? '' : 'opacity-30'}`} /></Button>
       </div>
 
       <div className="flex-1" />
 
       <AIQuickActionsMenu />
-      <Button variant="ghost" size="sm" className="hidden h-9 gap-1.5 text-inherit hover:bg-primary-foreground/10 hover:text-inherit sm:inline-flex" onClick={onPreview}>
+      <Button variant="ghost" size="sm" className={cn('hidden h-9 gap-1.5 sm:inline-flex', ghost)} onClick={onPreview}>
         <Play className="h-3.5 w-3.5" /> Preview
       </Button>
-      <Button variant="ghost" size="sm" className="h-9 gap-1.5 text-inherit hover:bg-primary-foreground/10 hover:text-inherit" onClick={onExport}>
+      <Button variant="ghost" size="sm" className={cn('h-9 gap-1.5', ghost)} onClick={onExport}>
         <Download className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Export</span>
       </Button>
-      <Button size="sm" variant="secondary" className="hidden h-9 gap-1.5 border-primary-foreground/20 bg-primary-foreground text-primary sm:inline-flex" onClick={onPublish}>
+      <Button size="sm" className="hidden h-9 gap-1.5 rounded-lg bg-[#8B3DFF] px-3.5 text-white hover:bg-[#7a2ff0] sm:inline-flex" onClick={onPublish}>
         <Send className="h-3.5 w-3.5" /> {returnToCreate ? 'Continue' : 'Publish'}
       </Button>
 
       {initial && (
-        <div className="hidden md:flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-[11px] font-semibold text-white" title={user?.email || undefined}>
+        <div className="hidden h-8 w-8 items-center justify-center rounded-full bg-[#2a2b2f] text-[11px] font-semibold text-white md:flex" title={user?.email || undefined}>
           {initial}
         </div>
       )}
 
-      <Button variant="ghost" size="icon" className="lg:hidden h-9 w-9" onClick={onToggleRight}>
+      <Button variant="ghost" size="icon" className={cn('h-9 w-9 lg:hidden', ghost)} onClick={onToggleRight}>
         <PanelRight className="h-4 w-4" />
       </Button>
     </header>
@@ -1344,6 +1337,7 @@ const VIDEO_TOOLS: ToolItem[] = VIDEO_RAIL.map((tool) => ({
 
 const ACTION_ICONS: Record<string, React.FC<{ className?: string }>> = {
   'edit-text': Edit3,
+  'edit-image': Edit3,
   font: Type,
   'text-style': Bold,
   'font-size': Type,
@@ -1371,6 +1365,10 @@ const ACTION_ICONS: Record<string, React.FC<{ className?: string }>> = {
   fade: Volume2,
   trim: Scissors,
   'bg-remove': Wand2,
+  eraser: Pipette,
+  case: Type,
+  more: MoreHorizontal,
+  'line-style': SquareIcon,
 };
 
 const toolsForSet = (set: ToolSetId): ToolItem[] => {
@@ -2477,6 +2475,7 @@ const EditorInner: React.FC = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>(() => {
     if (typeof window === 'undefined') return 'templates';
+    if (searchParams.get('studio') === '1') return 'ai-studio';
     const saved = window.localStorage.getItem('advista.editor.activeTab');
     if (searchParams.get('selectTemplate') === '1') return 'templates';
     return saved && LEFT_TABS.some((t) => t.id === saved) ? saved : 'templates';
@@ -2490,12 +2489,8 @@ const EditorInner: React.FC = () => {
   const [tick, forceUpdate] = useState(0);
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
-  const [sheetExpanded, setSheetExpanded] = useState(() => searchParams.get('selectTemplate') === '1');
+  const [sheetExpanded, setSheetExpanded] = useState(() => searchParams.get('selectTemplate') === '1' || searchParams.get('studio') === '1');
   const [sheetFull, setSheetFull] = useState(false);
-  const [dockOpen, setDockOpen] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return new URLSearchParams(window.location.search).get('studio') === '1';
-  });
   const [pendingUploads, setPendingUploads] = useState<File[] | null>(null);
   const cameraRollRef = useRef<HTMLInputElement>(null);
   const mediaInputRef = useRef<HTMLInputElement>(null);
@@ -2506,7 +2501,7 @@ const EditorInner: React.FC = () => {
   const styleSource = useRef<any>(null);
   const styleArmed = useRef(false);
   const [timelineOpen, setTimelineOpen] = useState(true);
-  const [videoIntent, setVideoIntent] = useState(false);
+  const [videoIntent, setVideoIntent] = useState(() => searchParams.get('mode') === 'video');
   const sawVideo = useRef(false);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
@@ -2535,10 +2530,22 @@ const EditorInner: React.FC = () => {
     });
   }, []);
 
-  const [preset, setPreset] = useState('instagramPortrait');
+  const [preset, setPreset] = useState(() => {
+    const fromQuery = searchParams.get('preset');
+    if (fromQuery === 'custom') return 'custom';
+    if (fromQuery && ARTBOARD_PRESETS[fromQuery]) return fromQuery;
+    return 'instagramPortrait';
+  });
   // Templates bring their own frame — kept as a "custom" artboard so the
   // design renders at its authored size instead of being squeezed into a preset.
-  const [customArtboard, setCustomArtboard] = useState<{ label: string; width: number; height: number } | null>(null);
+  const [customArtboard, setCustomArtboard] = useState<{ label: string; width: number; height: number } | null>(() => {
+    const width = Number(searchParams.get('w'));
+    const height = Number(searchParams.get('h'));
+    if (Number.isFinite(width) && Number.isFinite(height) && width >= 64 && height >= 64) {
+      return { label: `Custom (${Math.round(width)}×${Math.round(height)})`, width: Math.round(width), height: Math.round(height) };
+    }
+    return null;
+  });
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [pages, setPages] = useState<any[]>([]);
   const [pageIdx, setPageIdx] = useState(0);
@@ -2551,9 +2558,9 @@ const EditorInner: React.FC = () => {
     const fromDraft = typeof window !== 'undefined' && window.sessionStorage.getItem('advista.studio.draft');
     if (!fromQuery && !fromDraft) return;
     studioBoot.current = true;
-    setDockOpen(true);
+    setPanelCollapsed(false);
+    setActiveTab('ai-studio');
     if (isMobile) {
-      setActiveTab('studio-slot');
       setSheetExpanded(true);
     }
   }, [isMobile, searchParams]);
@@ -2606,7 +2613,7 @@ const EditorInner: React.FC = () => {
 
   const saveSnapshot = useCallback((c: FabricCanvas) => {
     if (isRestoringRef.current) return;
-    const json = JSON.stringify((c as any).toJSON(SERIALIZED_CANVAS_PROPS));
+    const json = JSON.stringify((c as any).toObject(SERIALIZED_CANVAS_PROPS));
     if (historyRef.current[historyIdxRef.current] === json) return;
     setHistory(prev => {
       const trimmed = prev.slice(0, historyIdxRef.current + 1);
@@ -2723,7 +2730,7 @@ const EditorInner: React.FC = () => {
     const operation = (async () => {
       setSaveStatus('Saving…');
       try {
-        const json = (canvas as any).toJSON(SERIALIZED_CANVAS_PROPS);
+        const json = (canvas as any).toObject(SERIALIZED_CANVAS_PROPS);
         const pageSnapshots = [...pages];
         if (pageSnapshots.length) pageSnapshots[pageIdx] = json;
         const document = creativeDocument(json, artboard.width, artboard.height, pageSnapshots);
@@ -2739,11 +2746,20 @@ const EditorInner: React.FC = () => {
           campaignIdRef.current = data.id;
           setCampaignId(data.id);
         }
+        const designType = (hasVideo || videoIntent || !!videoUrl) ? 'video' as const : 'photo' as const;
+        const priorStatus = String((creativeContentRef.current as any)?.designStatus || '');
+        const designStatus = priorStatus === 'finished' ? 'finished' as const : 'draft' as const;
+        const contentMeta = withDesignMeta(
+          { ...creativeContentRef.current, pageIdx, videoUrl },
+          { designType, designStatus },
+        );
+        creativeContentRef.current = contentMeta as Record<string, any>;
         const creative = await CreativeService.save(user.id, {
           campaign_id: targetCampaignId,
           name: projectName,
+          status: designStatus,
           canvas_data: document,
-          content: { ...creativeContentRef.current, pageIdx, videoUrl },
+          content: contentMeta,
           template_id: templateIdRef.current,
           preview_url: canvas.toDataURL({ format: 'png', multiplier: Math.min(1, 480 / artboard.width) }),
         }, creativeIdRef.current);
@@ -2772,7 +2788,7 @@ const EditorInner: React.FC = () => {
     })();
     saveInFlight.current = operation;
     try { return await operation; } finally { saveInFlight.current = null; }
-  }, [canvas, user, documentLoaded, loadError, pages, pageIdx, artboard.width, artboard.height, projectName, videoUrl, setSearchParams, qc]);
+  }, [canvas, user, documentLoaded, loadError, pages, pageIdx, artboard.width, artboard.height, projectName, videoUrl, hasVideo, videoIntent, setSearchParams, qc]);
 
   useEffect(() => {
     const save = () => {
@@ -2792,7 +2808,7 @@ const EditorInner: React.FC = () => {
 
   const autoSaveData = useMemo(() => {
     if (!canvas || !documentLoaded || loadError) return null;
-    try { return { json: (canvas as any).toJSON(SERIALIZED_CANVAS_PROPS), name: projectName, width: artboard.width, height: artboard.height }; }
+    try { return { json: (canvas as any).toObject(SERIALIZED_CANVAS_PROPS), name: projectName, width: artboard.width, height: artboard.height }; }
     catch { return null; }
   }, [canvas, documentLoaded, loadError, historyIdx, projectName, artboard.width, artboard.height]);
   const handleAutoSave = useCallback(async (data: any) => {
@@ -3096,6 +3112,9 @@ const EditorInner: React.FC = () => {
           setCampaignId(creative.campaign_id);
           templateIdRef.current = creative.template_id;
           creativeContentRef.current = (creative.content ?? {}) as Record<string, any>;
+          if (creativeContentRef.current.designType === 'video' || creativeContentRef.current.videoUrl) {
+            setVideoIntent(true);
+          }
           setProjectName(creative.name);
           if (!creative.canvas_data && creativeContentRef.current.mediaUrl) {
             const img = await FabricImage.fromURL(creativeContentRef.current.mediaUrl, { crossOrigin: 'anonymous' });
@@ -3230,6 +3249,16 @@ const EditorInner: React.FC = () => {
     markChanged();
   };
 
+  const uploadBoot = useRef(false);
+  useEffect(() => {
+    if (uploadBoot.current || !canvasReady || !canvas || searchParams.get('upload') !== '1') return;
+    const file = takePendingEditorUpload();
+    if (!file) return;
+    uploadBoot.current = true;
+    if (file.type.startsWith('video/')) setVideoIntent(true);
+    void addFilesToTimeline([file]);
+  }, [canvasReady, canvas, searchParams]);
+
   const exportTimelineVideo = async () => {
     const element = (canvas as any)?.lowerCanvasEl as HTMLCanvasElement | undefined;
     if (!canvas || !element) return;
@@ -3291,34 +3320,54 @@ const EditorInner: React.FC = () => {
     }
   };
 
+  /** Opens a left-rail panel without side effects such as the file picker. */
+  const openLeftPanel = (id: string) => {
+    const panel = panelForCreateTool(id);
+    setPanelCollapsed(false);
+    setActiveTab(panel);
+    setActiveTool(null);
+    setSheetFull(false);
+    setSheetExpanded(true);
+  };
+
+  const onPlayheadTime = useCallback((time: number) => { playheadRef.current = time; }, []);
+
+  // New media, shapes, text and frames start where the playhead is.
+  useEffect(() => {
+    setPlacementClock(() => (editorMode === 'video' ? playheadRef.current : 0));
+    return () => setPlacementClock(() => 0);
+  }, [editorMode]);
+
+  useEffect(() => {
+    if (!canvas || editorMode !== 'video') return undefined;
+    const place = (event: { target?: any }) => {
+      const target = event?.target;
+      const at = playheadRef.current;
+      if (!target || at <= 0 || isRestoringRef.current || target.advistaClip || isOverlayScrim(target)) return;
+      // Only things a person just added become the active object in the same tick. Template loads do not.
+      // The timeline may already have given the object a default clip by then, so the check above is the real test.
+      queueMicrotask(() => {
+        if (canvas.getActiveObject() !== target) return;
+        writeClip(target, { ...ensureObjectClip(target), start: Math.round(at * 100) / 100 });
+        canvas.requestRenderAll();
+        markChanged();
+      });
+    };
+    canvas.on('object:added', place);
+    return () => { canvas.off('object:added', place); };
+  }, [canvas, editorMode, markChanged]);
+
   const openCreateTool = (id: string) => {
     if (id === 'uploads') {
       mediaInputRef.current?.click();
     }
     const panel = panelForCreateTool(id);
-    if (panel === 'studio-slot') {
-      const open = isMobile ? activeTab === 'studio-slot' && sheetExpanded : dockOpen;
-      if (open) {
-        setDockOpen(false);
-        setSheetExpanded(false);
-        setSheetFull(false);
-        if (activeTab === 'studio-slot') setActiveTab('templates');
-        return;
-      }
-      setDockOpen(true);
-      if (isMobile) {
-        setActiveTab('studio-slot');
-        setActiveTool(null);
-        setSheetFull(false);
-        setSheetExpanded(true);
-      }
-      return;
-    }
     if (activeTab === panel && sheetExpanded && !activeTool) {
       setSheetExpanded(false);
       setSheetFull(false);
       return;
     }
+    setPanelCollapsed(false);
     setActiveTab(panel);
     setActiveTool(null);
     setSheetFull(false);
@@ -3441,17 +3490,12 @@ const EditorInner: React.FC = () => {
 
   const selectTab = useCallback((id: string) => {
     setPanelCollapsed(false);
-    if (id === 'ai-studio') {
-      setDockOpen(true);
-      setActiveTool(null);
-      if (isMobile) {
-        setActiveTab('studio-slot');
-        setSheetExpanded(true);
-      }
-      return;
-    }
-    setActiveTab(id);
+    setActiveTab(id === 'studio-slot' ? 'ai-studio' : id);
     setActiveTool(null);
+    if (isMobile && (id === 'ai-studio' || id === 'studio-slot')) {
+      setSheetFull(false);
+      setSheetExpanded(true);
+    }
   }, [isMobile]);
 
   // ---- Preview / Publish / Pages ----
@@ -3485,14 +3529,16 @@ const EditorInner: React.FC = () => {
       await saveAndReturn();
       return;
     }
+    creativeContentRef.current = { ...creativeContentRef.current, designStatus: 'finished' };
     const id = await persistCreative();
     if (!id) return;
-    navigate(`/campaigns/${id}`);
+    toast({ title: 'Design published', description: 'Find it under Your designs on Create.' });
+    navigate('/create?tab=designs');
   }, [persistCreative, navigate, returnToCreateAd, saveAndReturn]);
 
   const addPage = useCallback(() => {
     if (!canvas) return;
-    const snapshot = (canvas as any).toJSON(SERIALIZED_CANVAS_PROPS);
+    const snapshot = (canvas as any).toObject(SERIALIZED_CANVAS_PROPS);
     setPages((prev) => {
       const next = [...prev];
       next[pageIdx] = snapshot;
@@ -3509,7 +3555,7 @@ const EditorInner: React.FC = () => {
 
   const duplicatePage = useCallback(() => {
     if (!canvas) return;
-    const snapshot = (canvas as any).toJSON(SERIALIZED_CANVAS_PROPS);
+    const snapshot = (canvas as any).toObject(SERIALIZED_CANVAS_PROPS);
     setPages((prev) => {
       const next = [...prev];
       next[pageIdx] = snapshot;
@@ -3522,7 +3568,7 @@ const EditorInner: React.FC = () => {
 
   const goToPage = useCallback(async (idx: number) => {
     if (!canvas || idx === pageIdx) return;
-    const snapshot = (canvas as any).toJSON(SERIALIZED_CANVAS_PROPS);
+    const snapshot = (canvas as any).toObject(SERIALIZED_CANVAS_PROPS);
     const next = [...pages];
     next[pageIdx] = snapshot;
     setPages(next);
@@ -3550,7 +3596,7 @@ const EditorInner: React.FC = () => {
       canvasWidth={artboard.width}
       canvasHeight={artboard.height}
       compact={compact}
-      embedded={isMobile}
+      embedded
       selectedUrl={selectionMediaUrl(selected)}
       onAddImage={(url) => placeStudioResult(url, 'image')}
       onAddVideo={(url) => placeStudioResult(url, 'video')}
@@ -3560,13 +3606,14 @@ const EditorInner: React.FC = () => {
       }}
       onExpand={() => setSheetFull(true)}
       onClose={() => {
-        setDockOpen(false);
         setSheetExpanded(false);
         setSheetFull(false);
         if (activeTab === 'studio-slot' || activeTab === 'ai-studio') setActiveTab('templates');
       }}
     />
   );
+
+  const aiStudioActive = activeTab === 'ai-studio' || activeTab === 'studio-slot';
 
   const renderLeftPanel = () => {
     switch (activeTab) {
@@ -3584,7 +3631,13 @@ const EditorInner: React.FC = () => {
         />
       );
       case 'background': return <StudioBackgroundPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} brandColors={brandPalette} selected={selected} />;
-      case 'studio-slot': return studioDock(isMobile && !sheetFull);
+      case 'studio-slot':
+      case 'ai-studio':
+        return (
+          <div className="h-full min-h-0 overflow-y-auto p-3">
+            {studioDock(isMobile && !sheetFull)}
+          </div>
+        );
       case 'ai-voice': return (
         <KeySlot
           title="AI Voice"
@@ -3599,9 +3652,8 @@ const EditorInner: React.FC = () => {
           <AudioAddSheet onAdd={(url, name) => { if (!canvas) return; void addTimelineAudio(canvas, url, name).then(() => markChanged()); }} />
         </div>
       );
-      case 'ai-studio': return studioDock(isMobile && !sheetFull);
       case 'text': return <TextPanel onAdd={addText} onMagicWrite={magicWrite} />;
-      case 'elements': return <StudioElementsPanel canvas={canvas} onChanged={() => forceUpdate((n) => n + 1)} brandColors={brandPalette} selected={selected} />;
+      case 'elements': return <StudioElementsPanel canvas={canvas} onChanged={markChanged} brandColors={brandPalette} selected={selected} onOpenAudio={() => openLeftPanel('audio')} />;
       case 'brand': return (
         <BrandKitPanel
           onUseColor={useBrandColor}
@@ -3696,23 +3748,23 @@ const EditorInner: React.FC = () => {
         ) : undefined}
       />
 
-      {/* Floating Toolbar — simplified, contextual above object */}
+      {/* Floating layer actions — sits on the selection like Canva */}
       {selected && toolbarPos && (
-        <div className="absolute z-30 pointer-events-auto animate-in fade-in"
+        <div className="pointer-events-auto absolute z-30 animate-in fade-in"
           style={{ left: toolbarPos.left, top: toolbarPos.top, transform: 'translateX(-50%)' }}>
-          <div className="relative flex items-center gap-0.5 rounded-full px-1.5 py-1 shadow-lg" style={{ backgroundColor: '#2D2D2D', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
-            <button type="button" aria-label="Comment" title="Add a note on this design" onClick={() => setNoteOpen(true)} className="flex h-7 w-7 items-center justify-center rounded-md text-white hover:bg-white/10"><MessageSquare className="h-3.5 w-3.5" /></button>
+          <div className="relative flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#252627] px-1 py-0.5 shadow-[0_6px_20px_rgba(0,0,0,0.4)]">
+            <button type="button" aria-label="Comment" title="Add a note on this design" onClick={() => setNoteOpen(true)} className="flex h-7 w-7 items-center justify-center rounded-md text-white/90 hover:bg-white/10"><MessageSquare className="h-3.5 w-3.5" /></button>
             <button type="button" aria-label={isLocked(selected) ? 'Unlock' : 'Lock'} title={isLocked(selected) ? 'Unlock layer' : 'Lock layer'}
               onClick={() => { setLocked(canvas, selected, !isLocked(selected)); markChanged(); }}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-white hover:bg-white/10">
+              className="flex h-7 w-7 items-center justify-center rounded-md text-white/90 hover:bg-white/10">
               {isLocked(selected) ? <Lock className="h-3.5 w-3.5 text-amber-400" /> : <Unlock className="h-3.5 w-3.5" />}
             </button>
-            <button type="button" aria-label="Duplicate" title="Duplicate" onClick={duplicateSelected} className="flex h-7 w-7 items-center justify-center rounded-md text-white hover:bg-white/10"><Copy className="h-3.5 w-3.5" /></button>
-            <button type="button" aria-label="Delete" title="Delete" onClick={deleteSelected} className="flex h-7 w-7 items-center justify-center rounded-md text-white hover:bg-white/10"><Trash2 className="h-3.5 w-3.5" /></button>
-            <button type="button" aria-label="More layer actions" title="More" aria-expanded={moreOpen} onClick={() => setMoreOpen((open) => !open)} className="flex h-7 w-7 items-center justify-center rounded-md text-white hover:bg-white/10"><MoreHorizontal className="h-3.5 w-3.5" /></button>
+            <button type="button" aria-label="Duplicate" title="Duplicate" onClick={duplicateSelected} className="flex h-7 w-7 items-center justify-center rounded-md text-white/90 hover:bg-white/10"><Copy className="h-3.5 w-3.5" /></button>
+            <button type="button" aria-label="Delete" title="Delete" onClick={deleteSelected} className="flex h-7 w-7 items-center justify-center rounded-md text-white/90 hover:bg-white/10"><Trash2 className="h-3.5 w-3.5" /></button>
+            <button type="button" aria-label="More layer actions" title="More" aria-expanded={moreOpen} onClick={() => setMoreOpen((open) => !open)} className="flex h-7 w-7 items-center justify-center rounded-md text-white/90 hover:bg-white/10"><MoreHorizontal className="h-3.5 w-3.5" /></button>
             {moreOpen && (
               <div className="absolute right-0 top-10 z-40 w-40 rounded-xl border border-white/10 bg-[#1A1A1A] p-1 text-left text-xs text-white shadow-xl">
-                <button type="button" className="block w-full rounded-lg px-3 py-2 text-left hover:bg-white/10" onClick={() => { setMoreOpen(false); setDockOpen(true); if (isMobile) { setActiveTab('studio-slot'); setSheetExpanded(true); } }}>AI suggestions</button>
+                <button type="button" className="block w-full rounded-lg px-3 py-2 text-left hover:bg-white/10" onClick={() => { setMoreOpen(false); setPanelCollapsed(false); setActiveTab('ai-studio'); if (isMobile) { setSheetFull(false); setSheetExpanded(true); } }}>AI suggestions</button>
                 <button type="button" className="block w-full rounded-lg px-3 py-2 text-left hover:bg-white/10" onClick={() => {
                   setMoreOpen(false);
                   if (selectionType === 'text') { canvas?.setActiveObject(selected); (selected as any).enterEditing?.(); canvas?.requestRenderAll(); }
@@ -3726,8 +3778,8 @@ const EditorInner: React.FC = () => {
         </div>
       )}
 
-      {/* Pages sit under the artboard. Hidden on mobile while a sheet is open so the design stays fully visible above the tools. */}
-      {!(isMobile && sheetExpanded) && (
+      {/* Pages sit under the artboard (photo mode). Video mode uses the timeline Pages control instead. */}
+      {editorMode !== 'video' && !(isMobile && sheetExpanded) && (
       <div className={`flex shrink-0 items-center justify-center gap-2 py-2 ${isMobile ? 'bg-transparent' : 'border-t border-studio-line bg-studio-bg'}`}>
         {pages.length > 1 && pages.map((_, i) => (
           <button key={i} onClick={() => goToPage(i)}
@@ -3761,6 +3813,18 @@ const EditorInner: React.FC = () => {
           <p className="mb-2 text-xs font-semibold text-white">Notes</p>
           <textarea aria-label="Design notes" value={note} onChange={(event) => { setNote(event.target.value); try { localStorage.setItem('advista.editor.note', event.target.value); } catch { /* ignore */ } }} className="h-24 w-full resize-none rounded-lg bg-[#2D2D2D] p-2 text-xs text-white outline-none" placeholder="A note for this design" />
           <button type="button" className="mt-2 text-xs text-[#C8BEFF]" onClick={() => setNoteOpen(false)}>Close</button>
+        </div>
+      )}
+      {editorMode === 'video' && pageMenu && (
+        <div className="absolute bottom-4 right-3 z-40 w-44 rounded-xl border border-white/10 bg-[#1A1A1A] p-1 text-xs text-white shadow-xl">
+          {pages.length > 1 && pages.map((_, i) => (
+            <button key={i} type="button" className="block w-full rounded-lg px-3 py-2 text-left hover:bg-white/10" onClick={() => { setPageMenu(false); goToPage(i); }}>
+              Page {i + 1}{i === pageIdx ? ' · current' : ''}
+            </button>
+          ))}
+          <button type="button" className="block w-full rounded-lg px-3 py-2 text-left hover:bg-white/10" onClick={() => { setPageMenu(false); addPage(); }}>Blank page</button>
+          <button type="button" className="block w-full rounded-lg px-3 py-2 text-left hover:bg-white/10" onClick={() => { setPageMenu(false); duplicatePage(); }}>Duplicate this page</button>
+          <button type="button" className="block w-full rounded-lg px-3 py-2 text-left text-white/50 hover:bg-white/10" onClick={() => setPageMenu(false)}>Close</button>
         </div>
       )}
     </>
@@ -3809,7 +3873,7 @@ const EditorInner: React.FC = () => {
           onRedo={onRedo}
           canUndo={canUndo}
           canRedo={canRedo}
-          onToggleLeft={() => isMobile ? navigate('/dashboard') : setLeftOpen(true)}
+          onToggleLeft={() => isMobile ? navigate('/create') : setLeftOpen(true)}
           onToggleRight={() => setRightOpen(true)}
           isMobile={isMobile}
           showGrid={showGrid}
@@ -3834,21 +3898,6 @@ const EditorInner: React.FC = () => {
       </div>
 
       {loadError && <div role="alert" className="border-b border-destructive bg-card p-3 text-destructive">{loadError}<Button variant="outline" className="ml-3" onClick={() => window.location.reload()}>Retry</Button></div>}
-      {selected && (
-        <div data-testid="context-toolbar" className="z-20 hidden h-11 shrink-0 items-center gap-1 overflow-x-auto border-b border-[#2A2A2A] bg-[#161616] px-2 md:flex [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {currentTools.map((tool) => {
-            const Icon = tool.icon;
-            const on = activeTool === tool.id;
-            return (
-              <button key={tool.id} type="button" onClick={() => openSelectionTool(tool.id)} className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium ${on ? 'bg-white text-neutral-900' : 'text-white hover:bg-white/10'}`}>
-                <Icon className="h-3.5 w-3.5" />
-                {tool.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
       {/* Mobile layout: artboard shrinks when the sheet opens (half / nearly full) */}
       {isMobile ? (
         <>
@@ -3871,11 +3920,18 @@ const EditorInner: React.FC = () => {
               onSelect={(object) => { canvas?.setActiveObject(object); setSelected(object); }}
               onChanged={markChanged}
               onAddElements={() => openCreateTool('elements')}
+              onOpenUploads={() => openLeftPanel('uploads')}
               onAddMedia={() => mediaInputRef.current?.click()}
               onAddAudio={() => openCreateTool('audio')}
+              onDropMedia={(files) => void addFilesToTimeline(files)}
               onExportVideo={() => void exportTimelineVideo()}
               exporting={exporting}
-              onTime={(time) => { playheadRef.current = time; }}
+              onTime={onPlayheadTime}
+              pageLabel={`Pages ${pageIdx + 1}/${Math.max(pages.length, 1)}`}
+              onTogglePages={() => setPageMenu((open) => !open)}
+              onToggleGrid={() => setShowGrid((value) => !value)}
+              onFullscreen={() => { if (!document.fullscreenElement) void document.documentElement.requestFullscreen?.(); else void document.exitFullscreen?.(); }}
+              onHelp={() => setHelpOpen(true)}
             />
             )}
 
@@ -3899,7 +3955,7 @@ const EditorInner: React.FC = () => {
           ) : (
           <ContextualToolbar
             tools={railTools}
-            active={dockOpen ? 'studio-slot' : activeTool ? null : activeTab}
+            active={activeTool ? null : (aiStudioActive ? 'studio-slot' : activeTab)}
             onToolTap={openCreateTool}
           />
           )}
@@ -3910,16 +3966,16 @@ const EditorInner: React.FC = () => {
           {/* Editor Main */}
           <div className="editor-main flex flex-1 overflow-hidden min-h-0">
             {/* Left: Icon Rail + Panel */}
-            <div className="editor-left-panel flex h-full overflow-hidden">
-              <IconRail active={activeTab} onChange={selectTab} />
-              <div className={`editor-panel-content studio-panel relative hidden h-full w-[300px] shrink-0 flex-col overflow-hidden border-r md:flex ${panelCollapsed ? '!hidden' : ''}`}>
-                <button type="button" onClick={() => setPanelCollapsed(true)} aria-label="Collapse panel" className="absolute right-2 top-3 z-10 grid h-7 w-7 place-items-center rounded-full bg-[#2D2D2D] text-white hover:bg-[#3D3D3D]">
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
+            <div className="editor-left-panel relative flex h-full overflow-hidden">
+              <IconRail active={aiStudioActive ? 'ai-studio' : activeTab} onChange={selectTab} />
+              <div className={cn(
+                'editor-panel-content studio-panel relative hidden h-full w-[328px] shrink-0 flex-col overflow-hidden border-r border-[#2a2b2d] bg-[#151618] md:flex',
+                panelCollapsed && '!hidden',
+              )}>
                 <div key={activeTool || activeTab} className="flex h-full min-h-0 flex-col">
                   {activeTool && selected ? (
                     <div className="flex h-full min-h-0 flex-col">
-                      <div className="flex items-center gap-2 border-b border-[#3D3D3D] px-3 py-3">
+                      <div className="flex items-center gap-2 border-b border-[#2a2b2d] px-3 py-3">
                         <button type="button" onClick={() => setActiveTool(null)} className="grid h-8 w-8 place-items-center rounded-lg text-white hover:bg-white/10" aria-label="Back to tools">
                           <ChevronLeft className="h-4 w-4" />
                         </button>
@@ -3932,66 +3988,94 @@ const EditorInner: React.FC = () => {
                   ) : renderLeftPanel()}
                 </div>
               </div>
+              {!panelCollapsed && (
+                <button
+                  type="button"
+                  onClick={() => setPanelCollapsed(true)}
+                  aria-label="Collapse panel"
+                  className="absolute right-0 top-1/2 z-20 hidden h-8 w-4 -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full border border-[#3a3b3f] bg-[#252627] text-[#c8c9cc] shadow-md hover:bg-[#323338] md:flex"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
 
             {/* Canvas Area */}
-            <div className="editor-canvas-area relative flex flex-1 min-w-0 flex-col overflow-hidden">
+            <div className="editor-canvas-area relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[#0e0f11]">
               {panelCollapsed && (
-                <button type="button" onClick={() => setPanelCollapsed(false)} aria-label="Expand panel" className="absolute left-3 top-3 z-20 grid h-8 w-8 place-items-center rounded-full bg-[#2D2D2D] text-white">
-                  <ChevronRight className="h-4 w-4" />
+                <button type="button" onClick={() => setPanelCollapsed(false)} aria-label="Expand panel" className="absolute left-0 top-1/2 z-20 grid h-8 w-4 -translate-y-1/2 place-items-center rounded-r-full border border-l-0 border-[#3a3b3f] bg-[#252627] text-[#c8c9cc] shadow-md hover:bg-[#323338]">
+                  <ChevronRight className="h-3.5 w-3.5" />
                 </button>
               )}
+              {selected && currentTools !== CREATE_TOOLS && (
+                <DesktopContextBar
+                  selected={selected}
+                  tools={currentTools}
+                  activeTool={activeTool}
+                  onTool={openSelectionTool}
+                  onChanged={markChanged}
+                  canvas={canvas}
+                />
+              )}
               {renderCanvas()}
-              <div className="flex h-11 shrink-0 items-center gap-2 overflow-x-auto border-t border-[#2A2A2A] bg-[#121212] px-3 text-[11px] text-[#CCCCCC] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <button type="button" className="shrink-0 rounded-md px-2 py-1 hover:bg-white/10" onClick={() => setNoteOpen((open) => !open)}>Notes</button>
-                <button type="button" className="shrink-0 rounded-md px-2 py-1 hover:bg-white/10" onClick={() => setTimerOn((on) => !on)}>{timerOn ? 'Stop timer' : 'Timer'} {`${Math.floor(timerSeconds / 60)}:${String(timerSeconds % 60).padStart(2, '0')}`}</button>
-                <label className="flex shrink-0 items-center gap-2">
+              {editorMode !== 'video' && (
+              <div className="flex h-10 shrink-0 items-center gap-1 overflow-x-auto border-t border-[#2a2b2d] bg-[#151618] px-3 text-[11px] text-[#b8b9bd] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <button type="button" className="shrink-0 rounded-md px-2 py-1 hover:bg-white/10 hover:text-white" onClick={() => setNoteOpen((open) => !open)}>Notes</button>
+                <button type="button" className="shrink-0 rounded-md px-2 py-1 hover:bg-white/10 hover:text-white" onClick={() => setTimerOn((on) => !on)}>{timerOn ? 'Stop timer' : 'Timer'} {`${Math.floor(timerSeconds / 60)}:${String(timerSeconds % 60).padStart(2, '0')}`}</button>
+                <label className="ml-1 flex shrink-0 items-center gap-2">
                   <span className="sr-only">Zoom</span>
-                  <input aria-label="Zoom" type="range" min={25} max={200} value={Math.min(200, Math.max(25, zoom))} onChange={(event) => setZoom(Number(event.target.value))} className="w-24" />
-                  <span className="w-10 tabular-nums">{zoom}%</span>
+                  <input aria-label="Zoom" type="range" min={25} max={200} value={Math.min(200, Math.max(25, zoom))} onChange={(event) => setZoom(Number(event.target.value))} className="w-24 accent-[#8B3DFF]" />
+                  <span className="w-10 tabular-nums text-white/80">{zoom}%</span>
                 </label>
-                <span className="shrink-0">Pages {pageIdx + 1}/{Math.max(pages.length, 1)}</span>
-                <button type="button" className="shrink-0 rounded-md px-2 py-1 hover:bg-white/10" onClick={() => setShowGrid((value) => !value)}>{showGrid ? 'Hide grid' : 'Grid'}</button>
-                <button type="button" className="shrink-0 rounded-md px-2 py-1 hover:bg-white/10" onClick={() => setFitToken((value) => value + 1)}>Fit</button>
-                <button type="button" className="shrink-0 rounded-md px-2 py-1 hover:bg-white/10" onClick={() => { if (!document.fullscreenElement) void document.documentElement.requestFullscreen?.(); else void document.exitFullscreen?.(); }}>Fullscreen</button>
-                <button type="button" className="shrink-0 rounded-md px-2 py-1 hover:bg-white/10" onClick={() => setHelpOpen(true)}>Help</button>
+                <span className="shrink-0 px-1 text-white/70">Pages {pageIdx + 1}/{Math.max(pages.length, 1)}</span>
+                <button type="button" className="shrink-0 rounded-md px-2 py-1 hover:bg-white/10 hover:text-white" onClick={() => setShowGrid((value) => !value)} aria-label="Toggle grid">{showGrid ? 'Hide grid' : 'Grid'}</button>
+                <button type="button" className="shrink-0 rounded-md px-2 py-1 hover:bg-white/10 hover:text-white" onClick={() => setFitToken((value) => value + 1)}>Fit</button>
+                <button type="button" className="shrink-0 rounded-md px-2 py-1 hover:bg-white/10 hover:text-white" onClick={() => { if (!document.fullscreenElement) void document.documentElement.requestFullscreen?.(); else void document.exitFullscreen?.(); }}>Fullscreen</button>
+                <button type="button" className="shrink-0 rounded-md px-2 py-1 hover:bg-white/10 hover:text-white" onClick={() => setHelpOpen(true)}>Help</button>
               </div>
+              )}
               {helpOpen && (
                 <div className="absolute bottom-14 right-3 z-30 w-72 rounded-xl border border-[#3D3D3D] bg-[#1A1A1A] p-3 text-xs leading-relaxed text-[#DDDDDD] shadow-xl">
-                  <p className="font-semibold text-white">Photo design</p>
-                  <p className="mt-1">This opens as a still. The timeline appears when you apply a video template or add a video. Remove every video and it returns to a photo.</p>
+                  <p className="font-semibold text-white">{editorMode === 'video' ? 'Video design' : 'Photo design'}</p>
+                  <p className="mt-1">
+                    {editorMode === 'video'
+                      ? 'Use the timeline under the canvas to add media, elements, and audio. Drag the ruler to seek, then export when you are ready.'
+                      : 'This opens as a still. The timeline appears when you apply a video template or add a video. Remove every video and it returns to a photo.'}
+                  </p>
                   <button type="button" className="mt-2 text-[#C8BEFF]" onClick={() => setHelpOpen(false)}>Close</button>
                 </div>
               )}
+              {editorMode === 'video' && (
+              <StudioTimeline
+                canvas={canvas}
+                version={tick}
+                selectedId={selected?.advistaId ?? selected?.advistaClip?.id ?? null}
+                onSelect={(object) => { canvas?.setActiveObject(object); setSelected(object); }}
+                onChanged={markChanged}
+                onAddElements={() => openCreateTool('elements')}
+                onOpenUploads={() => openLeftPanel('uploads')}
+                onAddMedia={() => mediaInputRef.current?.click()}
+                onAddAudio={() => openCreateTool('audio')}
+                onDropMedia={(files) => void addFilesToTimeline(files)}
+                onExportVideo={() => void exportTimelineVideo()}
+                exporting={exporting}
+                onTime={onPlayheadTime}
+                pageLabel={`Pages ${pageIdx + 1}/${Math.max(pages.length, 1)}`}
+                onTogglePages={() => setPageMenu((open) => !open)}
+                onToggleGrid={() => setShowGrid((value) => !value)}
+                onFullscreen={() => { if (!document.fullscreenElement) void document.documentElement.requestFullscreen?.(); else void document.exitFullscreen?.(); }}
+                onHelp={() => setHelpOpen(true)}
+              />
+              )}
             </div>
 
-            {/* Desktop right panel — opened from the top bar */}
-            {dockOpen ? (
-              <aside className="studio-panel flex h-full w-[360px] shrink-0 flex-col overflow-y-auto border-l p-3">
-                {studioDock(false)}
-              </aside>
-            ) : selected && rightOpen && (
+            {/* Desktop inspector — properties only (AI Studio lives in the left sidebar) */}
+            {selected && rightOpen && (
                <div className="editor-right-panel studio-panel hidden w-[260px] shrink-0 overflow-y-auto border-l lg:flex">
                 <RightPanel selected={selected} canvas={canvas} onClose={() => setRightOpen(false)} preset={preset} customArtboard={customArtboard} onPresetChange={changeArtboardPreset} />
               </div>
             )}
           </div>
-
-          {editorMode === 'video' && (
-          <StudioTimeline
-            canvas={canvas}
-            version={tick}
-            selectedId={selected?.advistaId ?? selected?.advistaClip?.id ?? null}
-            onSelect={(object) => { canvas?.setActiveObject(object); setSelected(object); }}
-            onChanged={markChanged}
-            onAddElements={() => openCreateTool('elements')}
-            onAddMedia={() => mediaInputRef.current?.click()}
-            onAddAudio={() => openCreateTool('audio')}
-            onExportVideo={() => void exportTimelineVideo()}
-            exporting={exporting}
-            onTime={(time) => { playheadRef.current = time; }}
-          />
-          )}
         </>
       )}
 
@@ -4009,7 +4093,7 @@ const EditorInner: React.FC = () => {
           <div className="flex items-center gap-1 border-b bg-[hsl(245,45%,10%)] p-2 overflow-x-auto">
             {LEFT_TABS.map((t) => {
               const Icon = t.icon;
-              const isActive = activeTab === t.id;
+              const isActive = t.id === 'ai-studio' ? aiStudioActive : activeTab === t.id;
               return (
                 <button key={t.id} onClick={() => selectTab(t.id)}
                   className={`flex shrink-0 flex-col items-center gap-0.5 rounded-lg px-2.5 py-2 text-white ${isActive ? 'bg-primary' : 'hover:bg-white/10'}`}>
